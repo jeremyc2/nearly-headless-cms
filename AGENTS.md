@@ -5,6 +5,8 @@ Nearly Headless CMS is an allusion to Nearly Headless Nick from Harry Potter.
 This package facilitates the creation of Headless CMSs where the builder of the Headless CMS itself
 can bring their own UI and provide their own storage backend, authentication/authorization and user management, API/Transport layer, asset management, and runtime environment via Effect layers.
 
+- Don't use abreviations for variable or function names. Use descriptive names instead.
+
 ## Linting
 
 DO NOT use `eslint` or `prettier`. Exclusively use our `package.json` scripts for linting and formatting, or the oxlint CLI.
@@ -41,6 +43,8 @@ test("hello world", () => {
 ```
 
 ## Effect V4 RC
+
+Never access `_tag` directly. Effect v4 has utilities in many of it's modules for working with `_tag`. If needed, we can also add static properties to Effect error classes for carrying additional metadata.
 
 We are using the Effect v4 Release Candidate (RC). This is a major version bump from Effect v3.
 
