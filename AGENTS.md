@@ -1,3 +1,17 @@
+## Goal
+
+Nearly Headless CMS is an allusion to Nearly Headless Nick from Harry Potter.
+
+This package fascilitates the creation of Headless CMSs where the builder of the Headless CMS itself
+can bring their own UI and provide their own storage backend, authentication/authorization and user management, API/Transport layer, asset management, and runtime environment via Effect layers.
+
+## Linting
+
+DO NOT use `eslint` or `prettier`. Exclusively use our `package.json` scripts for linting and formatting, or the oxlint CLI.
+We have setup very strict linting rules. Don't ever use `// oxlint-disable`, and use `// oxlint-disable-next-line` only as an escape hatch (avoid when possible) and document the reason for doing so inline with the code every time. Don't loosen type-checking or linting rules in our config files without explicit permission.
+
+## This is a Bun TS project
+
 Default to using Bun instead of Node.js.
 
 For more information, read the Bun API docs in `node_modules/bun-types/docs/**.mdx`.
@@ -9,12 +23,12 @@ For more information, read the Bun API docs in `node_modules/bun-types/docs/**.m
 - Use `bunx <package> <command>` instead of `npx <package> <command>`
 - Bun automatically loads .env, so don't use dotenv.
 
-## APIs
+### APIs
 
 - Prefer `Bun.file` over `node:fs`'s readFile/writeFile
 - Bun.$`ls` instead of execa.
 
-## Testing
+### Testing
 
 Use `bun test` to run tests.
 
@@ -25,3 +39,11 @@ test("hello world", () => {
   expect(1).toBe(1);
 });
 ```
+
+## Effect V4 RC
+
+We are using the Effect v4 Release Candidate (RC). This is a major version bump from Effect v3.
+
+Prefer the bundled documentation over your current knowledge: `node_modules/effect/ai-docs/**.(ts|md)`.
+
+Effect is written in Effect, so we should also refer to the Effect source code for the most up-to-date examples and best practices, which they have graciously included in their node_modules: `node_modules/effect/src/**`.
