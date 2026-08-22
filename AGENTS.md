@@ -47,3 +47,17 @@ We are using the Effect v4 Release Candidate (RC). This is a major version bump 
 Prefer the bundled documentation over your current knowledge: `node_modules/effect/ai-docs/**.(ts|md)`.
 
 Effect is written in Effect, so we should also refer to the Effect source code for the most up-to-date examples and best practices, which they have graciously included in their node_modules: `node_modules/effect/src/**`.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs are tracked in this repository’s GitHub Issues using the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Triage uses the default five-label vocabulary. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Domain documentation uses the single-context layout. See `docs/agents/domain.md`.

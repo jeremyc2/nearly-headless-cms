@@ -1,5 +1,8 @@
 {
   "$schema": "./node_modules/@effect/tsgo/oxlint-schema.json",
+  "ignorePatterns": [
+    ".agents/"
+  ],
   "options": {
     "typeAware": true
   },
