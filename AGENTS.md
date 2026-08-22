@@ -2,7 +2,7 @@
 
 Nearly Headless CMS is an allusion to Nearly Headless Nick from Harry Potter.
 
-This package fascilitates the creation of Headless CMSs where the builder of the Headless CMS itself
+This package facilitates the creation of Headless CMSs where the builder of the Headless CMS itself
 can bring their own UI and provide their own storage backend, authentication/authorization and user management, API/Transport layer, asset management, and runtime environment via Effect layers.
 
 ## Linting
