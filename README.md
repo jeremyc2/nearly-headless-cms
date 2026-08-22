@@ -1,4 +1,4 @@
-# nearly-headless-cms
+# Nearly Headless CMS
 
 <img width="496" height="279" alt="image" src="https://github.com/user-attachments/assets/93b12b6f-40fc-44d5-80ef-5dd81f9b03c6" />
 
