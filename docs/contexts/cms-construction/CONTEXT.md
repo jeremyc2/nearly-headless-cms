@@ -39,3 +39,29 @@ _Avoid_: Property, attribute
 **Field Group**:
 A named, reusable fragment of Field definitions composed into one or more Content Types.
 _Avoid_: Editor panel, fieldset
+
+## Definition lifecycle
+
+**Content Definition**:
+A serializable definition of either a Content Type or a Field Group, identified independently of its human-readable name.
+_Avoid_: Model, collection configuration
+
+**Definition Revision**:
+An immutable, versioned Content Definition captured from a complete, self-valid draft.
+_Avoid_: Mutable definition, in-place edit
+
+**Definition Space**:
+One isolated set of Content Definitions and their lifecycle history for a Headless CMS.
+_Avoid_: Built-in tenant, global model store
+
+**Definition Snapshot**:
+One complete, immutable selection of Definition Revisions that forms a valid content-definition graph for a Definition Space.
+_Avoid_: Live mutable registry, partial activation
+
+**Definition Catalog**:
+The durable lifecycle record for a Definition Space, including Definition Revisions, Definition Snapshots, and lifecycle events.
+_Avoid_: Active runtime schema cache
+
+**Definition Registry**:
+The runtime view of a Definition Space's active Definition Snapshot and its compiled schemas.
+_Avoid_: Definition history store, authoring UI state
