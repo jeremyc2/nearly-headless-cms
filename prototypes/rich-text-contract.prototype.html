@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Rich Text Contract Prototype</title>
+    <style>
+      :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, sans-serif; color: #192330; background: #f5f7fa; }
+      body { margin: 0; }
+      main { max-width: 1120px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+      h1 { margin: 0; letter-spacing: -.04em; font-size: clamp(2rem, 5vw, 3.5rem); }
+      h2 { margin: 2rem 0 .65rem; font-size: 1.15rem; }
+      p { line-height: 1.55; max-width: 78ch; }
+      .note, .state, .walkthrough, .rendering { border: 1px solid #d7dee7; border-radius: 14px; background: #fff; padding: 1.25rem; box-shadow: 0 8px 24px #16253a0a; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; }
+      .state { min-height: 19rem; }
+      .label { color: #5d6a78; display: block; font-size: .78rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
+      .value { margin: .25rem 0 1rem; line-height: 1.5; }
+      .document { border-left: 4px solid #2f6fda; padding-left: 1rem; }
+      .document p { margin: .5rem 0; }
+      .unresolved { color: #a14417; font-weight: 700; }
+      button { appearance: none; border: 1px solid #b8c6d6; border-radius: 8px; background: #fff; color: #192330; cursor: pointer; font: inherit; margin: .25rem .25rem .25rem 0; padding: .6rem .8rem; }
+      button:hover, button:focus-visible { border-color: #205ec1; outline: 3px solid #b9d4ff; outline-offset: 2px; }
+      button.primary { background: #205ec1; border-color: #205ec1; color: #fff; }
+      button[disabled] { cursor: not-allowed; opacity: .5; }
+      .tabs { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
+      .tab[aria-selected="true"] { background: #172d4d; border-color: #172d4d; color: #fff; }
+      code { border-radius: 4px; background: #eef2f7; padding: .1rem .25rem; }
+      .feedback { color: #145b3a; font-weight: 650; }
+      .danger { color: #a14417; font-weight: 650; }
+      @media (max-width: 600px) { main { padding: 2rem 1rem; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Rich Text contract prototype</h1>
+      <p class="note"><strong>Throwaway logic prototype.</strong> This explores whether a portable, JSON-compatible document value can preserve semantic authoring intent, make Entry and Asset references explicit, let a Content Client render safely without importing the CMS, and migrate format changes without guessing at editorial meaning.</p>
+
+      <h2>Current document</h2>
+      <div class="grid">
+        <section class="state" aria-live="polite"><span class="label">Authored value</span><div id="value"></div></section>
+        <section class="rendering" aria-live="polite"><span class="label">Public Blog rendering</span><div id="rendering"></div></section>
+        <section class="state" aria-live="polite"><span class="label">Contract result</span><div id="result"></div></section>
+      </div>
+
+      <h2>Free play</h2>
+      <p>Try normal authoring actions in any order. The final panel always says what a portable Content Client can safely do with the resulting value.</p>
+      <div id="actions"></div>
+
+      <h2>Guided walkthroughs</h2>
+      <section class="walkthrough">
+        <div class="tabs" id="tabs"></div>
+        <div id="scenario"></div>
+      </section>
+    </main>
+
+    <script>
+      // Pure rich-text contract module. It has no DOM dependencies and is deliberately small enough to lift into production code.
+      const RichTextContract = (() => {
+        const createInitialState = () => ({
+          document: {
+            format: "nhcms.rich-text",
+            version: 1,
+            children: [{ type: "paragraph", children: [{ text: "A calm beginning." }] }]
+          },
+          knownEntries: new Set(["entry:author-ada"]),
+          knownAssets: new Set(["asset:harbor-photo"]),
+          message: "A new semantic document is ready to edit."
+        });
+
+        const cloneDocument = (document) => structuredClone(document);
+        const textNode = (text, marks = {}) => ({ text, ...marks });
+        const isTextNode = (node) => typeof node.text === "string";
+        const nodeIsValid = (node, knownEntries, knownAssets) => {
+          if (isTextNode(node)) return Object.keys(node).every((key) => ["text", "bold", "italic", "code"].includes(key) && (key === "text" || typeof node[key] === "boolean"));
+          if (!node || typeof node !== "object" || typeof node.type !== "string") return false;
+          if (node.type === "paragraph" || node.type === "heading") return Array.isArray(node.children) && node.children.length > 0 && node.children.every((child) => nodeIsValid(child, knownEntries, knownAssets));
+          if (node.type === "link") return typeof node.url === "string" && Array.isArray(node.children) && node.children.length > 0 && node.children.every((child) => nodeIsValid(child, knownEntries, knownAssets));
+          if (node.type === "entry-reference") return typeof node.entryId === "string" && knownEntries.has(node.entryId) && Array.isArray(node.children) && node.children.length > 0 && node.children.every((child) => nodeIsValid(child, knownEntries, knownAssets));
+          if (node.type === "asset-reference") return typeof node.assetId === "string" && knownAssets.has(node.assetId) && typeof node.alt === "string";
+          return false;
+        };
+        const validate = (document, knownEntries, knownAssets) => {
+          if (document.format !== "nhcms.rich-text" || document.version !== 1 || !Array.isArray(document.children) || document.children.length === 0) return "The document must declare the supported format and version with at least one block.";
+          return document.children.every((node) => nodeIsValid(node, knownEntries, knownAssets)) ? null : "The document contains an unsupported node, mark, or unresolved reference.";
+        };
+        const addBlock = (state, block, message) => ({ ...state, document: { ...state.document, children: [...state.document.children, block] }, message });
+        const reduce = (state, action) => {
+          if (action.type === "reset") return createInitialState();
+          if (action.type === "add-emphasis") return addBlock(state, { type: "paragraph", children: [textNode("A deliberate thought.", { italic: true })] }, "Added semantic emphasis, not a visual style.");
+          if (action.type === "add-author") return addBlock(state, { type: "paragraph", children: [{ type: "entry-reference", entryId: "entry:author-ada", children: [textNode("Ada Lovelace")] }] }, "Added an inline Entry reference whose visible label remains authored text.");
+          if (action.type === "add-image") return addBlock(state, { type: "asset-reference", assetId: "asset:harbor-photo", alt: "A foggy harbor at dawn" }, "Added a block Asset reference with author-provided alternative text.");
+          if (action.type === "add-unknown-node") return addBlock(state, { type: "callout", tone: "important", children: [textNode("A builder extension without a portable renderer.")] }, "Added an unregistered extension. Portable validation now rejects the document.");
+          if (action.type === "remove-author") return { ...state, knownEntries: new Set(), message: "The referenced Entry was removed from the available content space." };
+          if (action.type === "restore-author") return { ...state, knownEntries: new Set(["entry:author-ada"]), message: "The referenced Entry is available again." };
+          if (action.type === "migrate-v0") {
+            const legacy = { format: "nhcms.rich-text", version: 0, blocks: [{ kind: "text", value: "A calm beginning." }, { kind: "image", asset: "asset:harbor-photo" }] };
+            const migrated = { format: "nhcms.rich-text", version: 1, children: legacy.blocks.map((block) => block.kind === "text" ? ({ type: "paragraph", children: [textNode(block.value)] }) : ({ type: "asset-reference", assetId: block.asset, alt: "" })) };
+            return { ...state, document: migrated, message: "Migrated a known v0 representation mechanically. Missing alt text remains valid only because this prototype permits an empty string; the Example CMS should require a non-empty value before publication." };
+          }
+          return state;
+        };
+        const renderNode = (node) => {
+          if (isTextNode(node)) return `${node.bold ? "<strong>" : ""}${node.italic ? "<em>" : ""}${node.code ? "<code>" : ""}${escapeHtml(node.text)}${node.code ? "</code>" : ""}${node.italic ? "</em>" : ""}${node.bold ? "</strong>" : ""}`;
+          if (node.type === "paragraph") return `<p>${node.children.map(renderNode).join("")}</p>`;
+          if (node.type === "heading") return `<h2>${node.children.map(renderNode).join("")}</h2>`;
+          if (node.type === "link") return `<a href="${escapeHtml(node.url)}">${node.children.map(renderNode).join("")}</a>`;
+          if (node.type === "entry-reference") return `<a href="/authors/${escapeHtml(node.entryId)}">${node.children.map(renderNode).join("")}</a>`;
+          if (node.type === "asset-reference") return `<figure><img src="/assets/${escapeHtml(node.assetId)}" alt="${escapeHtml(node.alt)}"><figcaption>Asset reference: ${escapeHtml(node.assetId)}</figcaption></figure>`;
+          return `<p class="unresolved">This client does not render extension “${escapeHtml(node.type)}”.</p>`;
+        };
+        const escapeHtml = (value) => String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+        return { createInitialState, reduce, validate, renderNode, cloneDocument };
+      })();
+
+      const actions = [
+        ["add-emphasis", "Add emphasis"], ["add-author", "Reference Ada (Entry)"], ["add-image", "Reference harbor image (Asset)"],
+        ["add-unknown-node", "Add unknown extension"], ["remove-author", "Make Ada unavailable"], ["restore-author", "Restore Ada"], ["migrate-v0", "Migrate known v0 document"], ["reset", "Reset"]
+      ];
+      const scenarios = [
+        { name: "Author a post", description: "Add semantic emphasis, a credited Author, and a featured image. Watch the public rendering stay independent of the CMS UI.", steps: ["add-emphasis", "add-author", "add-image"] },
+        { name: "Protect references", description: "Create an Entry reference, then make its target unavailable. The document fails validation instead of silently emitting a broken public link.", steps: ["add-author", "remove-author"] },
+        { name: "Reject unknown meaning", description: "Add a builder-only node without declaring a portable contract. Generic Rich Text operations must reject it rather than preserve an opaque visual widget.", steps: ["add-unknown-node"] },
+        { name: "Migrate explicitly", description: "Convert one known older representation into v1. A migration is version-to-version data transformation; it cannot infer editorial alt text or presentation choices.", steps: ["migrate-v0"] }
+      ];
+
+      let state = RichTextContract.createInitialState();
+      let activeScenario = 0;
+      let currentStep = 0;
+      const value = document.querySelector("#value");
+      const rendering = document.querySelector("#rendering");
+      const result = document.querySelector("#result");
+      const actionArea = document.querySelector("#actions");
+      const tabs = document.querySelector("#tabs");
+      const scenario = document.querySelector("#scenario");
+
+      const dispatch = (type) => { state = RichTextContract.reduce(state, { type }); render(); };
+      const render = () => {
+        const validationError = RichTextContract.validate(state.document, state.knownEntries, state.knownAssets);
+        value.innerHTML = `<pre>${escapeForPanel(JSON.stringify(state.document, null, 2))}</pre>`;
+        rendering.innerHTML = validationError ? `<p class="danger">Not rendered: ${validationError}</p>` : `<div class="document">${state.document.children.map(RichTextContract.renderNode).join("")}</div>`;
+        result.innerHTML = `<p class="${validationError ? "danger" : "feedback"}">${validationError ? "Cannot persist or serve this value: " + validationError : "Portable validation passed. A Content Client receives semantic nodes and owns every visual decision."}</p><p><strong>Latest action:</strong> ${escapeForPanel(state.message)}</p><p><strong>Known entries:</strong> ${[...state.knownEntries].join(", ") || "none"}<br><strong>Known assets:</strong> ${[...state.knownAssets].join(", ") || "none"}</p>`;
+        actionArea.innerHTML = actions.map(([type, label]) => `<button data-action="${type}" ${type === "restore-author" && state.knownEntries.size ? "disabled" : ""}>${label}</button>`).join("");
+        actionArea.querySelectorAll("button").forEach((button) => button.addEventListener("click", () => dispatch(button.dataset.action)));
+        renderScenarios();
+      };
+      const renderScenarios = () => {
+        tabs.innerHTML = scenarios.map((item, index) => `<button class="tab" data-tab="${index}" aria-selected="${index === activeScenario}">${item.name}</button>`).join("");
+        tabs.querySelectorAll("button").forEach((button) => button.addEventListener("click", () => { activeScenario = Number(button.dataset.tab); currentStep = 0; state = RichTextContract.createInitialState(); render(); }));
+        const selected = scenarios[activeScenario];
+        const nextAction = selected.steps[currentStep];
+        scenario.innerHTML = `<p>${selected.description}</p><button class="primary" ${nextAction ? "" : "disabled"}>${nextAction ? `Step ${currentStep + 1}: ${actions.find(([type]) => type === nextAction)[1]}` : "Walkthrough complete"}</button> <button class="reset-scenario">Restart this walkthrough</button>`;
+        scenario.querySelector(".primary").addEventListener("click", () => { if (nextAction) { dispatch(nextAction); currentStep += 1; renderScenarios(); } });
+        scenario.querySelector(".reset-scenario").addEventListener("click", () => { currentStep = 0; state = RichTextContract.createInitialState(); render(); });
+      };
+      const escapeForPanel = (text) => String(text).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+      render();
+    </script>
+  </body>
+</html>
