@@ -57,7 +57,7 @@ One portable Field Kind supplied by the reusable library: constrained scalar, st
 _Avoid_: UI control, status field
 
 **Field Constraint**:
-A declarative restriction on a Field value, such as requiredness, nullability, a default, length, range, pattern, enumerated values, or uniqueness. Constraints describe content validity rather than how a CMS UI displays the Field.
+A declarative restriction on a Field value, such as requiredness, nullability, a default, length, range, pattern, enumerated values, or uniqueness. Constraints describe content validity rather than how a CMS UI displays the Field; the library validates values without silently converting them.
 _Avoid_: Form validation rule, widget setting
 
 **Default Value**:
