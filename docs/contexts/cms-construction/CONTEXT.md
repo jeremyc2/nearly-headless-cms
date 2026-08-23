@@ -142,6 +142,38 @@ _Avoid_: Advisory limit, best-effort truncation
 The returned form of an Entry: its immutable generated Entry ID, Content Type identifier, and selected Field values. It carries no library-defined editorial timestamp, publication metadata, Entry Revision, or write token.
 _Avoid_: Document envelope, audit record
 
+**Entry Revision**:
+An immutable complete snapshot of an Entry stored by a history-enabled Content Type after a successful create, update, or restore. It is distinct from the current live Entry and may remain inspectable after deletion.
+_Avoid_: Mutable draft, current Entry
+
+**Write Token**:
+An opaque value representing one current Entry state. A history-enabled Entry mutation supplies the token returned by a prior full read or successful write; a mismatch returns Conflict without writing. It is distinct from an Entry Revision number and absent from ordinary Entry projections.
+_Avoid_: Revision number, timestamp, ETag
+
+**Entry History**:
+The retained sequence of Entry Revisions and, after deletion, its deletion record for one Entry of a history-enabled Content Type. Ordinary Entry reads and queries never expose deleted Entries; history operations can inspect and restore them until permanent purge.
+_Avoid_: Audit log, event stream
+
+**Deletion Record**:
+The retained history state created when a history-enabled Entry is deleted. It makes the Entry absent from ordinary operations while preserving its prior Entry Revisions for inspection or restoration.
+_Avoid_: Soft-delete flag, tombstone Entry
+
+**Permanent Purge**:
+The irreversible removal of a deleted Entry and its entire Entry History. It is the only generic operation that removes retained history.
+_Avoid_: Delete, retention cleanup
+
+**Revision Retention Policy**:
+An optional Content Type policy for a history-enabled Entry that retains revisions indefinitely by default and may bound retained history by revision count, age, or both. It never removes the current revision or latest Deletion Record.
+_Avoid_: Backup schedule, cache eviction
+
+**Current Entry State**:
+The complete current Entry and its Write Token, returned only by a history-aware state read and successful history-enabled writes. It is separate from the projection-friendly Entry Representation returned by ordinary reads and queries.
+_Avoid_: Entry Representation, revision snapshot
+
+**Revision Number**:
+The immutable, per-Entry, monotonically increasing identifier of an Entry Revision. Revision listings are newest-first and cursor-paginated; a restore records the Revision Number it restored from as history metadata.
+_Avoid_: Write Token, global revision sequence
+
 **Asset Field**:
 A Field whose value is one Asset ID or a list of Asset IDs. It references immutable Assets instead of embedding their content in an Entry.
 _Avoid_: File upload control, embedded file
@@ -227,3 +259,43 @@ _Avoid_: Active runtime schema cache
 **Definition Registry**:
 The runtime view of a Definition Space's active Definition Snapshot and its compiled schemas.
 _Avoid_: Definition history store, authoring UI state
+
+**Migration Step**:
+A CMS Builder-supplied, versioned transformation that converts persisted Entry values from one Definition Snapshot to another. The library may classify a Definition change as safe but never invents a lossy or editorial transformation.
+_Avoid_: Automatic schema update, implicit data conversion
+
+**Atomic Definition Cutover**:
+The commit that makes a target Definition Snapshot and its migrated Entries current together, so operations observe either the prior consistent state or the target consistent state, never a mixture.
+_Avoid_: Rolling schema deployment, partial activation
+
+**Compatible Definition Change**:
+A Content Definition change that preserves every persisted Entry value's validity and representation, so the library may activate its Definition Snapshot without a Migration Step.
+_Avoid_: Probably safe change, automatic migration
+
+**Definition Rollback**:
+An Atomic Definition Cutover from the active Definition Snapshot to an earlier Definition Snapshot through an explicit Migration Step. It is a new migration, not an implied reversal or stale-data restore.
+_Avoid_: Undo, time travel
+
+**Migration Manifest**:
+The immutable, serializable Catalog record of a Migration Step, naming its source and target Definition Snapshots and its stable handler identifier and version. It describes a transformation without containing executable code.
+_Avoid_: Serialized migration function, mutable migration configuration
+
+**Migration Handler**:
+A CMS Builder-registered versioned transformation implementation selected by a Migration Manifest. It produces fully valid target Entry values but is not persisted in the Definition Catalog.
+_Avoid_: Stored procedure, automatic converter
+
+**Migration Preparation**:
+The validated target Entry generation produced before an Atomic Definition Cutover. It records its source generation and becomes stale if a source Entry write commits before cutover.
+_Avoid_: Live in-place migration, write lock
+
+**Migration Failure Report**:
+A typed preparation result that identifies a missing Migration Handler or Entry transformation and validation failures without changing the active Definition Snapshot or current Entries.
+_Avoid_: Partial migration, best-effort conversion
+
+**Migration Path**:
+The unique directed sequence of Migration Manifests that transforms Entry values from one Definition Snapshot to another. Activation uses one direct step; a historical restore may traverse a path to the active snapshot.
+_Avoid_: Assumed reversal, arbitrary conversion route
+
+**One-to-one Migration**:
+A generic Migration Step that deterministically transforms one current Entry into one current Entry with the same Entry ID and Content Type. It cannot create, delete, move, or coordinate Entries.
+_Avoid_: Data reshaping job, bulk content operation

@@ -12,7 +12,7 @@ The Layer has two explicit acknowledgement policies. `atomic` publishes a comple
 
 An Asset has a generated Asset ID and immutable validated metadata. Its immutable Asset Blob is addressed by the cryptographic digest of streamed bytes, so separately created Assets may share bytes while retaining independent metadata and lifecycle. Ingestion is backpressure-aware, bounded by configured byte and metadata limits, and removes its staging file after cancellation, limit rejection, or failure. The persistence read contract returns metadata and a one-shot byte stream; public URLs, range requests, caching headers, and content disposition belong to the Headless API.
 
-Generic Asset deletion returns `AssetReferenced` while a live Entry refers to the Asset. A CMS Builder that wants cascading behavior, such as the Example CMS clearing optional image assignments, issues an explicit batch mutation before deletion. Revision retention and optimistic-concurrency tokens remain separate Entry-history decisions.
+Generic Asset deletion returns `AssetReferenced` while a live Entry refers to the Asset. A CMS Builder that wants cascading behavior, such as the Example CMS clearing optional image assignments, issues an explicit batch mutation before deletion. Retained Entry History does not keep referenced Assets alive; restoration revalidates the referenced Assets. Revision retention and optimistic-concurrency tokens are defined in `entry-history-decision.md`.
 
 The Layer may serve a supported Entry Query with a bounded authoritative-record scan. It declares its Query Capabilities and configured resource limits, returning `UnsupportedQueryCapability` or a resource-limit failure rather than approximating a result. Derived indexes are disposable accelerators, rebuilt from the authoritative generation; they are never co-equal commit participants.
 
@@ -22,7 +22,7 @@ The configuration has hard limits for Entry encoding size, Asset byte size, meta
 
 ## Deferred decisions
 
-- Entry Revision retention, restoration, and optimistic-concurrency write tokens are defined by issue #16.
+- Entry History retention, restoration, and optimistic-concurrency Write Tokens are defined by `entry-history-decision.md`.
 - Content-definition migration commit behavior is defined by issue #10.
 - The Headless API's wire representation and Asset HTTP delivery are defined by issue #9.
 - The Example CMS's explicit Asset-replacement and optional-image-clearing commands are part of its application decision.
