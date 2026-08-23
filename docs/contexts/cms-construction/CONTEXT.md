@@ -305,8 +305,8 @@ The durable lifecycle record for a Definition Space, including Definition Revisi
 _Avoid_: Active runtime schema cache
 
 **Definition Registry**:
-The runtime view of a Definition Space's active Definition Snapshot and its compiled schemas.
-_Avoid_: Definition history store, authoring UI state
+The reusable library's private runtime view of a Definition Space's active Definition Snapshot and compiled schemas. It is not a CMS Builder-supplied Layer or public customization seam.
+_Avoid_: Definition history store, authoring UI state, Builder-supplied Registry
 
 **Migration Step**:
 A CMS Builder-supplied, versioned transformation that converts persisted Entry values from one Definition Snapshot to another. The library may classify a Definition change as safe but never invents a lossy or editorial transformation.
