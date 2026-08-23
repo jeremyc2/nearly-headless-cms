@@ -24,6 +24,10 @@ _Avoid_: Nearly Headless CMS library
 A system that consumes content from a Headless CMS and owns how that content is presented.
 _Avoid_: CMS UI, frontend layer
 
+**Headless API**:
+The public transport boundary through which a Content Client consumes content from a Headless CMS without importing its implementation or the reusable library.
+_Avoid_: SDK, direct CMS dependency
+
 **Content Type**:
 A named schema that defines the Fields accepted by one kind of content.
 _Avoid_: Collection, schema type
