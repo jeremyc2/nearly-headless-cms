@@ -9,7 +9,7 @@ The polished blog CMS maintained in this monorepo to demonstrate a complete comp
 _Avoid_: Demo, toy app, sample code
 
 **Public Blog**:
-The separately runnable static Content Client that generates its assets from the Example CMS's Headless API and owns all visual presentation of the Example Blog. Bun serves its generated assets; Public Visitors submit Comments directly to the Headless API. It exposes a latest-Posts home page, Post, Author, Category, and Tag pages, paginated listing pages, and an RSS feed.
+The separately runnable static Content Client that generates its assets from the Example CMS's Headless API and owns all visual presentation of the Example Blog. Bun serves its generated assets; Public Visitors submit Comments directly to the Headless API. It exposes a latest-Posts home page, Post, Author, Category, and Tag pages, paginated listing pages, and an RSS feed. Listings show published Posts newest-first with stable pagination. Public-affecting changes appear at the next static refresh. Its presentation is responsive and accessible through semantic HTML, keyboard navigation, visible focus states, meaningful image alt text, and accessible Comment-form errors.
 _Avoid_: CMS UI, preview
 
 **Post**:
@@ -25,11 +25,11 @@ An ordinary CMS Builder-defined field on a Post whose values include draft and p
 _Avoid_: Publication lifecycle
 
 **Comment**:
-Content submitted through the Public Blog and related to a Post. A Comment has a display name, plain-text body, optional website URL, creation time, and Comment Status. Comment moderation is expressed through ordinary CMS Builder-defined Fields, not library-defined workflow semantics. Comments do not have replies, visitor editing/deletion, likes, or email notifications.
+Content submitted through the Public Blog and related to a Post. A Comment has a bounded-length display name and plain-text body, optional website URL, creation time, and Comment Status. Comment moderation is expressed through ordinary CMS Builder-defined Fields, not library-defined workflow semantics. Comments do not have replies, visitor editing/deletion, likes, or email notifications. Its public endpoint returns generic validation errors; deployment-owned policy handles anonymous rate limiting.
 _Avoid_: Feedback, message
 
 **Comment Status**:
-An ordinary CMS Builder-defined field on a Comment whose values include pending, approved, and rejected. Only approved Comments are displayed by the Public Blog.
+An ordinary CMS Builder-defined field on a Comment whose values include pending, approved, and rejected. New Comments are pending. The Example CMS queues pending Comments for approval or rejection; rejected Comments remain stored but never appear publicly. Only approved Comments are displayed by the Public Blog.
 _Avoid_: Moderation workflow
 
 **Category**:

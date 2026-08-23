@@ -45,7 +45,7 @@ A named, reusable fragment of Field definitions composed into one or more Conten
 _Avoid_: Editor panel, fieldset
 
 **Asset**:
-An immutable persisted file and its metadata, referenced by Entries rather than embedded in their content.
+An immutable persisted file and its metadata, referenced by Entries rather than embedded in their content. In the Example CMS, an Asset is an image with filename, MIME type, dimensions, and default alt text.
 _Avoid_: Media-library item, upload
 
 ## Definition lifecycle
