@@ -37,11 +37,51 @@ One persisted value conforming to a Content Type.
 _Avoid_: Document, item, record
 
 **Field**:
-One named, typed part of an Entry's Content Type.
+One named, typed part of an Entry's Content Type or Field Group. Its immutable Field Key is the persisted object key; its editable label and description are human-readable metadata.
 _Avoid_: Property, attribute
 
+**Field Key**:
+The URL-safe lowercase identifier for a Field, unique within its containing Content Type or Field Group. Changing a Field Key is a content migration, not a label edit.
+_Avoid_: Field label, display name
+
+**Field Kind**:
+A serializable, versioned description of a Field's value shape and portable operations. Built-in Field Kinds are portable; a Custom Field Kind must declare its own validation and supported generic capabilities.
+_Avoid_: Widget, input control
+
+**Custom Field Kind**:
+A CMS Builder-defined Field Kind with a stable kind identifier, format version, JSON-compatible configuration, deterministic value validation, and explicit generic-operation capabilities. Its CMS Builder registers those validators when composing the Headless CMS; it does not define presentation for the reusable library.
+_Avoid_: Custom widget, UI extension
+
+**Built-in Field Kind**:
+One portable Field Kind supplied by the reusable library: constrained scalar, structured JSON, Asset, Relationship, or Rich Text. Asset, Relationship, and Rich Text share the Field boundary while their specialized value semantics are defined independently.
+_Avoid_: UI control, status field
+
+**Field Constraint**:
+A declarative restriction on a Field value, such as requiredness, nullability, a default, length, range, pattern, enumerated values, or uniqueness. Constraints describe content validity rather than how a CMS UI displays the Field.
+_Avoid_: Form validation rule, widget setting
+
+**Default Value**:
+A value that the CMS uses only when it creates an Entry and its Field is absent. Reading, updating, or activating a Content Definition does not add a Default Value to an existing Entry.
+_Avoid_: Implied stored value
+
+**Optional Field**:
+A Field that an Entry may omit. A required Field must be present with a non-null value, while a nullable Field independently permits an explicit null value.
+_Avoid_: Unvalidated Field
+
+**Unique Field**:
+A non-null scalar Field, or nested scalar Field path, whose value occurs at most once among live Entries of one Content Type. Entry persistence enforces it atomically; composite, array, and case-insensitive uniqueness are outside v0.1.
+_Avoid_: Database index
+
+**Asset Field**:
+A Field whose value is one Asset ID or a list of Asset IDs. It references immutable Assets instead of embedding their content in an Entry.
+_Avoid_: File upload control, embedded file
+
+**Relationship Field**:
+A Field whose value is one Entry ID or a list of Entry IDs, constrained to declared target Content Types. Its value shape does not decide target deletion behavior or read-time expansion.
+_Avoid_: Embedded Entry, foreign-key implementation
+
 **Field Group**:
-A named, reusable fragment of Field definitions composed into one or more Content Types.
+A named, reusable fragment of Field definitions composed into one or more Content Types. A nested composition mounts it under a new Field Key as an object; an inline composition merges its Fields and rejects key collisions without renaming or prefixing them.
 _Avoid_: Editor panel, fieldset
 
 **Asset**:
