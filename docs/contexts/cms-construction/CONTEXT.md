@@ -28,6 +28,34 @@ _Avoid_: CMS UI, frontend layer
 The public transport boundary through which a Content Client consumes content from a Headless CMS without importing its implementation or the reusable library.
 _Avoid_: SDK, direct CMS dependency
 
+**Current Identity**:
+The request-scoped identity context supplied by a CMS Builder. It is either an opaque builder-defined Actor or the explicit Anonymous state; it is not a library User model.
+_Avoid_: Logged-in user, session user
+
+**Actor**:
+An opaque identity defined by a CMS Builder and carried through the Current Identity context. Its attributes, authentication method, and lifecycle belong to the builder.
+_Avoid_: User, account, principal
+
+**Anonymous**:
+The explicit Current Identity state for a request without an Actor.
+_Avoid_: Missing identity, unauthenticated error
+
+**Authorization**:
+The CMS Builder-supplied policy boundary that returns allow or forbid for one library-defined Action on a minimal Resource descriptor in the context of a Current Identity. Every public generic CMS operation invokes it once before validation or persistence; a denial returns `Forbidden` without first checking resource existence, and it has no built-in trusted bypass. It does not rewrite queries, redact values, impose rate limits, create audit records, or encode editorial workflow.
+_Avoid_: Query scoping, field permissions
+
+**Open-access CMS**:
+A Headless CMS whose Current Identity is always Anonymous and whose Authorization allows every generic CMS Action. The Example CMS is an Open-access CMS and provides no user-management implementation.
+_Avoid_: Unsecured CMS, authenticated CMS
+
+**Action**:
+A library-defined, typed generic CMS operation submitted to Authorization. The closed vocabulary covers definition lifecycle, Entry and Asset reads and mutations, and transport-facing public reads; CMS Builder-specific commands are outside it.
+_Avoid_: Role, permission string
+
+**Resource**:
+The minimal library-defined descriptor naming the subject of an Action, such as a Definition Space, Content Type, Entry, or Asset. It contains no builder-specific authorization attributes.
+_Avoid_: Full Entry, policy context
+
 **Content Type**:
 A named schema that defines the Fields accepted by one kind of content.
 _Avoid_: Collection, schema type
@@ -72,13 +100,67 @@ _Avoid_: Unvalidated Field
 A non-null scalar Field, or nested scalar Field path, whose value occurs at most once among live Entries of one Content Type. Entry persistence enforces it atomically; composite, array, and case-insensitive uniqueness are outside v0.1.
 _Avoid_: Database index
 
+## Entry operations
+
+**Entry Query**:
+A declarative request to select Entries of exactly one Content Type using supported Field-path predicates, recursive boolean composition, sorting, cursor pagination, projection, and optional Relationship Expansion.
+_Avoid_: Database query, search request
+
+**Query Capability**:
+One filtering, sorting, projection, pagination, or expansion behavior that a Field Kind or Entry persistence implementation explicitly supports. A request needing an unavailable capability fails rather than producing an approximate result.
+_Avoid_: Best-effort query, implicit fallback
+
+**Cursor**:
+An opaque continuation value for a deterministically sorted Entry Query. Its order is made stable by Entry ID as the final tie-breaker.
+_Avoid_: Offset, page number
+
+**Projection**:
+The explicit set of Entry Field paths requested by an Entry Query or read. Unselected Fields are absent from the returned representation, while Entry identity and Content Type remain present.
+_Avoid_: Redaction, null-filled response
+
+**Query Page**:
+One internally consistent evaluation of an Entry Query that returns selected Entries and, when more results may exist, a next Cursor. It does not promise a snapshot across later pages after concurrent writes.
+_Avoid_: Stable result set, counted page
+
+**Unsupported Query Capability**:
+A typed failure reporting that an Entry Query needs a capability absent from the relevant Field Kind or persistence implementation. It never permits approximate filtering, sorting, or expansion.
+_Avoid_: Slow-query error, fallback result
+
+**Field Path**:
+A dot-separated route through nested Field Group objects to one Field. It cannot address an individual List item or descend into JSON, Rich Text, or a Custom Field Kind unless that Field Kind explicitly supports the requested capability.
+_Avoid_: JSONPath, relation traversal
+
+**Portable Text Matching**:
+Case-sensitive Unicode-code-point equality, prefix, and containment behavior for built-in string Fields. It excludes locale collation, case folding, tokenization, and full-text search.
+_Avoid_: Search, linguistic matching
+
+**Query Limit**:
+A CMS-configured bound applied to an Entry Query's requested page size and its projection and Relationship Expansion complexity. An over-limit request is Invalid Input rather than a partial result.
+_Avoid_: Advisory limit, best-effort truncation
+
+**Entry Representation**:
+The returned form of an Entry: its immutable generated Entry ID, Content Type identifier, and selected Field values. It carries no library-defined editorial timestamp, publication metadata, Entry Revision, or write token.
+_Avoid_: Document envelope, audit record
+
 **Asset Field**:
 A Field whose value is one Asset ID or a list of Asset IDs. It references immutable Assets instead of embedding their content in an Entry.
 _Avoid_: File upload control, embedded file
 
 **Relationship Field**:
-A Field whose value is one Entry ID or a list of Entry IDs, constrained to declared target Content Types. Its value shape does not decide target deletion behavior or read-time expansion.
+A Field whose value is one Entry ID or an ordered list of distinct Entry IDs, constrained to one or more declared target Content Types in the same Definition Space. It may target its own Content Type and participate in a cycle; its cardinality and optionality follow the ordinary Field and List Field rules.
 _Avoid_: Embedded Entry, foreign-key implementation
+
+**Referential Integrity**:
+The guarantee that every non-null Relationship Field value names an existing Entry of one of its declared target Content Types, checked atomically with a source Entry write. A target Entry cannot be deleted while any Relationship Field references it.
+_Avoid_: Best-effort reference validation, cascading delete
+
+**Relationship Expansion**:
+The caller-requested read-time replacement of a Relationship Field's Entry IDs with Entry representations. It is a separately authorized generic read action, never implicit, and is bounded and cycle-safe without per-target filtering or redaction.
+_Avoid_: Eager loading, embedded Entry
+
+**Reference-Blocked Deletion**:
+The generic deletion failure returned when an Entry still has inbound Relationship references. It does not disclose the source Entry IDs or Field paths that block deletion.
+_Avoid_: Cascade failure detail, reference leak
 
 **List Field**:
 A Field whose value is an ordered list of values, each validated by one declared element Field or Field Group. It may constrain list length but does not give items library-defined identities, an ordering interface, or item-level generic filtering.
