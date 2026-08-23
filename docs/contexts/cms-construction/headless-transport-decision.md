@@ -64,6 +64,44 @@ The Management API has standard resource groups for the settled generic capabili
 
 Ordinary Entry get and query responses never contain Write Tokens. A dedicated current-state endpoint returns the complete Entry and opaque Write Token. History-enabled create, replacement, and restore return both values. Replacement and deletion receive the current token through `CMS-Write-Token`; restore and Permanent Purge carry it in their structured command bodies. Non-history mutations return an ordinary Entry Representation or a bodyless success. The contract explicitly distinguishes history-enabled and ordinary outcomes without treating a Write Token as an HTTP ETag.
 
+### Management route catalog
+
+The following paths are relative to `/api/v1/management/definition-spaces/{definitionSpaceId}`.
+
+| Method | Path | Operation |
+| --- | --- | --- |
+| `POST` | `/content-types/{contentTypeId}/entries` | Create an Entry. |
+| `GET` | `/content-types/{contentTypeId}/entries/{entryId}` | Read the complete ordinary Entry Representation. |
+| `POST` | `/content-types/{contentTypeId}/entries/{entryId}/read` | Read with structured Projection or Relationship Expansion. |
+| `PUT` | `/content-types/{contentTypeId}/entries/{entryId}` | Completely replace an Entry. |
+| `DELETE` | `/content-types/{contentTypeId}/entries/{entryId}` | Delete an Entry. |
+| `POST` | `/content-types/{contentTypeId}/entries/query` | Evaluate the generic Entry Query algebra. |
+| `GET` | `/content-types/{contentTypeId}/entries/{entryId}/state` | Read complete history-aware state and its Write Token. |
+| `GET` | `/content-types/{contentTypeId}/entries/{entryId}/revisions` | List retained Entry Revisions. |
+| `GET` | `/content-types/{contentTypeId}/entries/{entryId}/revisions/{revisionNumber}` | Inspect one Entry Revision. |
+| `POST` | `/content-types/{contentTypeId}/entries/{entryId}/restorations` | Restore a retained revision. |
+| `POST` | `/content-types/{contentTypeId}/entries/{entryId}/purges` | Permanently purge a deleted Entry and its history. |
+| `POST` | `/assets` | Stream-ingest an immutable Asset. |
+| `GET` | `/assets/{assetId}` | Read immutable Asset metadata. |
+| `GET`, `HEAD` | `/assets/{assetId}/content` | Stream Asset bytes for Management use. |
+| `DELETE` | `/assets/{assetId}` | Delete an unreferenced Asset. |
+| `GET` | `/definitions` | List Content Definitions. |
+| `GET` | `/definitions/{definitionId}` | Read one Content Definition's Catalog state. |
+| `GET` | `/definitions/{definitionId}/revisions` | List Definition Revisions. |
+| `POST` | `/definitions/{definitionId}/revisions` | Append an immutable Definition Revision. |
+| `POST` | `/definitions/{definitionId}/retirements` | Retire a Definition from future snapshots. |
+| `GET` | `/definition-snapshot` | Read the complete active Definition Snapshot. |
+| `GET` | `/definition-snapshots` | List Definition Snapshots. |
+| `GET` | `/definition-snapshots/{snapshotId}` | Inspect one Definition Snapshot. |
+| `POST` | `/definition-snapshot-activations` | Activate a compatible snapshot or commit a prepared migration cutover. |
+| `GET` | `/catalog-events` | List append-only Catalog events. |
+| `GET`, `POST` | `/migration-manifests` | List or append serializable Migration Manifests. |
+| `GET` | `/migration-manifests/{migrationManifestId}` | Inspect one Migration Manifest. |
+| `POST` | `/migration-preparations` | Prepare and validate a target Entry generation. |
+| `GET` | `/migration-preparations/{migrationPreparationId}` | Inspect a preparation and its success-or-failure report. |
+
+List routes use positive `pageSize` and opaque `cursor` parameters and never return exact totals. A `GET` has no request body. Builder-defined Management Operations choose additional static relative paths below the Definition Space root and are rejected when they collide with this reserved catalog.
+
 The Example Headless API declares Delivery Operations to discover its public snapshot, list published Posts newest-first, resolve one published Post by slug, resolve public Authors, Categories, and Tags by slug, list their published Posts, list approved Comments for a published Post, submit a pending Comment with an idempotency key, resolve a public-safe Rich Text Entry reference, and deliver an authorized Asset. It exposes no draft Post, pending or rejected Comment, arbitrary Entry Query, or visitor update and delete operation.
 
 The Example paths are `/schema`, `/posts`, `/posts/{slug}`, `/authors/{slug}`, `/categories/{slug}`, `/tags/{slug}`, subordinate Post listings for each taxonomy or Author, `/posts/{postId}/comments`, `/references/entries/{entryId}`, `/assets/{assetId}`, and `/export`, all below `/api/v1/headless`. A draft Post, unapproved Comment, inaccessible Rich Text reference, or unauthorized Asset returns the same `NotFound` representation as an absent resource. Delivery-specific public reachability is checked before an ordinary generic read.
@@ -74,6 +112,12 @@ Successful Comment submission returns HTTP 201 with only an opaque `submissionId
 
 The Rich Text Entry-reference resolver returns the target Entry ID, Content Type identifier, and a CMS Builder-declared public Field projection. It is limited to eligible target Content Types and Entries reachable from public Rich Text, returning `NotFound` otherwise. It does not return a Public Blog URL; the Content Client derives presentation routes from public values such as slug.
 
+### Management command results
+
+Post publication and return-to-draft commands and Comment approval and rejection commands return the resulting Current Entry State for history-enabled Content Types. Entry-only cascade and detachment commands return affected counts and, when a root Entry remains, its resulting Current Entry State. They require the root `CMS-Write-Token` and return `Conflict` if any participating state changes before their atomic commit.
+
+Image replacement returns a discriminated progress or result document recording completion of new-Asset ingestion, atomic Entry reassignment, and old-Asset deletion, together with the safe old and new Asset IDs. The command route itself expresses destructive intent; human confirmation belongs to the CMS user interface and is not represented by a ceremonial boolean request property.
+
 The Example API also declares an `exportPublicBlog` Public Content Export. It evaluates one immutable persistence generation and streams or returns the complete bounded public dataset needed for static pages and the RSS feed. Static generation uses this export, then fetches immutable Assets separately. Interactive paginated endpoints retain best-effort cursor continuation rather than cross-request Entry snapshots.
 
 `exportPublicBlog` first produces one bounded, validated JSON document containing its Definition fingerprint and public Posts, Authors, Categories, Tags, approved Comments, and referenced Asset metadata. Only after completion does the server stream the artifact with a strong ETag. Exceeding the configured export-byte bound returns `ExportTooLarge` before headers begin.
@@ -82,6 +126,37 @@ The Asset Delivery Operation supports `GET` and `HEAD`, validated stored media t
 
 Management Asset ingestion uses streaming multipart input containing exactly one JSON `metadata` part and one binary `content` part. The client supplies neither Asset ID nor digest. The Asset service validates metadata, claimed media type, and image dimensions while the adapter computes the digest and enforces byte limits with scoped staging cleanup. Missing, duplicate, or unexpected parts fail. Success returns HTTP 201 with the generated Asset ID, immutable metadata, digest, and byte length.
 
-## Deferred decisions
+### Stable error codes
 
-- Final concrete Management routes, stable error-code inventory, and command-specific result shapes.
+| Code | HTTP status | Meaning |
+| --- | --- | --- |
+| `InvalidInput` | 400 | Request or domain input is invalid. |
+| `Forbidden` | 403 | Authorization denied the generic operation without existence disclosure. |
+| `NotFound` | 404 | The addressed or public-visible resource is absent. |
+| `Conflict` | 409 | A cursor, Write Token, source generation, or other optimistic condition is stale. |
+| `AssetReferenced` | 409 | A live Entry prevents Asset deletion. |
+| `ReferenceBlockedDeletion` | 409 | A live Entry or Rich Text reference prevents Entry deletion. |
+| `IdempotencyConflict` | 409 | One idempotency key was reused with different canonical input. |
+| `DefinitionSnapshotChanged` | 412 | The active fingerprint does not match the client's precondition. |
+| `UnsupportedQueryCapability` | 422 | Correct query execution needs an unavailable capability or exceeds its authoritative work bound. |
+| `ExportTooLarge` | 422 | A valid public export exceeds its configured semantic bound. |
+| `InfrastructureFailure` | 500 or 503 | A hidden adapter failure is respectively non-retryable or retryable. |
+| `InternalError` | 500 | An unexpected defect occurred. |
+| `MethodNotAllowed` | 405 | The route does not accept the requested method. |
+| `NotAcceptable` | 406 | The requested response media type is unsupported. |
+| `RequestTimeout` | 408 | The transport deadline elapsed. |
+| `PayloadTooLarge` | 413 | A transport body or multipart limit was exceeded. |
+| `UriTooLong` | 414 | The request target exceeded its configured limit. |
+| `UnsupportedMediaType` | 415 | The request media type is unsupported. |
+| `RangeNotSatisfiable` | 416 | An Asset byte range cannot be served. |
+| `HeadersTooLarge` | 431 | Request headers exceeded their configured limit. |
+
+A completed Migration Preparation returns HTTP 200 with a typed success-or-failure report; deterministic transformation and validation findings are report data rather than transport failure. A stale preparation or cutover condition returns `Conflict`. `InfrastructureFailure` may include only a safe `retryable` flag and request identifier, never its adapter cause.
+
+## Consequences
+
+- A Content Client can consume an ordinary documented HTTP API without importing the reusable library, while a CMS UI retains the complete generic Management surface.
+- Open-access identity does not accidentally turn drafts, moderation data, or unrestricted mutation into public behavior.
+- Dynamic Content Definitions remain first-class but cannot silently break a composed transport contract.
+- Public static generation receives one coherent bounded content artifact without changing generic cursor semantics.
+- Effect's unstable HTTP API implementation is isolated behind the library's stable public contract and can be replaced without changing wire behavior.

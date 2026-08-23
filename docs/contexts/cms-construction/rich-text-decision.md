@@ -24,5 +24,5 @@ Rich Text document format versions are immutable persisted contracts. A core or 
 
 ## Deferred decisions
 
-- The precise transport representation, content-client capability negotiation, and asset delivery URLs belong to issue #9.
+- The precise transport representation, content-client capability negotiation, and Asset delivery URLs are defined by `headless-transport-decision.md`.
 - The selected Example CMS editor toolkit and Public Blog rendering implementation belong to issue #6.

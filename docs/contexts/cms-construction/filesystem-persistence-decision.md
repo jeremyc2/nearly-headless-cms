@@ -24,5 +24,5 @@ The configuration has hard limits for Entry encoding size, Asset byte size, meta
 
 - Entry History retention, restoration, and optimistic-concurrency Write Tokens are defined by `entry-history-decision.md`.
 - Content-definition migration commit behavior is defined by issue #10.
-- The Headless API's wire representation and Asset HTTP delivery are defined by issue #9.
+- The Headless API's wire representation and Asset HTTP delivery are defined by `headless-transport-decision.md`.
 - The Example CMS's explicit Asset-replacement and optional-image-clearing commands are part of its application decision.

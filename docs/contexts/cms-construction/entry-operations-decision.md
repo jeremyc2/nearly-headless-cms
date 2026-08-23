@@ -25,6 +25,6 @@ An Entry persistence implementation may perform a bounded scan when it preserves
 ## Deferred decisions
 
 - Entry History retention, restoration, and optimistic-concurrency Write Tokens are defined by `entry-history-decision.md`.
-- The wire representation of commands, queries, errors, and cursors is defined by issue #9.
+- The wire representation of commands, queries, errors, and cursors is defined by `headless-transport-decision.md`.
 - Filesystem persistence indexes, scanning limits, atomicity, and failure behavior are defined by `filesystem-persistence-decision.md`.
 - The Example CMS's specific list views and filters are defined by its application and prototype decisions.
