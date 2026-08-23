@@ -8,9 +8,13 @@ The separately importable HTTP Transport uses Effect v4 `HttpApi` declarations t
 
 OpenAPI describes stable route, parameter, success, and error shapes. Runtime definition discovery separately returns the active Definition Snapshot fingerprint, API Contract Version, serializable definitions, supported Field Kind versions and capabilities, and Rich Text extension versions. Headless discovery exposes only the Public Definition Snapshot reachable through its public operations. Management discovery may expose the complete active Definition Snapshot and lifecycle operations. Neither surface exposes executable validators or compiled Effect Schemas.
 
+Headless discovery includes the API contract major version; active Definition Snapshot identifier and fingerprint; definition and compiler format versions; public Content Type and Field Group definitions; Field Kind identifiers, versions, and capabilities; Rich Text document format, core vocabulary version, and public extensions; Delivery Operation identifiers, methods, paths, reachable Content Types, and idempotency requirements; Asset Delivery URL template and capabilities; and the OpenAPI document URL. The server does not tailor discovery to claimed client support. A client compares advertised versions with its runtime decoders and fails explicitly when it cannot support a Field Kind or Rich Text extension.
+
 Delivery Operations are declared at CMS composition time with a stable identifier, HTTP method and path, request and response schemas, reachable Content Types, and CMS Builder handler. Their route set and OpenAPI contract remain fixed until the CMS is recomposed and redeployed. Activating a Definition Snapshot may change runtime content shapes and discovery data but cannot add, remove, or rename a Delivery Operation.
 
 Both API groups use lowercase plural resource paths, opaque identifiers in path segments, and `lowerCamelCase` JSON properties. Simple resource operations use ordinary HTTP methods; complete Entry replacement uses `PUT`, and the generic transport has no `PATCH`. Recursive Entry Queries use `POST` to a subordinate `query` route. Builder-selected Delivery paths live below the versioned Headless API prefix and are rejected at composition time when their paths, stable operation identifiers, or reserved prefixes collide.
+
+Management resources are scoped below `/api/v1/management/definition-spaces/{definitionSpaceId}`. Predictable subordinate collections cover Content Type Entries and queries, Entry state and revisions, Assets and Asset content, definitions and Definition Snapshots, Catalog events, Migration Manifests, and Migration Preparations. Restore, Permanent Purge, retirement, preparation, and cutover use named subordinate `POST` resources instead of overloaded query parameters.
 
 JSON request and response bodies use UTF-8 `application/json` and preserve the distinction between an absent property and explicit `null`. Dates and datetimes use their defined ISO encodings, integer Fields are restricted to JSON-safe integers, and numbers must be finite. IDs, fingerprints, cursors, Write Tokens, and idempotency keys are opaque strings. Entry values are objects keyed by Field Key. Asset bytes are streamed using their media type and are never embedded as base64 JSON.
 
@@ -18,11 +22,15 @@ The transport resolves request-scoped Current Identity for both API groups. A Ma
 
 Definition-dependent responses identify the Definition Snapshot fingerprint used to produce them. A client may pin subsequent requests to an expected active fingerprint. A mismatch returns HTTP 412 and never serves a historical snapshot. Static generation discovers and pins one fingerprint for a build, restarting cleanly if the active snapshot changes. Cursors remain bound to their originating query and snapshot; incompatible reuse returns `Conflict`.
 
+Cross-cutting headers are `X-Request-Id`, `CMS-Definition-Fingerprint`, `CMS-Expected-Definition-Fingerprint`, `CMS-Write-Token`, and the standard `Idempotency-Key`. A valid request identifier from trusted ingress may be retained; otherwise the transport generates one and always returns it. Standard `ETag`, `If-None-Match`, `Range`, and `If-Range` apply only to immutable Asset bytes and completed export artifacts rather than Entry concurrency.
+
 A Typed Client Binding is app-local generated source, not a shared runtime SDK dependency. It types stable HTTP operations and discovery data while runtime Entry values are decoded against serializable definition data. The Public Blog imports neither the Headless CMS implementation nor the reusable library and SDK.
 
 The composed CMS both serves and reproducibly exports an OpenAPI 3.1 document. A generic generator produces app-local transport bindings from that artifact; selection of the generator belongs to the application-stack decision. Runtime definition discovery drives decoding of dynamic Entry values, so a compatible Definition Snapshot activation does not require regenerating the client.
 
 Expected failures use a stable tagged JSON representation with a machine-readable code, safe message, request correlation identifier, and structured safe details. `InvalidInput` maps to HTTP 400, `Forbidden` to 403, `NotFound` to 404, conflicts including stale cursors and reference-blocked deletion to 409, `UnsupportedCapability` to 422, retryable infrastructure failure to 503, and unexpected defects to 500. Validation details use stable Field paths and reason codes. Transport errors never reveal adapter causes, filesystem paths, blocked referrers, or existence hidden by authorization.
+
+The JSON error document has stable `code`, `message`, and `requestId` properties plus optional safe `details`. Validation details contain `issues` whose `path` is an array of unambiguous segments and whose `reason` is a stable machine value. Unexpected defects use `InternalError` and reveal only their request identifier; a retryable 503 may carry `Retry-After`.
 
 Successful endpoints return their direct typed representation rather than a universal data envelope. Query pages use an `items` array and optional `nextCursor`; deletions and other bodyless success may use HTTP 204. Cross-cutting request identifiers and Definition Snapshot fingerprints use response headers. Discovery has its own explicit document shape.
 
@@ -40,7 +48,11 @@ Ordinary Entry get and query responses never contain Write Tokens. A dedicated c
 
 The Example Headless API declares Delivery Operations to discover its public snapshot, list published Posts newest-first, resolve one published Post by slug, resolve public Authors, Categories, and Tags by slug, list their published Posts, list approved Comments for a published Post, submit a pending Comment with an idempotency key, resolve a public-safe Rich Text Entry reference, and deliver an authorized Asset. It exposes no draft Post, pending or rejected Comment, arbitrary Entry Query, or visitor update and delete operation.
 
+The Example paths are `/schema`, `/posts`, `/posts/{slug}`, `/authors/{slug}`, `/categories/{slug}`, `/tags/{slug}`, subordinate Post listings for each taxonomy or Author, `/posts/{postId}/comments`, `/references/entries/{entryId}`, `/assets/{assetId}`, and `/export`, all below `/api/v1/headless`. A draft Post, unapproved Comment, inaccessible Rich Text reference, or unauthorized Asset returns the same `NotFound` representation as an absent resource. Delivery-specific public reachability is checked before an ordinary generic read.
+
 The Example API also declares an `exportPublicBlog` Public Content Export. It evaluates one immutable persistence generation and streams or returns the complete bounded public dataset needed for static pages and the RSS feed. Static generation uses this export, then fetches immutable Assets separately. Interactive paginated endpoints retain best-effort cursor continuation rather than cross-request Entry snapshots.
+
+`exportPublicBlog` first produces one bounded, validated JSON document containing its Definition fingerprint and public Posts, Authors, Categories, Tags, approved Comments, and referenced Asset metadata. Only after completion does the server stream the artifact with a strong ETag. Exceeding the configured export-byte bound returns `ExportTooLarge` before headers begin.
 
 The Asset Delivery Operation supports `GET` and `HEAD`, validated stored media type and byte length, a strong digest-derived ETag, `If-None-Match`, `If-Range`, and one byte range per request. It returns 206 or 416 as appropriate, advertises `Accept-Ranges: bytes`, uses CMS Builder-configured `Cache-Control`, and sends `Content-Disposition: inline` with a safely encoded original filename when available. Policy, metadata lookup, conditional evaluation, and range validation complete before response headers begin. A corruption or I/O failure discovered after streaming starts aborts the stream because it can no longer become a typed JSON response.
 
@@ -48,4 +60,4 @@ Management Asset ingestion uses streaming multipart input containing exactly one
 
 ## Deferred decisions
 
-- Exact route templates, discovery and error document fields, public-reference failure behavior, builder-command results, and export framing and bounds.
+- Dynamic-activation compatibility with stable operations, builder-defined Management commands, Comment idempotency results, public-reference representations, browser-security ownership, and remaining route-level status details.
