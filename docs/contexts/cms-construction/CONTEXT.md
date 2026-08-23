@@ -56,6 +56,10 @@ _Avoid_: Generic CRUD endpoint, unrestricted mutation
 The composition-time declaration of one Delivery Query or Delivery Command, including its stable identifier, HTTP method and path, request and response schemas, reachable Content Types, and CMS Builder handler. Activating a Definition Snapshot may change its runtime content shapes but cannot add, remove, or rename a Delivery Operation.
 _Avoid_: Dynamic route, generic CMS operation
 
+**Management Operation**:
+A named, CMS Builder-defined operation that adds a CMS-specific authoring or administrative workflow to the static Management API contract. Its handler uses ordinary authorized CMS operations and cannot obtain a privileged bypass.
+_Avoid_: Generic CMS operation, Delivery Operation
+
 **Asset Delivery Operation**:
 The optional canonical Headless API operation through which a Content Client resolves an authorized Asset ID to immutable bytes and public response metadata. Its CMS Builder handler applies delivery-specific policy before invoking the ordinary authorized Asset read; possession of an Asset ID never grants access by itself.
 _Avoid_: Public storage directory, Asset ID as capability
