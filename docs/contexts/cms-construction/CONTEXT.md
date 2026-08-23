@@ -84,6 +84,14 @@ _Avoid_: Embedded Entry, foreign-key implementation
 A Field whose value is an ordered list of values, each validated by one declared element Field or Field Group. It may constrain list length but does not give items library-defined identities, an ordering interface, or item-level generic filtering.
 _Avoid_: Repeating form control
 
+**JSON Field**:
+A Field that accepts any JSON-compatible value without portable filtering, sorting, uniqueness, or schema constraints. A CMS Builder uses a Custom Field Kind when that value needs a typed contract.
+_Avoid_: Untyped custom Field
+
+**Field Kind Identifier**:
+The stable name of a Field Kind. Library-supplied Field Kinds use reserved short names; a Custom Field Kind uses a reverse-domain name and an integer format version.
+_Avoid_: Display label, package name
+
 **Field Group**:
 A named, reusable fragment of Field definitions composed into one or more Content Types. A nested composition mounts it under a new Field Key as an object; an inline composition merges its Fields and rejects key collisions without renaming or prefixing them.
 _Avoid_: Editor panel, fieldset
@@ -95,7 +103,7 @@ _Avoid_: Media-library item, upload
 ## Definition lifecycle
 
 **Content Definition**:
-A serializable definition of either a Content Type or a Field Group, identified independently of its human-readable name.
+A serializable definition of either a Content Type or a Field Group, identified by an immutable URL-safe lowercase identifier independently of its editable human-readable name.
 _Avoid_: Model, collection configuration
 
 **Definition Revision**:
