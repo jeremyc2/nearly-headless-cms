@@ -26,5 +26,5 @@ An Entry persistence implementation may perform a bounded scan when it preserves
 
 - Entry Revision retention, restoration, and optimistic-concurrency write tokens are defined by issue #16.
 - The wire representation of commands, queries, errors, and cursors is defined by issue #9.
-- Filesystem persistence indexes, scanning limits, and failure behavior are defined by issue #19.
+- Filesystem persistence indexes, scanning limits, atomicity, and failure behavior are defined by `filesystem-persistence-decision.md`.
 - The Example CMS's specific list views and filters are defined by its application and prototype decisions.

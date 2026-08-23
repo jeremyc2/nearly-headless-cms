@@ -191,8 +191,16 @@ A named, reusable fragment of Field definitions composed into one or more Conten
 _Avoid_: Editor panel, fieldset
 
 **Asset**:
-An immutable persisted file and its metadata, referenced by Entries rather than embedded in their content. In the Example CMS, an Asset is an image with filename, MIME type, dimensions, and default alt text. Deleting an Asset requires explicit confirmation and automatically clears its optional image assignments.
+An immutable persisted file and its metadata, referenced by Entries rather than embedded in their content. In the Example CMS, an Asset is an image with filename, MIME type, dimensions, and default alt text. Generic deletion fails while an Entry references the Asset; a CMS Builder may offer an explicit batch command that clears optional image assignments before deleting it.
 _Avoid_: Media-library item, upload
+
+**Asset Blob**:
+The immutable bytes of an Asset, identified by their cryptographic digest. An Asset has its own generated Asset ID and metadata, so separate Assets may share one Asset Blob when their bytes are identical.
+_Avoid_: Asset ID, upload filename
+
+**Filesystem Persistence Layer**:
+A CMS Builder-provided Entry and Asset persistence implementation that owns one local storage root. It exposes only logical Entry and Asset identifiers; its directory layout and physical filenames are private implementation details.
+_Avoid_: Content directory, public asset URL
 
 ## Definition lifecycle
 
