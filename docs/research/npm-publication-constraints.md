@@ -2,6 +2,8 @@
 
 _Researched 2026-08-22 against the current official Bun, npm, TypeScript, and Effect sources._
 
+> **Update, 2026-08-23:** The final package contract replaces this note's `npm pack` recommendation with one authoritative `bun pm pack` archive that is inspected, smoke-tested, and then passed directly to `npm publish`. See [`bun-pm-pack-release-gates.md`](./bun-pm-pack-release-gates.md) and [`package-release-readiness-decision.md`](../package-release-readiness-decision.md). npm remains the registry client for trusted publication.
+
 ## Answer
 
 Nearly Headless CMS can be developed as a Bun monorepo and published as a conventional typed ESM package. The safest v0.1 route is:
