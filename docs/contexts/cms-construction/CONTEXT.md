@@ -44,6 +44,10 @@ _Avoid_: Property, attribute
 A named, reusable fragment of Field definitions composed into one or more Content Types.
 _Avoid_: Editor panel, fieldset
 
+**Asset**:
+An immutable persisted file and its metadata, referenced by Entries rather than embedded in their content.
+_Avoid_: Media-library item, upload
+
 ## Definition lifecycle
 
 **Content Definition**:
