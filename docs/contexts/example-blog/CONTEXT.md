@@ -13,7 +13,7 @@ The separately runnable static Content Client that generates its assets from the
 _Avoid_: CMS UI, preview
 
 **Post**:
-The primary publishable content in the Example CMS. A Post has a title, slug, excerpt, Rich Text body, optional featured Asset, one Author, zero or more Categories and Tags, a Post Status, and an optional publication time. Deleting a Post requires explicit confirmation and automatically deletes its associated Comments.
+The primary publishable content in the Example CMS. A Post has a title, slug, excerpt, Rich Text body, optional featured Asset, one Author, zero or more Categories and Tags, a Post Status, and an optional publication time. Its Rich Text body uses only the portable core Rich Text vocabulary; every image in a published Post has non-empty alternative text. Deleting a Post requires explicit confirmation and automatically deletes its associated Comments.
 _Avoid_: Article
 
 **Author**:

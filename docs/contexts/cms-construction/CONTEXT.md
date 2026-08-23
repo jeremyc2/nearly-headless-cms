@@ -9,8 +9,16 @@ A developer who uses the Nearly Headless CMS library to assemble a CMS with thei
 _Avoid_: Package consumer, integrator
 
 **Rich Text**:
-Structured content that preserves document structure and semantic marks such as emphasis and strong emphasis without prescribing their visual presentation.
+The JSON-compatible, versioned semantic document value of the built-in `rich-text` Field Kind. It contains only contracted structural nodes, inline nodes, text leaves, semantic marks, and validated Entry or Asset references; it contains no HTML, CSS, editor state, or presentation instructions. A Content Client renders it with its own presentation.
 _Avoid_: Styled text, HTML blob
+
+**Rich Text Extension**:
+A CMS Builder-registered versioned Rich Text node contract with a reverse-domain identifier, JSON-compatible configuration, deterministic value validation, child-placement rules, and explicit reference behavior. Generic validation rejects an unregistered version and a portable renderer must fail visibly rather than silently discard an unknown extension.
+_Avoid_: Custom widget, arbitrary embedded component
+
+**Rich Text Reference**:
+An `entry-reference` or `asset-reference` node in a Rich Text document, storing a live target identifier rather than copying target data. Its target is atomically validated and restricts target deletion; resolving it for display is a Content Client responsibility.
+_Avoid_: Embedded Entry, image URL
 
 **System**:
 One independently composed part of the headless content flow: the reusable library, a Headless CMS built with it, or a Content Client that consumes that CMS.
@@ -81,7 +89,7 @@ A CMS Builder-defined Field Kind with a stable kind identifier, format version, 
 _Avoid_: Custom widget, UI extension
 
 **Built-in Field Kind**:
-One portable Field Kind supplied by the reusable library: constrained scalar, structured JSON, Asset, Relationship, or Rich Text. Asset, Relationship, and Rich Text share the Field boundary while their specialized value semantics are defined independently.
+One portable Field Kind supplied by the reusable library: constrained scalar, structured JSON, Asset, Relationship, or Rich Text. Asset, Relationship, and Rich Text share the Field boundary while their specialized value semantics are defined independently. `rich-text` uses the semantic versioned document contract and has no portable generic query capability within its tree.
 _Avoid_: UI control, status field
 
 **Field Constraint**:
