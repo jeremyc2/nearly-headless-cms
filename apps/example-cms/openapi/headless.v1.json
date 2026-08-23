@@ -1,0 +1,100 @@
+{
+  "components": {
+    "schemas": {
+      "Error": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "details": {},
+          "message": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          }
+        },
+        "required": ["code", "message", "requestId"],
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "Nearly Headless CMS Headless API",
+    "version": "1.0.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/headless/schema": {
+      "get": {
+        "operationId": "discoverPublicDefinitionSnapshot"
+      }
+    },
+    "/api/v1/headless/posts": {
+      "get": {
+        "operationId": "listPublishedPosts"
+      }
+    },
+    "/api/v1/headless/posts/{slug}": {
+      "get": {
+        "operationId": "getPublishedPostBySlug"
+      }
+    },
+    "/api/v1/headless/authors/{slug}": {
+      "get": {
+        "operationId": "getPublicAuthorBySlug"
+      }
+    },
+    "/api/v1/headless/authors/{slug}/posts": {
+      "get": {
+        "operationId": "listAuthorPosts"
+      }
+    },
+    "/api/v1/headless/categories/{slug}": {
+      "get": {
+        "operationId": "getPublicCategoryBySlug"
+      }
+    },
+    "/api/v1/headless/categories/{slug}/posts": {
+      "get": {
+        "operationId": "listCategoryPosts"
+      }
+    },
+    "/api/v1/headless/tags/{slug}": {
+      "get": {
+        "operationId": "getPublicTagBySlug"
+      }
+    },
+    "/api/v1/headless/tags/{slug}/posts": {
+      "get": {
+        "operationId": "listTagPosts"
+      }
+    },
+    "/api/v1/headless/posts/{postId}/comments": {
+      "get": {
+        "operationId": "listApprovedComments"
+      },
+      "post": {
+        "operationId": "submitComment"
+      }
+    },
+    "/api/v1/headless/references/entries/{entryId}": {
+      "get": {
+        "operationId": "resolvePublicEntryReference"
+      }
+    },
+    "/api/v1/headless/assets/{assetId}": {
+      "get": {
+        "operationId": "deliverPublicAsset"
+      },
+      "head": {
+        "operationId": "inspectPublicAsset"
+      }
+    },
+    "/api/v1/headless/export": {
+      "get": {
+        "operationId": "exportPublicBlog"
+      }
+    }
+  }
+}

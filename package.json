@@ -1,21 +1,37 @@
 {
-  "name": "nearly-headless-cms",
-  "module": "index.ts",
+  "name": "nearly-headless-cms-monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "type": "module",
   "scripts": {
-    "lint": "oxlint",
-    "prepare": "effect-tsgo patch --oxlint"
+    "prepare": "effect-tsgo patch --typescript --oxlint",
+    "dev": "bun run --no-orphans --parallel --filter '*' dev",
+    "build": "bun run --filter '*' build",
+    "verify": "bun run lint && bun run typecheck && bun run test",
+    "lint": "oxlint . --type-aware",
+    "typecheck": "bun run --filter '*' typecheck",
+    "test": "bun test",
+    "test:unit": "bun test packages/nearly-headless-cms/test/unit apps/example-cms/test/unit apps/public-blog/test/unit",
+    "test:types": "bun run --cwd packages/nearly-headless-cms test:types",
+    "test:contract": "bun test packages/nearly-headless-cms/test/contract",
+    "test:integration": "bun test packages/nearly-headless-cms/test/integration apps/example-cms/test/integration apps/public-blog/test/integration",
+    "test:filesystem": "bun test packages/nearly-headless-cms/test/filesystem",
+    "test:webview": "bun test acceptance/webview",
+    "test:visual": "bun test acceptance/visual",
+    "check:generated": "bun run scripts/check-generated.ts",
+    "check:architecture": "bun run scripts/check-architecture.ts",
+    "acceptance": "bun run scripts/run-acceptance.ts",
+    "format": "oxfmt --write package.json tsconfig.json README.md packages apps acceptance scripts .github docs/acceptance docs/manual docs/releasing.md"
   },
   "devDependencies": {
-    "@effect/tsgo": "^0.36.5",
-    "@types/bun": "latest",
+    "@effect/tsgo": "0.36.5",
+    "@types/bun": "1.4.0",
+    "oxfmt": "0.32.0",
     "oxlint": "1.78.0",
-    "oxlint-tsgolint": "^7.0.2001"
-  },
-  "peerDependencies": {
-    "typescript": "^7"
-  },
-  "dependencies": {
-    "effect": "^4.0.0-rc.111"
+    "oxlint-tsgolint": "7.0.2001",
+    "typescript": "7.0.2"
   }
 }

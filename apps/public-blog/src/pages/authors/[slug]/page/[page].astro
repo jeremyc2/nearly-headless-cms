@@ -1,0 +1,16 @@
+---
+import Pagination from "../../../../components/Pagination.astro"
+import PostCard from "../../../../components/PostCard.astro"
+import { publicExport } from "../../../../data/public-export.ts"
+import { paginate } from "../../../../domain/public-model.ts"
+import SiteLayout from "../../../../layouts/SiteLayout.astro"
+
+export function getStaticPaths() {
+  return publicExport.authors.flatMap((author) => paginate(publicExport.posts.filter((post) => post.author === author.id), 6).map((page) => ({
+    params: { page: String(page.pageNumber), slug: author.slug },
+    props: { author, page }
+  })))
+}
+const { author, page } = Astro.props
+---
+<SiteLayout title={`${author.name} · Page ${page.pageNumber}`}><header class="listing-header"><div class="shell"><p class="eyebrow">Author</p><h1>{author.name}</h1></div></header><section class="shell content-stack"><div class="post-grid">{page.items.map((post) => <PostCard post={post} />)}</div><Pagination basePath={`/authors/${author.slug}`} previousPage={page.previousPage} nextPage={page.nextPage} /></section></SiteLayout>

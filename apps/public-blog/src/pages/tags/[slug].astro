@@ -1,0 +1,10 @@
+---
+import PostCard from "../../components/PostCard.astro"
+import { publicExport } from "../../data/public-export.ts"
+import SiteLayout from "../../layouts/SiteLayout.astro"
+export function getStaticPaths() { return publicExport.tags.map((tag) => ({ params: { slug: tag.slug }, props: { tag } })) }
+const { tag } = Astro.props,
+ posts = publicExport.posts.filter((post) => post.tags.includes(tag.id))
+---
+<SiteLayout title={tag.name}><header class="listing-header"><div class="shell"><p class="eyebrow">Tag</p><h1>#{tag.name}</h1><p>{tag.description}</p></div></header><section class="shell content-stack"><div class="post-grid">{posts.map((post) => <PostCard post={post} />)}</div></section></SiteLayout>
+

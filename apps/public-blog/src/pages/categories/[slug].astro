@@ -1,0 +1,10 @@
+---
+import PostCard from "../../components/PostCard.astro"
+import { publicExport } from "../../data/public-export.ts"
+import SiteLayout from "../../layouts/SiteLayout.astro"
+export function getStaticPaths() { return publicExport.categories.map((category) => ({ params: { slug: category.slug }, props: { category } })) }
+const { category } = Astro.props,
+ posts = publicExport.posts.filter((post) => post.categories.includes(category.id))
+---
+<SiteLayout title={category.name}><header class="listing-header"><div class="shell"><p class="eyebrow">Category</p><h1>{category.name}</h1><p>{category.description}</p></div></header><section class="shell content-stack"><div class="post-grid">{posts.map((post) => <PostCard post={post} />)}</div></section></SiteLayout>
+

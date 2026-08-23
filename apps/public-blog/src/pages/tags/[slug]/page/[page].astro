@@ -1,0 +1,16 @@
+---
+import Pagination from "../../../../components/Pagination.astro"
+import PostCard from "../../../../components/PostCard.astro"
+import { publicExport } from "../../../../data/public-export.ts"
+import { paginate } from "../../../../domain/public-model.ts"
+import SiteLayout from "../../../../layouts/SiteLayout.astro"
+
+export function getStaticPaths() {
+  return publicExport.tags.flatMap((tag) => paginate(publicExport.posts.filter((post) => post.tags.includes(tag.id)), 6).map((page) => ({
+    params: { page: String(page.pageNumber), slug: tag.slug },
+    props: { page, tag }
+  })))
+}
+const { page, tag } = Astro.props
+---
+<SiteLayout title={`${tag.name} · Page ${page.pageNumber}`}><header class="listing-header"><div class="shell"><p class="eyebrow">Tag</p><h1>#{tag.name}</h1></div></header><section class="shell content-stack"><div class="post-grid">{page.items.map((post) => <PostCard post={post} />)}</div><Pagination basePath={`/tags/${tag.slug}`} previousPage={page.previousPage} nextPage={page.nextPage} /></section></SiteLayout>

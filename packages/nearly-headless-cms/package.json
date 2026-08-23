@@ -1,0 +1,88 @@
+{
+  "name": "nearly-headless-cms",
+  "version": "0.1.0",
+  "description": "A library for building headless CMS applications with Effect",
+  "keywords": [
+    "bun",
+    "cms",
+    "effect",
+    "headless-cms",
+    "typescript"
+  ],
+  "homepage": "https://github.com/jeremyc2/nearly-headless-cms#readme",
+  "bugs": {
+    "url": "https://github.com/jeremyc2/nearly-headless-cms/issues"
+  },
+  "license": "MIT",
+  "author": "Jeremy Ryan Chandler",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jeremyc2/nearly-headless-cms.git",
+    "directory": "packages/nearly-headless-cms"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./http": {
+      "types": "./dist/http/index.d.ts",
+      "import": "./dist/http/index.js",
+      "default": "./dist/http/index.js"
+    },
+    "./adapters": {
+      "types": "./dist/adapters/index.d.ts",
+      "import": "./dist/adapters/index.js",
+      "default": "./dist/adapters/index.js"
+    },
+    "./bun/filesystem": {
+      "types": "./dist/bun/filesystem/index.d.ts",
+      "import": "./dist/bun/filesystem/index.js",
+      "default": "./dist/bun/filesystem/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing/index.d.ts",
+      "import": "./dist/testing/index.js",
+      "default": "./dist/testing/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true,
+    "registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "clean": "bun run scripts/clean.ts",
+    "build": "bun run scripts/build.ts",
+    "lint": "oxlint . --type-aware",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "bun test",
+    "test:types": "tsc --noEmit -p test/types/tsconfig.json",
+    "verify": "bun run lint && bun run typecheck && bun run test",
+    "package:inspect": "bun run scripts/package-inspect.ts",
+    "package:smoke": "bun run scripts/package-smoke.ts",
+    "publish:dry-run": "bun run scripts/publish-dry-run.ts",
+    "release:npm": "bun run scripts/release-npm.ts",
+    "prepack": "bun run clean && bun run build",
+    "prepublishOnly": "bun run verify && bun run package:smoke"
+  },
+  "devDependencies": {
+    "effect": "4.0.0-rc.111",
+    "typescript": "7.0.2"
+  },
+  "peerDependencies": {
+    "effect": "^4.0.0-rc.111"
+  }
+}

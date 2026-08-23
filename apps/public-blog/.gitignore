@@ -1,0 +1,5 @@
+.generated/
+public/generated-assets/
+dist/
+.astro/
+

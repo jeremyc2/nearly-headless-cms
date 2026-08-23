@@ -1,0 +1,212 @@
+{
+  "components": {
+    "schemas": {
+      "Error": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "details": {},
+          "message": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          }
+        },
+        "required": ["code", "message", "requestId"],
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "Nearly Headless CMS Management API",
+    "version": "1.0.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/management/definition-spaces/{definitionSpaceId}/content-types/{contentTypeId}/entries": {
+      "post": {
+        "operationId": "createEntry"
+      }
+    },
+    "/api/v1/management/definition-spaces/{definitionSpaceId}/content-types/{contentTypeId}/entries/{entryId}": {
+      "get": {
+        "operationId": "getEntry"
+      },
+      "put": {
+        "operationId": "replaceEntry"
+      },
+      "delete": {
+        "operationId": "deleteEntry"
+      }
+    },
+    "/api/v1/management/definition-spaces/{definitionSpaceId}/content-types/{contentTypeId}/entries/{entryId}/read": {
+      "post": {
+        "operationId": "readEntry"
+      }
+    },
+    "/api/v1/management/definition-spaces/{definitionSpaceId}/content-types/{contentTypeId}/entries/query": {
+      "post": {
+        "operationId": "queryEntries"
+      }
+    },
+    "/api/v1/management/definition-spaces/{definitionSpaceId}/content-types/{contentTypeId}/entries/{entryId}/state": {
+      "get": {
+        "operationId": "getCurrentEntryState"
+      }
+    },
+    "/api/v1/management/definition-spaces/{definitionSpaceId}/content-types/{contentTypeId}/entries/{entryId}/revisions": {
+      "get": {
+        "operationId": "listEntryRevisions"
+      }
+    },
+    "/api/v1/management/definition-spaces/{definitionSpaceId}/content-types/{contentTypeId}/entries/{entryId}/revisions/{revisionNumber}": {
+      "get": {
+        "operationId": "inspectEntryRevision"
+      }
+    },
+    "/api/v1/management/definition-spaces/{definitionSpaceId}/content-types/{contentTypeId}/entries/{entryId}/restorations": {
+      "post": {
+        "operationId": "restoreEntryRevision"
+      }
+    },
+    "/api/v1/management/definition-spaces/{definitionSpaceId}/content-types/{contentTypeId}/entries/{entryId}/purges": {
+      "post": {
+        "operationId": "permanentlyPurgeEntry"
+      }
+    },
+    "/api/v1/management/definition-spaces/{definitionSpaceId}/assets": {
+      "post": {
+        "operationId": "ingestAsset"
+      }
+    },
+    "/api/v1/management/definition-spaces/{definitionSpaceId}/assets/{assetId}": {
+      "get": {
+        "operationId": "getAsset"
+      },
+      "delete": {
+        "operationId": "deleteAsset"
+      }
+    },
+    "/api/v1/management/definition-spaces/{definitionSpaceId}/assets/{assetId}/content": {
+      "get": {
+        "operationId": "readAsset"
+      },
+      "head": {
+        "operationId": "inspectAssetContent"
+      }
+    },
+    "/api/v1/management/definition-spaces/{definitionSpaceId}/definitions": {
+      "get": {
+        "operationId": "listDefinitions"
+      }
+    },
+    "/api/v1/management/definition-spaces/{definitionSpaceId}/definitions/{definitionId}": {
+      "get": {
+        "operationId": "getDefinition"
+      }
+    },
+    "/api/v1/management/definition-spaces/{definitionSpaceId}/definitions/{definitionId}/revisions": {
+      "get": {
+        "operationId": "listDefinitionRevisions"
+      },
+      "post": {
+        "operationId": "appendDefinitionRevision"
+      }
+    },
+    "/api/v1/management/definition-spaces/{definitionSpaceId}/definitions/{definitionId}/retirements": {
+      "post": {
+        "operationId": "retireDefinition"
+      }
+    },
+    "/api/v1/management/definition-spaces/{definitionSpaceId}/definition-snapshot": {
+      "get": {
+        "operationId": "getActiveDefinitionSnapshot"
+      }
+    },
+    "/api/v1/management/definition-spaces/{definitionSpaceId}/definition-snapshots": {
+      "get": {
+        "operationId": "listDefinitionSnapshots"
+      }
+    },
+    "/api/v1/management/definition-spaces/{definitionSpaceId}/definition-snapshots/{snapshotId}": {
+      "get": {
+        "operationId": "inspectDefinitionSnapshot"
+      }
+    },
+    "/api/v1/management/definition-spaces/{definitionSpaceId}/definition-snapshot-activations": {
+      "post": {
+        "operationId": "activateDefinitionSnapshot"
+      }
+    },
+    "/api/v1/management/definition-spaces/{definitionSpaceId}/catalog-events": {
+      "get": {
+        "operationId": "listCatalogEvents"
+      }
+    },
+    "/api/v1/management/definition-spaces/{definitionSpaceId}/migration-manifests": {
+      "get": {
+        "operationId": "listMigrationManifests"
+      },
+      "post": {
+        "operationId": "appendMigrationManifest"
+      }
+    },
+    "/api/v1/management/definition-spaces/{definitionSpaceId}/migration-manifests/{migrationManifestId}": {
+      "get": {
+        "operationId": "inspectMigrationManifest"
+      }
+    },
+    "/api/v1/management/definition-spaces/{definitionSpaceId}/migration-preparations/{migrationPreparationId}": {
+      "get": {
+        "operationId": "inspectMigrationPreparation"
+      }
+    },
+    "/api/v1/management/definition-spaces/{definitionSpaceId}/migration-preparations": {
+      "post": {
+        "operationId": "prepareDefinitionMigration"
+      }
+    },
+    "/api/v1/management/definition-spaces/{definitionSpaceId}/operations/posts/{entryId}/publications": {
+      "post": {
+        "operationId": "publishPost"
+      }
+    },
+    "/api/v1/management/definition-spaces/{definitionSpaceId}/operations/posts/{entryId}/draft-returns": {
+      "post": {
+        "operationId": "returnPostToDraft"
+      }
+    },
+    "/api/v1/management/definition-spaces/{definitionSpaceId}/operations/comments/{entryId}/approvals": {
+      "post": {
+        "operationId": "approveComment"
+      }
+    },
+    "/api/v1/management/definition-spaces/{definitionSpaceId}/operations/comments/{entryId}/rejections": {
+      "post": {
+        "operationId": "rejectComment"
+      }
+    },
+    "/api/v1/management/definition-spaces/{definitionSpaceId}/operations/posts/{entryId}/cascade-deletions": {
+      "post": {
+        "operationId": "deletePostWithComments"
+      }
+    },
+    "/api/v1/management/definition-spaces/{definitionSpaceId}/operations/categories/{entryId}/detachments": {
+      "post": {
+        "operationId": "detachAndDeleteCategory"
+      }
+    },
+    "/api/v1/management/definition-spaces/{definitionSpaceId}/operations/tags/{entryId}/detachments": {
+      "post": {
+        "operationId": "detachAndDeleteTag"
+      }
+    },
+    "/api/v1/management/definition-spaces/{definitionSpaceId}/operations/assets/{assetId}/replacements": {
+      "post": {
+        "operationId": "replaceImage"
+      }
+    }
+  }
+}

@@ -1,0 +1,241 @@
+import { describe, expect, test } from "bun:test";
+import { Effect, Exit } from "effect";
+import { Cms, ContentDefinition } from "../../src/index.ts";
+import { DevelopmentCms } from "../../src/testing/index.ts";
+
+const initialSnapshot = ContentDefinition.compile({
+  definitionSpaceId: "definition-lifecycle",
+  definitions: [
+    {
+      kind: "contentType",
+      id: "note",
+      name: "Note",
+      revision: 1,
+      history: true,
+      fields: [{ key: "title", label: "Title", required: true, kind: { kind: "text" } }],
+    },
+  ],
+  snapshotId: "initial",
+});
+
+describe("runtime Content Definition lifecycle", () => {
+  test("activates compatible revisions and atomically migrates incompatible Entries", async () => {
+    await Effect.runPromise(
+      Effect.gen(function* () {
+        const cms = yield* Cms.Service,
+          created = yield* cms.createEntry({
+            contentTypeId: "note",
+            values: { title: "A durable note" },
+          }),
+          entry = "entry" in created ? created.entry : created,
+          optionalSummary = {
+            fields: [
+              { key: "title", label: "Title", required: true, kind: { kind: "text" as const } },
+              { key: "summary", label: "Summary", kind: { kind: "text" as const } },
+            ],
+            history: true,
+            id: "note",
+            kind: "contentType" as const,
+            name: "Note",
+            parentRevision: 1,
+            revision: 2,
+          },
+          appended = yield* cms.appendDefinitionRevision({
+            definition: optionalSummary,
+            expectedCatalogVersion: 1,
+            source: "integration test",
+          });
+        expect(appended.version).toBe(2);
+        const compatible = yield* cms.activateDefinitionSnapshot({
+          expectedCatalogVersion: 2,
+          snapshot: {
+            definitionSpaceId: "definition-lifecycle",
+            definitions: [optionalSummary],
+            snapshotId: "optional-summary",
+          },
+          source: "integration test",
+        });
+        expect(compatible.migratedEntryCount).toBe(0);
+        expect((yield* cms.getEntry({ contentTypeId: "note", entryId: entry.id })).values).toEqual({
+          title: "A durable note",
+        });
+
+        const requiredSlug = {
+            ...optionalSummary,
+            fields: [
+              ...optionalSummary.fields,
+              {
+                key: "slug",
+                label: "Slug",
+                required: true,
+                unique: true,
+                kind: { kind: "text" as const },
+              },
+            ],
+            parentRevision: 2,
+            revision: 3,
+          },
+          appendedRequired = yield* cms.appendDefinitionRevision({
+            definition: requiredSlug,
+            expectedCatalogVersion: 3,
+            source: "integration test",
+          }),
+          rejected = yield* Effect.exit(
+            cms.activateDefinitionSnapshot({
+              expectedCatalogVersion: appendedRequired.version,
+              snapshot: {
+                definitionSpaceId: "definition-lifecycle",
+                definitions: [requiredSlug],
+                snapshotId: "required-slug",
+              },
+              source: "integration test",
+            }),
+          );
+        expect(Exit.isFailure(rejected)).toBeTrue();
+        expect((yield* cms.activeDefinitionSnapshot).snapshotId).toBe("optional-summary");
+
+        const manifest = {
+            handlerIdentifier: "note-slug",
+            handlerVersion: 1,
+            id: "add-note-slug",
+            sourceSnapshotId: "optional-summary",
+            targetSnapshotId: "required-slug",
+          },
+          manifestCatalog = yield* cms.appendMigrationManifest({
+            expectedCatalogVersion: appendedRequired.version,
+            manifest,
+          }),
+          preparation = yield* cms.prepareDefinitionMigration({
+            expectedCatalogVersion: manifestCatalog.version,
+            manifestId: manifest.id,
+            snapshot: {
+              definitionSpaceId: "definition-lifecycle",
+              definitions: [requiredSlug],
+              snapshotId: "required-slug",
+            },
+          }),
+          preparedCatalog = yield* cms.readDefinitionCatalog,
+          migrated = yield* cms.activateDefinitionSnapshot({
+            expectedCatalogVersion: preparedCatalog.version,
+            migration: { manifest, preparationId: preparation.id },
+            snapshot: {
+              definitionSpaceId: "definition-lifecycle",
+              definitions: [requiredSlug],
+              snapshotId: "required-slug",
+            },
+            source: "integration test",
+          });
+        expect(migrated.migratedEntryCount).toBe(1);
+        expect(
+          (yield* cms.getEntry({ contentTypeId: "note", entryId: entry.id })).values["slug"],
+        ).toBe("a-durable-note");
+
+        const current = yield* cms.getCurrentEntryState({
+            contentTypeId: "note",
+            entryId: entry.id,
+          }),
+          restored = yield* cms.restoreEntryRevision({
+            contentTypeId: "note",
+            entryId: entry.id,
+            revisionNumber: 1,
+            writeToken: current.writeToken,
+          });
+        expect(restored.entry.values["slug"]).toBe("a-durable-note");
+
+        const catalog = yield* cms.readDefinitionCatalog;
+        expect(catalog.active.compiled.snapshotId).toBe("required-slug");
+        expect(catalog.events.map((event) => event.eventType)).toContain("revisionAppended");
+        expect(catalog.events.map((event) => event.eventType)).toContain("snapshotActivated");
+      }).pipe(
+        Effect.provide(
+          DevelopmentCms.layer({
+            migrationHandlers: [
+              {
+                identifier: "note-slug",
+                version: 1,
+                transform: ({ values }) => ({ ...values, slug: "a-durable-note" }),
+              },
+            ],
+            snapshot: initialSnapshot,
+          }),
+        ),
+      ),
+    );
+  });
+
+  test("retains composition-time Custom Field registrations during activation", async () => {
+    const ratingRegistration: ContentDefinition.CustomFieldRegistration = {
+      capabilities: { filter: ["equals"], projectable: true, sortable: true },
+      formatVersion: 1,
+      identifier: "com.example.rating",
+      validateConfiguration: () => [],
+      validateValue: (value) =>
+        typeof value === "number" && Number.isSafeInteger(value) && value >= 1 && value <= 5
+          ? []
+          : [
+              {
+                message: "Rating must be an integer from one through five",
+                path: [],
+                reason: "invalidRating",
+              },
+            ],
+    };
+    await Effect.runPromise(
+      Effect.gen(function* () {
+        const cms = yield* Cms.Service,
+          ratedNote = {
+            fields: [
+              { key: "title", label: "Title", required: true, kind: { kind: "text" as const } },
+              {
+                key: "rating",
+                kind: {
+                  configuration: {},
+                  formatVersion: 1,
+                  identifier: "com.example.rating",
+                  kind: "custom" as const,
+                },
+                label: "Rating",
+              },
+            ],
+            history: true,
+            id: "note",
+            kind: "contentType" as const,
+            name: "Note",
+            parentRevision: 1,
+            revision: 2,
+          },
+          appended = yield* cms.appendDefinitionRevision({
+            definition: ratedNote,
+            expectedCatalogVersion: 1,
+          }),
+          activated = yield* cms.activateDefinitionSnapshot({
+            expectedCatalogVersion: appended.version,
+            snapshot: {
+              definitionSpaceId: "definition-lifecycle",
+              definitions: [ratedNote],
+              snapshotId: "rated-notes",
+            },
+          });
+        expect(activated.snapshot.snapshotId).toBe("rated-notes");
+        yield* cms.createEntry({
+          contentTypeId: "note",
+          values: { rating: 5, title: "Excellent" },
+        });
+        expect(
+          Exit.isFailure(
+            yield* Effect.exit(
+              cms.createEntry({ contentTypeId: "note", values: { rating: 6, title: "Invalid" } }),
+            ),
+          ),
+        ).toBeTrue();
+      }).pipe(
+        Effect.provide(
+          DevelopmentCms.layer({
+            compileOptions: { customFieldKinds: [ratingRegistration] },
+            snapshot: initialSnapshot,
+          }),
+        ),
+      ),
+    );
+  });
+});

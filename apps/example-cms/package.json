@@ -1,0 +1,29 @@
+{
+  "name": "@nearly-headless-cms/example-cms",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --hot src/server.ts",
+    "build": "bun run scripts/build.ts",
+    "start": "NODE_ENV=production bun src/server.ts",
+    "lint": "oxlint . --type-aware",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@effect/platform-bun": "4.0.0-rc.111",
+    "@tanstack/react-query": "5.102.2",
+    "@tanstack/react-router": "1.170.32",
+    "bun-plugin-tailwind": "0.1.2",
+    "effect": "4.0.0-rc.111",
+    "nearly-headless-cms": "workspace:*",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "tailwindcss": "4.3.3"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3"
+  }
+}
