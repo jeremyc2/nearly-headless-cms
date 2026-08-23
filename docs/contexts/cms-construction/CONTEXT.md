@@ -88,12 +88,24 @@ _Avoid_: Repeating form control
 A Field that accepts any JSON-compatible value without portable filtering, sorting, uniqueness, or schema constraints. A CMS Builder uses a Custom Field Kind when that value needs a typed contract.
 _Avoid_: Untyped custom Field
 
+**JSON-compatible Value**:
+A persisted Entry value made only of null, boolean, finite number, string, array, and object values that JSON can represent. A Custom Field Kind validates this stored form even when application code converts it to another representation.
+_Avoid_: Runtime object, serialized program
+
+**Date Field**:
+A Field whose value is an ISO-8601 calendar date without a time or time zone.
+_Avoid_: Timestamp
+
+**Datetime Field**:
+A Field whose value is a normalized UTC ISO-8601 instant.
+_Avoid_: Calendar date
+
 **Field Kind Identifier**:
 The stable name of a Field Kind. Library-supplied Field Kinds use reserved short names; a Custom Field Kind uses a reverse-domain name and an integer format version.
 _Avoid_: Display label, package name
 
 **Field Group**:
-A named, reusable fragment of Field definitions composed into one or more Content Types. A nested composition mounts it under a new Field Key as an object; an inline composition merges its Fields and rejects key collisions without renaming or prefixing them.
+A named, reusable fragment of Field definitions composed into one or more Content Types or Field Groups. A nested composition mounts it under a new Field Key as an object; an inline composition merges its Fields and rejects key collisions without renaming or prefixing them. The active Definition Snapshot rejects every Field Group inclusion cycle.
 _Avoid_: Editor panel, fieldset
 
 **Asset**:
