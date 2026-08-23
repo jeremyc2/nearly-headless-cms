@@ -33,8 +33,40 @@ A system that consumes content from a Headless CMS and owns how that content is 
 _Avoid_: CMS UI, frontend layer
 
 **Headless API**:
-The public transport boundary through which a Content Client consumes content from a Headless CMS without importing its implementation or the reusable library.
-_Avoid_: SDK, direct CMS dependency
+The versioned public HTTP boundary through which a Content Client invokes only CMS Builder-selected queries and commands without importing the Headless CMS implementation, reusable library, or an SDK.
+_Avoid_: Management API, SDK, direct CMS dependency
+
+**Management API**:
+The versioned HTTP boundary through which a CMS user interface invokes authoring, definition-lifecycle, history, and other management operations exposed by a Headless CMS. It is distinct from the narrower Headless API even when one HTTP transport hosts both.
+_Avoid_: Headless API, public content API
+
+**Typed Client Binding**:
+App-local source generated from a Headless API contract that types its stable HTTP operations without introducing a runtime dependency on the Headless CMS, reusable library, or an SDK package. Dynamic Entry values remain subject to runtime decoding against serializable definition data.
+_Avoid_: Shared SDK, direct CMS dependency
+
+**Delivery Query**:
+A named, CMS Builder-defined Headless API read operation with an explicit public request and response contract. It fixes all non-public selection rules in its handler rather than exposing unrestricted generic Entry Query behavior.
+_Avoid_: Generic Entry Query, public database query
+
+**Delivery Command**:
+A named, CMS Builder-defined Headless API mutation with an explicit public request and response contract. It accepts only caller-owned input and assigns protected values through its handler.
+_Avoid_: Generic CRUD endpoint, unrestricted mutation
+
+**Delivery Operation**:
+The composition-time declaration of one Delivery Query or Delivery Command, including its stable identifier, HTTP method and path, request and response schemas, reachable Content Types, and CMS Builder handler. Activating a Definition Snapshot may change its runtime content shapes but cannot add, remove, or rename a Delivery Operation.
+_Avoid_: Dynamic route, generic CMS operation
+
+**Asset Delivery Operation**:
+The optional canonical Headless API operation through which a Content Client resolves an authorized Asset ID to immutable bytes and public response metadata. Its CMS Builder handler applies delivery-specific policy before invoking the ordinary authorized Asset read; possession of an Asset ID never grants access by itself.
+_Avoid_: Public storage directory, Asset ID as capability
+
+**Public Content Export**:
+A builder-defined Delivery Query that reads one immutable persistence generation and returns the complete bounded public dataset a static Content Client needs. It provides build coherence without changing generic cursor pagination into a cross-request snapshot.
+_Avoid_: Database backup, generic query snapshot
+
+**API Contract Version**:
+The major version of a Management API or Headless API's stable HTTP shapes and semantics. It is independent of the active Definition Snapshot and its fingerprint.
+_Avoid_: Definition Revision, Definition Snapshot fingerprint
 
 **Current Identity**:
 The request-scoped identity context supplied by a CMS Builder. It is either an opaque builder-defined Actor or the explicit Anonymous state; it is not a library User model.
@@ -49,7 +81,7 @@ The explicit Current Identity state for a request without an Actor.
 _Avoid_: Missing identity, unauthenticated error
 
 **Authorization**:
-The CMS Builder-supplied policy boundary that returns allow or forbid for one library-defined Action on a minimal Resource descriptor in the context of a Current Identity. Every public generic CMS operation invokes it once before validation or persistence; a denial returns `Forbidden` without first checking resource existence, and it has no built-in trusted bypass. It does not rewrite queries, redact values, impose rate limits, create audit records, or encode editorial workflow.
+The CMS Builder-supplied policy boundary that returns allow or forbid for one library-defined Action on a minimal Resource descriptor in the context of a Current Identity. Every public generic CMS operation invokes it once before validation or persistence; an expanded read additionally invokes it once for the complete Relationship Expansion plan. A denial returns `Forbidden` without first checking resource existence, and there is no built-in trusted bypass. It does not rewrite queries, redact values, impose rate limits, create audit records, or encode editorial workflow.
 _Avoid_: Query scoping, field permissions
 
 **Open-access CMS**:
@@ -195,7 +227,7 @@ The guarantee that every non-null Relationship Field value names an existing Ent
 _Avoid_: Best-effort reference validation, cascading delete
 
 **Relationship Expansion**:
-The caller-requested read-time replacement of a Relationship Field's Entry IDs with Entry representations. It is a separately authorized generic read action, never implicit, and is bounded and cycle-safe without per-target filtering or redaction.
+The caller-requested read-time replacement of a Relationship Field's Entry IDs with Entry representations. After the base read is authorized, the complete requested plan is authorized once as a separate generic Action before validation or lookup. Expansion is never implicit and is bounded and cycle-safe without per-target filtering or redaction.
 _Avoid_: Eager loading, embedded Entry
 
 **Reference-Blocked Deletion**:
@@ -259,6 +291,10 @@ _Avoid_: Built-in tenant, global model store
 **Definition Snapshot**:
 One complete, immutable selection of Definition Revisions that forms a valid content-definition graph for a Definition Space.
 _Avoid_: Live mutable registry, partial activation
+
+**Public Definition Snapshot**:
+The serializable subset of an active Definition Snapshot reachable through a Headless API's Delivery Queries and Delivery Commands. It includes the Field Kind, capability, and Rich Text extension metadata a Content Client needs for runtime decoding but contains no executable validator or compiled schema.
+_Avoid_: OpenAPI document, compiled Effect Schema
 
 **Definition Catalog**:
 The durable lifecycle record for a Definition Space, including Definition Revisions, Definition Snapshots, and lifecycle events.
