@@ -80,6 +80,10 @@ _Avoid_: File upload control, embedded file
 A Field whose value is one Entry ID or a list of Entry IDs, constrained to declared target Content Types. Its value shape does not decide target deletion behavior or read-time expansion.
 _Avoid_: Embedded Entry, foreign-key implementation
 
+**List Field**:
+A Field whose value is an ordered list of values, each validated by one declared element Field or Field Group. It may constrain list length but does not give items library-defined identities, an ordering interface, or item-level generic filtering.
+_Avoid_: Repeating form control
+
 **Field Group**:
 A named, reusable fragment of Field definitions composed into one or more Content Types. A nested composition mounts it under a new Field Key as an object; an inline composition merges its Fields and rejects key collisions without renaming or prefixing them.
 _Avoid_: Editor panel, fieldset
