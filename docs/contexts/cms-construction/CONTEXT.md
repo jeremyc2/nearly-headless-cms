@@ -275,7 +275,7 @@ The immutable bytes of an Asset, identified by their cryptographic digest. An As
 _Avoid_: Asset ID, upload filename
 
 **Filesystem Persistence Layer**:
-A CMS Builder-provided Entry and Asset persistence implementation that owns one local storage root. It exposes only logical Entry and Asset identifiers; its directory layout and physical filenames are private implementation details.
+A Bun-specific Entry and Asset persistence Adapter supplied by the reusable library and selected explicitly by a CMS Builder. It owns one local storage root and exposes only logical Entry and Asset identifiers; its directory layout and physical filenames are private implementation details.
 _Avoid_: Content directory, public asset URL
 
 ## Definition lifecycle
