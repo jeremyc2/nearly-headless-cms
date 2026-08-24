@@ -24,9 +24,8 @@ export interface ExampleSystemOptions {
   readonly storageRoot?: string;
 }
 
-export const createExampleSystem = async (
-  options: ExampleSystemOptions = {},
-): Promise<ExampleSystem> => {
+/** Builds the reusable CMS Layer and HTTP operation declarations for this application. */
+export const makeExampleComposition = (options: ExampleSystemOptions = {}) => {
   const storageRoot = options.storageRoot ?? ".data/example-cms",
     commandReceiptStore = filesystemCommandReceiptStore(`${storageRoot}/command-receipts`),
     deliveryOperations = makeDeliveryOperations({ commandReceiptStore }),
@@ -43,23 +42,28 @@ export const createExampleSystem = async (
       identifierLayer,
       filesystemLayer,
     ),
-    runtime = ManagedRuntime.make(
-      Cms.makeLayer({ operationContracts: [...deliveryOperations, ...managementOperations] }).pipe(
-        Layer.provide(dependencies),
-      ),
-    ),
+    cmsLayer = Cms.makeLayer({
+      operationContracts: [...deliveryOperations, ...managementOperations],
+    }).pipe(Layer.provide(dependencies)),
+    transportOptions: HttpTransport.Options = {
+      cors: {
+        headers: ["content-type", "idempotency-key"],
+        methods: ["GET", "POST", "HEAD", "OPTIONS"],
+        origins: ["http://localhost:4321"],
+      },
+      deliveryOperations,
+      managementOperations,
+    };
+  return { cmsLayer, transportOptions };
+};
+
+export const createExampleSystem = async (
+  options: ExampleSystemOptions = {},
+): Promise<ExampleSystem> => {
+  const composition = makeExampleComposition(options),
+    runtime = ManagedRuntime.make(composition.cmsLayer),
     seedResult = options.seed ? await runtime.runPromise(seed) : undefined,
-    handler = await runtime.runPromise(
-      HttpTransport.makeHandler({
-        cors: {
-          headers: ["content-type", "idempotency-key"],
-          methods: ["GET", "POST", "HEAD", "OPTIONS"],
-          origins: ["http://localhost:4321"],
-        },
-        deliveryOperations,
-        managementOperations,
-      }),
-    );
+    handler = await runtime.runPromise(HttpTransport.makeHandler(composition.transportOptions));
   return {
     handler,
     ...(seedResult === undefined ? {} : { seed: seedResult }),

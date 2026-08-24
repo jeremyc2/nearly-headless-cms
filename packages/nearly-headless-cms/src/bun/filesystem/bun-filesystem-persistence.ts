@@ -25,6 +25,7 @@ const stagingPrefix = ".nhcms-stage-",
   storageFormat = "nearly-headless-cms/filesystem",
   storageFormatVersion = 1;
 
+/** Root path, acknowledgement, and resource bounds for one filesystem Adapter. */
 export interface Configuration {
   readonly root: string;
   readonly acknowledgement: "atomic" | "durable";
@@ -33,6 +34,7 @@ export interface Configuration {
   readonly maximumMetadataByteLength?: number;
 }
 
+/** Filesystem configuration plus the initial Definition Snapshot. */
 export interface CmsConfiguration extends Configuration {
   readonly definitionSnapshot: CompiledSnapshot;
   readonly compileOptions?: CompileOptions;
@@ -694,6 +696,10 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
       return { context, lockPath };
     });
 
+/**
+ * Creates Bun-only Entry, Asset, and Definition persistence services for one root.
+ * Exactly one writer process may own a root; startup recovers staged generations.
+ */
 export const layer = (
   configuration: Configuration,
 ): Layer.Layer<EntryPersistence | Management, InfrastructureFailure, Generator> =>
@@ -706,6 +712,7 @@ export const layer = (
     ).pipe(Effect.map((acquired) => acquired.context)),
   );
 
+/** Creates the complete filesystem persistence Layer used by a CMS composition. */
 export const cmsLayer = (
   configuration: CmsConfiguration,
 ): Layer.Layer<
@@ -724,6 +731,7 @@ export const cmsLayer = (
     ).pipe(Effect.map((acquired) => acquired.context)),
   );
 
+/** Reads a bounded diagnostic snapshot of a filesystem root without mutating it. */
 export const inspect = (
   root: string,
 ): Effect.Effect<{ readonly format: string; readonly generation: number }, InfrastructureFailure> =>

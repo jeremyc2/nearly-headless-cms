@@ -10,6 +10,7 @@ const cloneRecord = (record: EntryRecord): EntryRecord => structuredClone(record
     ),
   });
 
+/** Process-local Entry Persistence Layer with atomic immutable generations. */
 export const layer: Layer.Layer<EntryPersistence> = Layer.effect(
   EntryPersistence,
   Effect.gen(function* layer() {

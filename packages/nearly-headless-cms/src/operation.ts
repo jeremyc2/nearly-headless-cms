@@ -1,3 +1,4 @@
+/** The closed generic CMS operation vocabulary submitted to Authorization. */
 export type Action =
   | "definition.read"
   | "definition.write"
@@ -16,6 +17,7 @@ export type Action =
   | "asset.delete"
   | "public.read";
 
+/** Minimal library-owned Resource descriptors submitted to Authorization. */
 export type Resource =
   | { readonly kind: "definitionSpace"; readonly definitionSpaceId: string }
   | {
@@ -31,6 +33,7 @@ export type Resource =
     }
   | { readonly kind: "asset"; readonly definitionSpaceId: string; readonly assetId?: string };
 
+/** Presentation-neutral contract for a Builder-selected public operation. */
 export interface DeliveryOperation<Request, Response> {
   readonly identifier: string;
   readonly method: "GET" | "POST" | "PUT" | "DELETE" | "HEAD";
@@ -41,6 +44,7 @@ export interface DeliveryOperation<Request, Response> {
 }
 
 /** One Field shape that a composed operation promises on its public wire contract. */
+/** A Field path and capabilities required by an operation contract. */
 export interface FieldContract {
   readonly path: string;
   /** Built-in Field Kind or registered Custom Field Kind identifier. */
@@ -52,12 +56,14 @@ export interface FieldContract {
 }
 
 /** Content Definition surface used by one composed Delivery or Management operation. */
+/** Content Type requirements preserved across Definition activation. */
 export interface DefinitionRequirement {
   readonly contentTypeId: string;
   readonly fields: readonly FieldContract[];
 }
 
 /** Definition-dependent portion of a stable composed operation contract. */
+/** A composed operation's complete Definition compatibility contract. */
 export interface DefinitionContract {
   readonly identifier: string;
   readonly definitionRequirements: readonly DefinitionRequirement[];
@@ -107,6 +113,7 @@ const findField = (fields: readonly ResolvedField[], path: string): ResolvedFiel
  * immutable Definition Snapshot. It throws `InvalidInput` before activation can
  * mutate either the Catalog or Entry generation.
  */
+/** Validates every operation contract against a compiled Definition Snapshot. */
 export const validateDefinitionContracts = (
   snapshot: CompiledSnapshot,
   contracts: readonly DefinitionContract[],

@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { Effect, Schema } from "effect";
+import { Effect, Layer, Schema } from "effect";
+import { HttpRouter, HttpServer } from "effect/unstable/http";
 import { ContentDefinition } from "../../src/index.ts";
+import * as HttpApiContract from "../../src/http/http-api.ts";
 import { HttpTransport, OpenApi } from "../../src/http/index.ts";
 import { DevelopmentCms } from "../../src/testing/index.ts";
 
@@ -42,6 +44,38 @@ describe("HTTP contract", () => {
     expect(unrestrictedHeadless.status).toBe(404);
     expect(OpenApi.management().openapi).toBe("3.1.0");
     expect(OpenApi.headless([]).paths).not.toHaveProperty("/content-types/{contentTypeId}/entries");
+  });
+
+  test("mounts each declared operation through the portable Effect HttpApi route Layer", async () => {
+    const routes = HttpTransport.layer({
+        deliveryOperations: [
+          {
+            definitionRequirements: [],
+            execute: () => Effect.succeed({ available: true }),
+            identifier: "checkAvailability",
+            method: "GET",
+            path: "/availability",
+            reachableContentTypeIds: ["post"],
+            schemas: {
+              request: Schema.Struct({}),
+              response: Schema.Struct({ available: Schema.Boolean }),
+            },
+          },
+        ],
+      }).pipe(
+        Layer.provide(DevelopmentCms.layer({ snapshot })),
+        Layer.provide(HttpServer.layerServices),
+      ),
+      webHandler = HttpRouter.toWebHandler(routes);
+    try {
+      const response = await webHandler.handler(
+        new Request("http://cms.test/api/v1/headless/availability"),
+      );
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ available: true });
+    } finally {
+      await webHandler.dispose();
+    }
   });
 
   test("maps transport limits, media, and methods to their stable HTTP failures", async () => {
@@ -132,23 +166,31 @@ describe("HTTP contract", () => {
   });
 
   test("derives stable OpenAPI request, success, parameter, and declared error schemas", () => {
-    const document = OpenApi.headless([
-      {
-        definitionRequirements: [],
-        execute: () => Effect.succeed({ status: "pending" }),
-        identifier: "submitComment",
-        method: "POST",
-        path: "/posts/{postId}/comments",
-        reachableContentTypeIds: ["post", "comment"],
-        schemas: {
-          pathParameters: { postId: Schema.String },
-          request: Schema.Struct({ body: Schema.String }),
-          requestBody: Schema.Struct({ body: Schema.String }),
-          response: Schema.Struct({ status: Schema.Literal("pending") }),
+    const operations = [
+        {
+          definitionRequirements: [],
+          execute: () => Effect.succeed({ status: "pending" }),
+          identifier: "submitComment",
+          method: "POST",
+          path: "/posts/{postId}/comments",
+          reachableContentTypeIds: ["post", "comment"],
+          schemas: {
+            pathParameters: { postId: Schema.String },
+            request: Schema.Struct({ body: Schema.String }),
+            requestBody: Schema.Struct({ body: Schema.String }),
+            response: Schema.Struct({ status: Schema.Literal("pending") }),
+          },
+          successStatus: 201,
         },
-        successStatus: 201,
-      },
-    ]);
+      ] as const,
+      document = OpenApi.headless(operations),
+      api = HttpApiContract.headless(operations);
+    expect(JSON.stringify(HttpApiContract.headlessDocument(operations))).toBe(
+      JSON.stringify(document),
+    );
+    expect(api.groups.headless?.endpoints["submitComment"]?.path).toBe(
+      "/api/v1/headless/posts/:postId/comments",
+    );
     const commentSubmissionPath = document.paths["/api/v1/headless/posts/{postId}/comments"];
     expect(commentSubmissionPath).toMatchObject({
       post: {

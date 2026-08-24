@@ -16,6 +16,7 @@ import { layer as memoryAssetLayer } from "../adapters/memory-asset-management.t
 import { layer as memoryCatalogLayer } from "../adapters/memory-definition-catalog.ts";
 import { layer as memoryEntryLayer } from "../adapters/memory-entry-persistence.ts";
 
+/** Definition snapshot and registrations for a fully in-memory development CMS. */
 export interface Options {
   readonly snapshot: CompiledSnapshot;
   readonly compileOptions?: CompileOptions;
@@ -23,6 +24,7 @@ export interface Options {
   readonly operationContracts?: readonly DefinitionContract[];
 }
 
+/** Composes all development Adapters into one ready-to-use CMS Layer. */
 export const layer = ({
   compileOptions,
   migrationHandlers,

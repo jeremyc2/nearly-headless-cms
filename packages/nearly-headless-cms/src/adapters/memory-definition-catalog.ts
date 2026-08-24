@@ -8,6 +8,7 @@ import {
   EntryPersistence,
 } from "../persistence.ts";
 
+/** Initial snapshot and optional catalog records for the in-memory Adapter. */
 export interface Options {
   readonly snapshot: CompiledSnapshot;
 }
@@ -23,6 +24,7 @@ const cloneState = (state: CatalogState): CatalogState => ({
   snapshots: [...state.snapshots],
 });
 
+/** Creates a process-local Definition Catalog with atomic cutover semantics. */
 export const layer = ({
   snapshot,
 }: Options): Layer.Layer<DefinitionCatalog, never, EntryPersistence> =>

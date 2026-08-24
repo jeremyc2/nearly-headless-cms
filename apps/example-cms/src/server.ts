@@ -1,81 +1,70 @@
 import { BunHttpServer, BunRuntime } from "@effect/platform-bun";
 import { Effect, Layer } from "effect";
-import {
-  HttpRouter,
-  HttpServerRequest,
-  HttpServerResponse,
-  HttpStaticServer,
-} from "effect/unstable/http";
+import { HttpRouter, HttpServerResponse, HttpStaticServer } from "effect/unstable/http";
 import tailwind from "bun-plugin-tailwind";
+import { HttpTransport } from "nearly-headless-cms/http";
 import { join } from "node:path";
-import { createExampleSystem } from "./system.ts";
+import { seed } from "./domain/seed.ts";
+import { makeExampleComposition } from "./system.ts";
 
 const applicationDirectory = join(import.meta.dir, ".."),
   dashboardDirectory = join(applicationDirectory, "dist"),
   port = Number(Bun.env["EXAMPLE_CMS_PORT"] ?? "3000"),
   responseFrom = (response: Response) => HttpServerResponse.fromWeb(response),
-  applicationRoutes = Layer.effectDiscard(
-    Effect.acquireRelease(
-      Effect.promise(() => createExampleSystem({ seed: true })),
-      (system) => Effect.promise(() => system.dispose()),
-    ).pipe(
-      Effect.flatMap((system) =>
-        HttpRouter.HttpRouter.pipe(
-          Effect.flatMap((router) =>
-            Effect.gen(function* registerRoutes() {
-              yield* router.add("*", "/api/*", (request) =>
-                HttpServerRequest.toWeb(request).pipe(
-                  Effect.flatMap((webRequest) => Effect.promise(() => system.handler(webRequest))),
-                  Effect.map(responseFrom),
-                ),
-              );
-              yield* router.add("POST", "/development/rebuild", () =>
-                Effect.tryPromise({
-                  catch: (cause) =>
-                    responseFrom(
-                      new Response(cause instanceof Error ? cause.message : "Build failed", {
+  composition = makeExampleComposition({ seed: true }),
+  applicationRoutes = Layer.mergeAll(
+    HttpTransport.layer(composition.transportOptions),
+    Layer.effectDiscard(seed),
+    Layer.effectDiscard(
+      HttpRouter.HttpRouter.pipe(
+        Effect.flatMap((router) =>
+          Effect.gen(function* registerRoutes() {
+            yield* router.add("POST", "/development/rebuild", () =>
+              Effect.tryPromise({
+                catch: (cause) =>
+                  responseFrom(
+                    new Response(cause instanceof Error ? cause.message : "Build failed", {
+                      status: 500,
+                    }),
+                  ),
+                try: async () => {
+                  const buildProcess = Bun.spawn(["bun", "run", "build"], {
+                      cwd: `${import.meta.dir}/../../public-blog`,
+                      env: {
+                        ...Bun.env,
+                        EXAMPLE_CMS_URL: `http://localhost:${port}`,
+                      },
+                      stderr: "pipe",
+                      stdout: "pipe",
+                    }),
+                    exitCode = await buildProcess.exited;
+                  if (exitCode !== 0) {
+                    return responseFrom(
+                      new Response(await new Response(buildProcess.stderr).text(), {
                         status: 500,
                       }),
-                    ),
-                  try: async () => {
-                    const buildProcess = Bun.spawn(["bun", "run", "build"], {
-                        cwd: `${import.meta.dir}/../../public-blog`,
-                        env: {
-                          ...Bun.env,
-                          EXAMPLE_CMS_URL: `http://localhost:${port}`,
-                        },
-                        stderr: "pipe",
-                        stdout: "pipe",
-                      }),
-                      exitCode = await buildProcess.exited;
-                    if (exitCode !== 0) {
-                      return responseFrom(
-                        new Response(await new Response(buildProcess.stderr).text(), {
-                          status: 500,
-                        }),
-                      );
-                    }
-                    return HttpServerResponse.text("Public Blog build completed");
-                  },
-                }).pipe(Effect.catch((response) => Effect.succeed(response))),
-              );
-              yield* router.add(
-                "GET",
-                "/docs/headless",
-                responseFrom(Response.redirect("/api/v1/headless/openapi.json", 302)),
-              );
-              yield* router.add(
-                "GET",
-                "/docs/management",
-                responseFrom(Response.redirect("/api/v1/management/openapi.json", 302)),
-              );
-              yield* router.add("GET", "/health", HttpServerResponse.text("ok"));
-            }),
-          ),
+                    );
+                  }
+                  return HttpServerResponse.text("Public Blog build completed");
+                },
+              }).pipe(Effect.catch((response) => Effect.succeed(response))),
+            );
+            yield* router.add(
+              "GET",
+              "/docs/headless",
+              responseFrom(Response.redirect("/api/v1/headless/openapi.json", 302)),
+            );
+            yield* router.add(
+              "GET",
+              "/docs/management",
+              responseFrom(Response.redirect("/api/v1/management/openapi.json", 302)),
+            );
+            yield* router.add("GET", "/health", HttpServerResponse.text("ok"));
+          }),
         ),
       ),
     ),
-  ),
+  ).pipe(Layer.provide(composition.cmsLayer)),
   staticDashboard = HttpStaticServer.layer({
     index: "index.html",
     root: dashboardDirectory,

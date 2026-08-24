@@ -15,7 +15,8 @@ Portable entry points support Bun 1.4+ and Node 22+. `nearly-headless-cms/bun/fi
 ```ts
 import { Cms, ContentDefinition } from "nearly-headless-cms";
 import { DevelopmentCms } from "nearly-headless-cms/testing";
-import { Effect } from "effect";
+import { HttpTransport } from "nearly-headless-cms/http";
+import { Effect, Layer } from "effect";
 
 const snapshot = ContentDefinition.compile({
   definitionSpaceId: "notes",
@@ -39,6 +40,11 @@ const note = await Effect.runPromise(
   program.pipe(Effect.provide(DevelopmentCms.layer({ snapshot }))),
 );
 console.log(note);
+
+// Supply this portable route Layer to HttpRouter.serve and the Effect HTTP-server
+// adapter for your runtime, such as BunHttpServer or NodeHttpServer.
+const httpRoutes = HttpTransport.layer().pipe(Layer.provide(DevelopmentCms.layer({ snapshot })));
+void httpRoutes;
 ```
 
 ## Public imports
@@ -48,6 +54,8 @@ console.log(note);
 - `nearly-headless-cms/adapters` exports individual memory, anonymous/open-access, and crypto identifier Layers.
 - `nearly-headless-cms/bun/filesystem` exports the Bun-only immutable-generation Filesystem Persistence Layer.
 - `nearly-headless-cms/testing` exports only the development composition `DevelopmentCms`.
+
+`HttpTransport.layer` declares every configured Management and Headless operation through Effect `HttpApi`, registers the implementations with Effect's HTTP router, and requires the public `Cms.Service`. The CMS Builder chooses and provides the Effect HTTP-server adapter. `HttpTransport.makeHandler` exposes the same contract as a Web-standard `Request` → `Response` handler for in-memory tests and serverless adapters. Transport limits, CORS, Delivery Operations, and Builder-specific Management Operations are configured through `HttpTransport.Options`.
 
 ```ts
 import { EntryQuery, RichText } from "nearly-headless-cms";

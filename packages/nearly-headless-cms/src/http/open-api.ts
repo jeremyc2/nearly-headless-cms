@@ -8,6 +8,7 @@ import {
   managementPrefix,
 } from "./http-contract.ts";
 
+/** Deterministic OpenAPI 3.1 document for one versioned HTTP contract. */
 export interface Document {
   readonly openapi: "3.1.0";
   readonly info: { readonly title: string; readonly version: "1.0.0" };
@@ -389,6 +390,7 @@ const errorSchema = {
       : {}),
   });
 
+/** Builds the complete generic plus Builder-defined Management OpenAPI document. */
 export const management = (operations: readonly ManagementOperation[] = []): Document => ({
   components: { schemas },
   info: { title: "Nearly Headless CMS Management API", version: "1.0.0" },
@@ -474,6 +476,7 @@ export const management = (operations: readonly ManagementOperation[] = []): Doc
   }),
 });
 
+/** Builds an OpenAPI document containing only declared Headless Delivery Operations. */
 export const headless = (operations: readonly DeliveryOperation[]): Document => ({
   components: { schemas },
   info: { title: "Nearly Headless CMS Headless API", version: "1.0.0" },
@@ -511,5 +514,6 @@ const sortValue = (value: unknown): unknown => {
   );
 };
 
+/** Serializes an OpenAPI document with deterministic recursively sorted object keys. */
 export const stringify = (document: Document): string =>
   `${JSON.stringify(sortValue(document), null, 2)}\n`;

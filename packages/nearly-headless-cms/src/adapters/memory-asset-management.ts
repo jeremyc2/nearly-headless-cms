@@ -4,6 +4,7 @@ import { type Asset, Management, type StoredAsset } from "../asset.ts";
 import { type InfrastructureFailure, InvalidInput, NotFound } from "../cms-error.ts";
 import { Generator } from "../identifier.ts";
 
+/** Bounds for the in-memory development Asset Adapter. */
 export interface Options {
   readonly maximumByteLength?: number;
   readonly maximumMetadataByteLength?: number;
@@ -29,6 +30,7 @@ const collectBytes = (
   );
 };
 
+/** Creates a process-local, non-durable Asset Management Layer. */
 export const layer = (options: Options = {}): Layer.Layer<Management, never, Generator> =>
   Layer.effect(
     Management,

@@ -1,4 +1,5 @@
 import { join } from "node:path";
+import * as HttpApiContract from "../packages/nearly-headless-cms/dist/http/http-api.js";
 import { OpenApi } from "../packages/nearly-headless-cms/dist/http/index.js";
 import { makeDeliveryOperations } from "../apps/example-cms/src/delivery.ts";
 import { makeManagementOperations } from "../apps/example-cms/src/management.ts";
@@ -28,8 +29,8 @@ const formatTypeScript = async (source: string): Promise<string> => {
   },
   repository = join(import.meta.dir, ".."),
   write = process.argv.includes("--write"),
-  managementDocument = OpenApi.management(makeManagementOperations()),
-  headlessDocument = OpenApi.headless(makeDeliveryOperations()),
+  managementDocument = HttpApiContract.managementDocument(makeManagementOperations()),
+  headlessDocument = HttpApiContract.headlessDocument(makeDeliveryOperations()),
   managementClient = await formatTypeScript(generateOpenApiClient(managementDocument)),
   headlessClient = await formatTypeScript(generateOpenApiClient(headlessDocument)),
   artifacts = [

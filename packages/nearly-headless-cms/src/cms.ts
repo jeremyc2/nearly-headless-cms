@@ -73,9 +73,12 @@ import {
   isJsonObject,
 } from "./internal/json.ts";
 
+/** Entry mutation result, including concurrency state when History is enabled. */
 export type MutationResult = Representation | CurrentState;
+/** Entry deletion result, including retained state when History is enabled. */
 export type DeleteResult = void | DeletionRecord;
 
+/** One atomically read Definition, Entry, and Asset state for coherent exports. */
 export interface ConsistentReadSnapshot {
   readonly assets: readonly StoredAsset[];
   readonly definitionSnapshot: CompiledSnapshot;
@@ -83,36 +86,43 @@ export interface ConsistentReadSnapshot {
   readonly generation: number;
 }
 
+/** Input for deleting a live Entry with optional Write Token. */
 export interface DeleteEntryInput {
   readonly contentTypeId: string;
   readonly entryId: string;
   readonly writeToken?: string;
 }
 
+/** Input for permanently removing a retained deleted Entry. */
 export interface PurgeEntryInput {
   readonly contentTypeId: string;
   readonly entryId: string;
   readonly writeToken: string;
 }
 
+/** One create, complete replacement, or delete in an atomic Entry batch. */
 export type EntryBatchMutation =
   | { readonly kind: "replace"; readonly input: UpdateInput }
   | { readonly kind: "delete"; readonly input: DeleteEntryInput };
 
+/** Result corresponding positionally to one atomic Entry batch mutation. */
 export type EntryBatchMutationResult = MutationResult | DeleteResult;
 
+/** Input for inspecting one immutable Entry Revision. */
 export interface ReadRevisionInput {
   readonly contentTypeId: string;
   readonly entryId: string;
   readonly revisionNumber: number;
 }
 
+/** Input for appending one Definition revision under catalog concurrency. */
 export interface AppendDefinitionRevisionInput {
   readonly expectedCatalogVersion: number;
   readonly definition: Definition;
   readonly source?: string;
 }
 
+/** Input for atomic compatible activation or prepared migration cutover. */
 export interface ActivateDefinitionSnapshotInput {
   readonly expectedCatalogVersion: number;
   readonly snapshot: SnapshotInput;
@@ -124,34 +134,40 @@ export interface ActivateDefinitionSnapshotInput {
   readonly source?: string;
 }
 
+/** Catalog and migration counts committed by Definition activation. */
 export interface ActivateDefinitionSnapshotResult {
   readonly snapshot: CompiledSnapshot;
   readonly catalogVersion: number;
   readonly migratedEntryCount: number;
 }
 
+/** Input for retiring one Definition revision lineage. */
 export interface RetireDefinitionInput {
   readonly expectedCatalogVersion: number;
   readonly definitionId: string;
   readonly source?: string;
 }
 
+/** Input for appending one Migration Manifest under catalog concurrency. */
 export interface AppendMigrationManifestInput {
   readonly expectedCatalogVersion: number;
   readonly manifest: Manifest;
 }
 
+/** Input for staging a complete Definition migration. */
 export interface PrepareDefinitionMigrationInput {
   readonly expectedCatalogVersion: number;
   readonly manifestId: string;
   readonly snapshot: SnapshotInput;
 }
 
+/** Builder registrations and composed contracts used to construct the CMS Layer. */
 export interface CmsLayerOptions extends CompileOptions {
   readonly migrationHandlers?: readonly Handler[];
   readonly operationContracts?: readonly DefinitionContract[];
 }
 
+/** The complete presentation-neutral public CMS operation surface. */
 export interface ServiceShape {
   readonly readDefinitionCatalog: Effect.Effect<CatalogState, CmsError>;
   readonly appendDefinitionRevision: (
@@ -193,6 +209,7 @@ export interface ServiceShape {
   readonly readConsistentSnapshot: Effect.Effect<ConsistentReadSnapshot, CmsError>;
 }
 
+/** Public Effect service through which all generic CMS operations are invoked. */
 export class Service extends Context.Service<Service, ServiceShape>()(
   "nearly-headless-cms/Cms/Service",
 ) {}
@@ -605,6 +622,10 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
     return retained;
   };
 
+/**
+ * Constructs the CMS service from required Builder Layers. Mutations are serialized
+ * through one operation gate so validation, authorization, and persistence stay atomic.
+ */
 export const makeLayer = (
   options: CmsLayerOptions = {},
 ): Layer.Layer<
@@ -1781,4 +1802,5 @@ export const makeLayer = (
     }),
   );
 
+/** Default CMS Layer without Custom Field Kinds, Rich Text Extensions, or migrations. */
 export const layer = makeLayer();

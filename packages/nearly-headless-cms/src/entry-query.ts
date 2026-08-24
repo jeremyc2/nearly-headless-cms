@@ -14,6 +14,7 @@ import {
   isJsonObject,
 } from "./internal/json.ts";
 
+/** Portable scalar predicate operations with exact cross-adapter semantics. */
 export type PredicateOperator =
   | "equals"
   | "notEquals"
@@ -27,31 +28,38 @@ export type PredicateOperator =
   | "contains"
   | "isNull";
 
+/** A predicate over one resolvable Field path. */
 export interface FieldPredicate {
   readonly path: string;
   readonly operator: PredicateOperator;
   readonly value?: JsonValue;
 }
 
+/** A predicate requiring every child predicate to match. */
 export interface AllPredicate {
   readonly all: readonly Predicate[];
 }
 
+/** A predicate requiring at least one child predicate to match. */
 export interface AnyPredicate {
   readonly any: readonly Predicate[];
 }
 
+/** A predicate negating one child predicate. */
 export interface NotPredicate {
   readonly not: Predicate;
 }
 
+/** The recursive portable Entry Query predicate algebra. */
 export type Predicate = FieldPredicate | AllPredicate | AnyPredicate | NotPredicate;
 
+/** One deterministic Field-path sort followed implicitly by Entry ID. */
 export interface Sort {
   readonly path: string;
   readonly direction: "ascending" | "descending";
 }
 
+/** A bounded Query over exactly one Content Type. */
 export interface Query {
   readonly contentTypeId: string;
   readonly where?: Predicate;
@@ -62,11 +70,13 @@ export interface Query {
   readonly cursor?: string;
 }
 
+/** One internally consistent cursor page of Entry representations. */
 export interface QueryPage {
   readonly items: readonly Representation[];
   readonly nextCursor?: string;
 }
 
+/** Hard complexity and page-size bounds applied before Query evaluation. */
 export interface QueryLimits {
   readonly maximumPageSize: number;
   readonly maximumProjectionPaths: number;
@@ -74,6 +84,7 @@ export interface QueryLimits {
   readonly maximumScanEntries: number;
 }
 
+/** Compiled Definition and Adapter capability inputs for portable evaluation. */
 export interface EvaluationOptions {
   readonly generation: number;
   readonly limits?: Partial<QueryLimits>;
@@ -309,6 +320,7 @@ const encodeCursor = (cursor: CursorPayload): string =>
     return { contentTypeId: entry.contentTypeId, id: entry.id, values: projected };
   };
 
+/** Evaluates a Query exactly and returns a cursor bound to its shape and snapshot. */
 export const evaluate = (
   entries: readonly Representation[],
   query: Query,

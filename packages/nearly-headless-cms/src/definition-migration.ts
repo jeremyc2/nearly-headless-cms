@@ -3,6 +3,7 @@ import type { CompiledSnapshot } from "./content-definition.ts";
 import type { Representation } from "./entry.ts";
 import type { JsonObject, JsonValue } from "./internal/json.ts";
 
+/** One directed, versioned Definition migration edge. */
 export interface Manifest {
   readonly id: string;
   readonly sourceSnapshotId: string;
@@ -12,6 +13,7 @@ export interface Manifest {
   readonly compatible?: boolean;
 }
 
+/** Source Entry and snapshots supplied to a deterministic Migration Handler. */
 export interface HandlerInput {
   readonly entryId: string;
   readonly contentTypeId: string;
@@ -19,12 +21,14 @@ export interface HandlerInput {
   readonly manifest: Manifest;
 }
 
+/** Builder-supplied deterministic one-to-one Entry migration capability. */
 export interface Handler {
   readonly identifier: string;
   readonly version: number;
   readonly transform: (input: HandlerInput) => JsonObject;
 }
 
+/** Inputs for staging and validating a complete Definition migration. */
 export interface PreparationInput {
   readonly source: CompiledSnapshot;
   readonly target: CompiledSnapshot;
@@ -34,10 +38,12 @@ export interface PreparationInput {
   readonly handlers: readonly Handler[];
 }
 
+/** Serializable success or failure report for one staged Entry migration. */
 export type PreparationReport =
   | { readonly status: "ready"; readonly transformedEntryCount: number }
   | { readonly status: "failed"; readonly issues: readonly ValidationIssue[] };
 
+/** Complete staged migration output tied to its source generation. */
 export interface Preparation {
   readonly id: string;
   readonly sourceSnapshotId: string;
@@ -54,6 +60,7 @@ const migrationIssue = (entryId: string, reason: string, message: string): Valid
   reason,
 });
 
+/** Deterministically prepares every live Entry without modifying durable state. */
 export const prepare = (input: PreparationInput): Preparation => {
   if (
     input.manifest.sourceSnapshotId !== input.source.snapshotId ||
@@ -141,6 +148,7 @@ export const prepare = (input: PreparationInput): Preparation => {
   };
 };
 
+/** Rejects a preparation whose source Entry generation has changed. */
 export const assertFresh = (preparation: Preparation, currentGeneration: number): void => {
   if (preparation.sourceGeneration !== currentGeneration) {
     throw Conflict.make({
@@ -177,6 +185,7 @@ const pathCount = (
   return count;
 };
 
+/** Ensures migration edges form an unambiguous directed graph with at most one path. */
 export const validateGraph = (manifests: readonly Manifest[]): void => {
   const manifestIds = new Set<string>();
   for (const manifest of manifests) {
@@ -205,6 +214,7 @@ export const validateGraph = (manifests: readonly Manifest[]): void => {
   }
 };
 
+/** Resolves the unique ordered migration path between two snapshots. */
 export const path = (
   manifests: readonly Manifest[],
   sourceSnapshotId: string,
@@ -241,6 +251,7 @@ export const path = (
   return found;
 };
 
+/** Persistable Migration Manifest metadata without executable compatibility logic. */
 export interface SerializableManifest extends Omit<Manifest, "compatible"> {
   readonly compatible?: boolean;
   readonly metadata?: JsonValue;

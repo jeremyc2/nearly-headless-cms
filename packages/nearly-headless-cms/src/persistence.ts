@@ -6,6 +6,7 @@ import type { Representation } from "./entry.ts";
 import type { DeletionRecord, Revision } from "./entry-history.ts";
 import type { Manifest, Preparation } from "./definition-migration.ts";
 
+/** Persisted current Entry state with optional history metadata. */
 export interface EntryRecord {
   readonly entry: Representation;
   readonly writeToken?: string;
@@ -13,11 +14,13 @@ export interface EntryRecord {
   readonly deletionRecord?: DeletionRecord;
 }
 
+/** One immutable, internally consistent generation of Entry records. */
 export interface EntryGeneration {
   readonly generation: number;
   readonly records: ReadonlyMap<string, EntryRecord>;
 }
 
+/** Builder-supplied atomic Entry persistence capability. */
 export class EntryPersistence extends Context.Service<
   EntryPersistence,
   {
@@ -29,6 +32,7 @@ export class EntryPersistence extends Context.Service<
   }
 >()("nearly-headless-cms/Persistence/EntryPersistence") {}
 
+/** One append-only Content Definition revision. */
 export interface DefinitionRevisionRecord {
   readonly definitionId: string;
   readonly revision: number;
@@ -36,12 +40,14 @@ export interface DefinitionRevisionRecord {
   readonly parentRevision?: number;
 }
 
+/** A compiled immutable Definition Snapshot stored by the catalog. */
 export interface DefinitionSnapshotRecord {
   readonly input: SnapshotInput;
   readonly compiled: CompiledSnapshot;
   readonly activatedAt: string;
 }
 
+/** An append-only event in the Definition Catalog lifecycle. */
 export interface CatalogEvent {
   readonly eventType: "revisionAppended" | "snapshotActivated" | "definitionRetired" | "rollback";
   readonly recordedAt: string;
@@ -50,6 +56,7 @@ export interface CatalogEvent {
   readonly source?: string;
 }
 
+/** Complete durable Definition Catalog state and active snapshot. */
 export interface CatalogState {
   readonly active: DefinitionSnapshotRecord;
   readonly snapshots: readonly DefinitionSnapshotRecord[];
@@ -61,6 +68,7 @@ export interface CatalogState {
   readonly version: number;
 }
 
+/** Builder-supplied append-only and atomically cut over Definition Catalog. */
 export class DefinitionCatalog extends Context.Service<
   DefinitionCatalog,
   {

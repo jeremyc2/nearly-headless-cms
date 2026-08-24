@@ -6,10 +6,14 @@ import type { Effect } from "effect";
 import type { Schema } from "effect";
 import type { DefinitionRequirement } from "../operation.ts";
 
+/** Stable major-version URL prefix for the complete Management API. */
 export const managementPrefix = "/api/v1/management";
+/** Stable major-version URL prefix for Builder-selected Headless operations. */
 export const headlessPrefix = "/api/v1/headless";
+/** Current major API Contract Version, independent of Definition versions. */
 export const apiContractVersion = 1;
 
+/** Safe tagged JSON failure representation returned by HTTP endpoints. */
 export interface ErrorDocument {
   readonly code: string;
   readonly message: string;
@@ -17,6 +21,7 @@ export interface ErrorDocument {
   readonly details?: JsonValue;
 }
 
+/** Request, CMS service, active snapshot, and parameters supplied to an operation. */
 export interface OperationContext {
   readonly request: Request;
   readonly parameters: Readonly<Record<string, string>>;
@@ -26,8 +31,10 @@ export interface OperationContext {
 }
 
 /** Effect Schemas used for runtime decoding and OpenAPI generation. */
+/** Effect Schema codec accepted at a transport operation boundary. */
 export type OperationSchema = Schema.Codec<unknown, unknown, never, never>;
 
+/** Request, parameter, header, response, and media schemas for one HTTP operation. */
 export interface OperationSchemas {
   readonly request: OperationSchema;
   readonly response: OperationSchema;
@@ -38,6 +45,7 @@ export interface OperationSchemas {
   readonly responseMediaType?: string;
 }
 
+/** A fixed composition-time Headless Delivery Query or Command declaration. */
 export interface DeliveryOperation {
   readonly definitionRequirements: readonly DefinitionRequirement[];
   readonly identifier: string;
@@ -51,6 +59,7 @@ export interface DeliveryOperation {
   readonly execute: (context: OperationContext) => Effect.Effect<unknown, CmsError>;
 }
 
+/** A fixed composition-time Builder-specific Management operation declaration. */
 export interface ManagementOperation {
   readonly definitionRequirements: readonly DefinitionRequirement[];
   readonly identifier: string;
@@ -60,6 +69,7 @@ export interface ManagementOperation {
   readonly execute: (context: OperationContext) => Effect.Effect<unknown, CmsError>;
 }
 
+/** Public runtime Definition and operation capabilities advertised to Content Clients. */
 export interface DiscoveryDocument {
   readonly apiContractVersion: number;
   readonly definitionSnapshotId: string;
@@ -84,6 +94,7 @@ export interface DiscoveryDocument {
   readonly openApiUrl: string;
 }
 
+/** Derives public discovery without executable schemas or unreachable definitions. */
 export const discovery = (
   snapshot: CompiledSnapshot,
   operations: readonly DeliveryOperation[],

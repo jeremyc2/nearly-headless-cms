@@ -4,6 +4,7 @@ import type { InfrastructureFailure } from "./cms-error.ts";
 import type { Identity } from "./identity.ts";
 import type { Action, Resource } from "./operation.ts";
 
+/** Builder policy that authorizes one closed CMS Action and Resource pair. */
 export class Service extends Context.Service<
   Service,
   {

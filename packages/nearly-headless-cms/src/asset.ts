@@ -7,6 +7,7 @@ import type {
   NotFound,
 } from "./cms-error.ts";
 
+/** Immutable metadata recorded for an Asset Blob. */
 export interface Metadata {
   readonly filename: string;
   readonly mediaType: string;
@@ -17,11 +18,13 @@ export interface Metadata {
   readonly defaultAlternativeText?: string;
 }
 
+/** An Asset identifier paired with its immutable metadata. */
 export interface Asset {
   readonly id: string;
   readonly metadata: Metadata;
 }
 
+/** Input for bounded, digest-addressed Asset ingestion. */
 export interface IngestInput {
   readonly filename: string;
   readonly mediaType: string;
@@ -31,10 +34,12 @@ export interface IngestInput {
   readonly defaultAlternativeText?: string;
 }
 
+/** A complete Asset value including its verified bytes. */
 export interface StoredAsset extends Asset {
   readonly bytes: Uint8Array;
 }
 
+/** Builder-supplied Asset persistence and retrieval capability. */
 export class Management extends Context.Service<
   Management,
   {

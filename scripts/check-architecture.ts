@@ -115,10 +115,72 @@ for await (const relativePath of portableDistributionGlob.scan({ cwd: repository
     throw new Error(`Portable package entry point leaks a Bun-only runtime at ${relativePath}`);
   }
 }
+
+const publicApiSourcePaths = [
+    "src/index.ts",
+    "src/asset.ts",
+    "src/authorization.ts",
+    "src/cms.ts",
+    "src/cms-error.ts",
+    "src/content-definition.ts",
+    "src/definition-migration.ts",
+    "src/entry.ts",
+    "src/entry-history.ts",
+    "src/entry-query.ts",
+    "src/identifier.ts",
+    "src/identity.ts",
+    "src/operation.ts",
+    "src/persistence.ts",
+    "src/rich-text.ts",
+    "src/transport.ts",
+    "src/http/index.ts",
+    "src/http/http-contract.ts",
+    "src/http/http-transport.ts",
+    "src/http/open-api.ts",
+    "src/adapters/index.ts",
+    "src/adapters/allow-all-authorization.ts",
+    "src/adapters/anonymous-identity.ts",
+    "src/adapters/crypto-identifier-generator.ts",
+    "src/adapters/memory-asset-management.ts",
+    "src/adapters/memory-definition-catalog.ts",
+    "src/adapters/memory-entry-persistence.ts",
+    "src/bun/filesystem/index.ts",
+    "src/bun/filesystem/bun-filesystem-persistence.ts",
+    "src/testing/index.ts",
+    "src/testing/development-cms.ts",
+  ],
+  undocumentedDeclarations: string[] = [];
+let documentedPublicDeclarationCount = 0;
+for (const sourcePath of publicApiSourcePaths) {
+  const packageRelativePath = `packages/nearly-headless-cms/${sourcePath}`,
+    lines = (await Bun.file(join(repository, packageRelativePath)).text()).split("\n");
+  for (const [lineIndex, line] of lines.entries()) {
+    if (!/^export (?:class|const|function|interface|type|\*|\{)/u.test(line)) {
+      continue;
+    }
+    let commentLineIndex = lineIndex - 1;
+    if (!lines[commentLineIndex]?.trimEnd().endsWith("*/")) {
+      undocumentedDeclarations.push(`${packageRelativePath}:${lineIndex + 1}`);
+      continue;
+    }
+    while (commentLineIndex >= 0 && !lines[commentLineIndex]?.trimStart().startsWith("/**")) {
+      commentLineIndex -= 1;
+    }
+    if (commentLineIndex < 0) {
+      undocumentedDeclarations.push(`${packageRelativePath}:${lineIndex + 1}`);
+      continue;
+    }
+    documentedPublicDeclarationCount += 1;
+  }
+}
+if (undocumentedDeclarations.length > 0) {
+  throw new Error(`Public API declarations need TSDoc:\n${undocumentedDeclarations.join("\n")}`);
+}
 console.log(
   JSON.stringify(
     {
       checkedPublicImports: true,
+      documentedPublicDeclarationCount,
       status: "passed",
       workspaces: workspaceManifests.map((manifest) => manifest.name),
     },

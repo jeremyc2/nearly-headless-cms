@@ -1,4 +1,6 @@
-import { Effect, Schema } from "effect";
+import { Effect, Layer, Schema } from "effect";
+import { HttpRouter, HttpServerRequest, HttpServerResponse } from "effect/unstable/http";
+import { HttpApiBuilder } from "effect/unstable/httpapi";
 import type { IngestInput } from "../asset.ts";
 import { Service as CmsService } from "../cms.ts";
 import {
@@ -26,8 +28,9 @@ import {
   headlessPrefix,
   managementPrefix,
 } from "./http-contract.ts";
-import * as OpenApi from "./open-api.ts";
+import * as HttpApiContract from "./http-api.ts";
 
+/** Limits, CORS policy, and composed operation declarations for the HTTP Transport. */
 export interface Options {
   readonly deliveryOperations?: readonly DeliveryOperation[];
   readonly managementOperations?: readonly ManagementOperation[];
@@ -43,6 +46,7 @@ export interface Options {
   };
 }
 
+/** Portable Web-standard request handler used for in-memory contract testing. */
 export type Handler = (request: Request) => Promise<Response>;
 
 interface OperationOutcome<Value> {
@@ -381,6 +385,10 @@ const runOperationInterruptibly = async <Value>(
     });
   };
 
+/**
+ * Creates an interruptible Web handler. It enforces transport limits, validates
+ * declared schemas, sanitizes failures, and streams immutable Asset responses.
+ */
 export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never, CmsService> =>
   Effect.gen(function* makeHandler() {
     const cms = yield* CmsService,
@@ -487,7 +495,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
 
       if (requestUrl.pathname === `${managementPrefix}/openapi.json` && request.method === "GET") {
         return jsonResponse(
-          OpenApi.management(managementOperations),
+          HttpApiContract.managementDocument(managementOperations),
           200,
           requestId,
           snapshot.fingerprint,
@@ -495,7 +503,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
       }
       if (requestUrl.pathname === `${headlessPrefix}/openapi.json` && request.method === "GET") {
         return jsonResponse(
-          OpenApi.headless(operations),
+          HttpApiContract.headlessDocument(operations),
           200,
           requestId,
           snapshot.fingerprint,
@@ -1354,3 +1362,67 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
       }
     };
   });
+
+const respond = (handler: Handler, request: HttpServerRequest.HttpServerRequest) =>
+  HttpServerRequest.toWeb(request).pipe(
+    Effect.orDie,
+    Effect.flatMap((webRequest) => Effect.promise(() => handler(webRequest))),
+    Effect.map(HttpServerResponse.fromWeb),
+  );
+
+/**
+ * Creates the configurable, portable Effect HTTP Transport Layer. A CMS Builder
+ * provides an Effect HTTP-server adapter when serving these routes.
+ */
+export const layer = (options: Options = {}) => {
+  const managementApi = HttpApiContract.management(options.managementOperations),
+    headlessApi = HttpApiContract.headless(options.deliveryOperations ?? []),
+    managementHandlers = HttpApiBuilder.group(managementApi, "management", (handlers) =>
+      makeHandler(options).pipe(
+        Effect.map((handler) =>
+          handlers.handleAll(
+            Object.fromEntries(
+              Object.keys(managementApi.groups["management"]!.endpoints).map((identifier) => [
+                identifier,
+                ({ request }: { readonly request: HttpServerRequest.HttpServerRequest }) =>
+                  respond(handler, request),
+              ]),
+            ),
+          ),
+        ),
+      ),
+    ),
+    headlessHandlers = HttpApiBuilder.group(headlessApi, "headless", (handlers) =>
+      makeHandler(options).pipe(
+        Effect.map((handler) =>
+          handlers.handleAll(
+            Object.fromEntries(
+              Object.keys(headlessApi.groups["headless"]!.endpoints).map((identifier) => [
+                identifier,
+                ({ request }: { readonly request: HttpServerRequest.HttpServerRequest }) =>
+                  respond(handler, request),
+              ]),
+            ),
+          ),
+        ),
+      ),
+    ),
+    declaredRoutes = Layer.merge(
+      HttpApiBuilder.layer(managementApi).pipe(Layer.provide(managementHandlers)),
+      HttpApiBuilder.layer(headlessApi).pipe(Layer.provide(headlessHandlers)),
+    ),
+    crossCuttingRoutes = Layer.effectDiscard(
+      Effect.gen(function* registerCrossCuttingRoutes() {
+        const handler = yield* makeHandler(options),
+          router = yield* HttpRouter.HttpRouter;
+        yield* router.add("GET", `${managementPrefix}/openapi.json`, (request) =>
+          respond(handler, request),
+        );
+        yield* router.add("GET", `${headlessPrefix}/openapi.json`, (request) =>
+          respond(handler, request),
+        );
+        yield* router.add("OPTIONS", "/api/*", (request) => respond(handler, request));
+      }),
+    );
+  return Layer.merge(declaredRoutes, crossCuttingRoutes);
+};
