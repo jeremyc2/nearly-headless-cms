@@ -31,7 +31,7 @@ await Bun.write(join(consumerDirectory, "filesystem.mjs"), bunConsumer);
 await Bun.write(join(consumerDirectory, "consumer.ts"), typeConsumer);
 await Bun.write(
   join(consumerDirectory, "tsconfig.json"),
-  `${JSON.stringify({ compilerOptions: { module: "NodeNext", moduleResolution: "NodeNext", noEmit: true, skipLibCheck: true, strict: true, target: "ES2022" }, include: ["consumer.ts"] }, null, 2)}\n`,
+  `${JSON.stringify({ compilerOptions: { module: "NodeNext", moduleResolution: "NodeNext", noEmit: true, skipLibCheck: true, strict: true, target: "ES2023" }, include: ["consumer.ts"] }, null, 2)}\n`,
 );
 for (const command of [
   ["bun", "portable.mjs"],

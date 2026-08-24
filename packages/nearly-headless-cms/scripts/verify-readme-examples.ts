@@ -19,7 +19,7 @@ try {
           noEmit: true,
           skipLibCheck: true,
           strict: true,
-          target: "ES2022",
+          target: "ES2023",
         },
         include: ["*.ts"],
       },
