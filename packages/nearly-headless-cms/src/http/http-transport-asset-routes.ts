@@ -1,9 +1,9 @@
+import type { RouteHandlerContext, RouteHandlerResult } from "./http-transport-types.ts";
 import { RequestFailureError } from "./http-transport-request-failure.ts";
 import dispatchRouteHandlers from "./http-transport-route-dispatch.ts";
 import transportOperation from "./http-transport-operation.ts";
 import transportRequestParsing from "./http-transport-request-parsing.ts";
 import transportResponse from "./http-transport-response.ts";
-import type { RouteHandlerContext, RouteHandlerResult } from "./http-transport-types.ts";
 
 const {
     assetContentResponse,
@@ -35,24 +35,33 @@ const {
     if (assetMatch === undefined) {
       return undefined;
     }
-    const assetId = requiredPathParameter(assetMatch, "assetId");
     if (context.request.method === "GET") {
-      return context.withOutcome(context.cms.getAsset(assetId), context.requestId, (asset) =>
-        jsonResponse({
-          fingerprint: context.fingerprint,
-          requestId: context.requestId,
-          status: 200,
-          value: asset,
-        }),
+      return context.withOutcome(
+        context.cms.getAsset(requiredPathParameter(assetMatch, "assetId")),
+        context.requestId,
+        (asset) =>
+          jsonResponse({
+            fingerprint: context.fingerprint,
+            requestId: context.requestId,
+            status: 200,
+            value: asset,
+          }),
       );
     }
     if (context.request.method === "DELETE") {
-      return context.withOutcome(context.cms.deleteAsset(assetId), context.requestId, () =>
-        bodylessResponse(204, context.requestId, context.fingerprint),
+      return context.withOutcome(
+        context.cms.deleteAsset(requiredPathParameter(assetMatch, "assetId")),
+        context.requestId,
+        () => bodylessResponse(204, context.requestId, context.fingerprint),
       );
     }
     return undefined;
   },
+  handleAssetRoutes = (context: RouteHandlerContext): Promise<RouteHandlerResult> =>
+    dispatchRouteHandlers(
+      [handleAssetContentRoute, handleAssetResourceRoute, handleAssetUploadRoute],
+      context,
+    ),
   // oxlint-disable-next-line effecttsgo/async-function -- route handlers await JSON body parsing before Effect execution.
   handleAssetUploadRoute = async (context: RouteHandlerContext): Promise<RouteHandlerResult> => {
     if (
@@ -96,13 +105,6 @@ const {
     } catch (error) {
       return invalidRequestResponse(error, "Invalid multipart Asset upload", context.requestId);
     }
-  },
-  assetRouteHandlers = [
-    handleAssetResourceRoute,
-    handleAssetContentRoute,
-    handleAssetUploadRoute,
-  ],
-  handleAssetRoutes = (context: RouteHandlerContext): Promise<RouteHandlerResult> =>
-    dispatchRouteHandlers(assetRouteHandlers, context);
+  };
 
 export default handleAssetRoutes;

@@ -1,4 +1,3 @@
-import { Effect, Schema } from "effect";
 import {
   type CmsError,
   DefinitionSnapshotChanged,
@@ -9,6 +8,7 @@ import type {
   ManagementOperation,
   OperationSchema,
 } from "./http-contract.ts";
+import { Effect, Schema } from "effect";
 
 const compilePath = (
     path: string,
@@ -17,9 +17,10 @@ const compilePath = (
       pattern = path
         .split("/")
         .map((segment) => {
-          const match = /^\{([^}]+)\}$/u.exec(segment);
-          if (match?.[1] !== undefined) {
-            names.push(match[1]);
+          const match = /^\{(?<parameterName>[^}]+)\}$/u.exec(segment),
+           parameterName = match?.groups?.["parameterName"];
+          if (parameterName !== undefined) {
+            names.push(parameterName);
             return "([^/]+)";
           }
           return segment.replaceAll(/[.*+?^${}()|[\]\\]/gu, String.raw`\$&`);
@@ -96,9 +97,9 @@ const compilePath = (
         operation.schemas.requestBody !== undefined &&
         (request.headers.get("content-type") ?? "").toLowerCase().startsWith("application/json")
       ) {
-        const body = yield* Effect.tryPromise({
+        const body: unknown = yield* Effect.tryPromise({
           catch: () => InvalidInput.make({ message: "JSON request body is malformed" }),
-          try: () => request.clone().json(),
+          try: (): Promise<unknown> => request.clone().json(),
         });
         yield* validateSchema(
           operation.schemas.requestBody,

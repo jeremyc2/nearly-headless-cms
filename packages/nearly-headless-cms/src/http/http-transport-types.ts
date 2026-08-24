@@ -1,12 +1,12 @@
-import type { Effect } from "effect";
-import type { CmsError } from "../cms-error.ts";
-import type { CompiledSnapshot } from "../content-definition.ts";
-import type { ServiceShape as CmsService } from "../cms.ts";
-import type { JsonObject } from "../internal/json.ts";
 import type {
   DeliveryOperation,
   ManagementOperation,
 } from "./http-contract.ts";
+import type { CmsError } from "../cms-error.ts";
+import type { ServiceShape as CmsService } from "../cms.ts";
+import type { CompiledSnapshot } from "../content-definition.ts";
+import type { Effect } from "effect";
+import type { JsonObject } from "../internal/json.ts";
 
 /** Limits, CORS policy, and composed operation declarations for the HTTP Transport. */
 export interface Options {
@@ -38,11 +38,9 @@ export interface JsonResponseInput {
   readonly value: unknown;
 }
 
-export interface OperationOutcome<Value> {
-  readonly error?: CmsError;
-  readonly success: boolean;
-  readonly value?: Value;
-}
+export type OperationOutcome<Value> =
+  | { readonly error: CmsError; readonly success: false }
+  | { readonly success: true; readonly value: Value };
 
 export interface RespondWithOutcomeInput<Value> {
   readonly effect: Effect.Effect<Value, CmsError>;
