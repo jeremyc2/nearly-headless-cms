@@ -106,17 +106,13 @@ describe("Example CMS public visibility", () => {
     expect(commentResponse.status).toBe(201);
 
     const draftComments = await system.handler(
-        new Request(
-          `http://cms.test/api/v1/headless/posts/${system.seed!.draftPostId}/comments`,
-        ),
+        new Request(`http://cms.test/api/v1/headless/posts/${system.seed!.draftPostId}/comments`),
       ),
       privateTaxonomy = await system.handler(
         new Request("http://cms.test/api/v1/headless/categories/private-taxonomy"),
       ),
       privateReference = await system.handler(
-        new Request(
-          `http://cms.test/api/v1/headless/references/entries/${categoryIdentifier}`,
-        ),
+        new Request(`http://cms.test/api/v1/headless/references/entries/${categoryIdentifier}`),
       );
     expect(draftComments.status).toBe(404);
     expect(privateTaxonomy.status).toBe(404);
@@ -128,7 +124,9 @@ describe("Example CMS public visibility", () => {
       categories: readonly { id: string }[];
       comments: readonly { post: string }[];
     };
-    expect(publicExport.categories.some((candidate) => candidate.id === categoryIdentifier)).toBeFalse();
+    expect(
+      publicExport.categories.some((candidate) => candidate.id === categoryIdentifier),
+    ).toBeFalse();
     expect(
       publicExport.comments.some((candidate) => candidate.post === system.seed!.draftPostId),
     ).toBeFalse();

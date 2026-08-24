@@ -644,9 +644,9 @@ export const makeLayer = (
         operationContracts = options.operationContracts ?? [],
         currentDefinitionSnapshot = catalog.read.pipe(
           Effect.flatMap((state) =>
-            attempt(() => validateDefinitionContracts(state.active.compiled, operationContracts)).pipe(
-              Effect.as(state.active.compiled),
-            ),
+            attempt(() =>
+              validateDefinitionContracts(state.active.compiled, operationContracts),
+            ).pipe(Effect.as(state.active.compiled)),
           ),
         ),
         authorize = (action: Action, resource: Resource): Effect.Effect<void, CmsError> =>

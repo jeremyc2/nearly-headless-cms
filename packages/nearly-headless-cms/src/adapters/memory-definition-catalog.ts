@@ -23,7 +23,9 @@ const cloneState = (state: CatalogState): CatalogState => ({
   snapshots: [...state.snapshots],
 });
 
-export const layer = ({ snapshot }: Options): Layer.Layer<DefinitionCatalog, never, EntryPersistence> =>
+export const layer = ({
+  snapshot,
+}: Options): Layer.Layer<DefinitionCatalog, never, EntryPersistence> =>
   Layer.effect(
     DefinitionCatalog,
     Effect.gen(function* layer() {
@@ -65,12 +67,13 @@ export const layer = ({ snapshot }: Options): Layer.Layer<DefinitionCatalog, nev
               return Effect.fail(Conflict.make({ message: "Definition Catalog version is stale" }));
             }
             const committed = { ...cloneState(replacement), version: expectedVersion + 1 };
-            return entryPersistence.commitGeneration(expectedEntryGeneration, records).pipe(
-              Effect.map((entries) => [
-                { catalog: cloneState(committed), entries },
-                committed,
-              ] as const),
-            );
+            return entryPersistence
+              .commitGeneration(expectedEntryGeneration, records)
+              .pipe(
+                Effect.map(
+                  (entries) => [{ catalog: cloneState(committed), entries }, committed] as const,
+                ),
+              );
           }),
         read: SynchronizedRef.get(state).pipe(Effect.map(cloneState)),
         replace: (expectedVersion, replacement) =>

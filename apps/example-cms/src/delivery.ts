@@ -49,14 +49,15 @@ export const postDefinitionRequirement = {
       { kind: "list", path: "external-links", projectable: true },
     ],
   } as const,
-  taxonomyDefinitionRequirement = (contentTypeId: "category" | "tag") => ({
-    contentTypeId,
-    fields: [
-      { kind: "text", path: "name", projectable: true, required: true },
-      { kind: "text", path: "slug", projectable: true, required: true },
-      { kind: "text", path: "description", projectable: true },
-    ],
-  }) as const,
+  taxonomyDefinitionRequirement = (contentTypeId: "category" | "tag") =>
+    ({
+      contentTypeId,
+      fields: [
+        { kind: "text", path: "name", projectable: true, required: true },
+        { kind: "text", path: "slug", projectable: true, required: true },
+        { kind: "text", path: "description", projectable: true },
+      ],
+    }) as const,
   commentDefinitionRequirement = {
     contentTypeId: "comment",
     fields: [
@@ -336,9 +337,7 @@ const lowerCamelCase = (key: string): string =>
         reachability.publishedPostIdentifiers.has(String(comment.values["post"])),
       );
     return {
-      authors: allAuthors.filter((author) =>
-        reachability.publicAuthorIdentifiers.has(author.id),
-      ),
+      authors: allAuthors.filter((author) => reachability.publicAuthorIdentifiers.has(author.id)),
       categories: allCategories.filter((category) =>
         reachability.publicCategoryIdentifiers.has(category.id),
       ),
@@ -505,10 +504,9 @@ export const makeDeliveryOperations = (
             method: "GET",
             path: `/${contentTypeId === "category" ? "categories" : `${contentTypeId}s`}/{slug}`,
             reachableContentTypeIds: [contentTypeId, "post"],
-            schemas: readSchemas(
-              contentTypeId === "author" ? PublicAuthor : PublicTaxonomy,
-              { slug: Identifier },
-            ),
+            schemas: readSchemas(contentTypeId === "author" ? PublicAuthor : PublicTaxonomy, {
+              slug: Identifier,
+            }),
           },
           {
             definitionRequirements: [
@@ -684,8 +682,12 @@ export const makeDeliveryOperations = (
               content = publicContent(consistentSnapshot),
               entryIdentifier = parameters["entryId"]!;
             if (content.reachability.richTextReachableIdentifiers.has(entryIdentifier)) {
-              const entry = [...content.posts, ...content.authors, ...content.categories, ...content.tags]
-                .find((candidate) => candidate.id === entryIdentifier);
+              const entry = [
+                ...content.posts,
+                ...content.authors,
+                ...content.categories,
+                ...content.tags,
+              ].find((candidate) => candidate.id === entryIdentifier);
               if (entry !== undefined) {
                 return publicValue(entry);
               }
