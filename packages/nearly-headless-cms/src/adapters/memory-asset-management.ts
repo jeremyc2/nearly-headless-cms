@@ -73,11 +73,11 @@ export const layer = (options: Options = {}): Layer.Layer<Management, never, Gen
               return yield* InvalidInput.make({
                 message: "Asset bytes exceed the configured limit",
               });
-            const id = yield* identifiers.generate("asset");
+            const assetIdentifier = yield* identifiers.generate("asset");
             const digest = createHash("sha256").update(bytes).digest("hex");
             const stored: StoredAsset = {
               bytes,
-              id,
+              id: assetIdentifier,
               metadata: {
                 byteLength: bytes.byteLength,
                 digest,
@@ -90,7 +90,9 @@ export const layer = (options: Options = {}): Layer.Layer<Management, never, Gen
                   : { defaultAlternativeText: input.defaultAlternativeText }),
               },
             };
-            yield* SynchronizedRef.update(state, (assets) => new Map(assets).set(id, stored));
+            yield* SynchronizedRef.update(state, (assets) =>
+              new Map(assets).set(assetIdentifier, stored),
+            );
             return { id: stored.id, metadata: stored.metadata };
           }),
         list: SynchronizedRef.get(state).pipe(

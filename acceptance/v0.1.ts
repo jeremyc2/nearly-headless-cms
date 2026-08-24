@@ -28,7 +28,7 @@ export interface AcceptanceCase {
 }
 
 const automated = (
-    id: string,
+    identifier: string,
     source: string,
     claim: string,
     level: VerificationLevel,
@@ -44,7 +44,7 @@ const automated = (
     evidence: ["test result", "command log"],
     externalProcess:
       level === "journey" || level === "visual" ? "Example CMS and Public Blog" : "none",
-    id,
+    id: identifier,
     level,
     operatingSystem: "portable unless named",
     owner,
@@ -52,14 +52,19 @@ const automated = (
     selector,
     source,
   }),
-  manual = (id: string, source: string, claim: string, selector: string): AcceptanceCase => ({
+  manual = (
+    identifier: string,
+    source: string,
+    claim: string,
+    selector: string,
+  ): AcceptanceCase => ({
     adapter: "filesystem",
     automation: "manual",
     claim,
     command: "docs/manual/v0.1-release-checklist.md",
     evidence: ["signed release-candidate checklist"],
     externalProcess: "Safari, Chrome, Firefox, VoiceOver, Japanese IME",
-    id,
+    id: identifier,
     level: "manual",
     limitation:
       "Claim is limited to the recorded versions and macOS desktop keyboard/mouse authoring.",

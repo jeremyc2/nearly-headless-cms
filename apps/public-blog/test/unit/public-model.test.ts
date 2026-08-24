@@ -2,19 +2,19 @@ import { describe, expect, test } from "bun:test";
 import { paginate, publishedPosts } from "../../src/domain/public-model.ts";
 import type { PublicBlogExport, PublicPost } from "../../src/generated/headless-client.ts";
 
-const post = (id: string, status: "published", publishedAt: string): PublicPost => ({
+const post = (identifier: string, status: "published", publishedAt: string): PublicPost => ({
   author: "author",
   body: { children: [], format: "nearly-headless-cms/rich-text", version: 1 },
   categories: [],
-  excerpt: id,
+  excerpt: identifier,
   featuredAlternativeText: null,
   featuredAsset: null,
-  id,
+  id: identifier,
   publishedAt,
-  slug: id,
+  slug: identifier,
   status,
   tags: [],
-  title: id,
+  title: identifier,
 });
 
 describe("Public Blog render model", () => {

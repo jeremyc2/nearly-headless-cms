@@ -16,17 +16,17 @@ const repository = join(import.meta.dir, ".."),
       throw new Error(`Acceptance command failed: ${command.join(" ")}`);
     }
   },
-  waitFor = async (url: string): Promise<void> => {
+  waitFor = async (requestUrl: string): Promise<void> => {
     const deadline = Date.now() + 20_000;
     while (Date.now() < deadline) {
       try {
-        if ((await fetch(url)).ok) {
+        if ((await fetch(requestUrl)).ok) {
           return;
         }
       } catch {}
       await Bun.sleep(100);
     }
-    throw new Error(`Timed out waiting for ${url}`);
+    throw new Error(`Timed out waiting for ${requestUrl}`);
   };
 
 await run(["bun", "run", "verify"]);

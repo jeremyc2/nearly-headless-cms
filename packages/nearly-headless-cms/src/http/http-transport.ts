@@ -454,7 +454,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
           requestId,
         );
       }
-      const url = new URL(request.url),
+      const requestUrl = new URL(request.url),
         activeOutcome = await runOperationInterruptibly(cms.activeDefinitionSnapshot, signal);
       if (!activeOutcome.success) {
         return errorResponse(activeOutcome.error!, requestId);
@@ -485,7 +485,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
         });
       }
 
-      if (url.pathname === `${managementPrefix}/openapi.json` && request.method === "GET") {
+      if (requestUrl.pathname === `${managementPrefix}/openapi.json` && request.method === "GET") {
         return jsonResponse(
           OpenApi.management(managementOperations),
           200,
@@ -493,7 +493,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
           snapshot.fingerprint,
         );
       }
-      if (url.pathname === `${headlessPrefix}/openapi.json` && request.method === "GET") {
+      if (requestUrl.pathname === `${headlessPrefix}/openapi.json` && request.method === "GET") {
         return jsonResponse(
           OpenApi.headless(operations),
           200,
@@ -502,7 +502,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
           "no-cache",
         );
       }
-      if (url.pathname === `${headlessPrefix}/schema` && request.method === "GET") {
+      if (requestUrl.pathname === `${headlessPrefix}/schema` && request.method === "GET") {
         const headers = responseHeaders(requestId, snapshot.fingerprint, "no-cache");
         headers.set("content-type", "application/json; charset=utf-8");
         headers.set("etag", `"${snapshot.fingerprint}"`);
@@ -516,7 +516,10 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
       }
 
       const managementBase = `${managementPrefix}/definition-spaces/${encodeURIComponent(snapshot.definitionSpaceId)}`;
-      if (url.pathname === `${managementBase}/definition-snapshot` && request.method === "GET") {
+      if (
+        requestUrl.pathname === `${managementBase}/definition-snapshot` &&
+        request.method === "GET"
+      ) {
         return jsonResponse(
           { ...snapshot.input, fingerprint: snapshot.fingerprint },
           200,
@@ -525,7 +528,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
         );
       }
 
-      if (url.pathname === `${managementBase}/definitions` && request.method === "GET") {
+      if (requestUrl.pathname === `${managementBase}/definitions` && request.method === "GET") {
         return withOutcome(cms.readDefinitionCatalog, requestId, (state) =>
           jsonResponse(
             {
@@ -541,7 +544,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
 
       const definitionMatch = matchPath(
         `${managementBase}/definitions/{definitionId}`,
-        url.pathname,
+        requestUrl.pathname,
       );
       if (definitionMatch !== undefined && request.method === "GET") {
         return withOutcome(
@@ -569,7 +572,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
 
       const definitionRevisionsMatch = matchPath(
         `${managementBase}/definitions/{definitionId}/revisions`,
-        url.pathname,
+        requestUrl.pathname,
       );
       if (definitionRevisionsMatch !== undefined) {
         const definitionId = definitionRevisionsMatch["definitionId"]!;
@@ -630,7 +633,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
 
       const retirementMatch = matchPath(
         `${managementBase}/definitions/{definitionId}/retirements`,
-        url.pathname,
+        requestUrl.pathname,
       );
       if (retirementMatch !== undefined && request.method === "POST") {
         try {
@@ -656,7 +659,10 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
         }
       }
 
-      if (url.pathname === `${managementBase}/definition-snapshots` && request.method === "GET") {
+      if (
+        requestUrl.pathname === `${managementBase}/definition-snapshots` &&
+        request.method === "GET"
+      ) {
         return withOutcome(cms.readDefinitionCatalog, requestId, (state) =>
           jsonResponse(
             {
@@ -676,7 +682,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
 
       const definitionSnapshotMatch = matchPath(
         `${managementBase}/definition-snapshots/{snapshotId}`,
-        url.pathname,
+        requestUrl.pathname,
       );
       if (definitionSnapshotMatch !== undefined && request.method === "GET") {
         return withOutcome(
@@ -705,7 +711,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
       }
 
       if (
-        url.pathname === `${managementBase}/definition-snapshot-activations` &&
+        requestUrl.pathname === `${managementBase}/definition-snapshot-activations` &&
         request.method === "POST"
       ) {
         try {
@@ -770,7 +776,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
         }
       }
 
-      if (url.pathname === `${managementBase}/catalog-events` && request.method === "GET") {
+      if (requestUrl.pathname === `${managementBase}/catalog-events` && request.method === "GET") {
         return withOutcome(cms.readDefinitionCatalog, requestId, (state) =>
           jsonResponse(
             { catalogVersion: state.version, items: state.events },
@@ -780,7 +786,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
           ),
         );
       }
-      if (url.pathname === `${managementBase}/migration-manifests`) {
+      if (requestUrl.pathname === `${managementBase}/migration-manifests`) {
         if (request.method === "GET") {
           return withOutcome(cms.readDefinitionCatalog, requestId, (state) =>
             jsonResponse(
@@ -831,7 +837,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
       }
       const migrationManifestMatch = matchPath(
         `${managementBase}/migration-manifests/{migrationManifestId}`,
-        url.pathname,
+        requestUrl.pathname,
       );
       if (migrationManifestMatch !== undefined && request.method === "GET") {
         return withOutcome(
@@ -851,7 +857,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
       }
       const migrationPreparationMatch = matchPath(
         `${managementBase}/migration-preparations/{migrationPreparationId}`,
-        url.pathname,
+        requestUrl.pathname,
       );
       if (migrationPreparationMatch !== undefined && request.method === "GET") {
         return withOutcome(
@@ -871,7 +877,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
         );
       }
       if (
-        url.pathname === `${managementBase}/migration-preparations` &&
+        requestUrl.pathname === `${managementBase}/migration-preparations` &&
         request.method === "POST"
       ) {
         try {
@@ -907,7 +913,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
 
       const createMatch = matchPath(
         `${managementBase}/content-types/{contentTypeId}/entries`,
-        url.pathname,
+        requestUrl.pathname,
       );
       if (createMatch !== undefined && request.method === "POST") {
         try {
@@ -931,7 +937,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
 
       const queryMatch = matchPath(
         `${managementBase}/content-types/{contentTypeId}/entries/query`,
-        url.pathname,
+        requestUrl.pathname,
       );
       if (queryMatch !== undefined && request.method === "POST") {
         try {
@@ -948,7 +954,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
 
       const readMatch = matchPath(
         `${managementBase}/content-types/{contentTypeId}/entries/{entryId}/read`,
-        url.pathname,
+        requestUrl.pathname,
       );
       if (readMatch !== undefined && request.method === "POST") {
         try {
@@ -986,7 +992,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
 
       const entryMatch = matchPath(
         `${managementBase}/content-types/{contentTypeId}/entries/{entryId}`,
-        url.pathname,
+        requestUrl.pathname,
       );
       if (entryMatch !== undefined) {
         const contentTypeId = entryMatch["contentTypeId"]!,
@@ -1037,7 +1043,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
 
       const stateMatch = matchPath(
         `${managementBase}/content-types/{contentTypeId}/entries/{entryId}/state`,
-        url.pathname,
+        requestUrl.pathname,
       );
       if (stateMatch !== undefined && request.method === "GET") {
         return withOutcome(
@@ -1052,15 +1058,15 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
 
       const revisionsMatch = matchPath(
         `${managementBase}/content-types/{contentTypeId}/entries/{entryId}/revisions`,
-        url.pathname,
+        requestUrl.pathname,
       );
       if (revisionsMatch !== undefined && request.method === "GET") {
         return withOutcome(
           cms.listEntryRevisions({
             contentTypeId: revisionsMatch["contentTypeId"]!,
-            cursor: url.searchParams.get("cursor") ?? undefined,
+            cursor: requestUrl.searchParams.get("cursor") ?? undefined,
             entryId: revisionsMatch["entryId"]!,
-            pageSize: Number(url.searchParams.get("pageSize") ?? "20"),
+            pageSize: Number(requestUrl.searchParams.get("pageSize") ?? "20"),
           }),
           requestId,
           (page) => jsonResponse(page, 200, requestId, snapshot.fingerprint),
@@ -1069,7 +1075,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
 
       const revisionMatch = matchPath(
         `${managementBase}/content-types/{contentTypeId}/entries/{entryId}/revisions/{revisionNumber}`,
-        url.pathname,
+        requestUrl.pathname,
       );
       if (revisionMatch !== undefined && request.method === "GET") {
         return withOutcome(
@@ -1085,7 +1091,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
 
       const restorationMatch = matchPath(
         `${managementBase}/content-types/{contentTypeId}/entries/{entryId}/restorations`,
-        url.pathname,
+        requestUrl.pathname,
       );
       if (restorationMatch !== undefined && request.method === "POST") {
         try {
@@ -1115,7 +1121,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
 
       const purgeMatch = matchPath(
         `${managementBase}/content-types/{contentTypeId}/entries/{entryId}/purges`,
-        url.pathname,
+        requestUrl.pathname,
       );
       if (purgeMatch !== undefined && request.method === "POST") {
         try {
@@ -1137,7 +1143,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
         }
       }
 
-      const assetMatch = matchPath(`${managementBase}/assets/{assetId}`, url.pathname);
+      const assetMatch = matchPath(`${managementBase}/assets/{assetId}`, requestUrl.pathname);
       if (assetMatch !== undefined) {
         const assetId = assetMatch["assetId"]!;
         if (request.method === "GET") {
@@ -1153,7 +1159,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
       }
       const assetContentMatch = matchPath(
         `${managementBase}/assets/{assetId}/content`,
-        url.pathname,
+        requestUrl.pathname,
       );
       if (
         assetContentMatch !== undefined &&
@@ -1164,7 +1170,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
         );
       }
 
-      if (url.pathname === `${managementBase}/assets` && request.method === "POST") {
+      if (requestUrl.pathname === `${managementBase}/assets` && request.method === "POST") {
         try {
           if (
             !(request.headers.get("content-type") ?? "")
@@ -1207,7 +1213,10 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
       }
 
       for (const managementOperation of managementOperations) {
-        const parameters = matchPath(`${managementBase}${managementOperation.path}`, url.pathname);
+        const parameters = matchPath(
+          `${managementBase}${managementOperation.path}`,
+          requestUrl.pathname,
+        );
         if (parameters === undefined) {
           continue;
         }
@@ -1231,7 +1240,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
       }
 
       for (const matcher of operationMatchers) {
-        const match = matcher.expression.exec(url.pathname);
+        const match = matcher.expression.exec(requestUrl.pathname);
         if (match === null) {
           continue;
         }
@@ -1281,7 +1290,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
         );
       }
 
-      if (operationMatchers.some((matcher) => matcher.expression.test(url.pathname))) {
+      if (operationMatchers.some((matcher) => matcher.expression.test(requestUrl.pathname))) {
         return jsonResponse(
           { code: "MethodNotAllowed", message: "Method not allowed", requestId },
           405,
