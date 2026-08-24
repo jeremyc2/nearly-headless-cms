@@ -104,12 +104,12 @@ const defaultLimits: QueryLimits = {
   maximumPageSize: 100,
   maximumProjectionPaths: 100,
   maximumScanEntries: 10_000,
-};
+},
 
-const BASE64_QUARTET_LENGTH = 4;
-const NEGATIVE_ONE = -1;
-const ZERO = 0;
-const ONE = 1;
+ BASE64_QUARTET_LENGTH = 4,
+ NEGATIVE_ONE = -1,
+ ZERO = 0,
+ ONE = 1;
 
 interface CursorPayload {
   readonly generation: number;

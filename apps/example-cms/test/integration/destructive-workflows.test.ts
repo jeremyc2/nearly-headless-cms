@@ -7,9 +7,9 @@ const HTTP_NOT_FOUND = 404,
   HTTP_OK = 200,
   PAGE_SIZE = 100,
   TWO = 2,
-  ZERO = 0;
+  ZERO = 0,
 
-const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
+ isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
     value !== null && typeof value === "object" && !Array.isArray(value),
   jsonRecord = async (response: Response): Promise<Readonly<Record<string, unknown>>> => {
     const body: unknown = await response.json();

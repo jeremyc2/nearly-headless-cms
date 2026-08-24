@@ -179,10 +179,10 @@ for (const sourcePath of publicApiSourcePaths) {
           commentLineIndex >= firstIndex &&
           !lines[commentLineIndex]?.trimStart().startsWith("/**")
         )
-          commentLineIndex -= oneItem;
+          {commentLineIndex -= oneItem;}
         if (commentLineIndex < firstIndex)
-          undocumentedDeclarations.push(`${packageRelativePath}:${lineIndex + oneItem}`);
-        else documentedPublicDeclarationCount += oneItem;
+          {undocumentedDeclarations.push(`${packageRelativePath}:${lineIndex + oneItem}`);}
+        else {documentedPublicDeclarationCount += oneItem;}
       } else {
         undocumentedDeclarations.push(`${packageRelativePath}:${lineIndex + oneItem}`);
       }

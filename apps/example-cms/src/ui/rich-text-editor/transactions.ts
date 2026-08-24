@@ -95,7 +95,7 @@ const emptyParagraph = (): RichText.ParagraphNode => ({
           type: "text",
           ...((node.marks?.length ?? emptyIndex) === emptyIndex
             ? {}
-            : { marks: canonicalMarks(node.marks!) }),
+            : { marks: canonicalMarks(node.marks ?? []) }),
         };
       } else if (node.type === "text") {
         normalized.push({
@@ -103,7 +103,7 @@ const emptyParagraph = (): RichText.ParagraphNode => ({
           type: "text",
           ...((node.marks?.length ?? emptyIndex) === emptyIndex
             ? {}
-            : { marks: canonicalMarks(node.marks!) }),
+            : { marks: canonicalMarks(node.marks ?? []) }),
         });
       } else {
         normalized.push(structuredClone(node));
@@ -280,9 +280,9 @@ const insertText = (state: State, text: string): State => {
         type: "text",
         ...((selected.text.marks?.length ?? emptyIndex) > emptyIndex
           ? { marks: selected.text.marks }
-          : (state.pendingMarks.length > emptyIndex
+          : state.pendingMarks.length > emptyIndex
             ? { marks: state.pendingMarks }
-            : {})),
+            : {}),
       },
       children = selected.block.children.map((node, index) =>
         index === position.inlineIndex ? replacement : node,
@@ -655,14 +655,22 @@ export const transact = (state: State, command: Command): State => {
     }
     case "undo": {
       const historyIndex = Math.max(emptyIndex, state.historyIndex - firstIndex);
-      return { ...state, document: structuredClone(state.history[historyIndex]!), historyIndex };
+      const document = state.history[historyIndex];
+      if (document === undefined) {
+        throw new Error("Undo history entry is missing");
+      }
+      return { ...state, document: structuredClone(document), historyIndex };
     }
     case "redo": {
       const historyIndex = Math.min(
         state.history.length - firstIndex,
         state.historyIndex + firstIndex,
       );
-      return { ...state, document: structuredClone(state.history[historyIndex]!), historyIndex };
+      const document = state.history[historyIndex];
+      if (document === undefined) {
+        throw new Error("Redo history entry is missing");
+      }
+      return { ...state, document: structuredClone(document), historyIndex };
     }
     case "composition": {
       return { ...state, composing: command.active };

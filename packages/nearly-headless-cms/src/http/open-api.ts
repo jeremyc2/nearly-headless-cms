@@ -22,13 +22,13 @@ interface OperationDescriptor {
   readonly successStatus?: number;
 }
 
-const createdStatus = 201;
-const noContentStatus = 204;
-const okStatus = 200;
-const firstIndex = 0;
-const indentationSpaces = 2;
+const createdStatus = 201,
+ noContentStatus = 204,
+ okStatus = 200,
+ firstIndex = 0,
+ indentationSpaces = 2,
 
-const errorSchema = {
+ errorSchema = {
     properties: {
       code: { type: "string" },
       details: {},

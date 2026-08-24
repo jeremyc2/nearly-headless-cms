@@ -4,16 +4,16 @@ import { join } from "node:path";
 import { type ExampleSystem, createExampleSystem } from "../../src/system.ts";
 
 const FIRST_INDEX = 0,
+ HTTP_BAD_REQUEST = 400,
+ HTTP_CONFLICT = 409,
+ HTTP_CREATED = 201,
+ HTTP_NOT_FOUND = 404,
+ HTTP_NOT_MODIFIED = 304,
+ HTTP_OK = 200,
+ HTTP_PARTIAL_CONTENT = 206,
  ONE_ITEM = 1,
  TEN_BYTES = 10,
  TWO_ITEMS = 2,
- HTTP_OK = 200,
- HTTP_CREATED = 201,
- HTTP_BAD_REQUEST = 400,
- HTTP_NOT_MODIFIED = 304,
- HTTP_PARTIAL_CONTENT = 206,
- HTTP_NOT_FOUND = 404,
- HTTP_CONFLICT = 409,
 
  firstItem = <Item>(items: readonly Item[]): Item => {
   const item = items[FIRST_INDEX];

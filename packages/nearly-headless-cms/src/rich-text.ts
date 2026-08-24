@@ -4,8 +4,8 @@ import { type JsonObject, type JsonValue, isJsonValue } from "./internal/json.ts
 /** Stable identifier stored in every Nearly Headless CMS Rich Text document. */
 export const format = "nearly-headless-cms/rich-text";
 /** Current serialized Rich Text document format version. */
-export const formatVersion = 1,
-  emptyLength = 0,
+export const emptyLength = 0,
+  formatVersion = 1,
   headingLevels = [2, 3, 4] as const;
 
 /** The closed core vocabulary of semantic inline text marks. */

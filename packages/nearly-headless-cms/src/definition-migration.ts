@@ -3,8 +3,8 @@ import type { CompiledSnapshot } from "./content-definition.ts";
 import type { Representation } from "./entry.ts";
 import type { JsonObject, JsonValue } from "./internal/json.ts";
 
-const NO_PATHS = 0;
-const SINGLE_PATH = 1;
+const NO_PATHS = 0,
+ SINGLE_PATH = 1;
 
 /** One directed, versioned Definition migration edge. */
 export interface Manifest {

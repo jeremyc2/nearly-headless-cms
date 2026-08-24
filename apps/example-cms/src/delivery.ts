@@ -64,10 +64,10 @@ interface PublicAssetResponseInput {
 }
 
 const DEFAULT_PAGE_SIZE = 20,
- MAX_QUERY_PAGE_SIZE = 100,
  FIRST_INDEX = 0,
- ONE_ITEM = 1,
  MAX_PUBLIC_EXPORT_BYTES = 5_000_000,
+ MAX_QUERY_PAGE_SIZE = 100,
+ ONE_ITEM = 1,
 
  requiredParameter = (
   parameters: Readonly<Record<string, string | undefined>>,

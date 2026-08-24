@@ -49,8 +49,8 @@ export class ManagementClientFailure extends makeTaggedErrorClass<ManagementClie
   },
 ) {}
 
-const unknownStatus = 0,
-  definitionSpaceId = "example-blog",
+const definitionSpaceId = "example-blog",
+  unknownStatus = 0,
   mapFailure = <Value, Failure extends { readonly message: string }>(
     operation: Effect.Effect<Value, Failure>,
   ): Effect.Effect<Value, ManagementClientFailure> =>
