@@ -41,8 +41,8 @@ const snapshot = ContentDefinition.compile({
   run = <Value, Error>(effect: Effect.Effect<Value, Error, Cms.Service>): Promise<Value> =>
     Effect.runPromise(effect.pipe(Effect.provide(DevelopmentCms.layer({ snapshot })))),
   verifySuccessfulOperations = Effect.gen(function* verifySuccessfulOperations() {
-    const cms = yield* Cms.Service;
-    const author = yield* cms.createEntry({ contentTypeId: "author", values: { name: "Ada" } });
+    const cms = yield* Cms.Service,
+     author = yield* cms.createEntry({ contentTypeId: "author", values: { name: "Ada" } });
     expect("writeToken" in author).toBeFalse();
     if ("writeToken" in author) {
       return;
