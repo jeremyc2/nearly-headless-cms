@@ -2,7 +2,7 @@ import { mkdir, rename, rm } from "node:fs/promises";
 import { join } from "node:path";
 
 export interface CommandReceiptStore {
-  readonly read: (scope: string, commandKey: string) => Promise<unknown | undefined>;
+  readonly read: (scope: string, commandKey: string) => Promise<unknown>;
   readonly write: (scope: string, commandKey: string, receipt: unknown) => Promise<void>;
 }
 

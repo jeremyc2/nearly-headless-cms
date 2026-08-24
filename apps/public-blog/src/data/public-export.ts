@@ -1,9 +1,10 @@
-import type { PublicBlogExport } from "../generated/headless-client.ts";
+import { PublicBlogExportSchema } from "../generated/headless-client.ts";
+import { Schema } from "effect";
 import { join } from "node:path";
 
-export const publicExport = (await Bun.file(
-  join(process.cwd(), ".generated", "public-export.json"),
-).json()) as PublicBlogExport;
+export const publicExport = Schema.decodeUnknownSync(PublicBlogExportSchema)(
+  await Bun.file(join(process.cwd(), ".generated", "public-export.json")).json(),
+);
 export const assetById = new Map(publicExport.assets.map((asset) => [asset.id, asset]));
 export const authorById = new Map(publicExport.authors.map((author) => [author.id, author]));
 export const categoryById = new Map(

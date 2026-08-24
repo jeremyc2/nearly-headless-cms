@@ -60,8 +60,9 @@ const emptyParagraph = (): RichText.ParagraphNode => ({
     leftMarks: readonly RichText.Mark[] | undefined,
     rightMarks: readonly RichText.Mark[] | undefined,
   ): boolean => JSON.stringify(leftMarks ?? []) === JSON.stringify(rightMarks ?? []),
+  markOrder: readonly RichText.Mark[] = ["bold", "italic", "code", "strikethrough"],
   canonicalMarks = (marks: readonly RichText.Mark[]): readonly RichText.Mark[] =>
-    [...new Set(marks)].sort(),
+    markOrder.filter((mark) => marks.includes(mark)),
   normalizeInlineNodes = (
     nodes: readonly RichText.InlineNode[],
   ): readonly RichText.InlineNode[] => {
@@ -627,4 +628,5 @@ export const transact = (state: State, command: Command): State => {
       return { ...state, composing: command.active };
     }
   }
+  return command;
 };

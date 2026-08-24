@@ -390,7 +390,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
     identifiers: Generator["Service"],
     initialState: State,
   ): Effect.Effect<Context.Context<DefinitionCatalog | EntryPersistence | Management>> =>
-    Effect.gen(function* makeServices() {
+    Effect.gen(function* createFilesystemServices() {
       const state = yield* SynchronizedRef.make(initialState),
         entryService = EntryPersistence.of({
           commitGeneration: (expectedGeneration, records) =>
@@ -664,7 +664,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
     definitionSnapshot?: CompiledSnapshot,
     compileOptions: CompileOptions = {},
   ): Effect.Effect<Acquired, InfrastructureFailure, Generator> =>
-    Effect.gen(function* acquire() {
+    Effect.gen(function* acquireFilesystemRoot() {
       if (configuration.root.length === 0) {
         return yield* failure("Filesystem Persistence root is required", new Error("empty root"));
       }

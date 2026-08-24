@@ -40,10 +40,12 @@ const collectRichTextPublicationRules = (
     if (value === null || typeof value !== "object") {
       return;
     }
-    const record = value as Readonly<Record<string, unknown>>;
+    const nodeType = Reflect.get(value, "type"),
+      alternativeText = Reflect.get(value, "alternativeText"),
+      entryIdentifier = Reflect.get(value, "entryId");
     if (
-      record["type"] === "asset-reference" &&
-      (typeof record["alternativeText"] !== "string" || record["alternativeText"].trim() === "")
+      nodeType === "asset-reference" &&
+      (typeof alternativeText !== "string" || alternativeText.trim() === "")
     ) {
       issues.push({
         message: "Published Rich Text images require meaningful alternative text",
@@ -51,10 +53,10 @@ const collectRichTextPublicationRules = (
         reason: "missingAlternativeText",
       });
     }
-    if (record["type"] === "entry-reference" && typeof record["entryId"] === "string") {
-      references.push({ entryIdentifier: record["entryId"], path: [...path, "entryId"] });
+    if (nodeType === "entry-reference" && typeof entryIdentifier === "string") {
+      references.push({ entryIdentifier, path: [...path, "entryId"] });
     }
-    for (const [key, child] of Object.entries(record)) {
+    for (const [key, child] of Object.entries(value)) {
       collectRichTextPublicationRules(child, [...path, key], issues, references);
     }
   },
@@ -62,7 +64,7 @@ const collectRichTextPublicationRules = (
     cms: Cms.ServiceShape,
     values: ContentDefinition.JsonObject,
   ): Effect.Effect<void, CmsError.CmsError> =>
-    Effect.gen(function* validatePostPublication() {
+    Effect.gen(function* validatePostPublicationState() {
       const issues: CmsError.ValidationIssue[] = [],
         references: RichTextPublicationReference[] = [];
       if (
@@ -110,6 +112,7 @@ const collectRichTextPublicationRules = (
           message: "Post is not ready for publication",
         });
       }
+      return undefined;
     }),
   transition =
     (
@@ -117,7 +120,7 @@ const collectRichTextPublicationRules = (
       status: "draft" | "published" | "approved" | "rejected",
     ): HttpContract.ManagementOperation["execute"] =>
     ({ cms, parameters, request }) =>
-      Effect.gen(function* transition() {
+      Effect.gen(function* transitionEntry() {
         const entryId = parameters["entryId"]!,
           writeToken = request.headers.get("cms-write-token");
         if (writeToken === null || writeToken.length === 0) {
@@ -153,7 +156,7 @@ const collectRichTextPublicationRules = (
     parameters,
     request,
   }) =>
-    Effect.gen(function* deletePostWithComments() {
+    Effect.gen(function* deletePostAndComments() {
       const postId = parameters["entryId"]!,
         postWriteToken = yield* requiredWriteToken(request),
         comments = yield* cms.queryEntries({
@@ -185,7 +188,7 @@ const collectRichTextPublicationRules = (
       relationshipField: "categories" | "tags",
     ): HttpContract.ManagementOperation["execute"] =>
     ({ cms, parameters, request }) =>
-      Effect.gen(function* detachTaxonomy() {
+      Effect.gen(function* detachTaxonomyEntry() {
         const taxonomyEntryId = parameters["entryId"]!,
           taxonomyWriteToken = yield* requiredWriteToken(request),
           posts = yield* cms.queryEntries({
@@ -231,19 +234,25 @@ const collectRichTextPublicationRules = (
         if (typeof metadataValue !== "string" || !(contentValue instanceof File)) {
           throw new Error("invalid replacement upload");
         }
-        const metadata = JSON.parse(metadataValue) as Readonly<Record<string, unknown>>;
-        if (typeof metadata["filename"] !== "string" || typeof metadata["mediaType"] !== "string") {
+        const metadata: unknown = JSON.parse(metadataValue);
+        if (metadata === null || typeof metadata !== "object" || Array.isArray(metadata)) {
+          throw new Error("invalid replacement metadata");
+        }
+        const filename = Reflect.get(metadata, "filename"),
+          mediaType = Reflect.get(metadata, "mediaType"),
+          defaultAlternativeText = Reflect.get(metadata, "defaultAlternativeText"),
+          height = Reflect.get(metadata, "height"),
+          width = Reflect.get(metadata, "width");
+        if (typeof filename !== "string" || typeof mediaType !== "string") {
           throw new Error("invalid replacement metadata");
         }
         return {
           content: new Uint8Array(await contentValue.arrayBuffer()),
-          filename: metadata["filename"],
-          mediaType: metadata["mediaType"],
-          ...(typeof metadata["defaultAlternativeText"] === "string"
-            ? { defaultAlternativeText: metadata["defaultAlternativeText"] }
-            : {}),
-          ...(typeof metadata["height"] === "number" ? { height: metadata["height"] } : {}),
-          ...(typeof metadata["width"] === "number" ? { width: metadata["width"] } : {}),
+          filename,
+          mediaType,
+          ...(typeof defaultAlternativeText === "string" ? { defaultAlternativeText } : {}),
+          ...(typeof height === "number" ? { height } : {}),
+          ...(typeof width === "number" ? { width } : {}),
         };
       },
     }),
@@ -289,7 +298,7 @@ export const makeManagementOperations = (
 ): readonly HttpContract.ManagementOperation[] => {
   const commandReceiptStore = options.commandReceiptStore ?? memoryCommandReceiptStore(),
     replaceImage: HttpContract.ManagementOperation["execute"] = ({ cms, parameters, request }) =>
-      Effect.gen(function* replaceImage() {
+      Effect.gen(function* replaceImageAsset() {
         const oldAssetId = parameters["assetId"]!,
           commandKey = request.headers.get("idempotency-key");
         if (commandKey === null || commandKey.length === 0) {

@@ -1,7 +1,7 @@
 import type { Cms, ContentDefinition } from "nearly-headless-cms";
 import { CmsError, EntryQuery } from "nearly-headless-cms";
 import type { HttpContract } from "nearly-headless-cms/http";
-import { Effect } from "effect";
+import { Effect, Schema } from "effect";
 import { type CommandReceiptStore, memoryCommandReceiptStore } from "./command-receipt-store.ts";
 import {
   AssetBytes,
@@ -97,7 +97,7 @@ const lowerCamelCase = (key: string): string =>
     where?: EntryQuery.Predicate,
     sort?: readonly EntryQuery.Sort[],
   ): Effect.Effect<readonly Cms.ConsistentReadSnapshot["entries"][number][], CmsError.CmsError> =>
-    Effect.gen(function* queryAll() {
+    Effect.gen(function* queryEveryPage() {
       const entries: Cms.ConsistentReadSnapshot["entries"][number][] = [];
       let cursor: string | undefined;
       do {
@@ -126,7 +126,7 @@ const lowerCamelCase = (key: string): string =>
   },
   parseBody = (
     request: Request,
-  ): Effect.Effect<Readonly<Record<string, unknown>>, CmsError.InvalidInput> =>
+  ): Effect.Effect<ContentDefinition.JsonObject, CmsError.InvalidInput> =>
     Effect.tryPromise({
       catch: (cause) =>
         cause instanceof CmsError.InvalidInput
@@ -138,9 +138,9 @@ const lowerCamelCase = (key: string): string =>
             message: "Comment submission requires application/json",
           });
         const value = (await request.json()) as unknown;
-        if (value === null || Array.isArray(value) || typeof value !== "object")
+        if (!Schema.is(Schema.JsonObject)(value))
           throw CmsError.InvalidInput.make({ message: "Comment submission must be an object" });
-        return value as Readonly<Record<string, unknown>>;
+        return value;
       },
     }),
   findBySlug = (cms: Cms.ServiceShape, contentTypeId: string, slug: string, publicOnly = false) =>
@@ -169,14 +169,13 @@ const lowerCamelCase = (key: string): string =>
       }
       return;
     }
-    if (value === null || typeof value !== "object") {
+    if (!Schema.is(Schema.JsonObject)(value)) {
       return;
     }
-    const record = value as Readonly<Record<string, unknown>>;
-    if (record["type"] === "asset-reference" && typeof record["assetId"] === "string") {
-      assetIds.add(record["assetId"]);
+    if (value["type"] === "asset-reference" && typeof value["assetId"] === "string") {
+      assetIds.add(value["assetId"]);
     }
-    for (const child of Object.values(record)) {
+    for (const child of Object.values(value)) {
       collectRichTextAssetIds(child, assetIds);
     }
   },
@@ -187,14 +186,13 @@ const lowerCamelCase = (key: string): string =>
       }
       return;
     }
-    if (value === null || typeof value !== "object") {
+    if (!Schema.is(Schema.JsonObject)(value)) {
       return;
     }
-    const record = value as Readonly<Record<string, unknown>>;
-    if (record["type"] === "entry-reference" && typeof record["entryId"] === "string") {
-      entryIds.add(record["entryId"]);
+    if (value["type"] === "entry-reference" && typeof value["entryId"] === "string") {
+      entryIds.add(value["entryId"]);
     }
-    for (const child of Object.values(record)) {
+    for (const child of Object.values(value)) {
       collectRichTextEntryIds(child, entryIds);
     }
   },
@@ -333,9 +331,13 @@ const lowerCamelCase = (key: string): string =>
         "comment",
         { operator: "equals", path: "status", value: "approved" },
         [{ direction: "ascending", path: "created-at" }],
-      ).filter((comment) =>
-        reachability.publishedPostIdentifiers.has(String(comment.values["post"])),
-      );
+      ).filter((comment) => {
+        const postIdentifier = comment.values["post"];
+        return (
+          typeof postIdentifier === "string" &&
+          reachability.publishedPostIdentifiers.has(postIdentifier)
+        );
+      });
     return {
       authors: allAuthors.filter((author) => reachability.publicAuthorIdentifiers.has(author.id)),
       categories: allCategories.filter((category) =>
@@ -518,6 +520,12 @@ export const makeDeliveryOperations = (
             execute: ({ cms, parameters, request }) =>
               Effect.gen(function* () {
                 const owner = yield* publicOwnerBySlug(cms, contentTypeId, parameters["slug"]!);
+                const ownerIdentifier = owner["id"];
+                if (typeof ownerIdentifier !== "string") {
+                  return yield* CmsError.InvalidInput.make({
+                    message: `Public ${contentTypeId} has an invalid identifier`,
+                  });
+                }
                 const relationshipPath =
                   contentTypeId === "author"
                     ? "author"
@@ -531,7 +539,7 @@ export const makeDeliveryOperations = (
                   {
                     all: [
                       { operator: "equals", path: "status", value: "published" },
-                      { operator: "equals", path: relationshipPath, value: owner["id"] as string },
+                      { operator: "equals", path: relationshipPath, value: ownerIdentifier },
                     ],
                   },
                   [{ direction: "descending", path: "published-at" }],
@@ -581,7 +589,15 @@ export const makeDeliveryOperations = (
           Effect.gen(function* () {
             const idempotencyKey = request.headers.get("idempotency-key")!;
             const body = yield* parseBody(request);
-            const canonicalInput = JSON.stringify(body, Object.keys(body).sort());
+            const canonicalInput = JSON.stringify(body, (_propertyName, leftValue) => {
+              if (leftValue === null || typeof leftValue !== "object" || Array.isArray(leftValue)) {
+                return leftValue;
+              }
+              const entries = Object.entries(leftValue).sort(([leftKey], [rightKey]) =>
+                leftKey.localeCompare(rightKey),
+              );
+              return Object.fromEntries(entries);
+            });
             const prior = yield* Effect.tryPromise({
               catch: (cause) =>
                 CmsError.InfrastructureFailure.make({
@@ -609,7 +625,13 @@ export const makeDeliveryOperations = (
                 return yield* CmsError.IdempotencyConflict.make({
                   message: "Idempotency key was reused with different Comment input",
                 });
-              return prior.receipt as PublicValue;
+              if (!Schema.is(Schema.JsonObject)(prior.receipt)) {
+                return yield* CmsError.InfrastructureFailure.make({
+                  message: "Stored Comment receipt is not JSON-compatible",
+                  retryable: false,
+                });
+              }
+              return prior.receipt;
             }
             const post = yield* cms.getEntry({
               contentTypeId: "post",
@@ -747,7 +769,7 @@ export const makeDeliveryOperations = (
                 .filter((asset) => reachableAssetIds.has(asset.id))
                 .map(({ bytes: _bytes, ...asset }) => asset),
               artifact = {
-                assets: assets as unknown as ContentDefinition.JsonValue,
+                assets,
                 authors: content.authors.map(publicValue),
                 categories: content.categories.map(publicValue),
                 comments: content.comments.map(publicValue),

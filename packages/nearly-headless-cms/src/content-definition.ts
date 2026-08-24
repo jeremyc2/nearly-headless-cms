@@ -307,6 +307,7 @@ const issue = (
         return fieldKind.capabilities ?? {};
       }
     }
+    return fieldKind;
   };
 
 /** Returns the effective portable Query capabilities for a Field Kind. */
@@ -490,6 +491,7 @@ const validateCalendarDate = (value: string): boolean => {
               .map((customIssue) => ({ ...customIssue, path: [...path, ...customIssue.path] }));
       }
     }
+    return fieldKind;
   },
   validateFieldDefinition = (
     field: Field,
@@ -764,7 +766,7 @@ export const compile = (input: SnapshotInput, options: CompileOptions = {}): Com
     ]);
   }
   const compilerFormatVersion = input.compilerFormatVersion ?? 1,
-    snapshotFingerprint = fingerprint(input as unknown as JsonValue),
+    snapshotFingerprint = fingerprint(input),
     validateFields = (
       fields: readonly ResolvedField[],
       values: JsonObject,

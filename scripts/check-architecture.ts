@@ -1,13 +1,17 @@
 import { join } from "node:path";
 
-const repository = join(import.meta.dir, ".."),
-  rootManifest = (await Bun.file(join(repository, "package.json")).json()) as {
-    readonly private?: boolean;
-    readonly workspaces?: readonly string[];
-  };
+const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
+    value !== null && typeof value === "object" && !Array.isArray(value),
+  dependencyAt = (manifest: Readonly<Record<string, unknown>>, name: string): unknown => {
+    const dependencies = manifest["dependencies"];
+    return isRecord(dependencies) ? dependencies[name] : undefined;
+  },
+  repository = join(import.meta.dir, ".."),
+  rootManifest: unknown = await Bun.file(join(repository, "package.json")).json();
 if (
-  rootManifest.private !== true ||
-  JSON.stringify(rootManifest.workspaces) !== JSON.stringify(["packages/*", "apps/*"])
+  !isRecord(rootManifest) ||
+  rootManifest["private"] !== true ||
+  JSON.stringify(rootManifest["workspaces"]) !== JSON.stringify(["packages/*", "apps/*"])
 ) {
   throw new Error("Root must be a private coordinator with the settled workspace topology");
 }
@@ -24,33 +28,35 @@ if (workspaceManifestPaths.length !== 3) {
   );
 }
 
-const workspaceManifests = [
+const workspaceManifestValues: readonly unknown[] = [
   await Bun.file(join(repository, "packages/nearly-headless-cms/package.json")).json(),
   await Bun.file(join(repository, "apps/example-cms/package.json")).json(),
   await Bun.file(join(repository, "apps/public-blog/package.json")).json(),
-] as readonly {
-  readonly name: string;
-  readonly private?: boolean;
-  readonly dependencies?: Readonly<Record<string, string>>;
-}[];
+] as const;
+if (!workspaceManifestValues.every(isRecord)) {
+  throw new Error("Every workspace manifest must contain a JSON object");
+}
+const workspaceManifests = workspaceManifestValues;
 if (
   workspaceManifests.length !== 3 ||
   workspaceManifests
-    .filter((manifest) => manifest.private !== true)
-    .map((manifest) => manifest.name)
+    .filter((manifest) => manifest["private"] !== true)
+    .map((manifest) => manifest["name"])
     .join(",") !== "nearly-headless-cms"
 ) {
   throw new Error("Exactly the library package may be publishable");
 }
 const publicBlog = workspaceManifests.find(
-    (manifest) => manifest.name === "@nearly-headless-cms/public-blog",
-  )!,
+    (manifest) => manifest["name"] === "@nearly-headless-cms/public-blog",
+  ),
   exampleCms = workspaceManifests.find(
-    (manifest) => manifest.name === "@nearly-headless-cms/example-cms",
-  )!;
+    (manifest) => manifest["name"] === "@nearly-headless-cms/example-cms",
+  );
 if (
-  publicBlog.dependencies?.["nearly-headless-cms"] !== undefined ||
-  exampleCms.dependencies?.["nearly-headless-cms"] !== "workspace:*"
+  publicBlog === undefined ||
+  exampleCms === undefined ||
+  dependencyAt(publicBlog, "nearly-headless-cms") !== undefined ||
+  dependencyAt(exampleCms, "nearly-headless-cms") !== "workspace:*"
 ) {
   throw new Error("Application dependency direction violates the Headless API boundary");
 }
@@ -64,7 +70,7 @@ for (const forbidden of [
   "jsdom",
   "orval",
 ]) {
-  if (publicBlog.dependencies?.[forbidden] !== undefined)
+  if (dependencyAt(publicBlog, forbidden) !== undefined)
     throw new Error(`Public Blog has forbidden direct dependency ${forbidden}`);
 }
 for (const forbidden of [
@@ -75,7 +81,7 @@ for (const forbidden of [
   "tiptap",
   "concurrently",
 ]) {
-  if (exampleCms.dependencies?.[forbidden] !== undefined)
+  if (dependencyAt(exampleCms, forbidden) !== undefined)
     throw new Error(`Example CMS has forbidden dependency ${forbidden}`);
 }
 
@@ -89,9 +95,7 @@ for await (const relativePath of sourceGlob.scan({ cwd: repository })) {
     throw new Error(`Public Blog imports a forbidden runtime at ${relativePath}`);
   }
 }
-const libraryManifest = workspaceManifests[0] as {
-    readonly exports?: Readonly<Record<string, unknown>>;
-  },
+const libraryExports = workspaceManifests[0]["exports"],
   expectedExports = [
     ".",
     "./http",
@@ -101,7 +105,8 @@ const libraryManifest = workspaceManifests[0] as {
     "./package.json",
   ];
 if (
-  JSON.stringify(Object.keys(libraryManifest.exports ?? {})) !== JSON.stringify(expectedExports)
+  !isRecord(libraryExports) ||
+  JSON.stringify(Object.keys(libraryExports)) !== JSON.stringify(expectedExports)
 ) {
   throw new Error("Library exports map is not the complete settled public seam");
 }

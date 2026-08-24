@@ -191,6 +191,8 @@ const RichTextNodeSchema: Schema.Codec<RichTextNode> = Schema.Struct({
       Effect.mapError((issue) => ProtocolFailure.make({ message: String(issue), status })),
     );
 
+export { PublicBlogExportSchema };
+
 export const makeHeadlessClient = (baseAddress: string) => {
   const generatedClient = makeGeneratedClient(baseAddress);
   return {

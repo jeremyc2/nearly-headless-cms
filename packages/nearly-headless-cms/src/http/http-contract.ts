@@ -32,7 +32,7 @@ export interface OperationContext {
 
 /** Effect Schemas used for runtime decoding and OpenAPI generation. */
 /** Effect Schema codec accepted at a transport operation boundary. */
-export type OperationSchema = Schema.Codec<unknown, unknown, never, never>;
+export type OperationSchema = Schema.Codec<unknown, unknown>;
 
 /** Request, parameter, header, response, and media schemas for one HTTP operation. */
 export interface OperationSchemas {

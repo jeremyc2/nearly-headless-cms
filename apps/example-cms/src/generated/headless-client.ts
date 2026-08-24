@@ -10,7 +10,7 @@ export class HeadlessClientFailure extends Schema.TaggedError<HeadlessClientFail
   },
 ) {}
 
-const get = <Value>(path: string): Effect.Effect<Value, HeadlessClientFailure> =>
+const get = (path: string): Effect.Effect<unknown, HeadlessClientFailure> =>
   Effect.tryPromise({
     catch: (cause) =>
       cause instanceof HeadlessClientFailure
@@ -26,13 +26,12 @@ const get = <Value>(path: string): Effect.Effect<Value, HeadlessClientFailure> =
           message: `Headless request failed with ${response.status}`,
           status: response.status,
         });
-      return (await response.json()) as Value;
+      return response.json();
     },
   });
 
 export const headlessClient = {
-  discover: <Value>(): Effect.Effect<Value, HeadlessClientFailure> =>
-    get("/api/v1/headless/schema"),
-  exportPublicBlog: <Value>(): Effect.Effect<Value, HeadlessClientFailure> =>
+  discover: (): Effect.Effect<unknown, HeadlessClientFailure> => get("/api/v1/headless/schema"),
+  exportPublicBlog: (): Effect.Effect<unknown, HeadlessClientFailure> =>
     get("/api/v1/headless/export"),
 };

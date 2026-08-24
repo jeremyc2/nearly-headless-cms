@@ -357,7 +357,7 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
     generation: EntryGeneration,
     assets: AssetManagement["Service"],
   ): Effect.Effect<void, CmsError> =>
-    Effect.gen(function* ensureReferences() {
+    Effect.gen(function* ensureReferenceTargets() {
       for (const relationship of references.relationships) {
         const target = generation.records.get(relationship.entryId);
         if (
@@ -374,6 +374,7 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
       for (const assetId of references.assetIds) {
         yield* assets.get(assetId);
       }
+      return undefined;
     }),
   project = (entry: Representation, projection: readonly string[] | undefined): Representation => {
     if (projection === undefined) {
@@ -585,13 +586,22 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
     }
     try {
       const normalized = cursor.replaceAll("-", "+").replaceAll("_", "/"),
-        parsed = JSON.parse(
+        parsed: unknown = JSON.parse(
           atob(normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=")),
-        ) as Readonly<Record<string, unknown>>;
-      if (parsed["entryId"] !== entryId || !Number.isSafeInteger(parsed["offset"])) {
+        );
+      if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
         throw new Error("invalid");
       }
-      return parsed["offset"] as number;
+      const parsedEntryId = Reflect.get(parsed, "entryId"),
+        offset = Reflect.get(parsed, "offset");
+      if (
+        parsedEntryId !== entryId ||
+        typeof offset !== "number" ||
+        !Number.isSafeInteger(offset)
+      ) {
+        throw new Error("invalid");
+      }
+      return offset;
     } catch {
       throw Conflict.make({ message: "History cursor is invalid or belongs to another Entry" });
     }
@@ -620,7 +630,17 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
       retained = retained.slice(-Math.max(1, policy.maximumRevisionCount));
     }
     return retained;
-  };
+  },
+  entryResource = (
+    snapshot: CompiledSnapshot,
+    contentTypeId: string,
+    entryId?: string,
+  ): Resource => ({
+    contentTypeId,
+    definitionSpaceId: snapshot.definitionSpaceId,
+    kind: "entry",
+    ...(entryId === undefined ? {} : { entryId }),
+  });
 
 /**
  * Constructs the CMS service from required Builder Layers. Mutations are serialized
@@ -640,7 +660,7 @@ export const makeLayer = (
 > =>
   Layer.effect(
     Service,
-    Effect.gen(function* layer() {
+    Effect.gen(function* createCmsService() {
       const authorization = yield* AuthorizationService,
         currentIdentity = yield* CurrentIdentity,
         catalog = yield* DefinitionCatalog,
@@ -671,25 +691,16 @@ export const makeLayer = (
           ),
         ),
         authorize = (action: Action, resource: Resource): Effect.Effect<void, CmsError> =>
-          Effect.gen(function* authorize() {
+          Effect.gen(function* authorizeAction() {
             const identity = yield* currentIdentity.current,
               allowed = yield* authorization.authorize(identity, action, resource);
             if (!allowed) {
               return yield* Forbidden.make({ message: "The operation is forbidden" });
             }
+            return undefined;
           }),
-        entryResource = (
-          snapshot: CompiledSnapshot,
-          contentTypeId: string,
-          entryId?: string,
-        ): Resource => ({
-          contentTypeId,
-          definitionSpaceId: snapshot.definitionSpaceId,
-          kind: "entry",
-          ...(entryId === undefined ? {} : { entryId }),
-        }),
         createEntry = (input: CreateInput): Effect.Effect<MutationResult, CmsError> =>
-          Effect.gen(function* createEntry() {
+          Effect.gen(function* createEntryOperation() {
             const snapshot = yield* currentDefinitionSnapshot;
             yield* authorize("entry.create", entryResource(snapshot, input.contentTypeId));
             const contentType = snapshot.contentTypes.get(input.contentTypeId);
@@ -731,7 +742,7 @@ export const makeLayer = (
             return { entry, revisionNumber: 1, writeToken };
           }),
         getEntry = (input: ReadInput): Effect.Effect<Representation, CmsError> =>
-          Effect.gen(function* getEntry() {
+          Effect.gen(function* getEntryOperation() {
             const snapshot = yield* currentDefinitionSnapshot;
             yield* authorize(
               "entry.read",
@@ -760,7 +771,7 @@ export const makeLayer = (
             );
           }),
         updateEntry = (input: UpdateInput): Effect.Effect<MutationResult, CmsError> =>
-          Effect.gen(function* updateEntry() {
+          Effect.gen(function* updateEntryOperation() {
             const snapshot = yield* currentDefinitionSnapshot;
             yield* authorize(
               "entry.update",
@@ -824,7 +835,7 @@ export const makeLayer = (
             return { entry, revisionNumber, writeToken };
           }),
         deleteEntry = (input: DeleteEntryInput): Effect.Effect<DeleteResult, CmsError> =>
-          Effect.gen(function* deleteEntry() {
+          Effect.gen(function* deleteEntryOperation() {
             const snapshot = yield* currentDefinitionSnapshot;
             yield* authorize(
               "entry.delete",
@@ -864,7 +875,7 @@ export const makeLayer = (
             if (!contentType.definition.history) {
               records.delete(input.entryId);
               yield* persistence.commitGeneration(generation.generation, records);
-              return;
+              return undefined;
             }
             const writeToken = yield* identifiers.generate("write-token"),
               now = yield* Clock.currentTimeMillis,
@@ -888,7 +899,7 @@ export const makeLayer = (
         mutateEntriesAtomically = (
           mutations: readonly EntryBatchMutation[],
         ): Effect.Effect<readonly EntryBatchMutationResult[], CmsError> =>
-          Effect.gen(function* mutateEntriesAtomically() {
+          Effect.gen(function* mutateEntryBatch() {
             if (mutations.length === 0) {
               return yield* InvalidInput.make({
                 message: "An atomic Entry batch requires at least one mutation",
@@ -1009,7 +1020,7 @@ export const makeLayer = (
             return results;
           }),
         queryEntries = (query: Query): Effect.Effect<QueryPage, CmsError> =>
-          Effect.gen(function* queryEntries() {
+          Effect.gen(function* queryEntriesOperation() {
             const snapshot = yield* currentDefinitionSnapshot;
             yield* authorize("entry.query", {
               contentTypeId: query.contentTypeId,
@@ -1047,7 +1058,7 @@ export const makeLayer = (
         getCurrentEntryState = (
           input: Pick<ReadInput, "contentTypeId" | "entryId">,
         ): Effect.Effect<CurrentState, CmsError> =>
-          Effect.gen(function* getCurrentEntryState() {
+          Effect.gen(function* getCurrentEntryStateOperation() {
             const snapshot = yield* currentDefinitionSnapshot;
             yield* authorize(
               "entry.history.read",
@@ -1073,7 +1084,7 @@ export const makeLayer = (
             };
           }),
         listEntryRevisions = (input: ListRevisionsInput): Effect.Effect<RevisionPage, CmsError> =>
-          Effect.gen(function* listEntryRevisions() {
+          Effect.gen(function* listEntryRevisionsOperation() {
             const snapshot = yield* currentDefinitionSnapshot;
             yield* authorize(
               "entry.history.read",
@@ -1109,7 +1120,7 @@ export const makeLayer = (
               : { items };
           }),
         inspectEntryRevision = (input: ReadRevisionInput): Effect.Effect<Revision, CmsError> =>
-          Effect.gen(function* inspectEntryRevision() {
+          Effect.gen(function* inspectEntryRevisionOperation() {
             const snapshot = yield* currentDefinitionSnapshot;
             yield* authorize(
               "entry.history.read",
@@ -1132,7 +1143,7 @@ export const makeLayer = (
             return structuredClone(revision);
           }),
         restoreEntryRevision = (input: RestoreInput): Effect.Effect<CurrentState, CmsError> =>
-          Effect.gen(function* restoreEntryRevision() {
+          Effect.gen(function* restoreEntryRevisionOperation() {
             const snapshot = yield* currentDefinitionSnapshot;
             yield* authorize(
               "entry.history.restore",
@@ -1247,7 +1258,7 @@ export const makeLayer = (
             return { entry, revisionNumber, writeToken };
           }),
         permanentlyPurgeEntry = (input: PurgeEntryInput): Effect.Effect<void, CmsError> =>
-          Effect.gen(function* permanentlyPurgeEntry() {
+          Effect.gen(function* permanentlyPurgeEntryOperation() {
             const snapshot = yield* currentDefinitionSnapshot;
             yield* authorize(
               "entry.history.purge",
@@ -1270,9 +1281,10 @@ export const makeLayer = (
             const records = new Map(generation.records);
             records.delete(input.entryId);
             yield* persistence.commitGeneration(generation.generation, records);
+            return undefined;
           }),
         ingestAsset = (input: IngestInput): Effect.Effect<AssetValue, CmsError> =>
-          Effect.gen(function* ingestAsset() {
+          Effect.gen(function* ingestAssetOperation() {
             const snapshot = yield* currentDefinitionSnapshot;
             yield* authorize("asset.create", {
               definitionSpaceId: snapshot.definitionSpaceId,
@@ -1281,7 +1293,7 @@ export const makeLayer = (
             return yield* assets.ingest(input);
           }),
         getAsset = (assetId: string): Effect.Effect<AssetValue, CmsError> =>
-          Effect.gen(function* getAsset() {
+          Effect.gen(function* getAssetOperation() {
             const snapshot = yield* currentDefinitionSnapshot;
             yield* authorize("asset.read", {
               assetId,
@@ -1291,7 +1303,7 @@ export const makeLayer = (
             return yield* assets.get(assetId);
           }),
         readAsset = (assetId: string): Effect.Effect<StoredAsset, CmsError> =>
-          Effect.gen(function* readAsset() {
+          Effect.gen(function* readAssetOperation() {
             const snapshot = yield* currentDefinitionSnapshot;
             yield* authorize("asset.read", {
               assetId,
@@ -1309,7 +1321,7 @@ export const makeLayer = (
           return yield* assets.list;
         }),
         deleteAsset = (assetId: string): Effect.Effect<void, CmsError> =>
-          Effect.gen(function* deleteAsset() {
+          Effect.gen(function* deleteAssetOperation() {
             const snapshot = yield* currentDefinitionSnapshot;
             yield* authorize("asset.delete", {
               assetId,
@@ -1329,6 +1341,7 @@ export const makeLayer = (
               }
             }
             yield* assets.delete(assetId);
+            return undefined;
           }),
         readConsistentSnapshot = Effect.gen(function* readConsistentSnapshot() {
           const catalogState = yield* catalog.read,
@@ -1376,7 +1389,7 @@ export const makeLayer = (
         appendDefinitionRevision = (
           input: AppendDefinitionRevisionInput,
         ): Effect.Effect<CatalogState, CmsError> =>
-          Effect.gen(function* appendDefinitionRevision() {
+          Effect.gen(function* appendDefinitionRevisionOperation() {
             const state = yield* catalog.read;
             yield* authorize("definition.write", {
               definitionSpaceId: state.active.compiled.definitionSpaceId,
@@ -1461,7 +1474,7 @@ export const makeLayer = (
             });
           }),
         retireDefinition = (input: RetireDefinitionInput): Effect.Effect<CatalogState, CmsError> =>
-          Effect.gen(function* retireDefinition() {
+          Effect.gen(function* retireDefinitionOperation() {
             const state = yield* catalog.read;
             yield* authorize("definition.write", {
               definitionSpaceId: state.active.compiled.definitionSpaceId,
@@ -1493,7 +1506,7 @@ export const makeLayer = (
         appendMigrationManifest = (
           input: AppendMigrationManifestInput,
         ): Effect.Effect<CatalogState, CmsError> =>
-          Effect.gen(function* appendMigrationManifest() {
+          Effect.gen(function* appendMigrationManifestOperation() {
             const state = yield* catalog.read;
             yield* authorize("definition.write", {
               definitionSpaceId: state.active.compiled.definitionSpaceId,
@@ -1516,7 +1529,7 @@ export const makeLayer = (
         prepareDefinitionMigration = (
           input: PrepareDefinitionMigrationInput,
         ): Effect.Effect<Preparation, CmsError> =>
-          Effect.gen(function* prepareDefinitionMigration() {
+          Effect.gen(function* prepareDefinitionMigrationOperation() {
             const state = yield* catalog.read;
             yield* authorize("definition.activate", {
               definitionSpaceId: state.active.compiled.definitionSpaceId,
@@ -1559,7 +1572,7 @@ export const makeLayer = (
         activateDefinitionSnapshot = (
           input: ActivateDefinitionSnapshotInput,
         ): Effect.Effect<ActivateDefinitionSnapshotResult, CmsError> =>
-          Effect.gen(function* activateDefinitionSnapshot() {
+          Effect.gen(function* activateDefinitionSnapshotOperation() {
             yield* authorize("definition.activate", {
               definitionSpaceId: input.snapshot.definitionSpaceId,
               kind: "definitionSpace",
@@ -1592,8 +1605,7 @@ export const makeLayer = (
                 );
               if (
                 catalogRevision === undefined ||
-                canonicalJson(catalogRevision.definition as unknown as JsonValue) !==
-                  canonicalJson(definition as unknown as JsonValue)
+                canonicalJson(catalogRevision.definition) !== canonicalJson(definition)
               ) {
                 return yield* InvalidInput.make({
                   message: `Definition ${definition.id} revision ${revision} has not been appended to the Catalog`,
@@ -1771,7 +1783,9 @@ export const makeLayer = (
               snapshot: target,
             };
           }),
-        withOperationGate = operationGate.withPermit;
+        withOperationGate = <Success, Failure, Requirements>(
+          operation: Effect.Effect<Success, Failure, Requirements>,
+        ) => operationGate.withPermit(operation);
 
       return Service.of({
         activateDefinitionSnapshot: (input) => withOperationGate(activateDefinitionSnapshot(input)),

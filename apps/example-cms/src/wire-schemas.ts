@@ -76,7 +76,7 @@ export const EmptyRequest = Schema.Struct({}),
     status: Schema.Literal("pending"),
     submissionId: Schema.String,
   }),
-  EntryPage = (entry: Schema.Codec<unknown, unknown, never, never>) =>
+  EntryPage = (entry: Schema.Codec<unknown, unknown>) =>
     Schema.Struct({
       items: Schema.Array(entry),
       nextCursor: Schema.optionalKey(Schema.String),

@@ -12,6 +12,7 @@ import {
   cloneJson,
   fingerprint,
   isJsonObject,
+  isJsonValue,
 } from "./internal/json.ts";
 
 /** Portable scalar predicate operations with exact cross-adapter semantics. */
@@ -113,15 +114,19 @@ const encodeCursor = (cursor: CursorPayload): string =>
       if (decoded === null || typeof decoded !== "object") {
         throw new Error("not an object");
       }
-      const record = decoded as Readonly<Record<string, unknown>>;
+      const generation = Reflect.get(decoded, "generation"),
+        queryFingerprint = Reflect.get(decoded, "queryFingerprint"),
+        offset = Reflect.get(decoded, "offset");
       if (
-        !Number.isSafeInteger(record["generation"]) ||
-        typeof record["queryFingerprint"] !== "string" ||
-        !Number.isSafeInteger(record["offset"])
+        typeof generation !== "number" ||
+        !Number.isSafeInteger(generation) ||
+        typeof queryFingerprint !== "string" ||
+        typeof offset !== "number" ||
+        !Number.isSafeInteger(offset)
       ) {
         throw new Error("invalid fields");
       }
-      return decoded as CursorPayload;
+      return { generation, offset, queryFingerprint };
     } catch {
       throw InvalidInput.make({ message: "Invalid opaque Query cursor" });
     }
@@ -135,7 +140,11 @@ const encodeCursor = (cursor: CursorPayload): string =>
       if (current === null || Array.isArray(current) || typeof current !== "object") {
         return undefined;
       }
-      current = (current as JsonObject)[segment];
+      const next: unknown = Reflect.get(current, segment);
+      if (!isJsonValue(next)) {
+        return undefined;
+      }
+      current = next;
     }
     return current;
   },
@@ -231,6 +240,7 @@ const encodeCursor = (cursor: CursorPayload): string =>
         return expectedValue === false ? !isNullOrMissing : isNullOrMissing;
       }
     }
+    return predicate.operator;
   },
   matchesPredicate = (values: JsonObject, predicate: Predicate): boolean => {
     if (isFieldPredicate(predicate)) {
@@ -286,14 +296,20 @@ const encodeCursor = (cursor: CursorPayload): string =>
       validatePredicate(child, fields);
     });
   },
-  queryWithoutCursor = (query: Query): JsonValue => ({
-    contentTypeId: query.contentTypeId,
-    ...(query.where === undefined ? {} : { where: query.where as unknown as JsonValue }),
-    sort: (query.sort ?? []) as unknown as JsonValue,
-    projection: (query.projection ?? []) as unknown as JsonValue,
-    expansion: (query.expansion ?? []) as unknown as JsonValue,
-    pageSize: query.pageSize,
-  }),
+  queryWithoutCursor = (query: Query): JsonValue => {
+    const value: unknown = {
+      contentTypeId: query.contentTypeId,
+      ...(query.where === undefined ? {} : { where: query.where }),
+      sort: query.sort ?? [],
+      projection: query.projection ?? [],
+      expansion: query.expansion ?? [],
+      pageSize: query.pageSize,
+    };
+    if (!isJsonValue(value)) {
+      throw InvalidInput.make({ message: "Query is not JSON-compatible" });
+    }
+    return value;
+  },
   project = (entry: Representation, paths: readonly string[] | undefined): Representation => {
     if (paths === undefined) {
       return { ...entry, values: cloneJson(entry.values) };

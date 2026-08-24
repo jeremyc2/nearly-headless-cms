@@ -181,15 +181,19 @@ const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
       mediaRecord = requireRecord(media, `${description} media`);
     return { mediaType, schema: requireRecord(mediaRecord["schema"], `${description} schema`) };
   },
+  sortedBy = <Value>(
+    values: readonly Value[],
+    compare: (left: Value, right: Value) => number,
+  ): readonly Value[] => [...values].sort(compare),
   operationsFrom = (document: Readonly<Record<string, unknown>>): readonly GeneratedOperation[] => {
     const paths = requireRecord(document["paths"], "paths"),
       identifiers = new Set<string>(),
       operations: GeneratedOperation[] = [];
-    for (const [path, methodsValue] of Object.entries(paths).sort(([left], [right]) =>
+    for (const [path, methodsValue] of sortedBy(Object.entries(paths), ([left], [right]) =>
       left.localeCompare(right),
     )) {
       const methods = requireRecord(methodsValue, `methods for ${path}`);
-      for (const [method, operationValue] of Object.entries(methods).sort(([left], [right]) =>
+      for (const [method, operationValue] of sortedBy(Object.entries(methods), ([left], [right]) =>
         left.localeCompare(right),
       )) {
         const operation = requireRecord(operationValue, `operation ${method} ${path}`),
@@ -243,7 +247,7 @@ const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
         });
       }
     }
-    return operations.sort((left, right) => left.identifier.localeCompare(right.identifier));
+    return sortedBy(operations, (left, right) => left.identifier.localeCompare(right.identifier));
   },
   parameterGroupType = (
     parameters: readonly Parameter[],
@@ -297,8 +301,9 @@ const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
   componentTypes = (document: Readonly<Record<string, unknown>>): string => {
     const components = requireRecord(document["components"], "components"),
       componentSchemas = requireRecord(components["schemas"], "component schemas");
-    return Object.entries(componentSchemas)
-      .sort(([left], [right]) => left.localeCompare(right))
+    return sortedBy(Object.entries(componentSchemas), ([left], [right]) =>
+      left.localeCompare(right),
+    )
       .map(([name, schema]) => {
         if (!/^[A-Za-z_$][A-Za-z0-9_$]*$/u.test(name) || !isRecord(schema)) {
           throw new Error(`OpenAPI generator cannot emit component ${name}`);

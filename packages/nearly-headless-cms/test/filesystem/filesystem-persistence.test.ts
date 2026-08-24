@@ -73,7 +73,7 @@ describe("BunFilesystemPersistence", () => {
             input: targetSnapshot.input,
           };
         expect(catalog.commitCutover).toBeDefined();
-        yield* catalog.commitCutover!(
+        yield* catalog.commitCutover(
           catalogState.version,
           {
             ...catalogState,

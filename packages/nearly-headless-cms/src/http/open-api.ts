@@ -500,19 +500,17 @@ export const headless = (operations: readonly DeliveryOperation[]): Document => 
   ),
 });
 
-const sortValue = (value: unknown): unknown => {
-  if (Array.isArray(value)) {
-    return value.map(sortValue);
-  }
-  if (value === null || typeof value !== "object") {
-    return value;
-  }
-  return Object.fromEntries(
-    Object.entries(value)
-      .sort(([left], [right]) => left.localeCompare(right))
-      .map(([key, child]) => [key, sortValue(child)]),
-  );
-};
+const sortedEntries = (value: object): readonly (readonly [string, unknown])[] =>
+    Object.entries(value).sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey)),
+  sortValue = (value: unknown): unknown => {
+    if (Array.isArray(value)) {
+      return value.map(sortValue);
+    }
+    if (value === null || typeof value !== "object") {
+      return value;
+    }
+    return Object.fromEntries(sortedEntries(value).map(([key, child]) => [key, sortValue(child)]));
+  };
 
 /** Serializes an OpenAPI document with deterministic recursively sorted object keys. */
 export const stringify = (document: Document): string =>

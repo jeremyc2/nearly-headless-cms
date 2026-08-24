@@ -34,7 +34,7 @@ const collectBytes = (
 export const layer = (options: Options = {}): Layer.Layer<Management, never, Generator> =>
   Layer.effect(
     Management,
-    Effect.gen(function* layer() {
+    Effect.gen(function* makeMemoryAssetManagement() {
       const identifiers = yield* Generator,
         state = yield* SynchronizedRef.make<ReadonlyMap<string, StoredAsset>>(new Map()),
         maximumByteLength = options.maximumByteLength ?? 25_000_000,

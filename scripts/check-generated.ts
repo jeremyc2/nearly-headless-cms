@@ -15,8 +15,8 @@ const formatTypeScript = async (source: string): Promise<string> => {
         stdout: "pipe",
       },
     );
-    formatterProcess.stdin.write(source);
-    formatterProcess.stdin.end();
+    void formatterProcess.stdin.write(source);
+    void formatterProcess.stdin.end();
     const [exitCode, formattedSource, standardError] = await Promise.all([
       formatterProcess.exited,
       new Response(formatterProcess.stdout).text(),

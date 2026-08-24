@@ -212,7 +212,7 @@ const runOperationInterruptibly = async <Value>(
     request: Request,
     parameters: Readonly<Record<string, string>>,
   ): Effect.Effect<void, InvalidInput> =>
-    Effect.gen(function* validateOperationRequest() {
+    Effect.gen(function* validateDeclaredOperationRequest() {
       for (const [name, schema] of Object.entries(operation.schemas.pathParameters ?? {})) {
         yield* validateSchema(schema, parameters[name], `Path parameter ${name} is invalid`);
       }
@@ -390,7 +390,7 @@ const runOperationInterruptibly = async <Value>(
  * declared schemas, sanitizes failures, and streams immutable Asset responses.
  */
 export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never, CmsService> =>
-  Effect.gen(function* makeHandler() {
+  Effect.gen(function* createHandler() {
     const cms = yield* CmsService,
       operations = options.deliveryOperations ?? [],
       managementOperations = options.managementOperations ?? [],
@@ -1382,7 +1382,7 @@ export const layer = (options: Options = {}) => {
         Effect.map((handler) =>
           handlers.handleAll(
             Object.fromEntries(
-              Object.keys(managementApi.groups["management"]!.endpoints).map((identifier) => [
+              Object.keys(managementApi.groups["management"].endpoints).map((identifier) => [
                 identifier,
                 ({ request }: { readonly request: HttpServerRequest.HttpServerRequest }) =>
                   respond(handler, request),
@@ -1397,7 +1397,7 @@ export const layer = (options: Options = {}) => {
         Effect.map((handler) =>
           handlers.handleAll(
             Object.fromEntries(
-              Object.keys(headlessApi.groups["headless"]!.endpoints).map((identifier) => [
+              Object.keys(headlessApi.groups["headless"].endpoints).map((identifier) => [
                 identifier,
                 ({ request }: { readonly request: HttpServerRequest.HttpServerRequest }) =>
                   respond(handler, request),

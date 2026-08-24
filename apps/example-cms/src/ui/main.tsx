@@ -40,6 +40,10 @@ const managementClient = makeManagementClient(),
     { identifier: "comment", label: "Comments", symbol: "M" },
   ] as const;
 
+const preserveSelection = (event: MouseEvent<HTMLButtonElement>) => {
+  event.preventDefault();
+};
+
 const richTextDocumentFrom = (value: unknown): RichText.Document | undefined => {
   try {
     return RichText.validate(value);
@@ -236,8 +240,13 @@ function Overview() {
   );
 }
 
-const displayName = (entry: EntryRepresentation): string =>
-  String(entry.values["title"] ?? entry.values["name"] ?? entry.values["display-name"] ?? entry.id);
+const stringValue = (value: unknown, fallback: string): string =>
+    typeof value === "string" ? value : fallback,
+  displayName = (entry: EntryRepresentation): string =>
+    stringValue(
+      entry.values["title"] ?? entry.values["name"] ?? entry.values["display-name"],
+      entry.id,
+    );
 
 interface EditorialIssue {
   readonly path: readonly (string | number)[];
@@ -405,12 +414,14 @@ function ContentList() {
               <span className="entry-monogram">{displayName(entry).slice(0, 1)}</span>
               <span className="entry-title">
                 <strong>{displayName(entry)}</strong>
-                <small>{String(entry.values["slug"] ?? entry.values["status"] ?? entry.id)}</small>
+                <small>
+                  {stringValue(entry.values["slug"] ?? entry.values["status"], entry.id)}
+                </small>
               </span>
               <span
                 className={`status-pill ${entry.values["status"] === "published" || entry.values["status"] === "approved" ? "published" : ""}`}
               >
-                {String(entry.values["status"] ?? "active")}
+                {stringValue(entry.values["status"], "active")}
               </span>
               <span>→</span>
             </Link>
@@ -520,7 +531,7 @@ function EntryEditor() {
       },
     }),
     titleField = "title" in values ? "title" : "name" in values ? "name" : "display-name";
-  const title = String(values[titleField] ?? ""),
+  const title = stringValue(values[titleField], ""),
     bodyDocument = richTextDocumentFrom(values["body"]),
     profileDocument = richTextDocumentFrom(values["profile"]),
     updateField = (key: string, value: unknown) => {
@@ -654,7 +665,7 @@ function EntryEditor() {
               <label className="field full">
                 <span>Short biography</span>
                 <textarea
-                  value={String(values["biography"] ?? "")}
+                  value={stringValue(values["biography"], "")}
                   onChange={(event) => {
                     updateField("biography", event.target.value);
                   }}
@@ -666,7 +677,7 @@ function EntryEditor() {
               <label className="field full">
                 <span>Description</span>
                 <textarea
-                  value={String(values["description"] ?? "")}
+                  value={stringValue(values["description"], "")}
                   onChange={(event) => {
                     updateField("description", event.target.value || null);
                   }}
@@ -743,7 +754,7 @@ function EntryEditor() {
                   <span>Featured image alternative text</span>
                   <input
                     id="field-featured-alternative-text"
-                    value={String(values["featured-alternative-text"] ?? "")}
+                    value={stringValue(values["featured-alternative-text"], "")}
                     onChange={(event) => {
                       updateField("featured-alternative-text", event.target.value || null);
                     }}
@@ -779,7 +790,7 @@ function EntryEditor() {
                 <label className="field full">
                   <span>Portrait alternative text</span>
                   <input
-                    value={String(values["portrait-alternative-text"] ?? "")}
+                    value={stringValue(values["portrait-alternative-text"], "")}
                     onChange={(event) => {
                       updateField("portrait-alternative-text", event.target.value || null);
                     }}
@@ -797,7 +808,7 @@ function EntryEditor() {
                   <label className="field">
                     <span>Author</span>
                     <select
-                      value={String(values["author"] ?? "")}
+                      value={stringValue(values["author"], "")}
                       onChange={(event) => {
                         updateField("author", event.target.value);
                       }}
@@ -874,7 +885,9 @@ function EntryEditor() {
               {"status" in values && (
                 <div className="field">
                   <span>Status</span>
-                  <output className="status-readout">{String(values["status"] ?? "active")}</output>
+                  <output className="status-readout">
+                    {stringValue(values["status"], "active")}
+                  </output>
                   <small>Status changes only through the explicit editorial command below.</small>
                 </div>
               )}
@@ -1003,16 +1016,13 @@ function RichTextField({
     closeDialog = () => {
       setDialog(undefined);
       queueMicrotask(() => toolbar.current?.querySelector<HTMLButtonElement>("button")?.focus());
-    },
-    preserveSelection = (event: MouseEvent<HTMLButtonElement>) => {
-      event.preventDefault();
     };
   useEffect(() => {
     onChangeReference.current = onChange;
   }, [onChange]);
   useEffect(() => {
     if (host.current === null) {
-      return;
+      return undefined;
     }
     const browserAdapter = new BrowserAdapter({
       host: host.current,

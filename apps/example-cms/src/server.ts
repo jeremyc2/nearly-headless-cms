@@ -1,11 +1,16 @@
 import { BunHttpServer, BunRuntime } from "@effect/platform-bun";
-import { Effect, Layer } from "effect";
+import { Effect, Layer, Schema } from "effect";
 import { HttpRouter, HttpServerResponse, HttpStaticServer } from "effect/unstable/http";
 import tailwind from "bun-plugin-tailwind";
 import { HttpTransport } from "nearly-headless-cms/http";
 import { join } from "node:path";
 import { seed } from "./domain/seed.ts";
 import { makeExampleComposition } from "./system.ts";
+
+class DashboardBuildFailure extends Schema.TaggedError<DashboardBuildFailure>()(
+  "DashboardBuildFailure",
+  { message: Schema.String },
+) {}
 
 const applicationDirectory = join(import.meta.dir, ".."),
   dashboardDirectory = join(applicationDirectory, "dist"),
@@ -79,7 +84,12 @@ const applicationDirectory = join(import.meta.dir, ".."),
     ),
   ),
   buildDashboard = Effect.tryPromise({
-    catch: (cause) => (cause instanceof Error ? cause : new Error("Dashboard build failed")),
+    catch: (cause) =>
+      cause instanceof DashboardBuildFailure
+        ? cause
+        : DashboardBuildFailure.make({
+            message: cause instanceof Error ? cause.message : "Dashboard build failed",
+          }),
     try: async () => {
       const result = await Bun.build({
         entrypoints: [join(applicationDirectory, "src", "index.html")],
@@ -91,7 +101,9 @@ const applicationDirectory = join(import.meta.dir, ".."),
         target: "browser",
       });
       if (!result.success) {
-        throw new Error(result.logs.map((log) => log.message).join("\n"));
+        throw DashboardBuildFailure.make({
+          message: result.logs.map((log) => log.message).join("\n"),
+        });
       }
     },
   });

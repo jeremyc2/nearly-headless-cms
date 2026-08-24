@@ -182,9 +182,7 @@ const coreNodeTypes = new Set([
       case "link": {
         const issues: ValidationIssue[] = [];
         if (typeof node["url"] === "string") {
-          try {
-            new URL(node["url"]);
-          } catch {
+          if (!URL.canParse(node["url"])) {
             issues.push(makeIssue([...path, "url"], "expectedUrl", "Link URL is invalid"));
           }
         } else {

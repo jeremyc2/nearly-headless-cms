@@ -30,7 +30,7 @@ export const layer = ({
 }: Options): Layer.Layer<DefinitionCatalog, never, EntryPersistence> =>
   Layer.effect(
     DefinitionCatalog,
-    Effect.gen(function* layer() {
+    Effect.gen(function* makeMemoryDefinitionCatalog() {
       const entryPersistence = yield* EntryPersistence,
         activatedAt = new Date(yield* Clock.currentTimeMillis).toISOString(),
         initialSnapshot: DefinitionSnapshotRecord = {
