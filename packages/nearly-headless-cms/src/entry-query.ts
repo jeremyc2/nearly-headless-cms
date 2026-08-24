@@ -100,16 +100,15 @@ export interface EvaluationInput {
 }
 
 const defaultLimits: QueryLimits = {
-  maximumExpansionPaths: 20,
-  maximumPageSize: 100,
-  maximumProjectionPaths: 100,
-  maximumScanEntries: 10_000,
-},
-
- BASE64_QUARTET_LENGTH = 4,
- NEGATIVE_ONE = -1,
- ONE = 1,
- ZERO = 0;
+    maximumExpansionPaths: 20,
+    maximumPageSize: 100,
+    maximumProjectionPaths: 100,
+    maximumScanEntries: 10_000,
+  },
+  BASE64_QUARTET_LENGTH = 4,
+  NEGATIVE_ONE = -1,
+  ONE = 1,
+  ZERO = 0;
 
 interface CursorPayload {
   readonly generation: number;
@@ -169,7 +168,9 @@ const encodeCursor = (cursor: CursorPayload): string =>
       return left - right;
     }
     if (typeof left === "string" && typeof right === "string") {
-      return left < right ? NEGATIVE_ONE : (left > right ? ONE : ZERO);
+      if (left < right) return NEGATIVE_ONE;
+      if (left > right) return ONE;
+      return ZERO;
     }
     if (typeof left === "boolean" && typeof right === "boolean") {
       return Number(left) - Number(right);
@@ -300,11 +301,10 @@ const encodeCursor = (cursor: CursorPayload): string =>
       }
       return;
     }
-    const children = isAllPredicate(predicate)
-      ? predicate.all
-      : (isAnyPredicate(predicate)
-        ? predicate.any
-        : [predicate.not]);
+    let children: readonly Predicate[];
+    if (isAllPredicate(predicate)) children = predicate.all;
+    else if (isAnyPredicate(predicate)) children = predicate.any;
+    else children = [predicate.not];
     if (children.length === ZERO) {
       throw InvalidInput.make({ message: "Boolean Query groups cannot be empty" });
     }
@@ -333,19 +333,18 @@ const encodeCursor = (cursor: CursorPayload): string =>
     const projected: Record<string, JsonValue> = {};
     for (const path of paths) {
       const value = valueAtPath(entry.values, path);
-      if (value === undefined) {
-        continue;
-      }
-      const segments = path.split(".");
-      let current = projected;
-      for (const [index, segment] of segments.entries()) {
-        if (index === segments.length - ONE) {
-          current[segment] = cloneJson(value);
-        } else {
-          const existing = current[segment],
-            nested: Record<string, JsonValue> = isJsonObject(existing) ? { ...existing } : {};
-          current[segment] = nested;
-          current = nested;
+      if (value !== undefined) {
+        const segments = path.split(".");
+        let current = projected;
+        for (const [index, segment] of segments.entries()) {
+          if (index === segments.length - ONE) {
+            current[segment] = cloneJson(value);
+          } else {
+            const existing = current[segment],
+              nested: Record<string, JsonValue> = isJsonObject(existing) ? { ...existing } : {};
+            current[segment] = nested;
+            current = nested;
+          }
         }
       }
     }
@@ -434,9 +433,9 @@ export const evaluate = ({ entries, options, query, snapshot }: EvaluationInput)
         }
       }
     }
-    return leftEntry.id < rightEntry.id
-      ? NEGATIVE_ONE
-      : (leftEntry.id > rightEntry.id ? ONE : ZERO);
+    if (leftEntry.id < rightEntry.id) return NEGATIVE_ONE;
+    if (leftEntry.id > rightEntry.id) return ONE;
+    return ZERO;
   });
   const items = matchingEntries
       .slice(offset, offset + query.pageSize)

@@ -1,7 +1,12 @@
 import { afterAll, describe, expect, test } from "bun:test";
 
 const enabled = Bun.env["ACCEPTANCE_SERVERS_READY"] === "1",
-  acceptanceTest = enabled ? test : test.skip,
+  acceptanceTest = ((): typeof test => {
+    if (enabled) {
+      return test;
+    }
+    return test.skip;
+  })(),
   waitFor = async <Value>(
     view: Bun.WebView,
     expression: string,

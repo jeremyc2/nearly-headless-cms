@@ -23,12 +23,11 @@ interface OperationDescriptor {
 }
 
 const createdStatus = 201,
- firstIndex = 0,
- indentationSpaces = 2,
- noContentStatus = 204,
- okStatus = 200,
-
- errorSchema = {
+  firstIndex = 0,
+  indentationSpaces = 2,
+  noContentStatus = 204,
+  okStatus = 200,
+  errorSchema = {
     properties: {
       code: { type: "string" },
       details: {},
@@ -242,7 +241,9 @@ const createdStatus = 201,
     "listMigrationManifests",
   ]),
   writeTokenHeaderOperations = new Set(["replaceEntry", "deleteEntry"]),
-  additionalBodylessSuccessStatuses = new Map<string, readonly number[]>([["deleteEntry", [noContentStatus]]]),
+  additionalBodylessSuccessStatuses = new Map<string, readonly number[]>([
+    ["deleteEntry", [noContentStatus]],
+  ]),
   errorResponses = (): Readonly<Record<string, unknown>> =>
     Object.fromEntries(
       [
@@ -273,9 +274,10 @@ const createdStatus = 201,
     ),
   effectSchema = (schema: OperationSchema): Readonly<Record<string, unknown>> => {
     const document = Schema.toJsonSchemaDocument(schema);
-    return Object.keys(document.definitions).length === firstIndex
-      ? document.schema
-      : { ...document.schema, $defs: document.definitions };
+    if (Object.keys(document.definitions).length === firstIndex) {
+      return document.schema;
+    }
+    return { ...document.schema, $defs: document.definitions };
   },
   pathParameters = (
     path: string,
@@ -284,25 +286,30 @@ const createdStatus = 201,
     [...path.matchAll(/\{(?<parameterName>[^}]+)\}/gu)].map((match) => {
       const parameterName = match.groups?.["parameterName"] ?? "",
         declaredSchema = operationSchemas?.pathParameters?.[parameterName];
+      let parameterSchema: Readonly<Record<string, unknown>>;
+      if (declaredSchema === undefined) {
+        parameterSchema = { type: parameterName === "revisionNumber" ? "integer" : "string" };
+      } else {
+        parameterSchema = effectSchema(declaredSchema);
+      }
       return {
         in: "path",
         name: parameterName,
         required: true,
-        schema:
-          declaredSchema === undefined
-            ? { type: parameterName === "revisionNumber" ? "integer" : "string" }
-            : effectSchema(declaredSchema),
+        schema: parameterSchema,
       };
     }),
   queryParameters = (
     operationIdentifier: string,
     operationSchemas?: OperationSchemas,
   ): readonly Readonly<Record<string, unknown>>[] => {
-    const declared =
-      operationSchemas?.queryParameters ??
-      (paginatedOperations.has(operationIdentifier)
-        ? { cursor: Schema.String, pageSize: Schema.Int }
-        : {});
+    let declared = operationSchemas?.queryParameters;
+    if (declared === undefined && paginatedOperations.has(operationIdentifier)) {
+      declared = { cursor: Schema.String, pageSize: Schema.Int };
+    }
+    if (declared === undefined) {
+      declared = {};
+    }
     return Object.entries(declared).map(([name, schema]) => ({
       in: "query",
       name,
@@ -317,11 +324,11 @@ const createdStatus = 201,
     const declared = {
       "CMS-Expected-Definition-Fingerprint": Schema.String,
       "X-Request-Id": Schema.String,
-      ...(writeTokenHeaderOperations.has(operationIdentifier)
-        ? { "CMS-Write-Token": Schema.String }
-        : {}),
       ...operationSchemas?.requestHeaders,
     };
+    if (writeTokenHeaderOperations.has(operationIdentifier)) {
+      Object.assign(declared, { "CMS-Write-Token": Schema.String });
+    }
     return Object.entries(declared).map(([name, schema]) => ({
       in: "header",
       name,
@@ -334,9 +341,9 @@ const createdStatus = 201,
     method: string,
     operationDescriptor: OperationDescriptor,
   ): Readonly<Record<string, unknown>> => {
-    const {operationIdentifier} = operationDescriptor,
+    const { operationIdentifier } = operationDescriptor,
       successStatus =
-      operationDescriptor.successStatus ?? successStatuses.get(operationIdentifier) ?? okStatus,
+        operationDescriptor.successStatus ?? successStatuses.get(operationIdentifier) ?? okStatus,
       bodyless = method === "head" || successStatus === noContentStatus,
       parameters = [
         ...pathParameters(path, operationDescriptor.schemas),
@@ -355,15 +362,17 @@ const createdStatus = 201,
         operationDescriptor.schemas?.responseMediaType ??
         (operationIdentifier === "readAsset" || operationIdentifier === "inspectAssetContent"
           ? "application/octet-stream"
-          : "application/json"),
-      responseSchema =
-        operationDescriptor.schemas === undefined
-          ? (successSchemas.get(operationIdentifier) ?? {
-              $ref: "#/components/schemas/JsonObject",
-            })
-          : (responseMediaType === "application/octet-stream"
-            ? { format: "binary", type: "string" }
-            : effectSchema(operationDescriptor.schemas.response));
+          : "application/json");
+    let responseSchema: Readonly<Record<string, unknown>>;
+    if (operationDescriptor.schemas === undefined) {
+      responseSchema = successSchemas.get(operationIdentifier) ?? {
+        $ref: "#/components/schemas/JsonObject",
+      };
+    } else if (responseMediaType === "application/octet-stream") {
+      responseSchema = { format: "binary", type: "string" };
+    } else {
+      responseSchema = effectSchema(operationDescriptor.schemas.response);
+    }
     return {
       operationId: operationIdentifier,
       ...(parameters.length === firstIndex ? {} : { parameters }),

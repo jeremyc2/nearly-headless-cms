@@ -240,17 +240,24 @@ const issue = (
     message: string,
   ): ValidationIssue => ({ message, path, reason }),
   fail = (message: string, issues: readonly ValidationIssue[]): never => {
-    const [firstIssue] = issues,
-      issueLocation = firstIssue === undefined ? "" : ` at ${firstIssue.path.join(".")}`;
+    const [firstIssue] = issues;
+    let issueLocation = "";
+    if (firstIssue !== undefined) {
+      issueLocation = ` at ${firstIssue.path.join(".")}`;
+    }
     throw InvalidInput.make({ issues: [...issues], message: `${message}${issueLocation}` });
   },
   validateIdentifier = (
     identifier: string,
     path: readonly (string | number)[],
-  ): readonly ValidationIssue[] =>
-    identifierPattern.test(identifier)
-      ? []
-      : [issue(path, "invalidIdentifier", `Invalid URL-safe lowercase identifier: ${identifier}`)],
+  ): readonly ValidationIssue[] => {
+    if (identifierPattern.test(identifier)) {
+      return [];
+    }
+    return [
+      issue(path, "invalidIdentifier", `Invalid URL-safe lowercase identifier: ${identifier}`),
+    ];
+  },
   defaultCapabilities = (fieldKind: FieldKind): QueryCapabilities => {
     switch (fieldKind.kind) {
       case "text": {
@@ -773,13 +780,13 @@ export const compile = (input: SnapshotInput, options: CompileOptions = {}): Com
       parentPath: readonly (string | number)[],
     ): void => {
       for (const field of fields) {
-        const fieldPath = [...parentPath, field.key],
-          relationshipKind =
-            field.kind.kind === "relationship"
-              ? field.kind
-              : (field.kind.kind === "list" && field.kind.element.kind === "relationship"
-                ? field.kind.element
-                : undefined);
+        const fieldPath = [...parentPath, field.key];
+        let relationshipKind: Extract<FieldKind, { readonly kind: "relationship" }> | undefined;
+        if (field.kind.kind === "relationship") {
+          relationshipKind = field.kind;
+        } else if (field.kind.kind === "list" && field.kind.element.kind === "relationship") {
+          relationshipKind = field.kind.element;
+        }
         for (const targetContentTypeId of relationshipKind?.targetContentTypeIds ?? []) {
           if (!contentTypes.has(targetContentTypeId)) {
             fail("Invalid Relationship target", [

@@ -199,14 +199,13 @@ const attempt = <Value>(operation: () => Value): Effect.Effect<Value, InvalidInp
       try: operation,
     }),
   liveRecords = (generation: EntryGeneration): readonly EntryRecord[] =>
-    [...generation.records.values()].filter((record) => record.deletionRecord === undefined);
-
-const oneOrMany = (value: JsonValue): readonly JsonValue[] => {
-  if (Array.isArray(value)) {
-    return value;
-  }
-  return [value];
-};
+    [...generation.records.values()].filter((record) => record.deletionRecord === undefined),
+  oneOrMany = (value: JsonValue): readonly JsonValue[] => {
+    if (Array.isArray(value)) {
+      return value;
+    }
+    return [value];
+  };
 
 interface References {
   readonly relationships: readonly {
@@ -467,15 +466,15 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
     );
     for (const [fieldKey, nestedPaths] of groupExpansionPaths(expansion)) {
       let fieldPath = fieldKey;
-      if (parentPath.length !== 0) {
+      if (parentPath.length > 0) {
         fieldPath = `${parentPath}.${fieldKey}`;
       }
       const field = fields.find((candidate) => candidate.key === fieldKey);
       if (field === undefined) {
         throw InvalidInput.make({ message: `Field ${fieldPath} is not expandable` });
       }
-      const relationship = relationshipKind(field);
-      const value = values[fieldKey];
+      const relationship = relationshipKind(field),
+        value = values[fieldKey];
       if (value === undefined || value === null) {
         continue;
       }

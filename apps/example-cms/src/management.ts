@@ -192,38 +192,40 @@ const collectRichTextPublicationRules = ({
       }),
   requiredWriteToken = (request: Request): Effect.Effect<string, CmsError.InvalidInput> => {
     const writeToken = request.headers.get("cms-write-token");
-    return writeToken === null || writeToken.length === 0
-      ? Effect.fail(CmsError.InvalidInput.make({ message: "CMS-Write-Token is required" }))
-      : Effect.succeed(writeToken);
+    if (writeToken === null || writeToken.length === 0) {
+      return Effect.fail(CmsError.InvalidInput.make({ message: "CMS-Write-Token is required" }));
+    }
+    return Effect.succeed(writeToken);
   },
   requireDeletionRecord = (
     result: Cms.EntryBatchMutationResult | undefined,
-  ): Effect.Effect<Exclude<Cms.DeleteResult, undefined>, CmsError.InfrastructureFailure> =>
-    result !== undefined && "writeToken" in result && !("entry" in result)
-      ? Effect.succeed(result)
-      : Effect.fail(
-          CmsError.InfrastructureFailure.make({
-            cause: result,
-            message: "History-enabled deletion did not return its deletion record",
-            retryable: false,
-          }),
-        ),
+  ): Effect.Effect<Exclude<Cms.DeleteResult, undefined>, CmsError.InfrastructureFailure> => {
+    if (result !== undefined && "writeToken" in result && !("entry" in result)) {
+      return Effect.succeed(result);
+    }
+    return Effect.fail(
+      CmsError.InfrastructureFailure.make({
+        cause: result,
+        message: "History-enabled deletion did not return its deletion record",
+        retryable: false,
+      }),
+    );
+  },
   queryAllEntries = (
     cms: Cms.ServiceShape,
     query: Omit<EntryQuery.Query, "cursor">,
     cursor?: string,
   ): Effect.Effect<readonly Entry.Representation[], CmsError.CmsError> =>
-    cms
-      .queryEntries({ ...query, ...(cursor === undefined ? {} : { cursor }) })
-      .pipe(
-        Effect.flatMap((page) =>
-          page.nextCursor === undefined
-            ? Effect.succeed(page.items)
-            : queryAllEntries(cms, query, page.nextCursor).pipe(
-                Effect.map((remainingEntries) => [...page.items, ...remainingEntries]),
-              ),
-        ),
-      ),
+    cms.queryEntries({ ...query, ...(cursor === undefined ? {} : { cursor }) }).pipe(
+      Effect.flatMap((page) => {
+        if (page.nextCursor === undefined) {
+          return Effect.succeed(page.items);
+        }
+        return queryAllEntries(cms, query, page.nextCursor).pipe(
+          Effect.map((remainingEntries) => [...page.items, ...remainingEntries]),
+        );
+      }),
+    ),
   deletePostWithComments: HttpContract.ManagementOperation["execute"] = ({
     cms,
     parameters,
@@ -337,9 +339,9 @@ const collectRichTextPublicationRules = ({
           ),
           mutations: Cms.EntryBatchMutation[] = postStates.map((state) => {
             const currentRelationships = state.entry.values[relationshipField],
-              relationships = Array.isArray(currentRelationships)
-                ? currentRelationships.filter((entryId) => entryId !== taxonomyEntryId)
-                : [];
+             relationships = Array.isArray(currentRelationships)
+              ? currentRelationships.filter((entryId) => entryId !== taxonomyEntryId)
+              : [];
             return {
               input: {
                 contentTypeId: "post",

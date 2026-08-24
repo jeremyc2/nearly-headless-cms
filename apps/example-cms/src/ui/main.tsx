@@ -188,7 +188,7 @@ function Overview() {
             <span>Posts</span>
           </div>
           <small>
-            {draftPostCount} draft{draftPostCount === 1 ? "" : "s"}
+            {draftPostCount} draft{["s", ""][Number(draftPostCount === 1)]}
           </small>
         </article>
         <article className="signal-card">
@@ -197,7 +197,7 @@ function Overview() {
             <strong>{counts["comment"]}</strong>
             <span>Comments</span>
           </div>
-          <small className={pendingCommentCount > 0 ? "attention" : ""}>
+          <small className={["", "attention"][Number(pendingCommentCount > 0)]}>
             {pendingCommentCount} pending
           </small>
         </article>
@@ -409,24 +409,28 @@ function ContentList() {
     [statusFilter, setStatusFilter] = useState("all"),
     [sortDirection, setSortDirection] = useState<"ascending" | "descending">("descending"),
     [cursor, setCursor] = useState<string>(),
-    [priorCursors, setPriorCursors] = useState<readonly (string | undefined)[]>([]),
-    filterPath =
-      contentTypeId === "post" ? "title" : (contentTypeId === "comment" ? "display-name" : "name"),
-    predicates = [
-      ...(filterText.trim().length === 0
-        ? []
-        : [{ operator: "contains", path: filterPath, value: filterText.trim() }]),
-      ...(statusFilter === "all"
-        ? []
-        : [{ operator: "equals", path: "status", value: statusFilter }]),
-    ],
-    sortPath =
-      contentTypeId === "comment"
-        ? "created-at"
-        : (contentTypeId === "post"
-          ? "published-at"
-          : "name"),
-    entries = useQuery({
+    [priorCursors, setPriorCursors] = useState<readonly (string | undefined)[]>([]);
+  let filterPath = "name";
+  if (contentTypeId === "post") {
+    filterPath = "title";
+  } else if (contentTypeId === "comment") {
+    filterPath = "display-name";
+  }
+  const predicates = [
+    ...(filterText.trim().length === 0
+      ? []
+      : [{ operator: "contains", path: filterPath, value: filterText.trim() }]),
+    ...(statusFilter === "all"
+      ? []
+      : [{ operator: "equals", path: "status", value: statusFilter }]),
+  ];
+  let sortPath = "name";
+  if (contentTypeId === "comment") {
+    sortPath = "created-at";
+  } else if (contentTypeId === "post") {
+    sortPath = "published-at";
+  }
+  const entries = useQuery({
       queryFn: async () =>
         Effect.runPromise(
           managementClient.queryEntries(contentTypeId, {
@@ -450,39 +454,41 @@ function ContentList() {
                   managementClient.queryEntries(relatedContentTypeId, { pageSize: 1 }),
                 )
               : undefined,
-          relatedEntryId = related?.items[0]?.id,
-          values: Readonly<Record<string, unknown>> =
-            contentTypeId === "post"
-              ? {
-                  author: relatedEntryId,
-                  body: {
-                    children: [{ children: [{ text: "", type: "text" }], type: "paragraph" }],
-                    format: "nearly-headless-cms/rich-text",
-                    version: 1,
-                  },
-                  categories: [],
-                  excerpt: "Draft excerpt",
-                  slug: `untitled-${suffix}`,
-                  status: "draft",
-                  tags: [],
-                  title: `Untitled ${suffix}`,
-                }
-              : contentTypeId === "author"
-                ? {
-                    biography: "Biography to be completed.",
-                    "external-links": [],
-                    name: `Untitled ${suffix}`,
-                    slug: `untitled-${suffix}`,
-                  }
-                : contentTypeId === "comment"
-                  ? {
-                      body: "Comment awaiting editing.",
-                      "created-at": new Date().toISOString(),
-                      "display-name": `Reader ${suffix}`,
-                      post: relatedEntryId,
-                      status: "pending",
-                    }
-                  : { name: `Untitled ${suffix}`, slug: `untitled-${suffix}` };
+          relatedEntryId = related?.items[0]?.id;
+        let values: Readonly<Record<string, unknown>>;
+        if (contentTypeId === "post") {
+          values = {
+            author: relatedEntryId,
+            body: {
+              children: [{ children: [{ text: "", type: "text" }], type: "paragraph" }],
+              format: "nearly-headless-cms/rich-text",
+              version: 1,
+            },
+            categories: [],
+            excerpt: "Draft excerpt",
+            slug: `untitled-${suffix}`,
+            status: "draft",
+            tags: [],
+            title: `Untitled ${suffix}`,
+          };
+        } else if (contentTypeId === "author") {
+          values = {
+            biography: "Biography to be completed.",
+            "external-links": [],
+            name: `Untitled ${suffix}`,
+            slug: `untitled-${suffix}`,
+          };
+        } else if (contentTypeId === "comment") {
+          values = {
+            body: "Comment awaiting editing.",
+            "created-at": new Date().toISOString(),
+            "display-name": `Reader ${suffix}`,
+            post: relatedEntryId,
+            status: "pending",
+          };
+        } else {
+          values = { name: `Untitled ${suffix}`, slug: `untitled-${suffix}` };
+        }
         if (
           relatedEntryId === undefined &&
           (contentTypeId === "post" || contentTypeId === "comment")
@@ -801,9 +807,14 @@ function EntryEditor() {
       onSuccess: async () => {
         await navigate({ params: { contentTypeId }, to: "/content/$contentTypeId" });
       },
-    }),
-    titleField = "title" in values ? "title" : ("name" in values ? "name" : "display-name"),
-   title = stringValue(values[titleField], ""),
+    });
+  let titleField = "display-name";
+  if ("title" in values) {
+    titleField = "title";
+  } else if ("name" in values) {
+    titleField = "name";
+  }
+  const title = stringValue(values[titleField], ""),
     bodyDocument = richTextDocumentFrom(values["body"]),
     profileDocument = richTextDocumentFrom(values["profile"]),
     updateField = (key: string, value: unknown) => {
@@ -836,9 +847,8 @@ function EntryEditor() {
           </Link>
           <h1>{title || "Entry"}</h1>
           <p>
-            <span className="saved-dot" />{" "}
-            {save.isPending ? "Saving…" : (save.isSuccess ? "Saved in CMS" : "Saved in CMS")} ·
-            Revision {state.data?.revisionNumber ?? "—"}
+            <span className="saved-dot" /> {save.isPending ? "Saving…" : "Saved in CMS"} · Revision{" "}
+            {state.data?.revisionNumber ?? "—"}
           </p>
         </div>
         <div className="editor-actions">
@@ -1362,7 +1372,7 @@ function EntryEditor() {
                   </button>
                 </div>
               </>
-            ) : (confirmPurge ? (
+            ) : confirmPurge ? (
               <>
                 <p className="eyebrow">Irreversible action</p>
                 <h2 id="entry-deletion-title">Permanently purge retained history?</h2>
@@ -1422,7 +1432,7 @@ function EntryEditor() {
                   </button>
                 </div>
               </>
-            ))}
+            )}
           </div>
         </div>
       )}
@@ -1471,9 +1481,9 @@ function RichTextField({
         label:
           typeof entry.values["title"] === "string"
             ? entry.values["title"]
-            : (typeof entry.values["name"] === "string"
+            : typeof entry.values["name"] === "string"
               ? entry.values["name"]
-              : entry.id),
+              : entry.id,
         type: contentType.label,
       })),
     ),
@@ -1521,7 +1531,7 @@ function RichTextField({
                 adapter.current?.dispatch({
                   blockType: "heading",
                   headingLevel:
-                    Number(blockType.at(-1)) === 2 ? 2 : (Number(blockType.at(-1)) === 3 ? 3 : 4),
+                    Number(blockType.at(-1)) === 2 ? 2 : Number(blockType.at(-1)) === 3 ? 3 : 4,
                   type: "setBlockKind",
                 });
               } else if (
@@ -1815,7 +1825,7 @@ function HistoryPanel({
       enabled: selectedRevisionNumber !== undefined,
       queryFn: async () =>
         Effect.runPromise(
-          managementClient.inspectRevision(contentTypeId, entryId, selectedRevisionNumber!),
+          managementClient.inspectRevision(contentTypeId, entryId, selectedRevisionNumber ?? 0),
         ),
       queryKey: ["revision", contentTypeId, entryId, selectedRevisionNumber],
     }),

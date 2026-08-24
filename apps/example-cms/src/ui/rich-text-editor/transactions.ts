@@ -63,6 +63,12 @@ const emptyParagraph = (): RichText.ParagraphNode => ({
     children: [{ text: "", type: "text" }],
     type: "paragraph",
   }),
+  conditionalValue = <Value>(condition: boolean, whenTrue: Value, whenFalse: Value): Value => {
+    if (condition) {
+      return whenTrue;
+    }
+    return whenFalse;
+  },
   emptyDocument = (): RichText.Document => ({
     children: [emptyParagraph()],
     format: RichText.format,
@@ -81,35 +87,40 @@ const emptyParagraph = (): RichText.ParagraphNode => ({
   ): readonly RichText.InlineNode[] => {
     const normalized: RichText.InlineNode[] = [];
     for (const node of nodes) {
-      if (node.type === "text" && node.text.length === emptyIndex && nodes.length > firstIndex) {
-        continue;
-      }
-      const previous = normalized.at(negativeOne);
-      if (
-        node.type === "text" &&
-        previous?.type === "text" &&
-        marksEqual(previous.marks, node.marks)
-      ) {
-        normalized[normalized.length - firstIndex] = {
-          text: `${previous.text}${node.text}`,
-          type: "text",
-          ...((node.marks?.length ?? emptyIndex) === emptyIndex
-            ? {}
-            : { marks: canonicalMarks(node.marks ?? []) }),
-        };
-      } else if (node.type === "text") {
-        normalized.push({
-          text: node.text,
-          type: "text",
-          ...((node.marks?.length ?? emptyIndex) === emptyIndex
-            ? {}
-            : { marks: canonicalMarks(node.marks ?? []) }),
-        });
-      } else {
-        normalized.push(structuredClone(node));
+      const shouldSkipEmptyText =
+        node.type === "text" && node.text.length === emptyIndex && nodes.length > firstIndex;
+      if (!shouldSkipEmptyText) {
+        const previous = normalized.at(negativeOne);
+        if (
+          node.type === "text" &&
+          previous?.type === "text" &&
+          marksEqual(previous.marks, node.marks)
+        ) {
+          normalized[normalized.length - firstIndex] = {
+            text: `${previous.text}${node.text}`,
+            type: "text",
+            ...((node.marks?.length ?? emptyIndex) === emptyIndex
+              ? {}
+              : { marks: canonicalMarks(node.marks ?? []) }),
+          };
+        } else if (node.type === "text") {
+          normalized.push({
+            text: node.text,
+            type: "text",
+            ...((node.marks?.length ?? emptyIndex) === emptyIndex
+              ? {}
+              : { marks: canonicalMarks(node.marks ?? []) }),
+          });
+        } else {
+          normalized.push(structuredClone(node));
+        }
       }
     }
-    return normalized.length === emptyIndex ? [{ text: "", type: "text" }] : normalized;
+    return conditionalValue(
+      normalized.length === emptyIndex,
+      [{ text: "", type: "text" }],
+      normalized,
+    );
   };
 
 export const normalize = (document: RichText.Document): RichText.Document => {
@@ -129,7 +140,7 @@ export const normalize = (document: RichText.Document): RichText.Document => {
     return structuredClone(block);
   });
   return {
-    children: children.length === emptyIndex ? [emptyParagraph()] : children,
+    children: conditionalValue(children.length === emptyIndex, [emptyParagraph()], children),
     format: RichText.format,
     version: RichText.formatVersion,
   };
@@ -224,7 +235,7 @@ const selectedText = (
   ): RichText.Document => ({
     ...document,
     children: document.children.map((candidate, index) =>
-      index === blockIndex ? block : candidate,
+      conditionalValue(index === blockIndex, block, candidate),
     ),
   }),
   commit = (state: State, document: RichText.Document, selection = state.selection): State => {
@@ -274,15 +285,17 @@ const insertText = (state: State, text: string): State => {
     if (selected === undefined) {
       return state;
     }
-    const position = state.selection.anchor,
-      replacement: RichText.TextNode = {
+    const position = state.selection.anchor;
+    let marks: { readonly marks?: readonly RichText.Mark[] } = {};
+    if ((selected.text.marks?.length ?? emptyIndex) > emptyIndex) {
+      marks = { marks: selected.text.marks };
+    } else if (state.pendingMarks.length > emptyIndex) {
+      marks = { marks: state.pendingMarks };
+    }
+    const replacement: RichText.TextNode = {
         text: `${selected.text.text.slice(emptyIndex, selected.start)}${text}${selected.text.text.slice(selected.end)}`,
         type: "text",
-        ...((selected.text.marks?.length ?? emptyIndex) > emptyIndex
-          ? { marks: selected.text.marks }
-          : (state.pendingMarks.length > emptyIndex
-            ? { marks: state.pendingMarks }
-            : {})),
+        ...marks,
       },
       children = selected.block.children.map((node, index) =>
         index === position.inlineIndex ? replacement : node,
@@ -563,28 +576,31 @@ export const transact = (state: State, command: Command): State => {
       if (block?.type !== "paragraph" && block?.type !== "heading") {
         return state;
       }
-      const replacement: RichText.BlockNode =
-        command.blockType === "heading"
-          ? {
-              children: block.children,
-              level: command.headingLevel ?? secondHeadingLevel,
-              type: "heading",
-            }
-          : command.blockType === "paragraph"
-            ? { children: block.children, type: "paragraph" }
-            : command.blockType === "code-block"
-              ? {
-                  children: [
-                    {
-                      text: block.children
-                        .map((node) => (node.type === "text" ? node.text : ""))
-                        .join(""),
-                      type: "text",
-                    },
-                  ],
-                  type: "code-block",
-                }
-              : { children: [{ children: block.children, type: "paragraph" }], type: "quote" };
+      let replacement: RichText.BlockNode;
+      if (command.blockType === "heading") {
+        replacement = {
+          children: block.children,
+          level: command.headingLevel ?? secondHeadingLevel,
+          type: "heading",
+        };
+      } else if (command.blockType === "paragraph") {
+        replacement = { children: block.children, type: "paragraph" };
+      } else if (command.blockType === "code-block") {
+        replacement = {
+          children: [
+            {
+              text: block.children.map((node) => (node.type === "text" ? node.text : "")).join(""),
+              type: "text",
+            },
+          ],
+          type: "code-block",
+        };
+      } else {
+        replacement = {
+          children: [{ children: block.children, type: "paragraph" }],
+          type: "quote",
+        };
+      }
       return commit(state, replaceBlock(state.document, blockIndex, replacement));
     }
     case "toggleMark": {
@@ -655,7 +671,7 @@ export const transact = (state: State, command: Command): State => {
     }
     case "undo": {
       const historyIndex = Math.max(emptyIndex, state.historyIndex - firstIndex),
-       document = state.history[historyIndex];
+        document = state.history[historyIndex];
       if (document === undefined) {
         throw new Error("Undo history entry is missing");
       }
@@ -663,10 +679,10 @@ export const transact = (state: State, command: Command): State => {
     }
     case "redo": {
       const historyIndex = Math.min(
-        state.history.length - firstIndex,
-        state.historyIndex + firstIndex,
-      ),
-       document = state.history[historyIndex];
+          state.history.length - firstIndex,
+          state.historyIndex + firstIndex,
+        ),
+        document = state.history[historyIndex];
       if (document === undefined) {
         throw new Error("Redo history entry is missing");
       }

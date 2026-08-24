@@ -135,7 +135,10 @@ const runOperationInterruptibly = async <Value>(
       return 422;
     }
     if (error instanceof InfrastructureFailure) {
-      return error.retryable ? 503 : 500;
+      if (error.retryable) {
+        return 503;
+      }
+      return 500;
     }
     if (
       error instanceof Conflict ||
@@ -160,22 +163,24 @@ const runOperationInterruptibly = async <Value>(
     return headers;
   },
   errorResponse = (error: CmsError, requestId: string): Response => {
-    const details =
-        error instanceof InvalidInput && error.issues !== undefined
-          ? ({
-              issues: error.issues.map((issue: ValidationIssue) => ({
-                path: issue.path,
-                reason: issue.reason,
-              })),
-            } as unknown as JsonValue)
-          : undefined,
-      document: ErrorDocument = {
-        code: errorCode(error),
-        message: error.message,
-        requestId,
-        ...(details === undefined ? {} : { details }),
-      },
-      headers = responseHeaders(requestId);
+    let details: JsonValue | undefined;
+    if (error instanceof InvalidInput && error.issues !== undefined) {
+      details = {
+        issues: error.issues.map((issue: ValidationIssue) => ({
+          path: issue.path,
+          reason: issue.reason,
+        })),
+      };
+    }
+    const document: ErrorDocument = {
+      code: errorCode(error),
+      message: error.message,
+      requestId,
+    };
+    if (details !== undefined) {
+      Object.assign(document, { details });
+    }
+    const headers = responseHeaders(requestId);
     headers.set("content-type", "application/json; charset=utf-8");
     if (error instanceof InfrastructureFailure && error.retryable) {
       headers.set("retry-after", "1");
@@ -190,13 +195,19 @@ const runOperationInterruptibly = async <Value>(
       { headers, status: failure.status },
     );
   },
-  invalidRequestResponse = (error: unknown, fallbackMessage: string, requestId: string): Response =>
-    error instanceof RequestFailure
-      ? requestFailureResponse(error, requestId)
-      : errorResponse(
-          error instanceof InvalidInput ? error : InvalidInput.make({ message: fallbackMessage }),
-          requestId,
-        ),
+  invalidRequestResponse = (
+    error: unknown,
+    fallbackMessage: string,
+    requestId: string,
+  ): Response => {
+    if (error instanceof RequestFailure) {
+      return requestFailureResponse(error, requestId);
+    }
+    if (error instanceof InvalidInput) {
+      return errorResponse(error, requestId);
+    }
+    return errorResponse(InvalidInput.make({ message: fallbackMessage }), requestId);
+  },
   jsonResponse = ({
     cacheControl,
     fingerprint,
@@ -586,16 +597,14 @@ const runOperationInterruptibly = async <Value>(
         baseHeaders.set("content-range", `bytes */${storedAsset.bytes.byteLength}`);
         return new Response(null, { headers: baseHeaders, status: 416 });
       }
-      const start =
-          match[1] === ""
-            ? Math.max(0, storedAsset.bytes.byteLength - Number(match[2]))
-            : Number(match[1]),
-        end =
-          match[1] === ""
-            ? storedAsset.bytes.byteLength - 1
-            : match[2] === ""
-              ? storedAsset.bytes.byteLength - 1
-              : Number(match[2]);
+      let start: number, end: number;
+      if (match[1] === "") {
+        start = Math.max(0, storedAsset.bytes.byteLength - Number(match[2]));
+        end = storedAsset.bytes.byteLength - 1;
+      } else {
+        start = Number(match[1]);
+        end = match[2] === "" ? storedAsset.bytes.byteLength - 1 : Number(match[2]);
+      }
       if (
         !Number.isSafeInteger(start) ||
         !Number.isSafeInteger(end) ||
@@ -1172,7 +1181,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
                 const preparation = state.migrationPreparations.find(
                   (candidate) =>
                     candidate.id ===
-                      requiredPathParameter(migrationPreparationMatch, "migrationPreparationId"),
+                    requiredPathParameter(migrationPreparationMatch, "migrationPreparationId"),
                 );
                 return preparation === undefined
                   ? Effect.fail(NotFound.make({ message: "Migration Preparation was not found" }))
@@ -1343,8 +1352,8 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
           requestUrl.pathname,
         );
         if (entryMatch !== undefined) {
-          const contentTypeId = entryMatch["contentTypeId"]!,
-            entryId = entryMatch["entryId"]!;
+          const contentTypeId = requiredPathParameter(entryMatch, "contentTypeId"),
+            entryId = requiredPathParameter(entryMatch, "entryId");
           if (request.method === "GET") {
             return withOutcome(cms.getEntry({ contentTypeId, entryId }), requestId, (entry) =>
               jsonResponse({
@@ -1415,8 +1424,8 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
         if (stateMatch !== undefined && request.method === "GET") {
           return withOutcome(
             cms.getCurrentEntryState({
-              contentTypeId: stateMatch["contentTypeId"]!,
-              entryId: stateMatch["entryId"]!,
+              contentTypeId: requiredPathParameter(stateMatch, "contentTypeId"),
+              entryId: requiredPathParameter(stateMatch, "entryId"),
             }),
             requestId,
             (state) =>
@@ -1436,9 +1445,9 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
         if (revisionsMatch !== undefined && request.method === "GET") {
           return withOutcome(
             cms.listEntryRevisions({
-              contentTypeId: revisionsMatch["contentTypeId"]!,
+              contentTypeId: requiredPathParameter(revisionsMatch, "contentTypeId"),
               cursor: requestUrl.searchParams.get("cursor") ?? undefined,
-              entryId: revisionsMatch["entryId"]!,
+              entryId: requiredPathParameter(revisionsMatch, "entryId"),
               pageSize: Number(requestUrl.searchParams.get("pageSize") ?? "20"),
             }),
             requestId,
@@ -1459,9 +1468,9 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
         if (revisionMatch !== undefined && request.method === "GET") {
           return withOutcome(
             cms.inspectEntryRevision({
-              contentTypeId: revisionMatch["contentTypeId"]!,
-              entryId: revisionMatch["entryId"]!,
-              revisionNumber: Number(revisionMatch["revisionNumber"]!),
+              contentTypeId: requiredPathParameter(revisionMatch, "contentTypeId"),
+              entryId: requiredPathParameter(revisionMatch, "entryId"),
+              revisionNumber: Number(requiredPathParameter(revisionMatch, "revisionNumber")),
             }),
             requestId,
             (revision) =>
@@ -1491,8 +1500,8 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
             }
             return await withOutcome(
               cms.restoreEntryRevision({
-                contentTypeId: restorationMatch["contentTypeId"]!,
-                entryId: restorationMatch["entryId"]!,
+                contentTypeId: requiredPathParameter(restorationMatch, "contentTypeId"),
+                entryId: requiredPathParameter(restorationMatch, "entryId"),
                 revisionNumber: body["revisionNumber"] as number,
                 writeToken: body["writeToken"],
               }),
@@ -1522,8 +1531,8 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
             }
             return await withOutcome(
               cms.permanentlyPurgeEntry({
-                contentTypeId: purgeMatch["contentTypeId"]!,
-                entryId: purgeMatch["entryId"]!,
+                contentTypeId: requiredPathParameter(purgeMatch, "contentTypeId"),
+                entryId: requiredPathParameter(purgeMatch, "entryId"),
                 writeToken: body["writeToken"],
               }),
               requestId,
@@ -1536,7 +1545,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
 
         const assetMatch = matchPath(`${managementBase}/assets/{assetId}`, requestUrl.pathname);
         if (assetMatch !== undefined) {
-          const assetId = assetMatch["assetId"]!;
+          const assetId = requiredPathParameter(assetMatch, "assetId");
           if (request.method === "GET") {
             return withOutcome(cms.getAsset(assetId), requestId, (asset) =>
               jsonResponse({
@@ -1561,8 +1570,10 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
           assetContentMatch !== undefined &&
           (request.method === "GET" || request.method === "HEAD")
         ) {
-          return withOutcome(cms.readAsset(assetContentMatch["assetId"]!), requestId, (asset) =>
-            assetContentResponse(asset, request, requestId),
+          return withOutcome(
+            cms.readAsset(requiredPathParameter(assetContentMatch, "assetId")),
+            requestId,
+            (asset) => assetContentResponse(asset, request, requestId),
           );
         }
 
@@ -1628,17 +1639,20 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
               snapshot,
             }),
             requestId,
-            (value) =>
-              value instanceof Response
-                ? value
-                : value === undefined
-                  ? bodylessResponse(204, requestId, snapshot.fingerprint)
-                  : jsonResponse({
-                      fingerprint: snapshot.fingerprint,
-                      requestId,
-                      status: 200,
-                      value,
-                    }),
+            (value) => {
+              if (value instanceof Response) {
+                return value;
+              }
+              if (value === undefined) {
+                return bodylessResponse(204, requestId, snapshot.fingerprint);
+              }
+              return jsonResponse({
+                fingerprint: snapshot.fingerprint,
+                requestId,
+                status: 200,
+                value,
+              });
+            },
           );
         }
 
@@ -1680,18 +1694,21 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
           return withOutcome(
             executeOperation(matcher.operation, { cms, parameters, request, requestId, snapshot }),
             requestId,
-            (value) =>
-              value instanceof Response
-                ? value
-                : value === undefined
-                  ? bodylessResponse(204, requestId, snapshot.fingerprint)
-                  : jsonResponse({
-                      cacheControl: matcher.operation.cacheControl ?? "no-cache",
-                      fingerprint: snapshot.fingerprint,
-                      requestId,
-                      status: matcher.operation.successStatus ?? 200,
-                      value,
-                    }),
+            (value) => {
+              if (value instanceof Response) {
+                return value;
+              }
+              if (value === undefined) {
+                return bodylessResponse(204, requestId, snapshot.fingerprint);
+              }
+              return jsonResponse({
+                cacheControl: matcher.operation.cacheControl ?? "no-cache",
+                fingerprint: snapshot.fingerprint,
+                requestId,
+                status: matcher.operation.successStatus ?? 200,
+                value,
+              });
+            },
           );
         }
 

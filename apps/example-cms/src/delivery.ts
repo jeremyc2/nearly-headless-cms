@@ -131,12 +131,12 @@ export const postDefinitionRequirement = {
     response: HttpContract.OperationSchema,
     pathParameters: Readonly<Record<string, HttpContract.OperationSchema>> = {},
     includePagination = false,
-  ): HttpContract.OperationSchemas => ({
-    pathParameters,
-    ...(includePagination ? { queryParameters: PageQuery } : {}),
-    request: EmptyRequest,
-    response,
-  });
+  ): HttpContract.OperationSchemas => {
+    if (includePagination) {
+      return { pathParameters, queryParameters: PageQuery, request: EmptyRequest, response };
+    }
+    return { pathParameters, request: EmptyRequest, response };
+  };
 
 const lowerCamelCase = (key: string): string =>
     key.replaceAll(/-([a-z])/gu, (_match, letter: string) => letter.toUpperCase()),
@@ -179,20 +179,25 @@ const lowerCamelCase = (key: string): string =>
       pageSize = Number(requestUrl.searchParams.get("pageSize") ?? String(DEFAULT_PAGE_SIZE)),
       cursor = requestUrl.searchParams.get("cursor") ?? undefined;
     return cms.queryEntries({ contentTypeId, cursor, pageSize, sort, where }).pipe(
-      Effect.map((page) => ({
-        items: page.items.map(publicValue),
-        ...(page.nextCursor === undefined ? {} : { nextCursor: page.nextCursor }),
-      })),
+      Effect.map((page) => {
+        const result = { items: page.items.map(publicValue) };
+        if (page.nextCursor !== undefined) {
+          return { ...result, nextCursor: page.nextCursor };
+        }
+        return result;
+      }),
     );
   },
   parseBody = (
     request: Request,
   ): Effect.Effect<ContentDefinition.JsonObject, CmsError.InvalidInput> =>
     Effect.tryPromise({
-      catch: (cause) =>
-        cause instanceof CmsError.InvalidInput
-          ? cause
-          : CmsError.InvalidInput.make({ message: "Malformed Comment submission" }),
+      catch: (cause) => {
+        if (cause instanceof CmsError.InvalidInput) {
+          return cause;
+        }
+        return CmsError.InvalidInput.make({ message: "Malformed Comment submission" });
+      },
       try: async () => {
         if (!(request.headers.get("content-type") ?? "").startsWith("application/json")) {
           throw CmsError.InvalidInput.make({
@@ -206,25 +211,26 @@ const lowerCamelCase = (key: string): string =>
         return value;
       },
     }),
-  findBySlug = ({ cms, contentTypeId, publicOnly = false, slug }: FindBySlugInput) =>
-    queryAll({
-      cms,
-      contentTypeId,
-      where: publicOnly
-        ? {
-            all: [
-              { operator: "equals", path: "slug", value: slug },
-              { operator: "equals", path: "status", value: "published" },
-            ],
-          }
-        : { operator: "equals", path: "slug", value: slug },
-    }).pipe(
-      Effect.flatMap((entries) =>
-        entries[FIRST_INDEX] === undefined
-          ? Effect.fail(CmsError.NotFound.make({ message: `${contentTypeId} was not found` }))
-          : Effect.succeed(publicValue(entries[FIRST_INDEX])),
-      ),
-    ),
+  findBySlug = ({ cms, contentTypeId, publicOnly = false, slug }: FindBySlugInput) => {
+    let where: EntryQuery.Predicate = { operator: "equals", path: "slug", value: slug };
+    if (publicOnly) {
+      where = {
+        all: [
+          { operator: "equals", path: "slug", value: slug },
+          { operator: "equals", path: "status", value: "published" },
+        ],
+      };
+    }
+    return queryAll({ cms, contentTypeId, where }).pipe(
+      Effect.flatMap((entries) => {
+        const firstEntry = entries[FIRST_INDEX];
+        if (firstEntry === undefined) {
+          return Effect.fail(CmsError.NotFound.make({ message: `${contentTypeId} was not found` }));
+        }
+        return Effect.succeed(publicValue(firstEntry));
+      }),
+    );
+  },
   collectRichTextAssetIds = (value: unknown, assetIds: Set<string>): void => {
     if (Array.isArray(value)) {
       for (const item of value) {
@@ -289,16 +295,19 @@ const lowerCamelCase = (key: string): string =>
     const entries: Cms.ConsistentReadSnapshot["entries"][number][] = [];
     let cursor: string | undefined;
     do {
+      const query = { contentTypeId, cursor, pageSize: 100 } as {
+        contentTypeId: string;
+        cursor: string | undefined;
+        pageSize: number;
+        sort?: readonly EntryQuery.Sort[];
+        where?: EntryQuery.Predicate;
+      };
+      if (sort !== undefined) query.sort = sort;
+      if (where !== undefined) query.where = where;
       const page = EntryQuery.evaluate({
         entries: consistentSnapshot.entries,
         options: { generation: consistentSnapshot.generation },
-        query: {
-          contentTypeId,
-          cursor,
-          pageSize: 100,
-          ...(sort === undefined ? {} : { sort }),
-          ...(where === undefined ? {} : { where }),
-        },
+        query,
         snapshot: consistentSnapshot.definitionSnapshot,
       });
       entries.push(...page.items);
@@ -344,24 +353,22 @@ const lowerCamelCase = (key: string): string =>
       const discoveredIdentifiers = new Set<string>();
       collectRichTextEntryIds(documents.pop(), discoveredIdentifiers);
       for (const entryIdentifier of discoveredIdentifiers) {
-        if (richTextReachableIdentifiers.has(entryIdentifier)) {
-          continue;
-        }
-        const entry = entriesByIdentifier.get(entryIdentifier);
-        if (
-          entry === undefined ||
-          (entry.contentTypeId === "post" && entry.values["status"] !== "published")
-        ) {
-          continue;
-        }
-        richTextReachableIdentifiers.add(entryIdentifier);
-        if (entry.contentTypeId === "author") {
-          publicAuthorIdentifiers.add(entryIdentifier);
-          documents.push(entry.values["profile"]);
-        } else if (entry.contentTypeId === "category") {
-          publicCategoryIdentifiers.add(entryIdentifier);
-        } else if (entry.contentTypeId === "tag") {
-          publicTagIdentifiers.add(entryIdentifier);
+        if (!richTextReachableIdentifiers.has(entryIdentifier)) {
+          const entry = entriesByIdentifier.get(entryIdentifier);
+          if (
+            entry !== undefined &&
+            !(entry.contentTypeId === "post" && entry.values["status"] !== "published")
+          ) {
+            richTextReachableIdentifiers.add(entryIdentifier);
+            if (entry.contentTypeId === "author") {
+              publicAuthorIdentifiers.add(entryIdentifier);
+              documents.push(entry.values["profile"]);
+            } else if (entry.contentTypeId === "category") {
+              publicCategoryIdentifiers.add(entryIdentifier);
+            } else if (entry.contentTypeId === "tag") {
+              publicTagIdentifiers.add(entryIdentifier);
+            }
+          }
         }
       }
     }
@@ -419,19 +426,41 @@ const lowerCamelCase = (key: string): string =>
   ) =>
     cms.readConsistentSnapshot.pipe(
       Effect.flatMap((consistentSnapshot) => {
-        const content = publicContent(consistentSnapshot),
-          entries =
-            contentTypeId === "author"
-              ? content.authors
-              : (contentTypeId === "category"
-                ? content.categories
-                : content.tags),
-          entry = entries.find((candidate) => candidate.values["slug"] === slug);
-        return entry === undefined
-          ? Effect.fail(CmsError.NotFound.make({ message: `${contentTypeId} was not found` }))
-          : Effect.succeed(publicValue(entry));
+        const content = publicContent(consistentSnapshot);
+        let entries = content.tags;
+        if (contentTypeId === "author") {
+          entries = content.authors;
+        } else if (contentTypeId === "category") {
+          entries = content.categories;
+        }
+        const entry = entries.find((candidate) => candidate.values["slug"] === slug);
+        if (entry === undefined) {
+          return Effect.fail(CmsError.NotFound.make({ message: `${contentTypeId} was not found` }));
+        }
+        return Effect.succeed(publicValue(entry));
       }),
     ),
+  publicAssetBody = (request: Request, bytes: Uint8Array): ArrayBuffer | null => {
+    if (request.method === "HEAD") return null;
+    return bytes.slice().buffer;
+  },
+  publicOwnerPath = (contentTypeId: "author" | "category" | "tag"): string => {
+    if (contentTypeId === "category") return "categories";
+    return `${contentTypeId}s`;
+  },
+  publicOwnerDefinition = (contentTypeId: "author" | "category" | "tag") => {
+    if (contentTypeId === "author") return authorDefinitionRequirement;
+    return taxonomyDefinitionRequirement(contentTypeId);
+  },
+  publicOwnerSchema = (contentTypeId: "author" | "category" | "tag") => {
+    if (contentTypeId === "author") return PublicAuthor;
+    return PublicTaxonomy;
+  },
+  publicRelationshipPath = (contentTypeId: "author" | "category" | "tag"): string => {
+    if (contentTypeId === "author") return "author";
+    if (contentTypeId === "category") return "categories";
+    return "tags";
+  },
   publicAssetResponse = ({
     asset,
     definitionFingerprint,
@@ -458,7 +487,7 @@ const lowerCamelCase = (key: string): string =>
       request.headers.get("if-range") !== null &&
       request.headers.get("if-range") !== etag
     ) {
-      return new Response(request.method === "HEAD" ? null : new Uint8Array(asset.bytes), {
+      return new Response(publicAssetBody(request, new Uint8Array(asset.bytes)), {
         headers,
         status: 200,
       });
@@ -470,16 +499,10 @@ const lowerCamelCase = (key: string): string =>
         headers.delete("content-length");
         return new Response(null, { headers, status: 416 });
       }
-      const start =
-          match[1] === ""
-            ? Math.max(FIRST_INDEX, asset.bytes.byteLength - Number(match[2]))
-            : Number(match[1]),
-        end =
-          match[1] === ""
-            ? asset.bytes.byteLength - ONE_ITEM
-            : (match[2] === ""
-              ? asset.bytes.byteLength - ONE_ITEM
-              : Number(match[2]));
+      let start = Number(match[1]);
+      if (match[1] === "") start = Math.max(FIRST_INDEX, asset.bytes.byteLength - Number(match[2]));
+      let end = Number(match[2]);
+      if (match[1] === "" || match[2] === "") end = asset.bytes.byteLength - ONE_ITEM;
       if (
         !Number.isSafeInteger(start) ||
         !Number.isSafeInteger(end) ||
@@ -495,12 +518,12 @@ const lowerCamelCase = (key: string): string =>
         bytes = asset.bytes.slice(start, boundedEnd + 1);
       headers.set("content-range", `bytes ${start}-${boundedEnd}/${asset.bytes.byteLength}`);
       headers.set("content-length", String(bytes.byteLength));
-      return new Response(request.method === "HEAD" ? null : new Uint8Array(bytes), {
+      return new Response(publicAssetBody(request, new Uint8Array(bytes)), {
         headers,
         status: 206,
       });
     }
-    return new Response(request.method === "HEAD" ? null : new Uint8Array(asset.bytes), {
+    return new Response(publicAssetBody(request, new Uint8Array(asset.bytes)), {
       headers,
       status: 200,
     });
@@ -560,26 +583,22 @@ export const makeDeliveryOperations = (
         (contentTypeId): readonly HttpContract.DeliveryOperation[] => [
           {
             definitionRequirements: [
-              contentTypeId === "author"
-                ? authorDefinitionRequirement
-                : taxonomyDefinitionRequirement(contentTypeId),
+              publicOwnerDefinition(contentTypeId),
               postDefinitionRequirement,
             ],
             execute: ({ cms, parameters }) =>
               publicOwnerBySlug(cms, contentTypeId, requiredParameter(parameters, "slug")),
             identifier: `getPublic${contentTypeId.slice(0, 1).toUpperCase()}${contentTypeId.slice(1)}BySlug`,
             method: "GET",
-            path: `/${contentTypeId === "category" ? "categories" : `${contentTypeId}s`}/{slug}`,
+            path: `/${publicOwnerPath(contentTypeId)}/{slug}`,
             reachableContentTypeIds: [contentTypeId, "post"],
-            schemas: readSchemas(contentTypeId === "author" ? PublicAuthor : PublicTaxonomy, {
+            schemas: readSchemas(publicOwnerSchema(contentTypeId), {
               slug: Identifier,
             }),
           },
           {
             definitionRequirements: [
-              contentTypeId === "author"
-                ? authorDefinitionRequirement
-                : taxonomyDefinitionRequirement(contentTypeId),
+              publicOwnerDefinition(contentTypeId),
               postDefinitionRequirement,
             ],
             execute: ({ cms, parameters, request }) =>
@@ -595,12 +614,7 @@ export const makeDeliveryOperations = (
                     message: `Public ${contentTypeId} has an invalid identifier`,
                   });
                 }
-                const relationshipPath =
-                  contentTypeId === "author"
-                    ? "author"
-                    : (contentTypeId === "category"
-                      ? "categories"
-                      : "tags");
+                const relationshipPath = publicRelationshipPath(contentTypeId);
                 return yield* queryPage({
                   cms,
                   contentTypeId: "post",
@@ -616,7 +630,7 @@ export const makeDeliveryOperations = (
               }),
             identifier: `list${contentTypeId.slice(0, 1).toUpperCase()}${contentTypeId.slice(1)}Posts`,
             method: "GET",
-            path: `/${contentTypeId === "category" ? "categories" : `${contentTypeId}s`}/{slug}/posts`,
+            path: `/${publicOwnerPath(contentTypeId)}/{slug}/posts`,
             reachableContentTypeIds: [contentTypeId, "post"],
             schemas: readSchemas(EntryPage(PublicPost), { slug: Identifier }, true),
           },
@@ -736,7 +750,10 @@ export const makeDeliveryOperations = (
                   "website-url": websiteUrl ?? null,
                 },
               }),
-              submissionId = "writeToken" in result ? result.entry.id : result.id,
+              submissionId = (() => {
+                if ("writeToken" in result) return result.entry.id;
+                return result.id;
+              })(),
               receipt = { status: "pending", submissionId };
             yield* commandReceiptStore
               .write(
@@ -825,7 +842,10 @@ export const makeDeliveryOperations = (
                 requestId,
               });
             }),
-          identifier: method === "GET" ? "deliverPublicAsset" : "inspectPublicAsset",
+          identifier: (() => {
+            if (method === "GET") return "deliverPublicAsset";
+            return "inspectPublicAsset";
+          })(),
           method,
           path: "/assets/{assetId}",
           reachableContentTypeIds: ["post", "author", "category", "tag"],
@@ -881,9 +901,10 @@ export const makeDeliveryOperations = (
                 etag,
                 "x-request-id": requestId,
               });
-            return request.headers.get("if-none-match") === etag
-              ? new Response(null, { headers, status: 304 })
-              : new Response(bytes, { headers, status: 200 });
+            if (request.headers.get("if-none-match") === etag) {
+              return new Response(null, { headers, status: 304 });
+            }
+            return new Response(bytes, { headers, status: 200 });
           }),
         identifier: "exportPublicBlog",
         method: "GET",
