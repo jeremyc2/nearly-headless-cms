@@ -85,6 +85,12 @@ interface State {
 interface Acquired {
   readonly context: Context.Context<DefinitionCatalog | EntryPersistence | Management>;
   readonly lockPath: string;
+  readonly lockToken: string;
+}
+
+interface WriterLock {
+  readonly processId: number;
+  readonly token?: string;
 }
 
 const failure = (message: string, cause: unknown, retryable = false): InfrastructureFailure =>
@@ -215,6 +221,128 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
       await rm(stagePath, { force: true }).catch(() => undefined);
       throw error;
     }
+  },
+  filesystemErrorCode = (error: unknown): string | undefined => {
+    if (typeof error !== "object" || error === null || !("code" in error)) return undefined;
+    return typeof error.code === "string" ? error.code : undefined;
+  },
+  readWriterLock = async (lockPath: string): Promise<WriterLock> => {
+    const parsed: unknown = JSON.parse(await Bun.file(lockPath).text());
+    if (typeof parsed !== "object" || parsed === null) throw new Error("Writer lock is corrupt");
+    const processId = Reflect.get(parsed, "processId"),
+      token = Reflect.get(parsed, "token");
+    if (!Number.isInteger(processId) || typeof processId !== "number" || processId <= 0)
+      throw new Error("Writer lock is corrupt");
+    if (token !== undefined && (typeof token !== "string" || token.length === 0))
+      throw new Error("Writer lock is corrupt");
+    return { processId, ...(token === undefined ? {} : { token }) };
+  },
+  processIsActive = (processId: number): boolean => {
+    try {
+      process.kill(processId, 0);
+      return true;
+    } catch (error) {
+      return filesystemErrorCode(error) !== "ESRCH";
+    }
+  },
+  createWriterLock = async (
+    configuration: Configuration,
+    lockPath: string,
+    lockToken: string,
+  ): Promise<void> => {
+    const handle = await open(lockPath, "wx");
+    try {
+      await handle.writeFile(
+        JSON.stringify({
+          createdAt: new Date().toISOString(),
+          processId: process.pid,
+          token: lockToken,
+        }),
+      );
+      if (configuration.acknowledgement === "durable") {
+        await handle.sync();
+        await synchronize(configuration.root);
+      }
+      await handle.close();
+    } catch (error) {
+      await handle.close().catch(() => undefined);
+      await rm(lockPath, { force: true }).catch(() => undefined);
+      throw error;
+    }
+  },
+  acquireRecoveryGuard = async (configuration: Configuration): Promise<() => Promise<void>> => {
+    const guardPath = join(configuration.root, `${stagingPrefix}writer-recovery`),
+      guardToken = crypto.randomUUID(),
+      createGuard = async (): Promise<void> => {
+        const handle = await open(guardPath, "wx");
+        try {
+          await handle.writeFile(
+            JSON.stringify({ processId: process.pid, token: guardToken }),
+          );
+          await handle.close();
+        } catch (error) {
+          await handle.close().catch(() => undefined);
+          await rm(guardPath, { force: true }).catch(() => undefined);
+          throw error;
+        }
+      };
+    try {
+      await createGuard();
+    } catch (error) {
+      if (filesystemErrorCode(error) !== "EEXIST") throw error;
+      let guardIsActive = false;
+      try {
+        guardIsActive = processIsActive((await readWriterLock(guardPath)).processId);
+      } catch {
+        guardIsActive = false;
+      }
+      if (guardIsActive) throw new Error("Filesystem writer recovery is already in progress");
+      await rm(guardPath, { force: true });
+      await createGuard();
+    }
+    return async () => {
+      const guard = await readWriterLock(guardPath).catch(() => undefined);
+      if (guard?.token === guardToken) await rm(guardPath, { force: true });
+    };
+  },
+  acquireWriterLock = async (
+    configuration: Configuration,
+  ): Promise<{ readonly lockPath: string; readonly lockToken: string }> => {
+    const lockPath = join(configuration.root, "writer.lock"),
+      lockToken = crypto.randomUUID();
+    try {
+      await createWriterLock(configuration, lockPath, lockToken);
+      return { lockPath, lockToken };
+    } catch (error) {
+      if (filesystemErrorCode(error) !== "EEXIST") throw error;
+    }
+    const releaseRecoveryGuard = await acquireRecoveryGuard(configuration);
+    try {
+      try {
+        await createWriterLock(configuration, lockPath, lockToken);
+        return { lockPath, lockToken };
+      } catch (error) {
+        if (filesystemErrorCode(error) !== "EEXIST") throw error;
+      }
+      const existingLock = await readWriterLock(lockPath);
+      if (processIsActive(existingLock.processId))
+        throw new Error("Filesystem Persistence root already has an initialized writer");
+      await rm(lockPath, { force: true });
+      try {
+        await createWriterLock(configuration, lockPath, lockToken);
+      } catch (error) {
+        if (filesystemErrorCode(error) === "EEXIST")
+          throw new Error("Filesystem Persistence root already has an initialized writer");
+        throw error;
+      }
+      return { lockPath, lockToken };
+    } finally {
+      await releaseRecoveryGuard();
+    }
+  },
+  removeOwnedWriterLock = async (lockPath: string, lockToken: string): Promise<void> => {
+    const lock = await readWriterLock(lockPath).catch(() => undefined);
+    if (lock?.token === lockToken) await rm(lockPath, { force: true });
   },
   commitAssetBlob = (
     configuration: Configuration,
@@ -699,27 +827,25 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
         async () => mkdir(configuration.root, { recursive: true }),
         "Filesystem Persistence root creation failed",
       );
-      const lockPath = join(configuration.root, "writer.lock");
-      yield* fromPromise(async () => {
-        const handle = await open(lockPath, "wx");
-        try {
-          await handle.writeFile(
-            JSON.stringify({ createdAt: new Date().toISOString(), processId: process.pid }),
-          );
-          if (configuration.acknowledgement === "durable") {
-            await handle.sync();
-            await synchronize(configuration.root);
-          }
-        } finally {
-          await handle.close();
-        }
-      }, "Filesystem Persistence root already has an initialized writer");
-      const initialState = yield* fromPromise(
-          async () => initializeRoot(configuration, definitionSnapshot, compileOptions),
-          "Filesystem Persistence initialization failed",
+      const acquiredLock = yield* fromPromise(
+        async () => acquireWriterLock(configuration),
+        "Filesystem Persistence root already has an initialized writer",
+      );
+      return yield* Effect.gen(function* initializeFilesystemRoot() {
+        const initialState = yield* fromPromise(
+            async () => initializeRoot(configuration, definitionSnapshot, compileOptions),
+            "Filesystem Persistence initialization failed",
+          ),
+          context = yield* makeServices(configuration, identifiers, initialState);
+        return { context, ...acquiredLock };
+      }).pipe(
+        Effect.onError(() =>
+          fromPromise(
+            async () => removeOwnedWriterLock(acquiredLock.lockPath, acquiredLock.lockToken),
+            "Filesystem Persistence writer lock cleanup failed",
+          ).pipe(Effect.ignore),
         ),
-        context = yield* makeServices(configuration, identifiers, initialState);
-      return { context, lockPath };
+      );
     });
 
 /**
@@ -732,7 +858,7 @@ export const layer = (
   Layer.effectContext(
     Effect.acquireRelease(acquire(configuration), (acquired) =>
       fromPromise(
-        async () => rm(acquired.lockPath, { force: true }),
+        async () => removeOwnedWriterLock(acquired.lockPath, acquired.lockToken),
         "Filesystem Persistence writer lock cleanup failed",
       ).pipe(Effect.ignore),
     ).pipe(Effect.map((acquired) => acquired.context)),
@@ -751,7 +877,7 @@ export const cmsLayer = (
       acquire(configuration, configuration.definitionSnapshot, configuration.compileOptions ?? {}),
       (acquired) =>
         fromPromise(
-          async () => rm(acquired.lockPath, { force: true }),
+          async () => removeOwnedWriterLock(acquired.lockPath, acquired.lockToken),
           "Filesystem Persistence writer lock cleanup failed",
         ).pipe(Effect.ignore),
     ).pipe(Effect.map((acquired) => acquired.context)),

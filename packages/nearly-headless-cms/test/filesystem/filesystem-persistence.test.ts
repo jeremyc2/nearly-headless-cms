@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdtemp, readdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { Deferred, Effect, Exit, Fiber, Layer, Stream } from "effect";
 import { Asset, ContentDefinition, Persistence } from "../../src/index.ts";
 import { CryptoIdentifierGenerator } from "../../src/adapters/index.ts";
@@ -279,5 +280,56 @@ describe("BunFilesystemPersistence", () => {
     );
     expect(Exit.isFailure(unexpectedRoot)).toBeTrue();
     expect(await Bun.file(evidencePath).exists()).toBeTrue();
+    expect(await Bun.file(join(root, "writer.lock")).exists()).toBeFalse();
+  });
+
+  test("recovers the writer lock after its owning process terminates", async () => {
+    const root = await mkdtemp(join(tmpdir(), "nearly-headless-cms-writer-crash-")),
+      packageSourceUrl = pathToFileURL(join(import.meta.dir, "../../src/index.ts")).href,
+      adaptersSourceUrl = pathToFileURL(join(import.meta.dir, "../../src/adapters/index.ts")).href,
+      filesystemSourceUrl = pathToFileURL(join(import.meta.dir, "../../src/bun/filesystem/index.ts"))
+        .href,
+      childScript = `
+        import { Effect, Layer } from "effect";
+        import { Persistence } from ${JSON.stringify(packageSourceUrl)};
+        import { CryptoIdentifierGenerator } from ${JSON.stringify(adaptersSourceUrl)};
+        import { BunFilesystemPersistence } from ${JSON.stringify(filesystemSourceUrl)};
+        const filesystemLayer = BunFilesystemPersistence.layer({
+          acknowledgement: "atomic",
+          root: ${JSON.stringify(root)},
+        }).pipe(Layer.provide(CryptoIdentifierGenerator.layer));
+        await Effect.runPromise(Effect.scoped(Effect.gen(function* holdWriterLock() {
+          yield* Layer.build(filesystemLayer);
+          console.log("writer-ready");
+          yield* Effect.never;
+        })));
+      `,
+      child = Bun.spawn([process.execPath, "--eval", childScript], {
+        cwd: join(import.meta.dir, "../.."),
+        stderr: "pipe",
+        stdout: "pipe",
+      }),
+      standardOutputReader = child.stdout.getReader(),
+      firstOutput = await standardOutputReader.read();
+    if (firstOutput.done) {
+      throw new Error(
+        `Writer child exited before startup: ${await new Response(child.stderr).text()}`,
+      );
+    }
+    expect(new TextDecoder().decode(firstOutput.value)).toContain("writer-ready");
+    child.kill(9);
+    await child.exited;
+
+    const recoveredGeneration = await Effect.runPromise(
+      Persistence.EntryPersistence.pipe(
+        Effect.flatMap((entries) => entries.readGeneration),
+        Effect.provide(
+          BunFilesystemPersistence.layer({ acknowledgement: "atomic", root }).pipe(
+            Layer.provide(CryptoIdentifierGenerator.layer),
+          ),
+        ),
+      ),
+    );
+    expect(recoveredGeneration.generation).toBe(0);
   });
 });
