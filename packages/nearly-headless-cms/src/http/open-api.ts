@@ -22,6 +22,12 @@ interface OperationDescriptor {
   readonly successStatus?: number;
 }
 
+const createdStatus = 201;
+const noContentStatus = 204;
+const okStatus = 200;
+const firstIndex = 0;
+const indentationSpaces = 2;
+
 const errorSchema = {
     properties: {
       code: { type: "string" },
@@ -151,14 +157,14 @@ const errorSchema = {
     },
   },
   successStatuses = new Map<string, number>([
-    ["createEntry", 201],
-    ["ingestAsset", 201],
-    ["appendDefinitionRevision", 201],
-    ["retireDefinition", 201],
-    ["activateDefinitionSnapshot", 201],
-    ["appendMigrationManifest", 201],
-    ["deleteAsset", 204],
-    ["permanentlyPurgeEntry", 204],
+    ["createEntry", createdStatus],
+    ["ingestAsset", createdStatus],
+    ["appendDefinitionRevision", createdStatus],
+    ["retireDefinition", createdStatus],
+    ["activateDefinitionSnapshot", createdStatus],
+    ["appendMigrationManifest", createdStatus],
+    ["deleteAsset", noContentStatus],
+    ["permanentlyPurgeEntry", noContentStatus],
   ]),
   successSchemas = new Map<string, Readonly<Record<string, unknown>>>([
     ["createEntry", { $ref: "#/components/schemas/MutationResult" }],
@@ -236,7 +242,7 @@ const errorSchema = {
     "listMigrationManifests",
   ]),
   writeTokenHeaderOperations = new Set(["replaceEntry", "deleteEntry"]),
-  additionalBodylessSuccessStatuses = new Map<string, readonly number[]>([["deleteEntry", [204]]]),
+  additionalBodylessSuccessStatuses = new Map<string, readonly number[]>([["deleteEntry", [noContentStatus]]]),
   errorResponses = (): Readonly<Record<string, unknown>> =>
     Object.fromEntries(
       [
@@ -267,7 +273,7 @@ const errorSchema = {
     ),
   effectSchema = (schema: OperationSchema): Readonly<Record<string, unknown>> => {
     const document = Schema.toJsonSchemaDocument(schema);
-    return Object.keys(document.definitions).length === 0
+    return Object.keys(document.definitions).length === firstIndex
       ? document.schema
       : { ...document.schema, $defs: document.definitions };
   },
@@ -275,8 +281,8 @@ const errorSchema = {
     path: string,
     operationSchemas?: OperationSchemas,
   ): readonly Readonly<Record<string, unknown>>[] =>
-    [...path.matchAll(/\{([^}]+)\}/gu)].map((match) => {
-      const parameterName = match[1]!,
+    [...path.matchAll(/\{(?<parameterName>[^}]+)\}/gu)].map((match) => {
+      const parameterName = match.groups?.["parameterName"] ?? "",
         declaredSchema = operationSchemas?.pathParameters?.[parameterName];
       return {
         in: "path",
@@ -330,8 +336,8 @@ const errorSchema = {
   ): Readonly<Record<string, unknown>> => {
     const {operationIdentifier} = operationDescriptor,
       successStatus =
-        operationDescriptor.successStatus ?? successStatuses.get(operationIdentifier) ?? 200,
-      bodyless = method === "head" || successStatus === 204,
+      operationDescriptor.successStatus ?? successStatuses.get(operationIdentifier) ?? okStatus,
+      bodyless = method === "head" || successStatus === noContentStatus,
       parameters = [
         ...pathParameters(path, operationDescriptor.schemas),
         ...queryParameters(operationIdentifier, operationDescriptor.schemas),
@@ -360,7 +366,7 @@ const errorSchema = {
             : effectSchema(operationDescriptor.schemas.response));
     return {
       operationId: operationIdentifier,
-      ...(parameters.length === 0 ? {} : { parameters }),
+      ...(parameters.length === firstIndex ? {} : { parameters }),
       ...(requestBodySchema === undefined
         ? {}
         : {
@@ -533,4 +539,4 @@ const sortedEntries = (value: object): readonly (readonly [string, unknown])[] =
 
 /** Serializes an OpenAPI document with deterministic recursively sorted object keys. */
 export const stringify = (document: Document): string =>
-  `${JSON.stringify(sortValue(document), null, 2)}\n`;
+  `${JSON.stringify(sortValue(document), null, indentationSpaces)}\n`;

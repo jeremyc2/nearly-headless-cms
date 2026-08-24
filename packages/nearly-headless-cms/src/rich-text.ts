@@ -4,7 +4,9 @@ import { type JsonObject, type JsonValue, isJsonValue } from "./internal/json.ts
 /** Stable identifier stored in every Nearly Headless CMS Rich Text document. */
 export const format = "nearly-headless-cms/rich-text";
 /** Current serialized Rich Text document format version. */
-export const formatVersion = 1;
+export const formatVersion = 1,
+  emptyLength = 0,
+  headingLevels = [2, 3, 4] as const;
 
 /** The closed core vocabulary of semantic inline text marks. */
 export type Mark = "bold" | "italic" | "code" | "strikethrough";
@@ -42,7 +44,7 @@ export interface ParagraphNode {
 /** A semantic heading block at levels two through four. */
 export interface HeadingNode {
   readonly type: "heading";
-  readonly level: 2 | 3 | 4;
+  readonly level: (typeof headingLevels)[number];
   readonly children: readonly InlineNode[];
 }
 
@@ -135,13 +137,13 @@ const coreNodeTypes = new Set([
     "list-item",
     "asset-reference",
   ]),
+  isObject = (value: unknown): value is Readonly<Record<string, unknown>> =>
+    value !== null && typeof value === "object" && !Array.isArray(value),
   makeIssue = (
     path: readonly (string | number)[],
     reason: string,
     message: string,
   ): ValidationIssue => ({ message, path, reason }),
-  isObject = (value: unknown): value is Readonly<Record<string, unknown>> =>
-    value !== null && typeof value === "object" && !Array.isArray(value),
   validateText = (
     node: Readonly<Record<string, unknown>>,
     path: readonly (string | number)[],
@@ -201,7 +203,7 @@ const coreNodeTypes = new Set([
       }
       case "entry-reference": {
         const issues: ValidationIssue[] = [];
-        if (typeof node["entryId"] !== "string" || node["entryId"].length === 0) {
+        if (typeof node["entryId"] !== "string" || node["entryId"].length === emptyLength) {
           issues.push(
             makeIssue(
               [...path, "entryId"],
@@ -210,7 +212,7 @@ const coreNodeTypes = new Set([
             ),
           );
         }
-        if (!Array.isArray(node["children"]) || node["children"].length === 0) {
+        if (!Array.isArray(node["children"]) || node["children"].length === emptyLength) {
           issues.push(
             makeIssue(
               [...path, "children"],
@@ -257,7 +259,7 @@ const coreNodeTypes = new Set([
     switch (node["type"]) {
       case "paragraph":
       case "heading": {
-        if (node["type"] === "heading" && ![2, 3, 4].includes(Number(node["level"]))) {
+        if (node["type"] === "heading" && !headingLevels.some((level) => level === Number(node["level"]))) {
           issues.push(
             makeIssue(
               [...path, "level"],
@@ -278,7 +280,7 @@ const coreNodeTypes = new Set([
         return issues;
       }
       case "quote": {
-        if (!Array.isArray(node["children"]) || node["children"].length === 0) {
+        if (!Array.isArray(node["children"]) || node["children"].length === emptyLength) {
           return [
             makeIssue(
               [...path, "children"],
@@ -315,7 +317,7 @@ const coreNodeTypes = new Set([
       }
       case "ordered-list":
       case "unordered-list": {
-        if (!Array.isArray(node["children"]) || node["children"].length === 0) {
+        if (!Array.isArray(node["children"]) || node["children"].length === emptyLength) {
           return [makeIssue([...path, "children"], "expectedListItem", "List requires List items")];
         }
         for (const [index, child] of node["children"].entries()) {
@@ -339,7 +341,7 @@ const coreNodeTypes = new Set([
         return issues;
       }
       case "asset-reference": {
-        if (typeof node["assetId"] !== "string" || node["assetId"].length === 0) {
+        if (typeof node["assetId"] !== "string" || node["assetId"].length === emptyLength) {
           issues.push(
             makeIssue(
               [...path, "assetId"],
@@ -360,7 +362,7 @@ const coreNodeTypes = new Set([
         if (node["caption"] !== undefined && typeof node["caption"] !== "string") {
           issues.push(makeIssue([...path, "caption"], "expectedCaption", "Caption must be text"));
         }
-        if (!Array.isArray(node["children"]) || node["children"].length > 0) {
+        if (!Array.isArray(node["children"]) || node["children"].length > emptyLength) {
           issues.push(
             makeIssue(
               [...path, "children"],
@@ -413,7 +415,7 @@ const coreNodeTypes = new Set([
               "Extension requires a children array",
             ),
           );
-        } else if (extension.allowedChildren === "none" && node["children"].length > 0) {
+        } else if (extension.allowedChildren === "none" && node["children"].length > emptyLength) {
           issues.push(
             makeIssue(
               [...path, "children"],
@@ -462,8 +464,8 @@ export const validate = (value: unknown, options: ValidationOptions = {}): Docum
     issues = value["children"].flatMap((child, index) =>
       validateBlock(child, ["children", index], extensions),
     );
-  if (issues.length > 0) {
-    throw InvalidInput.make({ issues, message: issues[0]?.message ?? "Invalid Rich Text" });
+  if (issues.length > emptyLength) {
+    throw InvalidInput.make({ issues, message: issues.at(emptyLength)?.message ?? "Invalid Rich Text" });
   }
   return structuredClone(value) as unknown as Document;
 };
