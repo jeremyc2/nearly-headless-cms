@@ -46,9 +46,9 @@ export const layer = ({ snapshot }: Options): Layer.Layer<DefinitionCatalog> =>
           migrationPreparations: [],
           retiredDefinitionIds: new Set(),
           revisions: snapshot.input.definitions.map((definition) => ({
+            definition,
             definitionId: definition.id,
             revision: definition.revision ?? 1,
-            definition,
             ...(definition.parentRevision === undefined
               ? {}
               : { parentRevision: definition.parentRevision }),

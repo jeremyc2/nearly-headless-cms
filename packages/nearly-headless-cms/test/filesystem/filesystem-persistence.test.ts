@@ -58,7 +58,7 @@ describe("BunFilesystemPersistence", () => {
                   entry: {
                     contentTypeId: "note",
                     id: "note-1",
-                    values: { title: "Durable", slug: "durable" },
+                    values: { slug: "durable", title: "Durable" },
                   },
                   revisions: [],
                 },

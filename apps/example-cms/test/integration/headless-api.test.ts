@@ -38,9 +38,9 @@ describe("Example CMS Headless API", () => {
       request = () =>
         new Request(`http://cms.test/api/v1/headless/posts/${postId}/comments`, {
           body: JSON.stringify({
+            body: "Thoughtful post.",
             displayName: "Reader",
             websiteUrl: "https://example.com",
-            body: "Thoughtful post.",
           }),
           headers: { "content-type": "application/json", "idempotency-key": "comment-key-1" },
           method: "POST",

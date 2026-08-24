@@ -6,10 +6,10 @@ export async function GET(context: APIContext) {
   return rss({
     description: "Field notes for durable ideas",
     items: publicExport.posts.map((post) => ({
-      title: post.title,
       description: post.excerpt,
-      pubDate: new Date(post.publishedAt),
       link: `/posts/${post.slug}/`,
+      pubDate: new Date(post.publishedAt),
+      title: post.title,
     })),
     site: context.site!,
     title: "The Lantern",

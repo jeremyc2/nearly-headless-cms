@@ -7,12 +7,12 @@ const snapshot = ContentDefinition.compile({
   definitionSpaceId: "history-contract",
   definitions: [
     {
-      kind: "contentType",
-      id: "note",
-      name: "Note",
-      history: true,
-      revisionRetention: { maximumRevisionCount: 2 },
       fields: [{ key: "title", label: "Title", required: true, kind: { kind: "text" } }],
+      history: true,
+      id: "note",
+      kind: "contentType",
+      name: "Note",
+      revisionRetention: { maximumRevisionCount: 2 },
     },
   ],
   snapshotId: "initial",

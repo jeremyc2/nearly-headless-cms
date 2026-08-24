@@ -17,9 +17,6 @@ const snapshot = ContentDefinition.compile({
     definitionSpaceId: "authorization-contract",
     definitions: [
       {
-        kind: "contentType",
-        id: "person",
-        name: "Person",
         fields: [
           { key: "name", label: "Name", required: true, kind: { kind: "text" } },
           {
@@ -29,11 +26,11 @@ const snapshot = ContentDefinition.compile({
             kind: { kind: "relationship", targetContentTypeIds: ["person"] },
           },
         ],
+        id: "person",
+        kind: "contentType",
+        name: "Person",
       },
       {
-        kind: "fieldGroup",
-        id: "byline",
-        name: "Byline",
         fields: [
           {
             key: "editor",
@@ -41,11 +38,11 @@ const snapshot = ContentDefinition.compile({
             kind: { kind: "relationship", targetContentTypeIds: ["person"] },
           },
         ],
+        id: "byline",
+        kind: "fieldGroup",
+        name: "Byline",
       },
       {
-        kind: "contentType",
-        id: "article",
-        name: "Article",
         fieldGroups: [
           { fieldGroupId: "byline", key: "metadata", label: "Metadata", mode: "nested" },
         ],
@@ -61,6 +58,9 @@ const snapshot = ContentDefinition.compile({
             },
           },
         ],
+        id: "article",
+        kind: "contentType",
+        name: "Article",
       },
     ],
     snapshotId: "initial",

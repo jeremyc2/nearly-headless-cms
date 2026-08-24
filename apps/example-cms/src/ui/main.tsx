@@ -232,13 +232,13 @@ function ContentList() {
             pageSize: 50,
             sort: [
               {
+                direction: "descending",
                 path:
                   contentTypeId === "comment"
                     ? "created-at"
                     : contentTypeId === "post"
                       ? "published-at"
                       : "name",
-                direction: "descending",
               },
             ],
           }),

@@ -76,13 +76,13 @@ export const layer = (options: Options = {}): Layer.Layer<Management, never, Gen
             const id = yield* identifiers.generate("asset");
             const digest = createHash("sha256").update(bytes).digest("hex");
             const stored: StoredAsset = {
-              id,
               bytes,
+              id,
               metadata: {
-                filename: input.filename,
-                mediaType: input.mediaType,
                 byteLength: bytes.byteLength,
                 digest,
+                filename: input.filename,
+                mediaType: input.mediaType,
                 ...(input.width === undefined ? {} : { width: input.width }),
                 ...(input.height === undefined ? {} : { height: input.height }),
                 ...(input.defaultAlternativeText === undefined

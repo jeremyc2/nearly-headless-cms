@@ -159,7 +159,7 @@ const lowerCamelCase = (key: string): string =>
         "x-request-id": requestId,
       });
     if (request.headers.get("if-none-match") === etag) {
-      return new Response(null, { status: 304, headers });
+      return new Response(null, { headers, status: 304 });
     }
     const range = request.headers.get("range");
     if (
@@ -168,8 +168,8 @@ const lowerCamelCase = (key: string): string =>
       request.headers.get("if-range") !== etag
     ) {
       return new Response(request.method === "HEAD" ? null : asset.bytes.slice().buffer, {
-        status: 200,
         headers,
+        status: 200,
       });
     }
     if (range !== null) {
@@ -230,8 +230,8 @@ export const makeDeliveryOperations = (
             cms,
             request,
             "post",
-            { path: "status", operator: "equals", value: "published" },
-            [{ path: "published-at", direction: "descending" }],
+            { operator: "equals", path: "status", value: "published" },
+            [{ direction: "descending", path: "published-at" }],
           ),
         identifier: "listPublishedPosts",
         method: "GET",
@@ -270,11 +270,11 @@ export const makeDeliveryOperations = (
                   "post",
                   {
                     all: [
-                      { path: "status", operator: "equals", value: "published" },
-                      { path: relationshipPath, operator: "equals", value: owner["id"] as string },
+                      { operator: "equals", path: "status", value: "published" },
+                      { operator: "equals", path: relationshipPath, value: owner["id"] as string },
                     ],
                   },
-                  [{ path: "published-at", direction: "descending" }],
+                  [{ direction: "descending", path: "published-at" }],
                 );
               }),
             identifier: `list${contentTypeId[0]!.toUpperCase()}${contentTypeId.slice(1)}Posts`,
@@ -292,11 +292,11 @@ export const makeDeliveryOperations = (
             "comment",
             {
               all: [
-                { path: "post", operator: "equals", value: parameters["postId"]! },
-                { path: "status", operator: "equals", value: "approved" },
+                { operator: "equals", path: "post", value: parameters["postId"]! },
+                { operator: "equals", path: "status", value: "approved" },
               ],
             },
-            [{ path: "created-at", direction: "ascending" }],
+            [{ direction: "ascending", path: "created-at" }],
           ),
         identifier: "listApprovedComments",
         method: "GET",
@@ -362,16 +362,16 @@ export const makeDeliveryOperations = (
             const result = yield* cms.createEntry({
               contentTypeId: "comment",
               values: {
-                post: post.id,
-                "display-name": displayName,
-                "website-url": websiteUrl ?? null,
                 body: commentBody,
                 "created-at": new Date().toISOString(),
+                "display-name": displayName,
+                post: post.id,
                 status: "pending",
+                "website-url": websiteUrl ?? null,
               },
             });
             const submissionId = "writeToken" in result ? result.entry.id : result.id;
-            const receipt = { submissionId, status: "pending" };
+            const receipt = { status: "pending", submissionId };
             yield* Effect.tryPromise({
               catch: (cause) =>
                 new CmsError.InfrastructureFailure({
@@ -422,8 +422,8 @@ export const makeDeliveryOperations = (
           execute: ({ cms, parameters, request, requestId, snapshot }) =>
             Effect.gen(function* () {
               const posts = yield* queryAll(cms, "post", {
-                path: "status",
                 operator: "equals",
+                path: "status",
                 value: "published",
               });
               const authors = yield* queryAll(cms, "author");
@@ -450,14 +450,14 @@ export const makeDeliveryOperations = (
               posts = querySnapshot(
                 consistentSnapshot,
                 "post",
-                { path: "status", operator: "equals", value: "published" },
-                [{ path: "published-at", direction: "descending" }],
+                { operator: "equals", path: "status", value: "published" },
+                [{ direction: "descending", path: "published-at" }],
               ),
               comments = querySnapshot(
                 consistentSnapshot,
                 "comment",
-                { path: "status", operator: "equals", value: "approved" },
-                [{ path: "created-at", direction: "ascending" }],
+                { operator: "equals", path: "status", value: "approved" },
+                [{ direction: "ascending", path: "created-at" }],
               ),
               authors = querySnapshot(consistentSnapshot, "author"),
               categories = querySnapshot(consistentSnapshot, "category"),
@@ -467,14 +467,14 @@ export const makeDeliveryOperations = (
                 .filter((asset) => reachableAssetIds.has(asset.id))
                 .map(({ bytes: _bytes, ...asset }) => asset),
               artifact = {
+                assets: assets as unknown as ContentDefinition.JsonValue,
+                authors: authors.map(publicValue),
+                categories: categories.map(publicValue),
+                comments: comments.map(publicValue),
                 definitionFingerprint: snapshot.fingerprint,
                 generatedAt: "2026-08-23T16:00:00.000Z",
                 posts: posts.map(publicValue),
-                authors: authors.map(publicValue),
-                categories: categories.map(publicValue),
                 tags: tags.map(publicValue),
-                comments: comments.map(publicValue),
-                assets: assets as unknown as ContentDefinition.JsonValue,
               },
               bytes = new TextEncoder().encode(JSON.stringify(artifact));
             if (bytes.byteLength > 5_000_000)
@@ -486,16 +486,16 @@ export const makeDeliveryOperations = (
             const digest = new Bun.CryptoHasher("sha256").update(bytes).digest("hex"),
               etag = `"sha256-${digest}"`,
               headers = new Headers({
-                "content-type": "application/json; charset=utf-8",
-                "content-length": String(bytes.byteLength),
-                etag,
                 "cache-control": "no-cache",
-                "x-request-id": requestId,
                 "cms-definition-fingerprint": snapshot.fingerprint,
+                "content-length": String(bytes.byteLength),
+                "content-type": "application/json; charset=utf-8",
+                etag,
+                "x-request-id": requestId,
               });
             return request.headers.get("if-none-match") === etag
-              ? new Response(null, { status: 304, headers })
-              : new Response(bytes, { status: 200, headers });
+              ? new Response(null, { headers, status: 304 })
+              : new Response(bytes, { headers, status: 200 });
           }),
         identifier: "exportPublicBlog",
         method: "GET",

@@ -11,7 +11,7 @@ import {
   NotFound,
 } from "../../CmsError.ts";
 import { Generator } from "../../Identifier.ts";
-import { type CompiledSnapshot, type CompileOptions, compile } from "../../ContentDefinition.ts";
+import { type CompileOptions, type CompiledSnapshot, compile } from "../../ContentDefinition.ts";
 import {
   type CatalogState,
   DefinitionCatalog,
@@ -21,9 +21,9 @@ import {
   type EntryRecord,
 } from "../../Persistence.ts";
 
-const storageFormat = "nearly-headless-cms/filesystem",
-  storageFormatVersion = 1,
-  stagingPrefix = ".nhcms-stage-";
+const stagingPrefix = ".nhcms-stage-",
+  storageFormat = "nearly-headless-cms/filesystem",
+  storageFormatVersion = 1;
 
 export interface Configuration {
   readonly root: string;
@@ -400,10 +400,10 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
                     new Conflict({ message: "Filesystem Entry generation is stale" }),
                   );
                 const next: State = {
-                  generation: current.generation + 1,
-                  entryGeneration: current.entryGeneration + 1,
-                  records: new Map(records),
                   assets: current.assets,
+                  entryGeneration: current.entryGeneration + 1,
+                  generation: current.generation + 1,
+                  records: new Map(records),
                   ...(current.catalog === undefined ? {} : { catalog: current.catalog }),
                 };
                 const entryEncodingByteLength = encode([...records]).byteLength;
@@ -449,10 +449,10 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
                 const assets = new Map(current.assets);
                 assets.delete(assetId);
                 const next: State = {
-                  generation: current.generation + 1,
-                  entryGeneration: current.entryGeneration,
-                  records: current.records,
                   assets,
+                  entryGeneration: current.entryGeneration,
+                  generation: current.generation + 1,
+                  records: current.records,
                   ...(current.catalog === undefined ? {} : { catalog: current.catalog }),
                 };
                 return fromPromise(
@@ -477,11 +477,11 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
                   new InvalidInput({ message: "Asset filename and media type are required" }),
                 );
               const metadataByteLength = encode({
+                defaultAlternativeText: input.defaultAlternativeText,
                 filename: input.filename,
+                height: input.height,
                 mediaType: input.mediaType,
                 width: input.width,
-                height: input.height,
-                defaultAlternativeText: input.defaultAlternativeText,
               }).byteLength;
               if (metadataByteLength > (configuration.maximumMetadataByteLength ?? 16_384))
                 return yield* Effect.fail(
@@ -504,10 +504,10 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
                 );
               const assetId = yield* identifiers.generate("asset");
               const metadata: Metadata = {
-                filename: input.filename,
-                mediaType: input.mediaType,
                 byteLength: bytes.byteLength,
                 digest: assetDigest,
+                filename: input.filename,
+                mediaType: input.mediaType,
                 ...(input.width === undefined ? {} : { width: input.width }),
                 ...(input.height === undefined ? {} : { height: input.height }),
                 ...(input.defaultAlternativeText === undefined
@@ -517,10 +517,10 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
               const diskAsset: DiskAsset = { id: assetId, metadata };
               yield* SynchronizedRef.modifyEffect(state, (current) => {
                 const next: State = {
-                  generation: current.generation + 1,
-                  entryGeneration: current.entryGeneration,
-                  records: current.records,
                   assets: new Map(current.assets).set(assetId, diskAsset),
+                  entryGeneration: current.entryGeneration,
+                  generation: current.generation + 1,
+                  records: current.records,
                   ...(current.catalog === undefined ? {} : { catalog: current.catalog }),
                 };
                 return fromPromise(
@@ -559,7 +559,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
                 return yield* Effect.fail(
                   failure("Filesystem Asset Blob is corrupt", new Error("digest mismatch")),
                 );
-              return { id: asset.id, metadata: asset.metadata, bytes };
+              return { bytes, id: asset.id, metadata: asset.metadata };
             }),
         }),
         missingCatalog = (): InfrastructureFailure =>

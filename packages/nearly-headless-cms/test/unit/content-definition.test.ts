@@ -7,9 +7,6 @@ describe("ContentDefinition.compile", () => {
       definitionSpaceId: "example-blog",
       definitions: [
         {
-          kind: "contentType",
-          id: "post",
-          name: "Post",
           fields: [
             { key: "title", label: "Title", required: true, kind: { kind: "text", minLength: 1 } },
             {
@@ -19,6 +16,9 @@ describe("ContentDefinition.compile", () => {
               kind: { kind: "enum", values: ["draft", "published"] },
             },
           ],
+          id: "post",
+          kind: "contentType",
+          name: "Post",
         },
       ],
       snapshotId: "initial",
@@ -39,27 +39,23 @@ describe("ContentDefinition.compile", () => {
       definitionSpaceId: "field-groups",
       definitions: [
         {
-          kind: "fieldGroup",
-          id: "address",
-          name: "Address",
           fields: [
             { key: "city", label: "City", required: true, kind: { kind: "text" } },
             { key: "country", label: "Country", defaultValue: "US", kind: { kind: "text" } },
           ],
+          id: "address",
+          kind: "fieldGroup",
+          name: "Address",
         },
         {
-          kind: "fieldGroup",
-          id: "identity",
-          name: "Identity",
           fields: [
             { key: "display-name", label: "Display name", required: true, kind: { kind: "text" } },
           ],
+          id: "identity",
+          kind: "fieldGroup",
+          name: "Identity",
         },
         {
-          kind: "contentType",
-          id: "person",
-          name: "Person",
-          fields: [],
           fieldGroups: [
             { mode: "inline", fieldGroupId: "identity" },
             {
@@ -70,6 +66,10 @@ describe("ContentDefinition.compile", () => {
               required: true,
             },
           ],
+          fields: [],
+          id: "person",
+          kind: "contentType",
+          name: "Person",
         },
       ],
       snapshotId: "initial",
@@ -97,18 +97,18 @@ describe("ContentDefinition.compile", () => {
         definitionSpaceId: "field-groups",
         definitions: [
           {
-            kind: "fieldGroup",
-            id: "first",
-            name: "First",
-            fields: [],
             fieldGroups: [{ mode: "inline", fieldGroupId: "second" }],
+            fields: [],
+            id: "first",
+            kind: "fieldGroup",
+            name: "First",
           },
           {
-            kind: "fieldGroup",
-            id: "second",
-            name: "Second",
-            fields: [],
             fieldGroups: [{ mode: "inline", fieldGroupId: "first" }],
+            fields: [],
+            id: "second",
+            kind: "fieldGroup",
+            name: "Second",
           },
         ],
         snapshotId: "cycle",

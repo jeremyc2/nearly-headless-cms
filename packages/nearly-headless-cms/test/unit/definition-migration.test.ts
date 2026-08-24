@@ -5,10 +5,10 @@ const source = ContentDefinition.compile({
     definitionSpaceId: "example-blog",
     definitions: [
       {
-        kind: "contentType",
-        id: "post",
-        name: "Post",
         fields: [{ key: "title", label: "Title", required: true, kind: { kind: "text" } }],
+        id: "post",
+        kind: "contentType",
+        name: "Post",
       },
     ],
     snapshotId: "source",
@@ -17,10 +17,10 @@ const source = ContentDefinition.compile({
     definitionSpaceId: "example-blog",
     definitions: [
       {
-        kind: "contentType",
-        id: "post",
-        name: "Post",
         fields: [{ key: "headline", label: "Headline", required: true, kind: { kind: "text" } }],
+        id: "post",
+        kind: "contentType",
+        name: "Post",
       },
     ],
     snapshotId: "target",
@@ -36,12 +36,12 @@ describe("DefinitionMigration", () => {
         targetSnapshotId: "target",
       } as const,
       preparation = DefinitionMigration.prepare({
-        entries: [{ id: "post-1", contentTypeId: "post", values: { title: "Hello" } }],
+        entries: [{ contentTypeId: "post", id: "post-1", values: { title: "Hello" } }],
         handlers: [
           {
             identifier: "com.example.rename-title",
-            version: 1,
             transform: ({ values }) => ({ headline: values["title"] ?? "" }),
+            version: 1,
           },
         ],
         manifest,

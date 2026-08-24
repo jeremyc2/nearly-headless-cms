@@ -63,10 +63,10 @@ const serviceLayer: Layer.Layer<Cms.Service> = DevelopmentCms.layer({
     definitionSpaceId: "type-fixture",
     definitions: [
       {
-        id: "note",
-        name: "Note",
-        kind: "contentType",
         fields: [{ key: "title", label: "Title", kind: { kind: "text" }, required: true }],
+        id: "note",
+        kind: "contentType",
+        name: "Note",
       },
     ],
     snapshotId: "first",

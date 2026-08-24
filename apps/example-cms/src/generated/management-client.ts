@@ -32,8 +32,8 @@ const request = <Value>(
       cause instanceof ManagementClientFailure
         ? cause
         : new ManagementClientFailure({
-            status: 0,
             message: cause instanceof Error ? cause.message : "Management transport failed",
+            status: 0,
           }),
     try: async () => {
       const response = await fetch(`${baseUrl}${path}`, init);
@@ -43,9 +43,9 @@ const request = <Value>(
           readonly message?: string;
         };
         throw new ManagementClientFailure({
-          status: response.status,
           code: error.code,
           message: error.message ?? `Management request failed with ${response.status}`,
+          status: response.status,
         });
       }
       return response.status === 204 ? (undefined as Value) : ((await response.json()) as Value);
@@ -97,6 +97,22 @@ export const makeManagementClient = (baseUrl = "") => ({
       baseUrl,
       `/api/v1/management/definition-spaces/example-blog/content-types/${encodeURIComponent(contentTypeId)}/entries/${encodeURIComponent(entryId)}`,
     ),
+  inspectRevision: (
+    contentTypeId: string,
+    entryId: string,
+    revisionNumber: number,
+  ): Effect.Effect<
+    {
+      readonly revisionNumber: number;
+      readonly recordedAt: string;
+      readonly values: Readonly<Record<string, unknown>>;
+    },
+    ManagementClientFailure
+  > =>
+    request(
+      baseUrl,
+      `/api/v1/management/definition-spaces/example-blog/content-types/${encodeURIComponent(contentTypeId)}/entries/${encodeURIComponent(entryId)}/revisions/${revisionNumber}`,
+    ),
   listAssets: (): Effect.Effect<ReadonlyArray<unknown>, ManagementClientFailure> =>
     request(baseUrl, "/api/v1/management/definition-spaces/example-blog/assets"),
   listRevisions: (
@@ -114,22 +130,6 @@ export const makeManagementClient = (baseUrl = "") => ({
     request(
       baseUrl,
       `/api/v1/management/definition-spaces/example-blog/content-types/${encodeURIComponent(contentTypeId)}/entries/${encodeURIComponent(entryId)}/revisions?pageSize=20`,
-    ),
-  inspectRevision: (
-    contentTypeId: string,
-    entryId: string,
-    revisionNumber: number,
-  ): Effect.Effect<
-    {
-      readonly revisionNumber: number;
-      readonly recordedAt: string;
-      readonly values: Readonly<Record<string, unknown>>;
-    },
-    ManagementClientFailure
-  > =>
-    request(
-      baseUrl,
-      `/api/v1/management/definition-spaces/example-blog/content-types/${encodeURIComponent(contentTypeId)}/entries/${encodeURIComponent(entryId)}/revisions/${revisionNumber}`,
     ),
   queryEntries: (
     contentTypeId: string,

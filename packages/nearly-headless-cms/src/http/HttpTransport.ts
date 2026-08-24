@@ -266,7 +266,7 @@ const run = async <Value>(
       `inline; filename*=UTF-8''${encodeURIComponent(storedAsset.metadata.filename)}`,
     );
     if (request.headers.get("if-none-match") === etag) {
-      return new Response(null, { status: 304, headers: baseHeaders });
+      return new Response(null, { headers: baseHeaders, status: 304 });
     }
     const range = request.headers.get("range");
     if (
@@ -275,8 +275,8 @@ const run = async <Value>(
       request.headers.get("if-range") !== etag
     ) {
       return new Response(request.method === "HEAD" ? null : responseBody(storedAsset.bytes), {
-        status: 200,
         headers: baseHeaders,
+        status: 200,
       });
     }
     if (range !== null) {
@@ -447,7 +447,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
         headers.set("content-type", "application/json; charset=utf-8");
         headers.set("etag", `"${snapshot.fingerprint}"`);
         if (request.headers.get("if-none-match") === `"${snapshot.fingerprint}"`) {
-          return new Response(null, { status: 304, headers });
+          return new Response(null, { headers, status: 304 });
         }
         return new Response(JSON.stringify(discovery(snapshot, operations)), {
           headers,
@@ -469,8 +469,8 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
         return withOutcome(cms.readDefinitionCatalog, requestId, (state) =>
           jsonResponse(
             {
-              items: state.active.input.definitions,
               catalogVersion: state.version,
+              items: state.active.input.definitions,
             },
             200,
             requestId,
@@ -494,9 +494,9 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
               return definition === undefined
                 ? Effect.fail(new NotFound({ message: `Definition ${definitionId} was not found` }))
                 : Effect.succeed({
+                    catalogVersion: state.version,
                     definition,
                     retired: state.retiredDefinitionIds.has(definitionId),
-                    catalogVersion: state.version,
                   });
             }),
           ),
@@ -515,8 +515,8 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
           return withOutcome(cms.readDefinitionCatalog, requestId, (state) =>
             jsonResponse(
               {
-                items: state.revisions.filter((revision) => revision.definitionId === definitionId),
                 catalogVersion: state.version,
+                items: state.revisions.filter((revision) => revision.definitionId === definitionId),
               },
               200,
               requestId,
@@ -598,12 +598,12 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
         return withOutcome(cms.readDefinitionCatalog, requestId, (state) =>
           jsonResponse(
             {
+              catalogVersion: state.version,
               items: state.snapshots.map((snapshotRecord) => ({
                 ...snapshotRecord.input,
                 fingerprint: snapshotRecord.compiled.fingerprint,
                 activatedAt: snapshotRecord.activatedAt,
               })),
-              catalogVersion: state.version,
             },
             200,
             requestId,
@@ -632,8 +632,8 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
                   )
                 : Effect.succeed({
                     ...snapshotRecord.input,
-                    fingerprint: snapshotRecord.compiled.fingerprint,
                     activatedAt: snapshotRecord.activatedAt,
+                    fingerprint: snapshotRecord.compiled.fingerprint,
                   });
             }),
           ),
@@ -711,7 +711,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
       if (url.pathname === `${managementBase}/catalog-events` && request.method === "GET") {
         return withOutcome(cms.readDefinitionCatalog, requestId, (state) =>
           jsonResponse(
-            { items: state.events, catalogVersion: state.version },
+            { catalogVersion: state.version, items: state.events },
             200,
             requestId,
             snapshot.fingerprint,
@@ -722,7 +722,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
         if (request.method === "GET") {
           return withOutcome(cms.readDefinitionCatalog, requestId, (state) =>
             jsonResponse(
-              { items: state.migrationManifests, catalogVersion: state.version },
+              { catalogVersion: state.version, items: state.migrationManifests },
               200,
               requestId,
               snapshot.fingerprint,
@@ -994,9 +994,9 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
         return withOutcome(
           cms.listEntryRevisions({
             contentTypeId: revisionsMatch["contentTypeId"]!,
+            cursor: url.searchParams.get("cursor") ?? undefined,
             entryId: revisionsMatch["entryId"]!,
             pageSize: Number(url.searchParams.get("pageSize") ?? "20"),
-            cursor: url.searchParams.get("cursor") ?? undefined,
           }),
           requestId,
           (page) => jsonResponse(page, 200, requestId, snapshot.fingerprint),

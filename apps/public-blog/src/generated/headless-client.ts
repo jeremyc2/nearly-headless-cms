@@ -130,27 +130,27 @@ const fetchJson = <Value>(
             readonly message?: string;
           };
           throw new DeclaredFailure({
-            status: response.status,
             code: error.code ?? "Unknown",
             message: error.message ?? "Headless operation failed",
+            status: response.status,
           });
         }
         throw new ProtocolFailure({
-          status: response.status,
           message: `Unexpected Headless response ${response.status}`,
+          status: response.status,
         });
       }
       if (!mediaType.includes("application/json"))
         throw new ProtocolFailure({
-          status: response.status,
           message: "Expected a JSON Headless response",
+          status: response.status,
         });
       try {
         return (await response.json()) as Value;
       } catch {
         throw new ProtocolFailure({
-          status: response.status,
           message: "Malformed Headless JSON response",
+          status: response.status,
         });
       }
     },

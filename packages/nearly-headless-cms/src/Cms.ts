@@ -17,9 +17,9 @@ import {
   UnsupportedQueryCapability,
 } from "./CmsError.ts";
 import {
+  type CompileOptions,
   type CompiledContentType,
   type CompiledSnapshot,
-  type CompileOptions,
   type Definition,
   type Field,
   type RelationshipFieldKind,
@@ -377,8 +377,8 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
     }
     return { contentTypeId: entry.contentTypeId, id: entry.id, values };
   },
-  maximumExpansionPaths = 20,
   maximumExpansionDepth = 8,
+  maximumExpansionPaths = 20,
   groupExpansionPaths = (paths: readonly string[]): ReadonlyMap<string, readonly string[]> => {
     if (paths.length > maximumExpansionPaths) {
       throw new InvalidInput({
@@ -998,9 +998,9 @@ export const makeLayer = (
             });
             if (query.expansion !== undefined && query.expansion.length > 0) {
               yield* authorize("entry.expand", {
-                kind: "contentType",
-                definitionSpaceId: snapshot.definitionSpaceId,
                 contentTypeId: query.contentTypeId,
+                definitionSpaceId: snapshot.definitionSpaceId,
+                kind: "contentType",
               });
             }
             const generation = yield* persistence.readGeneration,
@@ -1171,8 +1171,8 @@ export const makeLayer = (
                   prepare({
                     entries: [
                       {
-                        id: input.entryId,
                         contentTypeId: input.contentTypeId,
+                        id: input.entryId,
                         values: sourceValues,
                       },
                     ],
@@ -1440,18 +1440,18 @@ export const makeLayer = (
               events: [
                 ...state.events,
                 {
+                  definitionId: input.definition.id,
                   eventType: "revisionAppended",
                   recordedAt,
-                  definitionId: input.definition.id,
                   ...(input.source === undefined ? {} : { source: input.source }),
                 },
               ],
               revisions: [
                 ...state.revisions,
                 {
+                  definition: structuredClone(input.definition),
                   definitionId: input.definition.id,
                   revision,
-                  definition: structuredClone(input.definition),
                   ...(input.definition.parentRevision === undefined
                     ? {}
                     : { parentRevision: input.definition.parentRevision }),
@@ -1482,9 +1482,9 @@ export const makeLayer = (
               events: [
                 ...state.events,
                 {
+                  definitionId: input.definitionId,
                   eventType: "definitionRetired",
                   recordedAt,
-                  definitionId: input.definitionId,
                   ...(input.source === undefined ? {} : { source: input.source }),
                 },
               ],
@@ -1688,8 +1688,8 @@ export const makeLayer = (
             if (preparation.report.status !== "ready") {
               return yield* Effect.fail(
                 new InvalidInput({
-                  message: "Definition Migration preparation failed",
                   issues: preparation.report.issues,
+                  message: "Definition Migration preparation failed",
                 }),
               );
             }
@@ -1823,8 +1823,8 @@ export const makeLayer = (
       return Service.of({
         activateDefinitionSnapshot: (input) => withOperationGate(activateDefinitionSnapshot(input)),
         activeDefinitionSnapshot: withOperationGate(activeDefinitionSnapshot),
-        appendMigrationManifest: (input) => withOperationGate(appendMigrationManifest(input)),
         appendDefinitionRevision: (input) => withOperationGate(appendDefinitionRevision(input)),
+        appendMigrationManifest: (input) => withOperationGate(appendMigrationManifest(input)),
         createEntry: (input) => withOperationGate(createEntry(input)),
         deleteAsset: (input) => withOperationGate(deleteAsset(input)),
         deleteEntry: (input) => withOperationGate(deleteEntry(input)),

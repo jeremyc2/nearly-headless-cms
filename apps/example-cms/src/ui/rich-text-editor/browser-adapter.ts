@@ -273,7 +273,7 @@ export class BrowserAdapter {
   readonly #handleCompositionEnd = (event: CompositionEvent): void => {
     this.dispatch({ active: false, type: "composition" });
     if (event.data.length > 0) {
-      this.dispatch({ type: "insertText", text: event.data });
+      this.dispatch({ text: event.data, type: "insertText" });
     }
   };
   readonly #handlePaste = (event: ClipboardEvent): void => {

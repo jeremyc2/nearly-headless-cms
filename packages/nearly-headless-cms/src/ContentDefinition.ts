@@ -10,11 +10,11 @@ import {
 
 export type { JsonObject, JsonValue } from "./internal/json.ts";
 
-const identifierPattern = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/,
+const calendarDatePattern = /^\d{4}-\d{2}-\d{2}$/,
   customIdentifierPattern = /^(?:[a-z][a-z0-9-]*\.)+[a-z][a-z0-9-]*$/,
-  calendarDatePattern = /^\d{4}-\d{2}-\d{2}$/,
-  utcDatetimePattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/,
-  emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+  identifierPattern = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/,
+  utcDatetimePattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/;
 
 export interface QueryCapabilities {
   readonly filter?: readonly string[];
@@ -223,8 +223,8 @@ const issue = (
       case "text": {
         return {
           filter: ["equals", "notEquals", "in", "notIn", "startsWith", "contains", "isNull"],
-          sortable: true,
           projectable: true,
+          sortable: true,
         };
       }
       case "integer":
@@ -243,8 +243,8 @@ const issue = (
             "greaterThanOrEqual",
             "isNull",
           ],
-          sortable: true,
           projectable: true,
+          sortable: true,
         };
       }
       case "boolean":
@@ -253,8 +253,8 @@ const issue = (
       case "enum": {
         return {
           filter: ["equals", "notEquals", "in", "notIn", "isNull"],
-          sortable: true,
           projectable: true,
+          sortable: true,
         };
       }
       case "asset": {
@@ -262,9 +262,9 @@ const issue = (
       }
       case "relationship": {
         return {
+          expandable: true,
           filter: ["equals", "notEquals", "in", "notIn", "isNull"],
           projectable: true,
-          expandable: true,
         };
       }
       case "list": {
@@ -637,11 +637,11 @@ const validateCalendarDate = (value: string): boolean => {
       } else {
         fields.push({
           key: composition.key,
-          label: composition.label,
-          required: composition.required,
-          nullable: composition.nullable,
           kind: { kind: "json" },
+          label: composition.label,
           nestedFields: composedFields,
+          nullable: composition.nullable,
+          required: composition.required,
         });
       }
     }

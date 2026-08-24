@@ -7,18 +7,14 @@ const snapshot = ContentDefinition.compile({
     definitionSpaceId: "example-blog",
     definitions: [
       {
-        kind: "contentType",
-        id: "author",
-        name: "Author",
         fields: [
           { key: "name", label: "Name", required: true, unique: true, kind: { kind: "text" } },
         ],
+        id: "author",
+        kind: "contentType",
+        name: "Author",
       },
       {
-        kind: "contentType",
-        id: "post",
-        name: "Post",
-        history: true,
         fields: [
           { key: "title", label: "Title", required: true, kind: { kind: "text" } },
           {
@@ -34,6 +30,10 @@ const snapshot = ContentDefinition.compile({
             kind: { kind: "relationship", targetContentTypeIds: ["author"] },
           },
         ],
+        history: true,
+        id: "post",
+        kind: "contentType",
+        name: "Post",
       },
     ],
     snapshotId: "initial",
@@ -82,7 +82,7 @@ describe("Cms.Service", () => {
       }),
     );
 
-    await expect(
+    expect(
       run(
         Effect.gen(function* () {
           const cms = yield* Cms.Service;

@@ -45,7 +45,7 @@ export type Command =
   | { readonly type: "composition"; readonly active: boolean };
 
 const emptyParagraph = (): RichText.ParagraphNode => ({
-    children: [{ type: "text", text: "" }],
+    children: [{ text: "", type: "text" }],
     type: "paragraph",
   }),
   emptyDocument = (): RichText.Document => ({
@@ -100,8 +100,8 @@ export const normalize = (document: RichText.Document): RichText.Document => {
     if (block.type === "heading") {
       return {
         ...block,
-        level: [2, 3, 4].includes(block.level) ? block.level : 2,
         children: normalizeInlineNodes(block.children),
+        level: [2, 3, 4].includes(block.level) ? block.level : 2,
       };
     }
     return structuredClone(block);
@@ -355,15 +355,15 @@ export const transact = (state: State, command: Command): State => {
               ? {
                   children: [
                     {
-                      type: "text",
                       text: block.children
                         .map((node) => (node.type === "text" ? node.text : ""))
                         .join(""),
+                      type: "text",
                     },
                   ],
                   type: "code-block",
                 }
-              : { children: [{ type: "paragraph", children: block.children }], type: "quote" };
+              : { children: [{ children: block.children, type: "paragraph" }], type: "quote" };
       return commit(state, replaceBlock(state.document, blockIndex, replacement));
     }
     case "toggleMark": {
@@ -377,8 +377,8 @@ export const transact = (state: State, command: Command): State => {
       return insertReference(state, {
         children: [
           {
-            type: "text",
             text: selected.text.text.slice(selected.start, selected.end),
+            type: "text",
             ...(selected.text.marks === undefined ? {} : { marks: selected.text.marks }),
           },
         ],
@@ -399,7 +399,7 @@ export const transact = (state: State, command: Command): State => {
         return state;
       }
       return insertReference(state, {
-        children: [{ type: "text", text: label }],
+        children: [{ text: label, type: "text" }],
         entryId: command.entryId,
         type: "entry-reference",
       });

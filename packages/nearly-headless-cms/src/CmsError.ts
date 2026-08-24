@@ -10,9 +10,9 @@ export class InvalidInput extends Schema.TaggedError<InvalidInput>()("InvalidInp
   issues: Schema.optional(
     Schema.Array(
       Schema.Struct({
+        message: Schema.String,
         path: Schema.Array(Schema.Union([Schema.String, Schema.Number])),
         reason: Schema.String,
-        message: Schema.String,
       }),
     ),
   ),

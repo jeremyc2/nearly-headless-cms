@@ -151,9 +151,9 @@ export const management = (operations: readonly ManagementOperation[] = []): Doc
       { post: { operationId: "createEntry" } },
     [`${managementPrefix}/definition-spaces/{definitionSpaceId}/content-types/{contentTypeId}/entries/{entryId}`]:
       {
+        delete: { operationId: "deleteEntry" },
         get: { operationId: "getEntry" },
         put: { operationId: "replaceEntry" },
-        delete: { operationId: "deleteEntry" },
       },
     [`${managementPrefix}/definition-spaces/{definitionSpaceId}/content-types/{contentTypeId}/entries/{entryId}/read`]:
       { post: { operationId: "readEntry" } },
@@ -173,8 +173,8 @@ export const management = (operations: readonly ManagementOperation[] = []): Doc
       post: { operationId: "ingestAsset" },
     },
     [`${managementPrefix}/definition-spaces/{definitionSpaceId}/assets/{assetId}`]: {
-      get: { operationId: "getAsset" },
       delete: { operationId: "deleteAsset" },
+      get: { operationId: "getAsset" },
     },
     [`${managementPrefix}/definition-spaces/{definitionSpaceId}/assets/{assetId}/content`]: {
       get: { operationId: "readAsset" },

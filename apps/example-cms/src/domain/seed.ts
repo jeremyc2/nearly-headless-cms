@@ -2,7 +2,7 @@ import { Cms, RichText } from "nearly-headless-cms";
 import { Effect } from "effect";
 
 const paragraph = (text: string): RichText.ParagraphNode => ({
-  children: [{ type: "text", text }],
+  children: [{ text, type: "text" }],
   type: "paragraph",
 });
 
@@ -53,9 +53,9 @@ export const seed = Effect.gen(function* seed() {
         portrait: asset.id,
         "portrait-alternative-text": "Portrait illustration of Ada Rowan",
         profile: RichText.toJson({
+          children: [paragraph("Ada writes about durable knowledge, small tools, and the coast.")],
           format: RichText.format,
           version: RichText.formatVersion,
-          children: [paragraph("Ada writes about durable knowledge, small tools, and the coast.")],
         }),
         slug: "ada-rowan",
       },
@@ -84,8 +84,6 @@ export const seed = Effect.gen(function* seed() {
       values: {
         author: authorId,
         body: RichText.toJson({
-          format: RichText.format,
-          version: RichText.formatVersion,
           children: [
             {
               type: "heading",
@@ -101,6 +99,8 @@ export const seed = Effect.gen(function* seed() {
               children: [],
             },
           ],
+          format: RichText.format,
+          version: RichText.formatVersion,
         }),
         categories: [categoryId],
         excerpt: "Why presentation-neutral content makes a steadier signal.",
@@ -118,9 +118,9 @@ export const seed = Effect.gen(function* seed() {
       values: {
         author: authorId,
         body: RichText.toJson({
+          children: [paragraph("Still taking notes.")],
           format: RichText.format,
           version: RichText.formatVersion,
-          children: [paragraph("Still taking notes.")],
         }),
         categories: [],
         excerpt: "A draft that must never cross the Headless API.",

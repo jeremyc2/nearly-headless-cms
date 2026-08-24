@@ -3,7 +3,7 @@ import type { Management } from "../Asset.ts";
 import type { Service as AuthorizationService } from "../Authorization.ts";
 import type { Service as CmsService } from "../Cms.ts";
 import { makeLayer as makeCmsLayer } from "../Cms.ts";
-import type { CompiledSnapshot, CompileOptions } from "../ContentDefinition.ts";
+import type { CompileOptions, CompiledSnapshot } from "../ContentDefinition.ts";
 import type { Handler } from "../DefinitionMigration.ts";
 import type { Generator } from "../Identifier.ts";
 import type { CurrentIdentity } from "../Identity.ts";

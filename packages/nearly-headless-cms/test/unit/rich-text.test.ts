@@ -6,7 +6,6 @@ describe("RichText", () => {
     const document: RichText.Document = {
       children: [
         {
-          type: "paragraph",
           children: [
             { type: "text", text: "Read ", marks: ["bold"] },
             {
@@ -15,12 +14,13 @@ describe("RichText", () => {
               children: [{ type: "text", text: "more" }],
             },
           ],
+          type: "paragraph",
         },
         {
-          type: "asset-reference",
-          assetId: "asset-1",
           alternativeText: "A lighthouse",
+          assetId: "asset-1",
           children: [],
+          type: "asset-reference",
         },
       ],
       format: "nearly-headless-cms/rich-text",
@@ -34,7 +34,7 @@ describe("RichText", () => {
   test("rejects unsupported extensions instead of silently discarding them", () => {
     expect(() =>
       RichText.validate({
-        children: [{ type: "com.example.callout", version: 1, configuration: {}, children: [] }],
+        children: [{ children: [], configuration: {}, type: "com.example.callout", version: 1 }],
         format: "nearly-headless-cms/rich-text",
         version: 1,
       }),

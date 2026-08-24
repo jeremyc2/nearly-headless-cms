@@ -7,12 +7,12 @@ const initialSnapshot = ContentDefinition.compile({
   definitionSpaceId: "definition-lifecycle",
   definitions: [
     {
-      kind: "contentType",
+      fields: [{ key: "title", label: "Title", required: true, kind: { kind: "text" } }],
+      history: true,
       id: "note",
+      kind: "contentType",
       name: "Note",
       revision: 1,
-      history: true,
-      fields: [{ key: "title", label: "Title", required: true, kind: { kind: "text" } }],
     },
   ],
   snapshotId: "initial",
@@ -30,8 +30,8 @@ describe("runtime Content Definition lifecycle", () => {
           entry = "entry" in created ? created.entry : created,
           optionalSummary = {
             fields: [
-              { key: "title", label: "Title", required: true, kind: { kind: "text" as const } },
-              { key: "summary", label: "Summary", kind: { kind: "text" as const } },
+              { key: "title", kind: { kind: "text" as const }, label: "Title", required: true },
+              { key: "summary", kind: { kind: "text" as const }, label: "Summary" },
             ],
             history: true,
             id: "note",
@@ -66,10 +66,10 @@ describe("runtime Content Definition lifecycle", () => {
               ...optionalSummary.fields,
               {
                 key: "slug",
+                kind: { kind: "text" as const },
                 label: "Slug",
                 required: true,
                 unique: true,
-                kind: { kind: "text" as const },
               },
             ],
             parentRevision: 2,
@@ -152,8 +152,8 @@ describe("runtime Content Definition lifecycle", () => {
             migrationHandlers: [
               {
                 identifier: "note-slug",
-                version: 1,
                 transform: ({ values }) => ({ ...values, slug: "a-durable-note" }),
+                version: 1,
               },
             ],
             snapshot: initialSnapshot,
@@ -185,7 +185,7 @@ describe("runtime Content Definition lifecycle", () => {
         const cms = yield* Cms.Service,
           ratedNote = {
             fields: [
-              { key: "title", label: "Title", required: true, kind: { kind: "text" as const } },
+              { key: "title", kind: { kind: "text" as const }, label: "Title", required: true },
               {
                 key: "rating",
                 kind: {

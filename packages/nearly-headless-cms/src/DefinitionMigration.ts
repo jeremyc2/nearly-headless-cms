@@ -134,7 +134,7 @@ export const prepare = (input: PreparationInput): Preparation => {
     report:
       issues.length === 0
         ? { status: "ready", transformedEntryCount: transformedEntries.length }
-        : { status: "failed", issues },
+        : { issues, status: "failed" },
     sourceGeneration: input.sourceGeneration,
     sourceSnapshotId: input.source.snapshotId,
     targetSnapshotId: input.target.snapshotId,

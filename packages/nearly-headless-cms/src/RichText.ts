@@ -440,7 +440,7 @@ export const validate = (value: unknown, options: ValidationOptions = {}): Docum
       validateBlock(child, ["children", index], extensions),
     );
   if (issues.length > 0) {
-    throw new InvalidInput({ message: issues[0]?.message ?? "Invalid Rich Text", issues });
+    throw new InvalidInput({ issues, message: issues[0]?.message ?? "Invalid Rich Text" });
   }
   return structuredClone(value) as unknown as Document;
 };

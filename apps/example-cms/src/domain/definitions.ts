@@ -11,9 +11,6 @@ export const definitionSnapshot = ContentDefinition.compile({
   definitionSpaceId: "example-blog",
   definitions: [
     {
-      kind: "fieldGroup",
-      id: "external-link",
-      name: "External Link",
       fields: [
         {
           key: "label",
@@ -23,12 +20,11 @@ export const definitionSnapshot = ContentDefinition.compile({
         },
         { key: "url", label: "URL", required: true, kind: { kind: "url" } },
       ],
+      id: "external-link",
+      kind: "fieldGroup",
+      name: "External Link",
     },
     {
-      kind: "contentType",
-      id: "author",
-      name: "Author",
-      history: true,
       fields: [
         {
           key: "name",
@@ -69,12 +65,40 @@ export const definitionSnapshot = ContentDefinition.compile({
           kind: { kind: "list", element: { kind: "json" }, maximumLength: 10 },
         },
       ],
+      history: true,
+      id: "author",
+      kind: "contentType",
+      name: "Author",
     },
     {
-      kind: "contentType",
+      fields: [
+        {
+          key: "name",
+          label: "Name",
+          required: true,
+          unique: true,
+          kind: text({ minLength: 1, maxLength: 80 }),
+        },
+        {
+          key: "slug",
+          label: "Slug",
+          required: true,
+          unique: true,
+          kind: text({ minLength: 1, maxLength: 80, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }),
+        },
+        {
+          key: "description",
+          label: "Description",
+          nullable: true,
+          kind: text({ maxLength: 300, multiline: true }),
+        },
+      ],
+      history: true,
       id: "category",
+      kind: "contentType",
       name: "Category",
-      history: true,
+    },
+    {
       fields: [
         {
           key: "name",
@@ -97,41 +121,12 @@ export const definitionSnapshot = ContentDefinition.compile({
           kind: text({ maxLength: 300, multiline: true }),
         },
       ],
-    },
-    {
-      kind: "contentType",
+      history: true,
       id: "tag",
+      kind: "contentType",
       name: "Tag",
-      history: true,
-      fields: [
-        {
-          key: "name",
-          label: "Name",
-          required: true,
-          unique: true,
-          kind: text({ minLength: 1, maxLength: 80 }),
-        },
-        {
-          key: "slug",
-          label: "Slug",
-          required: true,
-          unique: true,
-          kind: text({ minLength: 1, maxLength: 80, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }),
-        },
-        {
-          key: "description",
-          label: "Description",
-          nullable: true,
-          kind: text({ maxLength: 300, multiline: true }),
-        },
-      ],
     },
     {
-      kind: "contentType",
-      id: "post",
-      name: "Post",
-      history: true,
-      revisionRetention: { maximumRevisionCount: 100 },
       fields: [
         {
           key: "title",
@@ -195,13 +190,13 @@ export const definitionSnapshot = ContentDefinition.compile({
           kind: { kind: "datetime" },
         },
       ],
+      history: true,
+      id: "post",
+      kind: "contentType",
+      name: "Post",
+      revisionRetention: { maximumRevisionCount: 100 },
     },
     {
-      kind: "contentType",
-      id: "comment",
-      name: "Comment",
-      history: true,
-      revisionRetention: { maximumRevisionCount: 25 },
       fields: [
         { key: "post", label: "Post", required: true, kind: relationship(["post"]) },
         {
@@ -226,6 +221,11 @@ export const definitionSnapshot = ContentDefinition.compile({
           kind: { kind: "enum", values: ["pending", "approved", "rejected"] },
         },
       ],
+      history: true,
+      id: "comment",
+      kind: "contentType",
+      name: "Comment",
+      revisionRetention: { maximumRevisionCount: 25 },
     },
   ],
   snapshotId: "example-blog-v1",

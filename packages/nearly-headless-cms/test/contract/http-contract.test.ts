@@ -8,10 +8,10 @@ const snapshot = ContentDefinition.compile({
   definitionSpaceId: "example-blog",
   definitions: [
     {
-      kind: "contentType",
-      id: "post",
-      name: "Post",
       fields: [{ key: "title", label: "Title", required: true, kind: { kind: "text" } }],
+      id: "post",
+      kind: "contentType",
+      name: "Post",
     },
   ],
   snapshotId: "initial",

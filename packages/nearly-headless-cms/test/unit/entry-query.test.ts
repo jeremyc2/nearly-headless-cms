@@ -5,14 +5,14 @@ const snapshot = ContentDefinition.compile({
   definitionSpaceId: "example-blog",
   definitions: [
     {
-      kind: "contentType",
-      id: "post",
-      name: "Post",
       fields: [
         { key: "title", label: "Title", required: true, kind: { kind: "text" } },
         { key: "rank", label: "Rank", nullable: true, kind: { kind: "integer" } },
         { key: "status", label: "Status", kind: { kind: "enum", values: ["draft", "published"] } },
       ],
+      id: "post",
+      kind: "contentType",
+      name: "Post",
     },
   ],
   snapshotId: "initial",
@@ -41,7 +41,7 @@ describe("EntryQuery.evaluate", () => {
         contentTypeId: "post",
         pageSize: 1,
         projection: ["title"],
-        sort: [{ path: "rank", direction: "ascending" }],
+        sort: [{ direction: "ascending", path: "rank" }],
         where: { operator: "equals", path: "status", value: "published" },
       } as const,
       firstPage = EntryQuery.evaluate(entries, query, snapshot, { generation: 4 });
@@ -66,22 +66,22 @@ describe("EntryQuery.evaluate", () => {
         definitionSpaceId: "nested-query",
         definitions: [
           {
-            kind: "fieldGroup",
-            id: "address",
-            name: "Address",
             fields: [
               { key: "city", label: "City", kind: { kind: "text" } },
               { key: "country", label: "Country", kind: { kind: "text" } },
             ],
+            id: "address",
+            kind: "fieldGroup",
+            name: "Address",
           },
           {
-            kind: "contentType",
-            id: "person",
-            name: "Person",
-            fields: [],
             fieldGroups: [
               { mode: "nested", fieldGroupId: "address", key: "address", label: "Address" },
             ],
+            fields: [],
+            id: "person",
+            kind: "contentType",
+            name: "Person",
           },
         ],
         snapshotId: "initial",
