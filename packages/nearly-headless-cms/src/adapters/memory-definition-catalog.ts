@@ -5,6 +5,7 @@ import {
   type CatalogState,
   DefinitionCatalog,
   type DefinitionSnapshotRecord,
+  EntryPersistence,
 } from "../persistence.ts";
 
 export interface Options {
@@ -22,11 +23,12 @@ const cloneState = (state: CatalogState): CatalogState => ({
   snapshots: [...state.snapshots],
 });
 
-export const layer = ({ snapshot }: Options): Layer.Layer<DefinitionCatalog> =>
+export const layer = ({ snapshot }: Options): Layer.Layer<DefinitionCatalog, never, EntryPersistence> =>
   Layer.effect(
     DefinitionCatalog,
     Effect.gen(function* layer() {
-      const activatedAt = new Date(yield* Clock.currentTimeMillis).toISOString(),
+      const entryPersistence = yield* EntryPersistence,
+        activatedAt = new Date(yield* Clock.currentTimeMillis).toISOString(),
         initialSnapshot: DefinitionSnapshotRecord = {
           activatedAt,
           compiled: snapshot,
@@ -57,6 +59,19 @@ export const layer = ({ snapshot }: Options): Layer.Layer<DefinitionCatalog> =>
           version: 1,
         });
       return DefinitionCatalog.of({
+        commitCutover: (expectedVersion, replacement, expectedEntryGeneration, records) =>
+          SynchronizedRef.modifyEffect(state, (current) => {
+            if (current.version !== expectedVersion) {
+              return Effect.fail(Conflict.make({ message: "Definition Catalog version is stale" }));
+            }
+            const committed = { ...cloneState(replacement), version: expectedVersion + 1 };
+            return entryPersistence.commitGeneration(expectedEntryGeneration, records).pipe(
+              Effect.map((entries) => [
+                { catalog: cloneState(committed), entries },
+                committed,
+              ] as const),
+            );
+          }),
         read: SynchronizedRef.get(state).pipe(Effect.map(cloneState)),
         replace: (expectedVersion, replacement) =>
           SynchronizedRef.modifyEffect(state, (current) => {

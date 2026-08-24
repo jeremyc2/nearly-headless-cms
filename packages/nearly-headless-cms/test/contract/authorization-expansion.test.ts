@@ -81,6 +81,7 @@ const snapshot = ContentDefinition.compile({
         CurrentIdentity.of({ current: Effect.succeed(anonymous) }),
       ),
       assetsLayer = memoryAssetLayer().pipe(Layer.provide(identifierLayer)),
+      catalogLayer = memoryCatalogLayer({ snapshot }).pipe(Layer.provide(memoryEntryLayer)),
       dependencies: Layer.Layer<
         | AuthorizationService
         | CurrentIdentity
@@ -92,7 +93,7 @@ const snapshot = ContentDefinition.compile({
         authorizationLayer,
         identityLayer,
         identifierLayer,
-        memoryCatalogLayer({ snapshot }),
+        catalogLayer,
         memoryEntryLayer,
         assetsLayer,
       );

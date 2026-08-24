@@ -27,6 +27,7 @@ export const layer = ({
   snapshot,
 }: Options): Layer.Layer<CmsService> => {
   const assetLayer = memoryAssetLayer().pipe(Layer.provide(identifierLayer)),
+    catalogLayer = memoryCatalogLayer({ snapshot }).pipe(Layer.provide(memoryEntryLayer)),
     dependencies: Layer.Layer<
       | AuthorizationService
       | CurrentIdentity
@@ -38,7 +39,7 @@ export const layer = ({
       allowAllAuthorizationLayer,
       anonymousIdentityLayer,
       identifierLayer,
-      memoryCatalogLayer({ snapshot }),
+      catalogLayer,
       memoryEntryLayer,
       assetLayer,
     );
