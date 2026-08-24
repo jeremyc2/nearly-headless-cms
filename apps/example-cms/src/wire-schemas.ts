@@ -96,6 +96,11 @@ export const EmptyRequest = Schema.Struct({}),
     deletedCommentCount: Schema.Int,
     deletedPostId: Schema.String,
   }),
+  AuthorCascadeDeletionReceipt = Schema.Struct({
+    deletedAuthorId: Schema.String,
+    deletedCommentCount: Schema.Int,
+    deletedPostCount: Schema.Int,
+  }),
   DetachmentReceipt = Schema.Struct({
     detachedPostCount: Schema.Int,
     removedEntryId: Schema.String,
@@ -111,5 +116,11 @@ export const EmptyRequest = Schema.Struct({}),
     oldAssetId: Schema.String,
     reassignedEntryCount: Schema.Int,
     reassignmentCompleted: Schema.Boolean,
+  }),
+  ImageDeletionReceipt = Schema.Struct({
+    clearedAuthorCount: Schema.Int,
+    clearedPostCount: Schema.Int,
+    deletedAssetId: Schema.String,
+    deletionCompleted: Schema.Boolean,
   }),
   AssetBytes = Schema.Uint8Array;

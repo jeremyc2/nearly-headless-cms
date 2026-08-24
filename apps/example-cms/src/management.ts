@@ -1,4 +1,4 @@
-import type { Cms, ContentDefinition } from "nearly-headless-cms";
+import type { Cms, ContentDefinition, Entry, EntryQuery } from "nearly-headless-cms";
 import { CmsError } from "nearly-headless-cms";
 import type { HttpContract } from "nearly-headless-cms/http";
 import { Effect, Schema } from "effect";
@@ -10,11 +10,13 @@ import {
   taxonomyDefinitionRequirement,
 } from "./delivery.ts";
 import {
+  AuthorCascadeDeletionReceipt,
   CascadeDeletionReceipt,
   DetachmentReceipt,
   EditorialReceipt,
   EmptyRequest,
   Identifier,
+  ImageDeletionReceipt,
   ImageReplacementReceipt,
   ImageReplacementRequest,
   PublicAsset,
@@ -151,6 +153,22 @@ const collectRichTextPublicationRules = (
       ? Effect.fail(CmsError.InvalidInput.make({ message: "CMS-Write-Token is required" }))
       : Effect.succeed(writeToken);
   },
+  queryAllEntries = (
+    cms: Cms.ServiceShape,
+    query: Omit<EntryQuery.Query, "cursor">,
+    cursor?: string,
+  ): Effect.Effect<readonly Entry.Representation[], CmsError.CmsError> =>
+    cms
+      .queryEntries({ ...query, ...(cursor === undefined ? {} : { cursor }) })
+      .pipe(
+        Effect.flatMap((page) =>
+          page.nextCursor === undefined
+            ? Effect.succeed(page.items)
+            : queryAllEntries(cms, query, page.nextCursor).pipe(
+                Effect.map((remainingEntries) => [...page.items, ...remainingEntries]),
+              ),
+        ),
+      ),
   deletePostWithComments: HttpContract.ManagementOperation["execute"] = ({
     cms,
     parameters,
@@ -181,6 +199,66 @@ const collectRichTextPublicationRules = (
       });
       yield* cms.mutateEntriesAtomically(mutations);
       return { deletedCommentCount: commentStates.length, deletedPostId: postId };
+    }),
+  deleteAuthorWithPostsAndComments: HttpContract.ManagementOperation["execute"] = ({
+    cms,
+    parameters,
+    request,
+  }) =>
+    Effect.gen(function* deleteAuthorAndOwnedContent() {
+      const authorId = parameters["entryId"]!,
+        authorWriteToken = yield* requiredWriteToken(request),
+        posts = yield* queryAllEntries(cms, {
+          contentTypeId: "post",
+          pageSize: 100,
+          where: { operator: "equals", path: "author", value: authorId },
+        }),
+        commentGroups = yield* Effect.forEach(posts, (post) =>
+          queryAllEntries(cms, {
+            contentTypeId: "comment",
+            pageSize: 100,
+            where: { operator: "equals", path: "post", value: post.id },
+          }),
+        ),
+        comments = commentGroups.flat(),
+        postStates = yield* Effect.forEach(posts, (post) =>
+          cms.getCurrentEntryState({ contentTypeId: "post", entryId: post.id }),
+        ),
+        commentStates = yield* Effect.forEach(comments, (comment) =>
+          cms.getCurrentEntryState({ contentTypeId: "comment", entryId: comment.id }),
+        ),
+        mutations: Cms.EntryBatchMutation[] = [
+          ...commentStates.map(
+            (state): Cms.EntryBatchMutation => ({
+              input: {
+                contentTypeId: "comment",
+                entryId: state.entry.id,
+                writeToken: state.writeToken,
+              },
+              kind: "delete",
+            }),
+          ),
+          ...postStates.map(
+            (state): Cms.EntryBatchMutation => ({
+              input: {
+                contentTypeId: "post",
+                entryId: state.entry.id,
+                writeToken: state.writeToken,
+              },
+              kind: "delete",
+            }),
+          ),
+          {
+            input: { contentTypeId: "author", entryId: authorId, writeToken: authorWriteToken },
+            kind: "delete",
+          },
+        ];
+      yield* cms.mutateEntriesAtomically(mutations);
+      return {
+        deletedAuthorId: authorId,
+        deletedCommentCount: commentStates.length,
+        deletedPostCount: postStates.length,
+      };
     }),
   detachTaxonomy =
     (
@@ -297,6 +375,94 @@ export const makeManagementOperations = (
   options: ManagementOperationOptions = {},
 ): readonly HttpContract.ManagementOperation[] => {
   const commandReceiptStore = options.commandReceiptStore ?? memoryCommandReceiptStore(),
+    deleteImageAndClearAssignments: HttpContract.ManagementOperation["execute"] = ({
+      cms,
+      parameters,
+      request,
+    }) =>
+      Effect.gen(function* deleteImageAfterClearingAssignments() {
+        const assetId = parameters["assetId"]!,
+          commandKey = request.headers.get("idempotency-key");
+        if (commandKey === null || commandKey.length === 0) {
+          return yield* CmsError.InvalidInput.make({ message: "Idempotency-Key is required" });
+        }
+        const receiptScope = `image-deletion:${assetId}`,
+          prior = yield* Effect.tryPromise({
+            catch: (cause) =>
+              CmsError.InfrastructureFailure.make({
+                cause,
+                message: "Image deletion receipt lookup failed",
+                retryable: true,
+              }),
+            try: () => commandReceiptStore.read(receiptScope, commandKey),
+          });
+        if (prior !== undefined) {
+          return prior;
+        }
+        yield* cms.getAsset(assetId);
+        const posts = yield* queryAllEntries(cms, { contentTypeId: "post", pageSize: 100 }),
+          authors = yield* queryAllEntries(cms, { contentTypeId: "author", pageSize: 100 }),
+          postStates = yield* Effect.forEach(
+            posts.filter((post) => post.values["featured-asset"] === assetId),
+            (post) => cms.getCurrentEntryState({ contentTypeId: "post", entryId: post.id }),
+          ),
+          authorStates = yield* Effect.forEach(
+            authors.filter((author) => author.values["portrait"] === assetId),
+            (author) => cms.getCurrentEntryState({ contentTypeId: "author", entryId: author.id }),
+          ),
+          mutations: Cms.EntryBatchMutation[] = [
+            ...postStates.map(
+              (state): Cms.EntryBatchMutation => ({
+                input: {
+                  contentTypeId: "post",
+                  entryId: state.entry.id,
+                  values: {
+                    ...state.entry.values,
+                    "featured-alternative-text": null,
+                    "featured-asset": null,
+                  },
+                  writeToken: state.writeToken,
+                },
+                kind: "replace",
+              }),
+            ),
+            ...authorStates.map(
+              (state): Cms.EntryBatchMutation => ({
+                input: {
+                  contentTypeId: "author",
+                  entryId: state.entry.id,
+                  values: {
+                    ...state.entry.values,
+                    portrait: null,
+                    "portrait-alternative-text": null,
+                  },
+                  writeToken: state.writeToken,
+                },
+                kind: "replace",
+              }),
+            ),
+          ];
+        if (mutations.length > 0) {
+          yield* cms.mutateEntriesAtomically(mutations);
+        }
+        yield* cms.deleteAsset(assetId);
+        const receipt = {
+          clearedAuthorCount: authorStates.length,
+          clearedPostCount: postStates.length,
+          deletedAssetId: assetId,
+          deletionCompleted: true,
+        };
+        yield* Effect.tryPromise({
+          catch: (cause) =>
+            CmsError.InfrastructureFailure.make({
+              cause,
+              message: "Image deletion receipt persistence failed",
+              retryable: true,
+            }),
+          try: () => commandReceiptStore.write(receiptScope, commandKey, receipt),
+        });
+        return receipt;
+      }),
     replaceImage: HttpContract.ManagementOperation["execute"] = ({ cms, parameters, request }) =>
       Effect.gen(function* replaceImageAsset() {
         const oldAssetId = parameters["assetId"]!,
@@ -477,6 +643,23 @@ export const makeManagementOperations = (
     },
     {
       definitionRequirements: [
+        authorDefinitionRequirement,
+        postDefinitionRequirement,
+        commentDefinitionRequirement,
+      ],
+      execute: deleteAuthorWithPostsAndComments,
+      identifier: "deleteAuthorWithPostsAndComments",
+      method: "POST",
+      path: "/operations/authors/{entryId}/cascade-deletions",
+      schemas: {
+        pathParameters: { entryId: Identifier },
+        request: EmptyRequest,
+        requestHeaders: { "cms-write-token": Identifier },
+        response: AuthorCascadeDeletionReceipt,
+      },
+    },
+    {
+      definitionRequirements: [
         taxonomyDefinitionRequirement("category"),
         postDefinitionRequirement,
       ],
@@ -513,6 +696,19 @@ export const makeManagementOperations = (
       schemas: {
         request: EmptyRequest,
         response: Schema.Array(PublicAsset),
+      },
+    },
+    {
+      definitionRequirements: [postDefinitionRequirement, authorDefinitionRequirement],
+      execute: deleteImageAndClearAssignments,
+      identifier: "deleteImageAndClearAssignments",
+      method: "POST",
+      path: "/operations/assets/{assetId}/assignment-clearing-deletions",
+      schemas: {
+        pathParameters: { assetId: Identifier },
+        request: EmptyRequest,
+        requestHeaders: { "idempotency-key": Identifier },
+        response: ImageDeletionReceipt,
       },
     },
     {

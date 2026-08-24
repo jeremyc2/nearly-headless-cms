@@ -104,6 +104,14 @@ export interface OperationInputs {
       readonly "X-Request-Id"?: string;
     };
   };
+  readonly deleteAuthorWithPostsAndComments: {
+    readonly path: { readonly definitionSpaceId: string; readonly entryId: string };
+    readonly headers: {
+      readonly "CMS-Expected-Definition-Fingerprint"?: string;
+      readonly "X-Request-Id"?: string;
+      readonly "cms-write-token": string;
+    };
+  };
   readonly deleteEntry: {
     readonly path: {
       readonly definitionSpaceId: string;
@@ -114,6 +122,14 @@ export interface OperationInputs {
       readonly "CMS-Expected-Definition-Fingerprint"?: string;
       readonly "X-Request-Id"?: string;
       readonly "CMS-Write-Token": string;
+    };
+  };
+  readonly deleteImageAndClearAssignments: {
+    readonly path: { readonly definitionSpaceId: string; readonly assetId: string };
+    readonly headers: {
+      readonly "CMS-Expected-Definition-Fingerprint"?: string;
+      readonly "X-Request-Id"?: string;
+      readonly "idempotency-key": string;
     };
   };
   readonly deletePostWithComments: {
@@ -429,7 +445,18 @@ export interface OperationResponses {
   };
   readonly createEntry: MutationResult;
   readonly deleteAsset: undefined;
+  readonly deleteAuthorWithPostsAndComments: {
+    readonly deletedAuthorId: string;
+    readonly deletedCommentCount: number;
+    readonly deletedPostCount: number;
+  };
   readonly deleteEntry: undefined;
+  readonly deleteImageAndClearAssignments: {
+    readonly clearedAuthorCount: number;
+    readonly clearedPostCount: number;
+    readonly deletedAssetId: string;
+    readonly deletionCompleted: boolean;
+  };
   readonly deletePostWithComments: {
     readonly deletedCommentCount: number;
     readonly deletedPostId: string;
@@ -601,12 +628,32 @@ const operationSpecifications = {
       },
     ],
   },
+  deleteAuthorWithPostsAndComments: {
+    method: "POST",
+    path: "/api/v1/management/definition-spaces/{definitionSpaceId}/operations/authors/{entryId}/cascade-deletions",
+    successResponses: [
+      {
+        responseMediaType: "application/json",
+        status: 200,
+      },
+    ],
+  },
   deleteEntry: {
     method: "DELETE",
     path: "/api/v1/management/definition-spaces/{definitionSpaceId}/content-types/{contentTypeId}/entries/{entryId}",
     successResponses: [
       {
         status: 204,
+      },
+    ],
+  },
+  deleteImageAndClearAssignments: {
+    method: "POST",
+    path: "/api/v1/management/definition-spaces/{definitionSpaceId}/operations/assets/{assetId}/assignment-clearing-deletions",
+    successResponses: [
+      {
+        responseMediaType: "application/json",
+        status: 200,
       },
     ],
   },
@@ -1126,6 +1173,19 @@ export const makeGeneratedClient = (baseAddress = "") => ({
       input,
       signal,
     ),
+  deleteAuthorWithPostsAndComments: (
+    input: OperationInputs["deleteAuthorWithPostsAndComments"],
+    signal?: AbortSignal,
+  ): Effect.Effect<
+    OperationResponses["deleteAuthorWithPostsAndComments"],
+    TransportFailure | ProtocolFailure | DeclaredFailure
+  > =>
+    requestOperation<"deleteAuthorWithPostsAndComments">(
+      baseAddress,
+      operationSpecifications.deleteAuthorWithPostsAndComments,
+      input,
+      signal,
+    ),
   deleteEntry: (
     input: OperationInputs["deleteEntry"],
     signal?: AbortSignal,
@@ -1136,6 +1196,19 @@ export const makeGeneratedClient = (baseAddress = "") => ({
     requestOperation<"deleteEntry">(
       baseAddress,
       operationSpecifications.deleteEntry,
+      input,
+      signal,
+    ),
+  deleteImageAndClearAssignments: (
+    input: OperationInputs["deleteImageAndClearAssignments"],
+    signal?: AbortSignal,
+  ): Effect.Effect<
+    OperationResponses["deleteImageAndClearAssignments"],
+    TransportFailure | ProtocolFailure | DeclaredFailure
+  > =>
+    requestOperation<"deleteImageAndClearAssignments">(
+      baseAddress,
+      operationSpecifications.deleteImageAndClearAssignments,
       input,
       signal,
     ),
