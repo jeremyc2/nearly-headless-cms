@@ -3,17 +3,55 @@ import { OpenApi } from "../packages/nearly-headless-cms/dist/http/index.js";
 import { makeDeliveryOperations } from "../apps/example-cms/src/delivery.ts";
 import { makeManagementOperations } from "../apps/example-cms/src/management.ts";
 import { acceptanceCases } from "../acceptance/v0.1.ts";
+import { generateOpenApiClient } from "./openapi-client-generator.ts";
 
-const repository = join(import.meta.dir, ".."),
+const formatTypeScript = async (source: string): Promise<string> => {
+    const formatterProcess = Bun.spawn(
+      ["bunx", "oxfmt", "--stdin-filepath=generated-openapi-client.ts"],
+      {
+        stderr: "pipe",
+        stdin: "pipe",
+        stdout: "pipe",
+      },
+    );
+    formatterProcess.stdin.write(source);
+    formatterProcess.stdin.end();
+    const [exitCode, formattedSource, standardError] = await Promise.all([
+      formatterProcess.exited,
+      new Response(formatterProcess.stdout).text(),
+      new Response(formatterProcess.stderr).text(),
+    ]);
+    if (exitCode !== 0) {
+      throw new Error(`Failed to format generated client: ${standardError}`);
+    }
+    return formattedSource;
+  },
+  repository = join(import.meta.dir, ".."),
   write = process.argv.includes("--write"),
+  managementDocument = OpenApi.management(makeManagementOperations()),
+  headlessDocument = OpenApi.headless(makeDeliveryOperations()),
+  managementClient = await formatTypeScript(generateOpenApiClient(managementDocument)),
+  headlessClient = await formatTypeScript(generateOpenApiClient(headlessDocument)),
   artifacts = [
     {
-      content: `${JSON.stringify(OpenApi.management(makeManagementOperations()), null, 2)}\n`,
+      content: OpenApi.stringify(managementDocument),
       path: join(repository, "apps/example-cms/openapi/management.v1.json"),
     },
     {
-      content: `${JSON.stringify(OpenApi.headless(makeDeliveryOperations()), (_key, value) => (typeof value === "function" ? undefined : value), 2)}\n`,
+      content: OpenApi.stringify(headlessDocument),
       path: join(repository, "apps/example-cms/openapi/headless.v1.json"),
+    },
+    {
+      content: managementClient,
+      path: join(repository, "apps/example-cms/src/generated/management-openapi-client.ts"),
+    },
+    {
+      content: headlessClient,
+      path: join(repository, "apps/example-cms/src/generated/headless-openapi-client.ts"),
+    },
+    {
+      content: headlessClient,
+      path: join(repository, "apps/public-blog/src/generated/headless-openapi-client.ts"),
     },
     {
       content: `# v0.1 acceptance manifest\n\nThis file is generated from \`acceptance/v0.1.ts\`.\n\n| ID | Claim | Level | Owner | Status | Command |\n| --- | --- | --- | --- | --- | --- |\n${acceptanceCases.map((acceptanceCase) => `| ${acceptanceCase.id} | ${acceptanceCase.claim.replaceAll("|", "\\|")} | ${acceptanceCase.level} | ${acceptanceCase.owner} | ${acceptanceCase.automation} | \`${acceptanceCase.command}\` |`).join("\n")}\n`,
@@ -32,16 +70,4 @@ for (const artifact of artifacts) {
     throw new Error(`Generated artifact is stale: ${artifact.path}`);
   }
 }
-for (const clientPath of [
-  "apps/example-cms/src/generated/management-client.ts",
-  "apps/example-cms/src/generated/headless-client.ts",
-  "apps/public-blog/src/generated/headless-client.ts",
-]) {
-  const client = await Bun.file(join(repository, clientPath)).text();
-  if (!client.includes("generatorFormatVersion = 1")) {
-    throw new Error(`Generated client is missing its format version: ${clientPath}`);
-  }
-}
-console.log(
-  `${write ? "Updated" : "Verified"} ${artifacts.length} generated artifacts and 3 generated clients`,
-);
+console.log(`${write ? "Updated" : "Verified"} ${artifacts.length} generated artifacts`);

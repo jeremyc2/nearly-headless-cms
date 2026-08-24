@@ -279,9 +279,10 @@ const errorSchema = {
     operationIdentifier: string,
     operationSchemas?: OperationSchemas,
   ): readonly Readonly<Record<string, unknown>>[] => {
-    const declared = operationSchemas?.queryParameters ??
+    const declared =
+      operationSchemas?.queryParameters ??
       (paginatedOperations.has(operationIdentifier)
-        ? { cursor: Schema.String, pageSize: Schema.Number }
+        ? { cursor: Schema.String, pageSize: Schema.Int }
         : {});
     return Object.entries(declared).map(([name, schema]) => ({
       in: "query",
@@ -295,6 +296,8 @@ const errorSchema = {
     operationSchemas?: OperationSchemas,
   ): readonly Readonly<Record<string, unknown>>[] => {
     const declared = {
+      "CMS-Expected-Definition-Fingerprint": Schema.String,
+      "X-Request-Id": Schema.String,
       ...(writeTokenHeaderOperations.has(operationIdentifier)
         ? { "CMS-Write-Token": Schema.String }
         : {}),
@@ -303,7 +306,7 @@ const errorSchema = {
     return Object.entries(declared).map(([name, schema]) => ({
       in: "header",
       name,
-      required: true,
+      required: name !== "CMS-Expected-Definition-Fingerprint" && name !== "X-Request-Id",
       schema: effectSchema(schema),
     }));
   },
@@ -326,10 +329,10 @@ const errorSchema = {
         declaredRequestBody === undefined
           ? requestBodySchemas.get(operationIdentifier)
           : effectSchema(declaredRequestBody),
-      requestMediaType = operationIdentifier === "ingestAsset"
-        ? "multipart/form-data"
-        : "application/json",
-      responseMediaType = operationDescriptor.schemas?.responseMediaType ??
+      requestMediaType =
+        operationIdentifier === "ingestAsset" ? "multipart/form-data" : "application/json",
+      responseMediaType =
+        operationDescriptor.schemas?.responseMediaType ??
         (operationIdentifier === "readAsset" || operationIdentifier === "inspectAssetContent"
           ? "application/octet-stream"
           : "application/json"),
@@ -357,9 +360,7 @@ const errorSchema = {
           description: bodyless
             ? "Operation completed without a response body"
             : "Successful response",
-          ...(bodyless
-            ? {}
-            : { content: { [responseMediaType]: { schema: responseSchema } } }),
+          ...(bodyless ? {} : { content: { [responseMediaType]: { schema: responseSchema } } }),
         },
         ...errorResponses(),
       },
@@ -380,9 +381,7 @@ const errorSchema = {
       ]),
     ),
   descriptor = (operationIdentifier: string): OperationDescriptor => ({ operationIdentifier }),
-  customDescriptor = (
-    operation: DeliveryOperation | ManagementOperation,
-  ): OperationDescriptor => ({
+  customDescriptor = (operation: DeliveryOperation | ManagementOperation): OperationDescriptor => ({
     operationIdentifier: operation.identifier,
     schemas: operation.schemas,
     ...("successStatus" in operation && operation.successStatus !== undefined
@@ -445,7 +444,8 @@ export const management = (operations: readonly ManagementOperation[] = []): Doc
       get: descriptor("getActiveDefinitionSnapshot"),
     },
     [`${managementPrefix}/definition-spaces/{definitionSpaceId}/definition-snapshots`]: {
-      get: descriptor("listDefinitionSnapshots") },
+      get: descriptor("listDefinitionSnapshots"),
+    },
     [`${managementPrefix}/definition-spaces/{definitionSpaceId}/definition-snapshots/{snapshotId}`]:
       { get: descriptor("inspectDefinitionSnapshot") },
     [`${managementPrefix}/definition-spaces/{definitionSpaceId}/definition-snapshot-activations`]: {

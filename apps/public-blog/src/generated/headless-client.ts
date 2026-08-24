@@ -1,4 +1,12 @@
 import { Effect, Schema } from "effect";
+import {
+  DeclaredFailure,
+  ProtocolFailure,
+  TransportFailure,
+  makeGeneratedClient,
+} from "./headless-openapi-client.ts";
+
+export { DeclaredFailure, ProtocolFailure, TransportFailure };
 
 export const generatorFormatVersion = 1;
 
@@ -25,6 +33,7 @@ export interface PublicAuthor {
   readonly profile: RichTextDocument | null;
   readonly portrait: string | null;
   readonly portraitAlternativeText: string | null;
+  readonly externalLinks: readonly Readonly<Record<string, unknown>>[];
 }
 export interface PublicTaxonomy {
   readonly id: string;
@@ -83,105 +92,139 @@ export interface PublicBlogExport {
   readonly assets: readonly PublicAsset[];
 }
 
-export class TransportFailure extends Schema.TaggedError<TransportFailure>()("TransportFailure", {
-  message: Schema.String,
-}) {}
-export class ProtocolFailure extends Schema.TaggedError<ProtocolFailure>()("ProtocolFailure", {
-  message: Schema.String,
-  status: Schema.Number,
-}) {}
 export class UnsupportedDefinition extends Schema.TaggedError<UnsupportedDefinition>()(
   "UnsupportedDefinition",
   { message: Schema.String },
 ) {}
-export class DeclaredFailure extends Schema.TaggedError<DeclaredFailure>()("DeclaredFailure", {
-  code: Schema.String,
-  message: Schema.String,
-  status: Schema.Number,
-}) {}
-
-const fetchJson = <Value>(
-  url: string,
-  init?: RequestInit,
-): Effect.Effect<Value, TransportFailure | ProtocolFailure | DeclaredFailure> =>
-  Effect.tryPromise({
-    catch: (cause) =>
-      cause instanceof TransportFailure ||
-      cause instanceof ProtocolFailure ||
-      cause instanceof DeclaredFailure
-        ? cause
-        : TransportFailure.make({
-            message: cause instanceof Error ? cause.message : "Headless request failed",
-          }),
-    try: async () => {
-      let response: Response;
-      try {
-        response = await fetch(url, init);
-      } catch (cause) {
-        throw TransportFailure.make({
-          message: cause instanceof Error ? cause.message : "Connection failed",
-        });
-      }
-      const mediaType = response.headers.get("content-type") ?? "";
-      if (!response.ok) {
-        if (mediaType.includes("application/json")) {
-          const error = (await response.json()) as {
-            readonly code?: string;
-            readonly message?: string;
-          };
-          throw DeclaredFailure.make({
-            code: error.code ?? "Unknown",
-            message: error.message ?? "Headless operation failed",
-            status: response.status,
-          });
-        }
-        throw ProtocolFailure.make({
-          message: `Unexpected Headless response ${response.status}`,
-          status: response.status,
-        });
-      }
-      if (!mediaType.includes("application/json"))
-        throw ProtocolFailure.make({
-          message: "Expected a JSON Headless response",
-          status: response.status,
-        });
-      try {
-        return (await response.json()) as Value;
-      } catch {
-        throw ProtocolFailure.make({
-          message: "Malformed Headless JSON response",
-          status: response.status,
-        });
-      }
-    },
-  });
-
-export const makeHeadlessClient = (baseUrl: string) => ({
-  discover: (): Effect.Effect<
-    Readonly<Record<string, unknown>>,
-    TransportFailure | ProtocolFailure | DeclaredFailure
-  > => fetchJson(`${baseUrl}/api/v1/headless/schema`),
-  exportPublicBlog: (
-    expectedFingerprint: string,
-  ): Effect.Effect<PublicBlogExport, TransportFailure | ProtocolFailure | DeclaredFailure> =>
-    fetchJson(`${baseUrl}/api/v1/headless/export`, {
-      headers: { "cms-expected-definition-fingerprint": expectedFingerprint },
+const RichTextNodeSchema: Schema.Codec<RichTextNode> = Schema.Struct({
+    alternativeText: Schema.optionalKey(Schema.String),
+    assetId: Schema.optionalKey(Schema.String),
+    caption: Schema.optionalKey(Schema.String),
+    children: Schema.optionalKey(
+      Schema.Array(Schema.suspend((): Schema.Codec<RichTextNode> => RichTextNodeSchema)),
+    ),
+    entryId: Schema.optionalKey(Schema.String),
+    level: Schema.optionalKey(Schema.Number),
+    marks: Schema.optionalKey(Schema.Array(Schema.String)),
+    text: Schema.optionalKey(Schema.String),
+    type: Schema.String,
+    url: Schema.optionalKey(Schema.String),
+  }),
+  RichTextDocumentSchema: Schema.Codec<RichTextDocument> = Schema.Struct({
+    children: Schema.Array(RichTextNodeSchema),
+    format: Schema.Literal("nearly-headless-cms/rich-text"),
+    version: Schema.Literal(1),
+  }),
+  PublicPostSchema: Schema.Codec<PublicPost> = Schema.Struct({
+    author: Schema.String,
+    body: RichTextDocumentSchema,
+    categories: Schema.Array(Schema.String),
+    excerpt: Schema.String,
+    featuredAlternativeText: Schema.NullOr(Schema.String),
+    featuredAsset: Schema.NullOr(Schema.String),
+    id: Schema.String,
+    publishedAt: Schema.String,
+    slug: Schema.String,
+    status: Schema.Literal("published"),
+    tags: Schema.Array(Schema.String),
+    title: Schema.String,
+  }),
+  PublicAuthorSchema: Schema.Codec<PublicAuthor> = Schema.Struct({
+    biography: Schema.String,
+    externalLinks: Schema.Array(Schema.JsonObject),
+    id: Schema.String,
+    name: Schema.String,
+    portrait: Schema.NullOr(Schema.String),
+    portraitAlternativeText: Schema.NullOr(Schema.String),
+    profile: Schema.NullOr(RichTextDocumentSchema),
+    slug: Schema.String,
+  }),
+  PublicTaxonomySchema: Schema.Codec<PublicTaxonomy> = Schema.Struct({
+    description: Schema.NullOr(Schema.String),
+    id: Schema.String,
+    name: Schema.String,
+    slug: Schema.String,
+  }),
+  PublicCommentSchema: Schema.Codec<PublicComment> = Schema.Struct({
+    body: Schema.String,
+    createdAt: Schema.String,
+    displayName: Schema.String,
+    id: Schema.String,
+    post: Schema.String,
+    status: Schema.Literal("approved"),
+    websiteUrl: Schema.NullOr(Schema.String),
+  }),
+  PublicAssetSchema: Schema.Codec<PublicAsset> = Schema.Struct({
+    id: Schema.String,
+    localPath: Schema.optionalKey(Schema.String),
+    metadata: Schema.Struct({
+      byteLength: Schema.Number,
+      defaultAlternativeText: Schema.optionalKey(Schema.String),
+      digest: Schema.String,
+      filename: Schema.String,
+      height: Schema.optionalKey(Schema.Number),
+      mediaType: Schema.String,
+      width: Schema.optionalKey(Schema.Number),
     }),
-  submitComment: (
-    postId: string,
-    input: {
-      readonly displayName: string;
-      readonly websiteUrl: string | null;
-      readonly body: string;
-    },
-    idempotencyKey: string,
-  ): Effect.Effect<
-    { readonly submissionId: string; readonly status: "pending" },
-    TransportFailure | ProtocolFailure | DeclaredFailure
-  > =>
-    fetchJson(`${baseUrl}/api/v1/headless/posts/${encodeURIComponent(postId)}/comments`, {
-      body: JSON.stringify(input),
-      headers: { "content-type": "application/json", "idempotency-key": idempotencyKey },
-      method: "POST",
+  }),
+  PublicBlogExportSchema: Schema.Codec<PublicBlogExport> = Schema.Struct({
+    assets: Schema.Array(PublicAssetSchema),
+    authors: Schema.Array(PublicAuthorSchema),
+    categories: Schema.Array(PublicTaxonomySchema),
+    comments: Schema.Array(PublicCommentSchema),
+    definitionFingerprint: Schema.String,
+    generatedAt: Schema.String,
+    posts: Schema.Array(PublicPostSchema),
+    tags: Schema.Array(PublicTaxonomySchema),
+  }),
+  DiscoverySchema = Schema.Struct({
+    apiContractVersion: Schema.Literal(1),
+    definitionFingerprint: Schema.String,
+    richText: Schema.Struct({
+      extensions: Schema.Array(Schema.String),
+      format: Schema.String,
+      version: Schema.Literal(1),
     }),
-});
+  }),
+  decodeResponse = <Value>(schema: Schema.Codec<Value>, value: unknown, status = 200) =>
+    Schema.decodeUnknownEffect(schema)(value).pipe(
+      Effect.mapError((issue) => ProtocolFailure.make({ message: String(issue), status })),
+    );
+
+export const makeHeadlessClient = (baseAddress: string) => {
+  const generatedClient = makeGeneratedClient(baseAddress);
+  return {
+    discover: (): Effect.Effect<
+      Schema.Schema.Type<typeof DiscoverySchema>,
+      TransportFailure | ProtocolFailure | DeclaredFailure
+    > =>
+      generatedClient
+        .discoverPublicDefinitionSnapshot({})
+        .pipe(Effect.flatMap((value) => decodeResponse(DiscoverySchema, value))),
+    exportPublicBlog: (
+      expectedFingerprint: string,
+    ): Effect.Effect<PublicBlogExport, TransportFailure | ProtocolFailure | DeclaredFailure> =>
+      generatedClient
+        .exportPublicBlog({
+          headers: { "CMS-Expected-Definition-Fingerprint": expectedFingerprint },
+        })
+        .pipe(Effect.flatMap((value) => decodeResponse(PublicBlogExportSchema, value))),
+    submitComment: (
+      postId: string,
+      input: {
+        readonly displayName: string;
+        readonly websiteUrl: string | null;
+        readonly body: string;
+      },
+      idempotencyKey: string,
+    ): Effect.Effect<
+      { readonly submissionId: string; readonly status: "pending" },
+      TransportFailure | ProtocolFailure | DeclaredFailure
+    > =>
+      generatedClient.submitComment({
+        body: input,
+        headers: { "idempotency-key": idempotencyKey },
+        path: { postId },
+      }),
+  };
+};

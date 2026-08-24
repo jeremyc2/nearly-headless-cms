@@ -100,14 +100,14 @@
           "definitionFingerprint": {
             "type": "string"
           },
-          "definitionSnapshotId": {
-            "type": "string"
-          },
           "definitions": {
             "items": {
               "$ref": "#/components/schemas/JsonObject"
             },
             "type": "array"
+          },
+          "definitionSnapshotId": {
+            "type": "string"
           },
           "fieldKinds": {
             "items": {
@@ -257,560 +257,230 @@
   },
   "openapi": "3.1.0",
   "paths": {
-    "/api/v1/headless/schema": {
+    "/api/v1/headless/assets/{assetId}": {
       "get": {
-        "operationId": "discoverPublicDefinitionSnapshot",
-        "responses": {
-          "200": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Discovery"
-                }
-              }
-            }
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Invalid input"
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Forbidden"
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Not found"
-          },
-          "405": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Method not allowed"
-          },
-          "406": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Not acceptable"
-          },
-          "408": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Request timeout"
-          },
-          "409": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Conflict"
-          },
-          "412": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Definition Snapshot changed"
-          },
-          "413": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Payload too large"
-          },
-          "414": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "URI too long"
-          },
-          "415": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Unsupported request media type"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Unsupported query capability"
-          },
-          "431": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Request headers too large"
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Internal error"
-          },
-          "503": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Retryable infrastructure failure"
-          }
-        }
-      }
-    },
-    "/api/v1/headless/posts": {
-      "get": {
-        "operationId": "listPublishedPosts",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "cursor",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "pageSize",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "string",
-                  "enum": [
-                    "Infinity",
-                    "-Infinity",
-                    "NaN"
-                  ]
-                }
-              ]
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "items": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "author": {
-                            "type": "string"
-                          },
-                          "body": {
-                            "type": "object"
-                          },
-                          "categories": {
-                            "type": "array",
-                            "items": {
-                              "type": "string"
-                            }
-                          },
-                          "excerpt": {
-                            "type": "string"
-                          },
-                          "featuredAlternativeText": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          "featuredAsset": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          "id": {
-                            "type": "string"
-                          },
-                          "publishedAt": {
-                            "type": "string"
-                          },
-                          "slug": {
-                            "type": "string"
-                          },
-                          "status": {
-                            "type": "string",
-                            "enum": [
-                              "published"
-                            ]
-                          },
-                          "tags": {
-                            "type": "array",
-                            "items": {
-                              "type": "string"
-                            }
-                          },
-                          "title": {
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "author",
-                          "body",
-                          "categories",
-                          "excerpt",
-                          "featuredAlternativeText",
-                          "featuredAsset",
-                          "id",
-                          "publishedAt",
-                          "slug",
-                          "status",
-                          "tags",
-                          "title"
-                        ],
-                        "additionalProperties": false
-                      }
-                    },
-                    "nextCursor": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "items"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Invalid input"
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Forbidden"
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Not found"
-          },
-          "405": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Method not allowed"
-          },
-          "406": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Not acceptable"
-          },
-          "408": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Request timeout"
-          },
-          "409": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Conflict"
-          },
-          "412": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Definition Snapshot changed"
-          },
-          "413": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Payload too large"
-          },
-          "414": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "URI too long"
-          },
-          "415": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Unsupported request media type"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Unsupported query capability"
-          },
-          "431": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Request headers too large"
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Internal error"
-          },
-          "503": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Retryable infrastructure failure"
-          }
-        }
-      }
-    },
-    "/api/v1/headless/posts/{slug}": {
-      "get": {
-        "operationId": "getPublishedPostBySlug",
+        "operationId": "deliverPublicAsset",
         "parameters": [
           {
             "in": "path",
-            "name": "slug",
+            "name": "assetId",
             "required": true,
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "in": "header",
+            "name": "CMS-Expected-Definition-Fingerprint",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Request-Id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Successful response",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful response"
+          },
+          "400": {
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "author": {
-                      "type": "string"
-                    },
-                    "body": {
-                      "type": "object"
-                    },
-                    "categories": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    },
-                    "excerpt": {
-                      "type": "string"
-                    },
-                    "featuredAlternativeText": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "featuredAsset": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "id": {
-                      "type": "string"
-                    },
-                    "publishedAt": {
-                      "type": "string"
-                    },
-                    "slug": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "published"
-                      ]
-                    },
-                    "tags": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    },
-                    "title": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "author",
-                    "body",
-                    "categories",
-                    "excerpt",
-                    "featuredAlternativeText",
-                    "featuredAsset",
-                    "id",
-                    "publishedAt",
-                    "slug",
-                    "status",
-                    "tags",
-                    "title"
-                  ],
-                  "additionalProperties": false
+                  "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "description": "Invalid input"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Not found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Method not allowed"
+          },
+          "406": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Not acceptable"
+          },
+          "408": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Request timeout"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "412": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Definition Snapshot changed"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Payload too large"
+          },
+          "414": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "URI too long"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unsupported request media type"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unsupported query capability"
+          },
+          "431": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Request headers too large"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Internal error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Retryable infrastructure failure"
+          }
+        }
+      },
+      "head": {
+        "operationId": "inspectPublicAsset",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assetId",
+            "required": true,
+            "schema": {
+              "type": "string"
             }
+          },
+          {
+            "in": "header",
+            "name": "CMS-Expected-Definition-Fingerprint",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Request-Id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed without a response body"
           },
           "400": {
             "content": {
@@ -976,24 +646,39 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "in": "header",
+            "name": "CMS-Expected-Definition-Fingerprint",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Request-Id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
+                  "additionalProperties": false,
                   "properties": {
                     "biography": {
                       "type": "string"
                     },
                     "externalLinks": {
-                      "type": "array",
                       "items": {
                         "type": "object"
-                      }
+                      },
+                      "type": "array"
                     },
                     "id": {
                       "type": "string"
@@ -1045,10 +730,11 @@
                     "profile",
                     "slug"
                   ],
-                  "additionalProperties": false
+                  "type": "object"
                 }
               }
-            }
+            },
+            "description": "Successful response"
           },
           "400": {
             "content": {
@@ -1228,34 +914,36 @@
             "name": "pageSize",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "string",
-                  "enum": [
-                    "Infinity",
-                    "-Infinity",
-                    "NaN"
-                  ]
-                }
-              ]
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "CMS-Expected-Definition-Fingerprint",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Request-Id",
+            "required": false,
+            "schema": {
+              "type": "string"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
+                  "additionalProperties": false,
                   "properties": {
                     "items": {
-                      "type": "array",
                       "items": {
-                        "type": "object",
+                        "additionalProperties": false,
                         "properties": {
                           "author": {
                             "type": "string"
@@ -1264,10 +952,10 @@
                             "type": "object"
                           },
                           "categories": {
-                            "type": "array",
                             "items": {
                               "type": "string"
-                            }
+                            },
+                            "type": "array"
                           },
                           "excerpt": {
                             "type": "string"
@@ -1302,16 +990,16 @@
                             "type": "string"
                           },
                           "status": {
-                            "type": "string",
                             "enum": [
                               "published"
-                            ]
+                            ],
+                            "type": "string"
                           },
                           "tags": {
-                            "type": "array",
                             "items": {
                               "type": "string"
-                            }
+                            },
+                            "type": "array"
                           },
                           "title": {
                             "type": "string"
@@ -1331,8 +1019,9 @@
                           "tags",
                           "title"
                         ],
-                        "additionalProperties": false
-                      }
+                        "type": "object"
+                      },
+                      "type": "array"
                     },
                     "nextCursor": {
                       "type": "string"
@@ -1341,10 +1030,11 @@
                   "required": [
                     "items"
                   ],
-                  "additionalProperties": false
+                  "type": "object"
                 }
               }
-            }
+            },
+            "description": "Successful response"
           },
           "400": {
             "content": {
@@ -1510,15 +1200,30 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "in": "header",
+            "name": "CMS-Expected-Definition-Fingerprint",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Request-Id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
+                  "additionalProperties": false,
                   "properties": {
                     "description": {
                       "anyOf": [
@@ -1546,10 +1251,11 @@
                     "name",
                     "slug"
                   ],
-                  "additionalProperties": false
+                  "type": "object"
                 }
               }
-            }
+            },
+            "description": "Successful response"
           },
           "400": {
             "content": {
@@ -1729,34 +1435,36 @@
             "name": "pageSize",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "string",
-                  "enum": [
-                    "Infinity",
-                    "-Infinity",
-                    "NaN"
-                  ]
-                }
-              ]
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "CMS-Expected-Definition-Fingerprint",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Request-Id",
+            "required": false,
+            "schema": {
+              "type": "string"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
+                  "additionalProperties": false,
                   "properties": {
                     "items": {
-                      "type": "array",
                       "items": {
-                        "type": "object",
+                        "additionalProperties": false,
                         "properties": {
                           "author": {
                             "type": "string"
@@ -1765,10 +1473,10 @@
                             "type": "object"
                           },
                           "categories": {
-                            "type": "array",
                             "items": {
                               "type": "string"
-                            }
+                            },
+                            "type": "array"
                           },
                           "excerpt": {
                             "type": "string"
@@ -1803,16 +1511,16 @@
                             "type": "string"
                           },
                           "status": {
-                            "type": "string",
                             "enum": [
                               "published"
-                            ]
+                            ],
+                            "type": "string"
                           },
                           "tags": {
-                            "type": "array",
                             "items": {
                               "type": "string"
-                            }
+                            },
+                            "type": "array"
                           },
                           "title": {
                             "type": "string"
@@ -1832,8 +1540,9 @@
                           "tags",
                           "title"
                         ],
-                        "additionalProperties": false
-                      }
+                        "type": "object"
+                      },
+                      "type": "array"
                     },
                     "nextCursor": {
                       "type": "string"
@@ -1842,10 +1551,11 @@
                   "required": [
                     "items"
                   ],
-                  "additionalProperties": false
+                  "type": "object"
                 }
               }
-            }
+            },
+            "description": "Successful response"
           },
           "400": {
             "content": {
@@ -2000,14 +1710,22 @@
         }
       }
     },
-    "/api/v1/headless/tags/{slug}": {
+    "/api/v1/headless/export": {
       "get": {
-        "operationId": "getPublicTagBySlug",
+        "operationId": "exportPublicBlog",
         "parameters": [
           {
-            "in": "path",
-            "name": "slug",
-            "required": true,
+            "in": "header",
+            "name": "CMS-Expected-Definition-Fingerprint",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Request-Id",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -2015,42 +1733,348 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
+                  "additionalProperties": false,
                   "properties": {
-                    "description": {
-                      "anyOf": [
-                        {
-                          "type": "string"
+                    "assets": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "metadata": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "byteLength": {
+                                "type": "integer"
+                              },
+                              "defaultAlternativeText": {
+                                "type": "string"
+                              },
+                              "digest": {
+                                "type": "string"
+                              },
+                              "filename": {
+                                "type": "string"
+                              },
+                              "height": {
+                                "type": "integer"
+                              },
+                              "mediaType": {
+                                "type": "string"
+                              },
+                              "width": {
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "byteLength",
+                              "digest",
+                              "filename",
+                              "mediaType"
+                            ],
+                            "type": "object"
+                          }
                         },
-                        {
-                          "type": "null"
-                        }
-                      ]
+                        "required": [
+                          "id",
+                          "metadata"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
                     },
-                    "id": {
+                    "authors": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "biography": {
+                            "type": "string"
+                          },
+                          "externalLinks": {
+                            "items": {
+                              "type": "object"
+                            },
+                            "type": "array"
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "portrait": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "portraitAlternativeText": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "profile": {
+                            "anyOf": [
+                              {
+                                "type": "object"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "slug": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "biography",
+                          "externalLinks",
+                          "id",
+                          "name",
+                          "portrait",
+                          "portraitAlternativeText",
+                          "profile",
+                          "slug"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "categories": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "description": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "slug": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "description",
+                          "id",
+                          "name",
+                          "slug"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "comments": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "body": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          },
+                          "displayName": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "post": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "enum": [
+                              "approved"
+                            ],
+                            "type": "string"
+                          },
+                          "websiteUrl": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "body",
+                          "createdAt",
+                          "displayName",
+                          "id",
+                          "post",
+                          "status",
+                          "websiteUrl"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "definitionFingerprint": {
                       "type": "string"
                     },
-                    "name": {
+                    "generatedAt": {
                       "type": "string"
                     },
-                    "slug": {
-                      "type": "string"
+                    "posts": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "author": {
+                            "type": "string"
+                          },
+                          "body": {
+                            "type": "object"
+                          },
+                          "categories": {
+                            "items": {
+                              "type": "string"
+                            },
+                            "type": "array"
+                          },
+                          "excerpt": {
+                            "type": "string"
+                          },
+                          "featuredAlternativeText": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "featuredAsset": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "publishedAt": {
+                            "type": "string"
+                          },
+                          "slug": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "enum": [
+                              "published"
+                            ],
+                            "type": "string"
+                          },
+                          "tags": {
+                            "items": {
+                              "type": "string"
+                            },
+                            "type": "array"
+                          },
+                          "title": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "author",
+                          "body",
+                          "categories",
+                          "excerpt",
+                          "featuredAlternativeText",
+                          "featuredAsset",
+                          "id",
+                          "publishedAt",
+                          "slug",
+                          "status",
+                          "tags",
+                          "title"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "tags": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "description": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "slug": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "description",
+                          "id",
+                          "name",
+                          "slug"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
                     }
                   },
                   "required": [
-                    "description",
-                    "id",
-                    "name",
-                    "slug"
+                    "assets",
+                    "authors",
+                    "categories",
+                    "comments",
+                    "definitionFingerprint",
+                    "generatedAt",
+                    "posts",
+                    "tags"
                   ],
-                  "additionalProperties": false
+                  "type": "object"
                 }
               }
-            }
+            },
+            "description": "Successful response"
           },
           "400": {
             "content": {
@@ -2205,18 +2229,10 @@
         }
       }
     },
-    "/api/v1/headless/tags/{slug}/posts": {
+    "/api/v1/headless/posts": {
       "get": {
-        "operationId": "listTagPosts",
+        "operationId": "listPublishedPosts",
         "parameters": [
-          {
-            "in": "path",
-            "name": "slug",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "cursor",
@@ -2230,34 +2246,36 @@
             "name": "pageSize",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "string",
-                  "enum": [
-                    "Infinity",
-                    "-Infinity",
-                    "NaN"
-                  ]
-                }
-              ]
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "CMS-Expected-Definition-Fingerprint",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Request-Id",
+            "required": false,
+            "schema": {
+              "type": "string"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
+                  "additionalProperties": false,
                   "properties": {
                     "items": {
-                      "type": "array",
                       "items": {
-                        "type": "object",
+                        "additionalProperties": false,
                         "properties": {
                           "author": {
                             "type": "string"
@@ -2266,10 +2284,10 @@
                             "type": "object"
                           },
                           "categories": {
-                            "type": "array",
                             "items": {
                               "type": "string"
-                            }
+                            },
+                            "type": "array"
                           },
                           "excerpt": {
                             "type": "string"
@@ -2304,16 +2322,16 @@
                             "type": "string"
                           },
                           "status": {
-                            "type": "string",
                             "enum": [
                               "published"
-                            ]
+                            ],
+                            "type": "string"
                           },
                           "tags": {
-                            "type": "array",
                             "items": {
                               "type": "string"
-                            }
+                            },
+                            "type": "array"
                           },
                           "title": {
                             "type": "string"
@@ -2333,8 +2351,9 @@
                           "tags",
                           "title"
                         ],
-                        "additionalProperties": false
-                      }
+                        "type": "object"
+                      },
+                      "type": "array"
                     },
                     "nextCursor": {
                       "type": "string"
@@ -2343,10 +2362,11 @@
                   "required": [
                     "items"
                   ],
-                  "additionalProperties": false
+                  "type": "object"
                 }
               }
-            }
+            },
+            "description": "Successful response"
           },
           "400": {
             "content": {
@@ -2526,34 +2546,36 @@
             "name": "pageSize",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "string",
-                  "enum": [
-                    "Infinity",
-                    "-Infinity",
-                    "NaN"
-                  ]
-                }
-              ]
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "CMS-Expected-Definition-Fingerprint",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Request-Id",
+            "required": false,
+            "schema": {
+              "type": "string"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
+                  "additionalProperties": false,
                   "properties": {
                     "items": {
-                      "type": "array",
                       "items": {
-                        "type": "object",
+                        "additionalProperties": false,
                         "properties": {
                           "body": {
                             "type": "string"
@@ -2571,10 +2593,10 @@
                             "type": "string"
                           },
                           "status": {
-                            "type": "string",
                             "enum": [
                               "approved"
-                            ]
+                            ],
+                            "type": "string"
                           },
                           "websiteUrl": {
                             "anyOf": [
@@ -2596,8 +2618,9 @@
                           "status",
                           "websiteUrl"
                         ],
-                        "additionalProperties": false
-                      }
+                        "type": "object"
+                      },
+                      "type": "array"
                     },
                     "nextCursor": {
                       "type": "string"
@@ -2606,10 +2629,11 @@
                   "required": [
                     "items"
                   ],
-                  "additionalProperties": false
+                  "type": "object"
                 }
               }
-            }
+            },
+            "description": "Successful response"
           },
           "400": {
             "content": {
@@ -2776,6 +2800,22 @@
           },
           {
             "in": "header",
+            "name": "CMS-Expected-Definition-Fingerprint",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Request-Id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
             "name": "idempotency-key",
             "required": true,
             "schema": {
@@ -2787,7 +2827,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
+                "additionalProperties": false,
                 "properties": {
                   "body": {
                     "type": "string"
@@ -2810,7 +2850,7 @@
                   "body",
                   "displayName"
                 ],
-                "additionalProperties": false
+                "type": "object"
               }
             }
           },
@@ -2818,17 +2858,16 @@
         },
         "responses": {
           "201": {
-            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
+                  "additionalProperties": false,
                   "properties": {
                     "status": {
-                      "type": "string",
                       "enum": [
                         "pending"
-                      ]
+                      ],
+                      "type": "string"
                     },
                     "submissionId": {
                       "type": "string"
@@ -2838,10 +2877,280 @@
                     "status",
                     "submissionId"
                   ],
-                  "additionalProperties": false
+                  "type": "object"
                 }
               }
+            },
+            "description": "Successful response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Invalid input"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Not found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Method not allowed"
+          },
+          "406": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Not acceptable"
+          },
+          "408": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Request timeout"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "412": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Definition Snapshot changed"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Payload too large"
+          },
+          "414": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "URI too long"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unsupported request media type"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unsupported query capability"
+          },
+          "431": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Request headers too large"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Internal error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Retryable infrastructure failure"
+          }
+        }
+      }
+    },
+    "/api/v1/headless/posts/{slug}": {
+      "get": {
+        "operationId": "getPublishedPostBySlug",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "type": "string"
             }
+          },
+          {
+            "in": "header",
+            "name": "CMS-Expected-Definition-Fingerprint",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Request-Id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "author": {
+                      "type": "string"
+                    },
+                    "body": {
+                      "type": "object"
+                    },
+                    "categories": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "excerpt": {
+                      "type": "string"
+                    },
+                    "featuredAlternativeText": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "featuredAsset": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "publishedAt": {
+                      "type": "string"
+                    },
+                    "slug": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "enum": [
+                        "published"
+                      ],
+                      "type": "string"
+                    },
+                    "tags": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "title": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "author",
+                    "body",
+                    "categories",
+                    "excerpt",
+                    "featuredAlternativeText",
+                    "featuredAsset",
+                    "id",
+                    "publishedAt",
+                    "slug",
+                    "status",
+                    "tags",
+                    "title"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful response"
           },
           "400": {
             "content": {
@@ -3007,17 +3316,32 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "in": "header",
+            "name": "CMS-Expected-Definition-Fingerprint",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Request-Id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
                   "anyOf": [
                     {
-                      "type": "object",
+                      "additionalProperties": false,
                       "properties": {
                         "author": {
                           "type": "string"
@@ -3026,10 +3350,10 @@
                           "type": "object"
                         },
                         "categories": {
-                          "type": "array",
                           "items": {
                             "type": "string"
-                          }
+                          },
+                          "type": "array"
                         },
                         "excerpt": {
                           "type": "string"
@@ -3064,16 +3388,16 @@
                           "type": "string"
                         },
                         "status": {
-                          "type": "string",
                           "enum": [
                             "published"
-                          ]
+                          ],
+                          "type": "string"
                         },
                         "tags": {
-                          "type": "array",
                           "items": {
                             "type": "string"
-                          }
+                          },
+                          "type": "array"
                         },
                         "title": {
                           "type": "string"
@@ -3093,19 +3417,19 @@
                         "tags",
                         "title"
                       ],
-                      "additionalProperties": false
+                      "type": "object"
                     },
                     {
-                      "type": "object",
+                      "additionalProperties": false,
                       "properties": {
                         "biography": {
                           "type": "string"
                         },
                         "externalLinks": {
-                          "type": "array",
                           "items": {
                             "type": "object"
-                          }
+                          },
+                          "type": "array"
                         },
                         "id": {
                           "type": "string"
@@ -3157,10 +3481,10 @@
                         "profile",
                         "slug"
                       ],
-                      "additionalProperties": false
+                      "type": "object"
                     },
                     {
-                      "type": "object",
+                      "additionalProperties": false,
                       "properties": {
                         "description": {
                           "anyOf": [
@@ -3188,12 +3512,13 @@
                         "name",
                         "slug"
                       ],
-                      "additionalProperties": false
+                      "type": "object"
                     }
                   ]
                 }
               }
-            }
+            },
+            "description": "Successful response"
           },
           "400": {
             "content": {
@@ -3348,14 +3673,22 @@
         }
       }
     },
-    "/api/v1/headless/assets/{assetId}": {
+    "/api/v1/headless/schema": {
       "get": {
-        "operationId": "deliverPublicAsset",
+        "operationId": "discoverPublicDefinitionSnapshot",
         "parameters": [
           {
-            "in": "path",
-            "name": "assetId",
-            "required": true,
+            "in": "header",
+            "name": "CMS-Expected-Definition-Fingerprint",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Request-Id",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -3363,183 +3696,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful response",
-            "content": {
-              "application/octet-stream": {
-                "schema": {
-                  "format": "binary",
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "400": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/Discovery"
                 }
               }
             },
-            "description": "Invalid input"
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Forbidden"
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Not found"
-          },
-          "405": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Method not allowed"
-          },
-          "406": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Not acceptable"
-          },
-          "408": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Request timeout"
-          },
-          "409": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Conflict"
-          },
-          "412": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Definition Snapshot changed"
-          },
-          "413": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Payload too large"
-          },
-          "414": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "URI too long"
-          },
-          "415": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Unsupported request media type"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Unsupported query capability"
-          },
-          "431": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Request headers too large"
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Internal error"
-          },
-          "503": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "description": "Retryable infrastructure failure"
-          }
-        }
-      },
-      "head": {
-        "operationId": "inspectPublicAsset",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "assetId",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Operation completed without a response body"
+            "description": "Successful response"
           },
           "400": {
             "content": {
@@ -3694,262 +3858,282 @@
         }
       }
     },
-    "/api/v1/headless/export": {
+    "/api/v1/headless/tags/{slug}": {
       "get": {
-        "operationId": "exportPublicBlog",
+        "operationId": "getPublicTagBySlug",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "CMS-Expected-Definition-Fingerprint",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Request-Id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Successful response",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
+                  "additionalProperties": false,
                   "properties": {
-                    "assets": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string"
-                          },
-                          "metadata": {
-                            "type": "object",
-                            "properties": {
-                              "byteLength": {
-                                "anyOf": [
-                                  {
-                                    "type": "number"
-                                  },
-                                  {
-                                    "type": "string",
-                                    "enum": [
-                                      "Infinity",
-                                      "-Infinity",
-                                      "NaN"
-                                    ]
-                                  }
-                                ]
-                              },
-                              "defaultAlternativeText": {
-                                "type": "string"
-                              },
-                              "digest": {
-                                "type": "string"
-                              },
-                              "filename": {
-                                "type": "string"
-                              },
-                              "height": {
-                                "anyOf": [
-                                  {
-                                    "type": "number"
-                                  },
-                                  {
-                                    "type": "string",
-                                    "enum": [
-                                      "Infinity",
-                                      "-Infinity",
-                                      "NaN"
-                                    ]
-                                  }
-                                ]
-                              },
-                              "mediaType": {
-                                "type": "string"
-                              },
-                              "width": {
-                                "anyOf": [
-                                  {
-                                    "type": "number"
-                                  },
-                                  {
-                                    "type": "string",
-                                    "enum": [
-                                      "Infinity",
-                                      "-Infinity",
-                                      "NaN"
-                                    ]
-                                  }
-                                ]
-                              }
-                            },
-                            "required": [
-                              "byteLength",
-                              "digest",
-                              "filename",
-                              "mediaType"
-                            ],
-                            "additionalProperties": false
-                          }
+                    "description": {
+                      "anyOf": [
+                        {
+                          "type": "string"
                         },
-                        "required": [
-                          "id",
-                          "metadata"
-                        ],
-                        "additionalProperties": false
-                      }
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
-                    "authors": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "biography": {
-                            "type": "string"
-                          },
-                          "externalLinks": {
-                            "type": "array",
-                            "items": {
-                              "type": "object"
-                            }
-                          },
-                          "id": {
-                            "type": "string"
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "portrait": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          "portraitAlternativeText": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          "profile": {
-                            "anyOf": [
-                              {
-                                "type": "object"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          "slug": {
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "biography",
-                          "externalLinks",
-                          "id",
-                          "name",
-                          "portrait",
-                          "portraitAlternativeText",
-                          "profile",
-                          "slug"
-                        ],
-                        "additionalProperties": false
-                      }
-                    },
-                    "categories": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "description": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          "id": {
-                            "type": "string"
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "slug": {
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "description",
-                          "id",
-                          "name",
-                          "slug"
-                        ],
-                        "additionalProperties": false
-                      }
-                    },
-                    "comments": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "body": {
-                            "type": "string"
-                          },
-                          "createdAt": {
-                            "type": "string"
-                          },
-                          "displayName": {
-                            "type": "string"
-                          },
-                          "id": {
-                            "type": "string"
-                          },
-                          "post": {
-                            "type": "string"
-                          },
-                          "status": {
-                            "type": "string",
-                            "enum": [
-                              "approved"
-                            ]
-                          },
-                          "websiteUrl": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          }
-                        },
-                        "required": [
-                          "body",
-                          "createdAt",
-                          "displayName",
-                          "id",
-                          "post",
-                          "status",
-                          "websiteUrl"
-                        ],
-                        "additionalProperties": false
-                      }
-                    },
-                    "definitionFingerprint": {
+                    "id": {
                       "type": "string"
                     },
-                    "generatedAt": {
+                    "name": {
                       "type": "string"
                     },
-                    "posts": {
-                      "type": "array",
+                    "slug": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "description",
+                    "id",
+                    "name",
+                    "slug"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Invalid input"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Not found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Method not allowed"
+          },
+          "406": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Not acceptable"
+          },
+          "408": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Request timeout"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "412": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Definition Snapshot changed"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Payload too large"
+          },
+          "414": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "URI too long"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unsupported request media type"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unsupported query capability"
+          },
+          "431": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Request headers too large"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Internal error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Retryable infrastructure failure"
+          }
+        }
+      }
+    },
+    "/api/v1/headless/tags/{slug}/posts": {
+      "get": {
+        "operationId": "listTagPosts",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "CMS-Expected-Definition-Fingerprint",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Request-Id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "items": {
                       "items": {
-                        "type": "object",
+                        "additionalProperties": false,
                         "properties": {
                           "author": {
                             "type": "string"
@@ -3958,10 +4142,10 @@
                             "type": "object"
                           },
                           "categories": {
-                            "type": "array",
                             "items": {
                               "type": "string"
-                            }
+                            },
+                            "type": "array"
                           },
                           "excerpt": {
                             "type": "string"
@@ -3996,16 +4180,16 @@
                             "type": "string"
                           },
                           "status": {
-                            "type": "string",
                             "enum": [
                               "published"
-                            ]
+                            ],
+                            "type": "string"
                           },
                           "tags": {
-                            "type": "array",
                             "items": {
                               "type": "string"
-                            }
+                            },
+                            "type": "array"
                           },
                           "title": {
                             "type": "string"
@@ -4025,58 +4209,22 @@
                           "tags",
                           "title"
                         ],
-                        "additionalProperties": false
-                      }
+                        "type": "object"
+                      },
+                      "type": "array"
                     },
-                    "tags": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "description": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          "id": {
-                            "type": "string"
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "slug": {
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "description",
-                          "id",
-                          "name",
-                          "slug"
-                        ],
-                        "additionalProperties": false
-                      }
+                    "nextCursor": {
+                      "type": "string"
                     }
                   },
                   "required": [
-                    "assets",
-                    "authors",
-                    "categories",
-                    "comments",
-                    "definitionFingerprint",
-                    "generatedAt",
-                    "posts",
-                    "tags"
+                    "items"
                   ],
-                  "additionalProperties": false
+                  "type": "object"
                 }
               }
-            }
+            },
+            "description": "Successful response"
           },
           "400": {
             "content": {
