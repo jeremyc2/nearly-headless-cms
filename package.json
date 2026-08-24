@@ -13,6 +13,7 @@
     "verify": "bun run lint && bun run typecheck && bun run test",
     "lint": "oxlint . --fix --deny-warnings --format=agent",
     "lint:pretty": "oxlint . --fix --deny-warnings",
+    "lint:stats": "bun lint:pretty | tail -n 2",
     "typecheck": "bun run --filter '*' typecheck",
     "test": "bun test",
     "test:unit": "bun test packages/nearly-headless-cms/test/unit apps/example-cms/test/unit apps/public-blog/test/unit",
