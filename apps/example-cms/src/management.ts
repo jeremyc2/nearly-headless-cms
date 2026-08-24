@@ -1,7 +1,7 @@
 import type { Cms, ContentDefinition } from "nearly-headless-cms";
 import { CmsError } from "nearly-headless-cms";
 import type { HttpContract } from "nearly-headless-cms/http";
-import { Effect } from "effect";
+import { Effect, Schema } from "effect";
 import { type CommandReceiptStore, memoryCommandReceiptStore } from "./command-receipt-store.ts";
 import {
   authorDefinitionRequirement,
@@ -17,9 +17,101 @@ import {
   Identifier,
   ImageReplacementReceipt,
   ImageReplacementRequest,
+  PublicAsset,
 } from "./wire-schemas.ts";
 
-const transition =
+interface RichTextPublicationReference {
+  readonly entryIdentifier: string;
+  readonly path: readonly (string | number)[];
+}
+
+const collectRichTextPublicationRules = (
+    value: unknown,
+    path: readonly (string | number)[],
+    issues: CmsError.ValidationIssue[],
+    references: RichTextPublicationReference[],
+  ): void => {
+    if (Array.isArray(value)) {
+      value.forEach((child, index) =>
+        collectRichTextPublicationRules(child, [...path, index], issues, references),
+      );
+      return;
+    }
+    if (value === null || typeof value !== "object") {
+      return;
+    }
+    const record = value as Readonly<Record<string, unknown>>;
+    if (
+      record["type"] === "asset-reference" &&
+      (typeof record["alternativeText"] !== "string" || record["alternativeText"].trim() === "")
+    ) {
+      issues.push({
+        message: "Published Rich Text images require meaningful alternative text",
+        path: [...path, "alternativeText"],
+        reason: "missingAlternativeText",
+      });
+    }
+    if (record["type"] === "entry-reference" && typeof record["entryId"] === "string") {
+      references.push({ entryIdentifier: record["entryId"], path: [...path, "entryId"] });
+    }
+    for (const [key, child] of Object.entries(record)) {
+      collectRichTextPublicationRules(child, [...path, key], issues, references);
+    }
+  },
+  validatePostPublication = (
+    cms: Cms.ServiceShape,
+    values: ContentDefinition.JsonObject,
+  ): Effect.Effect<void, CmsError.CmsError> =>
+    Effect.gen(function* validatePostPublication() {
+      const issues: CmsError.ValidationIssue[] = [],
+        references: RichTextPublicationReference[] = [];
+      if (
+        typeof values["featured-asset"] === "string" &&
+        (typeof values["featured-alternative-text"] !== "string" ||
+          values["featured-alternative-text"].trim() === "")
+      ) {
+        issues.push({
+          message: "A published featured image requires meaningful alternative text",
+          path: ["featured-alternative-text"],
+          reason: "missingAlternativeText",
+        });
+      }
+      collectRichTextPublicationRules(values["body"], ["body"], issues, references);
+      for (const reference of references) {
+        let target:
+          | Awaited<
+              ReturnType<Cms.ServiceShape["getEntry"]> extends Effect.Effect<infer Value, unknown>
+                ? Value
+                : never
+            >
+          | undefined;
+        for (const contentTypeIdentifier of ["post", "author", "category", "tag"]) {
+          target = yield* cms
+            .getEntry({ contentTypeId: contentTypeIdentifier, entryId: reference.entryIdentifier })
+            .pipe(Effect.catchTag("NotFound", () => Effect.succeed(undefined)));
+          if (target !== undefined) {
+            break;
+          }
+        }
+        if (
+          target === undefined ||
+          (target.contentTypeId === "post" && target.values["status"] !== "published")
+        ) {
+          issues.push({
+            message: "Published Rich Text Entry references must resolve to public content",
+            path: reference.path,
+            reason: "referenceNotPublic",
+          });
+        }
+      }
+      if (issues.length > 0) {
+        return yield* CmsError.InvalidInput.make({
+          issues,
+          message: "Post is not ready for publication",
+        });
+      }
+    }),
+  transition =
     (
       contentTypeId: "post" | "comment",
       status: "draft" | "published" | "approved" | "rejected",
@@ -32,6 +124,9 @@ const transition =
           return yield* CmsError.InvalidInput.make({ message: "CMS-Write-Token is required" });
         }
         const current = yield* cms.getEntry({ contentTypeId, entryId });
+        if (contentTypeId === "post" && status === "published") {
+          yield* validatePostPublication(cms, current.values);
+        }
         return yield* cms.updateEntry({
           contentTypeId,
           entryId,
@@ -398,6 +493,17 @@ export const makeManagementOperations = (
         request: EmptyRequest,
         requestHeaders: { "cms-write-token": Identifier },
         response: DetachmentReceipt,
+      },
+    },
+    {
+      definitionRequirements: [],
+      execute: ({ cms }) => cms.listAssets,
+      identifier: "listExampleAssets",
+      method: "GET",
+      path: "/operations/assets",
+      schemas: {
+        request: EmptyRequest,
+        response: Schema.Array(PublicAsset),
       },
     },
     {

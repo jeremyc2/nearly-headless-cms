@@ -13,10 +13,24 @@ export interface QueryPage {
   readonly nextCursor?: string;
 }
 
+export interface AssetRepresentation {
+  readonly id: string;
+  readonly metadata: {
+    readonly byteLength: number;
+    readonly defaultAlternativeText?: string;
+    readonly digest: string;
+    readonly filename: string;
+    readonly height?: number;
+    readonly mediaType: string;
+    readonly width?: number;
+  };
+}
+
 export class ManagementClientFailure extends Schema.TaggedError<ManagementClientFailure>()(
   "ManagementClientFailure",
   {
     code: Schema.optional(Schema.String),
+    details: Schema.optional(Schema.Json),
     message: Schema.String,
     status: Schema.Number,
   },
@@ -40,10 +54,12 @@ const request = <Value>(
       if (!response.ok) {
         const error = (await response.json().catch(() => ({}))) as {
           readonly code?: string;
+          readonly details?: unknown;
           readonly message?: string;
         };
         throw ManagementClientFailure.make({
           code: error.code,
+          details: error.details,
           message: error.message ?? `Management request failed with ${response.status}`,
           status: response.status,
         });
@@ -113,8 +129,8 @@ export const makeManagementClient = (baseUrl = "") => ({
       baseUrl,
       `/api/v1/management/definition-spaces/example-blog/content-types/${encodeURIComponent(contentTypeId)}/entries/${encodeURIComponent(entryId)}/revisions/${revisionNumber}`,
     ),
-  listAssets: (): Effect.Effect<ReadonlyArray<unknown>, ManagementClientFailure> =>
-    request(baseUrl, "/api/v1/management/definition-spaces/example-blog/assets"),
+  listAssets: (): Effect.Effect<ReadonlyArray<AssetRepresentation>, ManagementClientFailure> =>
+    request(baseUrl, "/api/v1/management/definition-spaces/example-blog/operations/assets"),
   listRevisions: (
     contentTypeId: string,
     entryId: string,

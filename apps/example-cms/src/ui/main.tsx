@@ -13,7 +13,12 @@ import { Effect } from "effect";
 import { StrictMode, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import type { RichText } from "nearly-headless-cms";
-import { type EntryRepresentation, makeManagementClient } from "../generated/management-client.ts";
+import {
+  type AssetRepresentation,
+  type EntryRepresentation,
+  ManagementClientFailure,
+  makeManagementClient,
+} from "../generated/management-client.ts";
 import { BrowserAdapter, RichTextEditor } from "./rich-text-editor/index.ts";
 import "./styles.css";
 
@@ -220,6 +225,33 @@ function Overview() {
 const displayName = (entry: EntryRepresentation): string =>
   String(entry.values["title"] ?? entry.values["name"] ?? entry.values["display-name"] ?? entry.id);
 
+interface EditorialIssue {
+  readonly path: readonly (string | number)[];
+  readonly reason: string;
+}
+
+const editorialIssues = (error: unknown): readonly EditorialIssue[] => {
+  if (
+    !(error instanceof ManagementClientFailure) ||
+    error.details === null ||
+    typeof error.details !== "object"
+  ) {
+    return [];
+  }
+  const candidates = Reflect.get(error.details, "issues");
+  if (!Array.isArray(candidates)) {
+    return [];
+  }
+  return candidates.flatMap((candidate) => {
+    if (candidate === null || typeof candidate !== "object") {
+      return [];
+    }
+    const path = Reflect.get(candidate, "path"),
+      reason = Reflect.get(candidate, "reason");
+    return Array.isArray(path) && typeof reason === "string" ? [{ path, reason }] : [];
+  });
+};
+
 function ContentList() {
   const { contentTypeId } = useParams({ from: "/content/$contentTypeId" }),
     contentType = contentTypes.find((candidate) => candidate.identifier === contentTypeId),
@@ -382,25 +414,76 @@ function EntryEditor() {
         Effect.runPromise(managementClient.getCurrentState(contentTypeId, entryId)),
       queryKey: ["entry-state", contentTypeId, entryId],
     }),
-    [values, setValues] = useState<Record<string, unknown>>({});
+    authors = useQuery({
+      enabled: contentTypeId === "post",
+      queryFn: async () =>
+        Effect.runPromise(managementClient.queryEntries("author", { pageSize: 100 })),
+      queryKey: ["relationship-options", "author"],
+    }),
+    categories = useQuery({
+      enabled: contentTypeId === "post",
+      queryFn: async () =>
+        Effect.runPromise(managementClient.queryEntries("category", { pageSize: 100 })),
+      queryKey: ["relationship-options", "category"],
+    }),
+    tags = useQuery({
+      enabled: contentTypeId === "post",
+      queryFn: async () =>
+        Effect.runPromise(managementClient.queryEntries("tag", { pageSize: 100 })),
+      queryKey: ["relationship-options", "tag"],
+    }),
+    assets = useQuery({
+      enabled: contentTypeId === "post" || contentTypeId === "author",
+      queryFn: async () => Effect.runPromise(managementClient.listAssets()),
+      queryKey: ["assets"],
+    }),
+    loadedEntryIdentifier = useRef<string | undefined>(undefined),
+    [values, setValues] = useState<Record<string, unknown>>({}),
+    [conflict, setConflict] = useState<
+      | {
+          readonly latest: {
+            readonly entry: EntryRepresentation;
+            readonly revisionNumber: number;
+            readonly writeToken: string;
+          };
+        }
+      | undefined
+    >();
   useEffect(() => {
-    if (state.data !== undefined) {
+    if (state.data !== undefined && loadedEntryIdentifier.current !== entryId) {
+      loadedEntryIdentifier.current = entryId;
       setValues(structuredClone(state.data.entry.values));
+      setConflict(undefined);
     }
-  }, [state.data]);
+  }, [entryId, state.data]);
   const save = useMutation({
-      mutationFn: async (replacementValues: Readonly<Record<string, unknown>>) =>
+      mutationFn: async ({
+        replacementValues,
+        writeToken,
+      }: {
+        readonly replacementValues: Readonly<Record<string, unknown>>;
+        readonly writeToken?: string;
+      }) =>
         Effect.runPromise(
           managementClient.replaceEntry(
             contentTypeId,
             entryId,
             replacementValues,
-            state.data?.writeToken,
+            writeToken,
           ),
         ),
+      onError: async (error) => {
+        if (error instanceof ManagementClientFailure && error.status === 409) {
+          const latest = await Effect.runPromise(
+            managementClient.getCurrentState(contentTypeId, entryId),
+          );
+          setConflict({ latest });
+        }
+      },
       onSuccess: async (result) => {
         const updatedState = "entry" in result ? result : { entry: result };
         setValues(structuredClone(updatedState.entry.values));
+        setConflict(undefined);
         await queryClient.invalidateQueries({ queryKey: ["entry-state", contentTypeId, entryId] });
         await queryClient.invalidateQueries({ queryKey: ["entries", contentTypeId] });
         await queryClient.invalidateQueries({ queryKey: ["count", contentTypeId] });
@@ -432,8 +515,8 @@ function EntryEditor() {
     updateField = (key: string, value: unknown) => {
       setValues((current) => ({ ...current, [key]: value }));
     },
-    saveValues = (replacementValues = values) => {
-      save.mutate(replacementValues);
+    saveValues = (replacementValues = values, writeToken = state.data?.writeToken) => {
+      save.mutate({ replacementValues, writeToken });
     },
     setEditorialStatus = (status: "draft" | "published" | "approved" | "rejected") => {
       editorialCommand.mutate(status);
@@ -473,6 +556,54 @@ function EntryEditor() {
           {save.error.message}
         </p>
       )}
+      {conflict !== undefined && (
+        <section className="conflict-panel" role="alert" aria-labelledby="conflict-title">
+          <div>
+            <p className="eyebrow">Conflict</p>
+            <h2 id="conflict-title">A newer CMS revision exists</h2>
+            <p>
+              Your complete local draft is preserved. Compare it with revision {" "}
+              {conflict.latest.revisionNumber}, then deliberately reapply or discard it.
+            </p>
+          </div>
+          <div className="conflict-comparison">
+            <details>
+              <summary>Your local draft</summary>
+              <pre>{JSON.stringify(values, null, 2)}</pre>
+            </details>
+            <details>
+              <summary>Latest CMS revision</summary>
+              <pre>{JSON.stringify(conflict.latest.entry.values, null, 2)}</pre>
+            </details>
+          </div>
+          <div className="editor-actions">
+            <button
+              className="primary-button"
+              type="button"
+              disabled={save.isPending}
+              onClick={() => {
+                saveValues(values, conflict.latest.writeToken);
+              }}
+            >
+              Reapply my draft
+            </button>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => {
+                setValues(structuredClone(conflict.latest.entry.values));
+                queryClient.setQueryData(
+                  ["entry-state", contentTypeId, entryId],
+                  conflict.latest,
+                );
+                setConflict(undefined);
+              }}
+            >
+              Discard my draft
+            </button>
+          </div>
+        </section>
+      )}
       {state.isLoading ? (
         <p>Loading current state…</p>
       ) : (
@@ -511,6 +642,42 @@ function EntryEditor() {
                 />
               </label>
             )}
+            {"biography" in values && (
+              <label className="field full">
+                <span>Short biography</span>
+                <textarea
+                  value={String(values["biography"] ?? "")}
+                  onChange={(event) => {
+                    updateField("biography", event.target.value);
+                  }}
+                  rows={5}
+                />
+              </label>
+            )}
+            {"description" in values && (
+              <label className="field full">
+                <span>Description</span>
+                <textarea
+                  value={String(values["description"] ?? "")}
+                  onChange={(event) => {
+                    updateField("description", event.target.value || null);
+                  }}
+                  rows={4}
+                />
+              </label>
+            )}
+            {"body" in values && typeof values["body"] === "string" && (
+              <label className="field full">
+                <span>Body</span>
+                <textarea
+                  value={values["body"]}
+                  onChange={(event) => {
+                    updateField("body", event.target.value);
+                  }}
+                  rows={8}
+                />
+              </label>
+            )}
             {"body" in values && typeof values["body"] === "object" && (
               <RichTextField
                 value={values["body"] as RichText.Document}
@@ -519,35 +686,217 @@ function EntryEditor() {
                 }}
               />
             )}
+            {"profile" in values && values["profile"] !== null && (
+              <div className="field full">
+                <span>Author profile</span>
+                <RichTextField
+                  value={values["profile"] as RichText.Document}
+                  onChange={(document) => {
+                    updateField("profile", document);
+                  }}
+                />
+              </div>
+            )}
+            {contentTypeId === "post" && (
+              <fieldset className="field-group full">
+                <legend>Featured image</legend>
+                <label className="field">
+                  <span>Immutable Asset</span>
+                  <select
+                    value={typeof values["featured-asset"] === "string" ? values["featured-asset"] : ""}
+                    onChange={(event) => {
+                      const assetIdentifier = event.target.value;
+                      const selectedAsset = assets.data?.find(
+                        (candidate) => candidate.id === assetIdentifier,
+                      );
+                      updateField("featured-asset", assetIdentifier || null);
+                      if (
+                        selectedAsset?.metadata.defaultAlternativeText !== undefined &&
+                        !values["featured-alternative-text"]
+                      ) {
+                        updateField(
+                          "featured-alternative-text",
+                          selectedAsset.metadata.defaultAlternativeText,
+                        );
+                      }
+                    }}
+                  >
+                    <option value="">No featured Asset</option>
+                    {assets.data?.map((asset) => (
+                      <option value={asset.id} key={asset.id}>
+                        {asset.metadata.filename} · {asset.metadata.mediaType}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="field full">
+                  <span>Featured image alternative text</span>
+                  <input
+                    id="field-featured-alternative-text"
+                    value={String(values["featured-alternative-text"] ?? "")}
+                    onChange={(event) => {
+                      updateField("featured-alternative-text", event.target.value || null);
+                    }}
+                  />
+                </label>
+                {typeof values["featured-asset"] === "string" && (
+                  <p className="field-help">
+                    {assets.data?.find((asset) => asset.id === values["featured-asset"])?.metadata
+                      .filename ?? "Selected immutable Asset"}
+                  </p>
+                )}
+              </fieldset>
+            )}
+            {contentTypeId === "author" && (
+              <fieldset className="field-group full">
+                <legend>Portrait</legend>
+                <label className="field">
+                  <span>Immutable Asset</span>
+                  <select
+                    value={typeof values["portrait"] === "string" ? values["portrait"] : ""}
+                    onChange={(event) => {
+                      updateField("portrait", event.target.value || null);
+                    }}
+                  >
+                    <option value="">No portrait</option>
+                    {assets.data?.map((asset) => (
+                      <option value={asset.id} key={asset.id}>
+                        {asset.metadata.filename}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="field full">
+                  <span>Portrait alternative text</span>
+                  <input
+                    value={String(values["portrait-alternative-text"] ?? "")}
+                    onChange={(event) => {
+                      updateField("portrait-alternative-text", event.target.value || null);
+                    }}
+                  />
+                </label>
+              </fieldset>
+            )}
           </section>
           <aside className="editor-sidebar">
             <section className="panel">
               <p className="eyebrow">Publication</p>
               <h2>CMS state</h2>
+              {contentTypeId === "post" && (
+                <>
+                  <label className="field">
+                    <span>Author</span>
+                    <select
+                      value={String(values["author"] ?? "")}
+                      onChange={(event) => {
+                        updateField("author", event.target.value);
+                      }}
+                    >
+                      {authors.data?.items.map((author) => (
+                        <option value={author.id} key={author.id}>
+                          {displayName(author)}
+                        </option>
+                      ))}
+                    </select>
+                    <small>The Author describes the content; it is not a login identity.</small>
+                  </label>
+                  <label className="field">
+                    <span>Categories</span>
+                    <select
+                      multiple
+                      value={
+                        Array.isArray(values["categories"])
+                          ? values["categories"].map(String)
+                          : []
+                      }
+                      onChange={(event) => {
+                        updateField(
+                          "categories",
+                          [...event.currentTarget.selectedOptions].map((option) => option.value),
+                        );
+                      }}
+                    >
+                      {categories.data?.items.map((category) => (
+                        <option value={category.id} key={category.id}>
+                          {displayName(category)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="field">
+                    <span>Tags</span>
+                    <select
+                      multiple
+                      value={Array.isArray(values["tags"]) ? values["tags"].map(String) : []}
+                      onChange={(event) => {
+                        updateField(
+                          "tags",
+                          [...event.currentTarget.selectedOptions].map((option) => option.value),
+                        );
+                      }}
+                    >
+                      {tags.data?.items.map((tag) => (
+                        <option value={tag.id} key={tag.id}>
+                          {displayName(tag)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="field">
+                    <span>Publication time</span>
+                    <input
+                      type="datetime-local"
+                      value={
+                        typeof values["published-at"] === "string"
+                          ? values["published-at"].slice(0, 16)
+                          : ""
+                      }
+                      onChange={(event) => {
+                        updateField(
+                          "published-at",
+                          event.target.value === ""
+                            ? null
+                            : new Date(event.target.value).toISOString(),
+                        );
+                      }}
+                    />
+                  </label>
+                </>
+              )}
               {"status" in values && (
-                <label className="field">
+                <div className="field">
                   <span>Status</span>
-                  <select
-                    value={String(values["status"] ?? "active")}
-                    onChange={(event) => {
-                      updateField("status", event.target.value);
-                    }}
-                  >
-                    <option>draft</option>
-                    <option>published</option>
-                    <option>pending</option>
-                    <option>approved</option>
-                    <option>rejected</option>
-                  </select>
-                </label>
+                  <output className="status-readout">
+                    {String(values["status"] ?? "active")}
+                  </output>
+                  <small>Status changes only through the explicit editorial command below.</small>
+                </div>
               )}
               <p className="boundary-note">
                 Saving changes the CMS. Publishing makes a Post eligible for the next static build.
               </p>
               {editorialCommand.error && (
-                <p className="error-state" role="alert">
-                  {editorialCommand.error.message}
-                </p>
+                <div className="error-state issue-summary" role="alert">
+                  <strong>{editorialCommand.error.message}</strong>
+                  {editorialIssues(editorialCommand.error).length > 0 && (
+                    <ul>
+                      {editorialIssues(editorialCommand.error).map((issue) => {
+                        const rootField = String(issue.path[0] ?? "body"),
+                          targetIdentifier =
+                            rootField === "featured-alternative-text"
+                              ? "field-featured-alternative-text"
+                              : "field-body";
+                        return (
+                          <li key={`${issue.path.join(".")}-${issue.reason}`}>
+                            <a href={`#${targetIdentifier}`}>
+                              {issue.path.join(" → ")}: {issue.reason}
+                            </a>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
               )}
               {contentTypeId === "post" && (
                 <button
@@ -629,7 +978,7 @@ function RichTextField({
     };
   }, [initialValue]);
   return (
-    <div className="rich-text-shell">
+    <div className="rich-text-shell" id="field-body">
       <div className="rich-toolbar" role="toolbar" aria-label="Rich Text formatting">
         <button
           type="button"
@@ -666,10 +1015,19 @@ function HistoryPanel({
   readonly entryId: string;
   readonly writeToken?: string;
 }) {
-  const revisions = useQuery({
+  const [selectedRevisionNumber, setSelectedRevisionNumber] = useState<number>(),
+    revisions = useQuery({
       queryFn: async () =>
         Effect.runPromise(managementClient.listRevisions(contentTypeId, entryId)),
       queryKey: ["revisions", contentTypeId, entryId],
+    }),
+    inspectedRevision = useQuery({
+      enabled: selectedRevisionNumber !== undefined,
+      queryFn: async () =>
+        Effect.runPromise(
+          managementClient.inspectRevision(contentTypeId, entryId, selectedRevisionNumber!),
+        ),
+      queryKey: ["revision", contentTypeId, entryId, selectedRevisionNumber],
     }),
     restore = useMutation({
       mutationFn: async (revisionNumber: number) => {
@@ -681,6 +1039,7 @@ function HistoryPanel({
         );
       },
       onSuccess: async () => {
+        setSelectedRevisionNumber(undefined);
         await queryClient.invalidateQueries({ queryKey: ["entry-state", contentTypeId, entryId] });
         await queryClient.invalidateQueries({ queryKey: ["revisions", contentTypeId, entryId] });
       },
@@ -697,9 +1056,8 @@ function HistoryPanel({
       {revisions.data?.items.map((revision, index) => (
         <button
           className="revision-row"
-          disabled={restore.isPending || index === 0}
           onClick={() => {
-            restore.mutate(revision.revisionNumber);
+            setSelectedRevisionNumber(revision.revisionNumber);
           }}
           key={revision.revisionNumber}
         >
@@ -707,20 +1065,63 @@ function HistoryPanel({
           <span>
             <strong>Revision {revision.revisionNumber}</strong>
             <small>
-              {index === 0 ? "Current · " : "Restore · "}
+              {index === 0 ? "Current · inspect · " : "Inspect · "}
               {new Date(revision.recordedAt).toLocaleString()}
             </small>
           </span>
         </button>
       ))}
+      {selectedRevisionNumber !== undefined && (
+        <div className="revision-inspection" role="dialog" aria-modal="true">
+          <div className="revision-inspection-card">
+            <div className="panel-heading">
+              <div>
+                <p className="eyebrow">Complete captured values</p>
+                <h2>Revision {selectedRevisionNumber}</h2>
+              </div>
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => {
+                  setSelectedRevisionNumber(undefined);
+                }}
+              >
+                Close
+              </button>
+            </div>
+            {inspectedRevision.isLoading ? (
+              <p>Loading revision…</p>
+            ) : (
+              <pre>{JSON.stringify(inspectedRevision.data?.values, null, 2)}</pre>
+            )}
+            <button
+              className="primary-button"
+              type="button"
+              disabled={restore.isPending || writeToken === undefined}
+              onClick={() => {
+                restore.mutate(selectedRevisionNumber);
+              }}
+            >
+              Restore as a new revision
+            </button>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
 
 function AssetsPage() {
   const input = useRef<HTMLInputElement>(null),
+    assets = useQuery({
+      queryFn: async () => Effect.runPromise(managementClient.listAssets()),
+      queryKey: ["assets"],
+    }),
     upload = useMutation({
       mutationFn: async (file: File) => Effect.runPromise(managementClient.uploadAsset(file)),
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: ["assets"] });
+      },
     });
   const chooseFile = () => {
     input.current?.click();
@@ -755,11 +1156,18 @@ function AssetsPage() {
         </p>
       )}
       <section className="asset-grid">
-        <article className="asset-card">
-          <div className="asset-preview">☼</div>
-          <strong>lighthouse.svg</strong>
-          <small>image/svg+xml · 1200 × 630</small>
-        </article>
+        {assets.data?.map((asset: AssetRepresentation) => (
+          <article className="asset-card" key={asset.id}>
+            <div className="asset-preview">☼</div>
+            <strong>{asset.metadata.filename}</strong>
+            <small>
+              {asset.metadata.mediaType} · {asset.metadata.byteLength.toLocaleString()} bytes
+              {asset.metadata.width === undefined
+                ? ""
+                : ` · ${asset.metadata.width} × ${asset.metadata.height ?? "?"}`}
+            </small>
+          </article>
+        ))}
         <button className="asset-upload" onClick={chooseFile}>
           ＋<span>Upload a new Asset</span>
         </button>
