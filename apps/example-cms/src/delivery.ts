@@ -64,21 +64,20 @@ interface PublicAssetResponseInput {
 }
 
 const DEFAULT_PAGE_SIZE = 20,
- FIRST_INDEX = 0,
- MAX_PUBLIC_EXPORT_BYTES = 5_000_000,
- MAX_QUERY_PAGE_SIZE = 100,
- ONE_ITEM = 1,
-
- requiredParameter = (
-  parameters: Readonly<Record<string, string | undefined>>,
-  name: string,
-): string => {
-  const value = parameters[name];
-  if (value === undefined) {
-    throw new Error(`Missing required parameter: ${name}`);
-  }
-  return value;
-};
+  FIRST_INDEX = 0,
+  MAX_PUBLIC_EXPORT_BYTES = 5_000_000,
+  MAX_QUERY_PAGE_SIZE = 100,
+  ONE_ITEM = 1,
+  requiredParameter = (
+    parameters: Readonly<Record<string, string | undefined>>,
+    name: string,
+  ): string => {
+    const value = parameters[name];
+    if (value === undefined) {
+      throw new Error(`Missing required parameter: ${name}`);
+    }
+    return value;
+  };
 
 export const postDefinitionRequirement = {
     contentTypeId: "post",
@@ -424,9 +423,9 @@ const lowerCamelCase = (key: string): string =>
           entries =
             contentTypeId === "author"
               ? content.authors
-              : (contentTypeId === "category"
+              : contentTypeId === "category"
                 ? content.categories
-                : content.tags),
+                : content.tags,
           entry = entries.find((candidate) => candidate.values["slug"] === slug);
         return entry === undefined
           ? Effect.fail(CmsError.NotFound.make({ message: `${contentTypeId} was not found` }))
@@ -478,9 +477,9 @@ const lowerCamelCase = (key: string): string =>
         end =
           match[1] === ""
             ? asset.bytes.byteLength - ONE_ITEM
-            : (match[2] === ""
+            : match[2] === ""
               ? asset.bytes.byteLength - ONE_ITEM
-              : Number(match[2]));
+              : Number(match[2]);
       if (
         !Number.isSafeInteger(start) ||
         !Number.isSafeInteger(end) ||
@@ -568,7 +567,7 @@ export const makeDeliveryOperations = (
             ],
             execute: ({ cms, parameters }) =>
               publicOwnerBySlug(cms, contentTypeId, requiredParameter(parameters, "slug")),
-            identifier: `getPublic${contentTypeId[0]!.toUpperCase()}${contentTypeId.slice(1)}BySlug`,
+            identifier: `getPublic${contentTypeId.slice(0, 1).toUpperCase()}${contentTypeId.slice(1)}BySlug`,
             method: "GET",
             path: `/${contentTypeId === "category" ? "categories" : `${contentTypeId}s`}/{slug}`,
             reachableContentTypeIds: [contentTypeId, "post"],
@@ -585,7 +584,11 @@ export const makeDeliveryOperations = (
             ],
             execute: ({ cms, parameters, request }) =>
               Effect.gen(function* execute() {
-                const owner = yield* publicOwnerBySlug(cms, contentTypeId, requiredParameter(parameters, "slug")),
+                const owner = yield* publicOwnerBySlug(
+                    cms,
+                    contentTypeId,
+                    requiredParameter(parameters, "slug"),
+                  ),
                   ownerIdentifier = owner["id"];
                 if (typeof ownerIdentifier !== "string") {
                   return yield* CmsError.InvalidInput.make({
@@ -595,9 +598,9 @@ export const makeDeliveryOperations = (
                 const relationshipPath =
                   contentTypeId === "author"
                     ? "author"
-                    : (contentTypeId === "category"
+                    : contentTypeId === "category"
                       ? "categories"
-                      : "tags");
+                      : "tags";
                 return yield* queryPage({
                   cms,
                   contentTypeId: "post",
@@ -611,7 +614,7 @@ export const makeDeliveryOperations = (
                   },
                 });
               }),
-            identifier: `list${contentTypeId[0]!.toUpperCase()}${contentTypeId.slice(1)}Posts`,
+            identifier: `list${contentTypeId.slice(0, 1).toUpperCase()}${contentTypeId.slice(1)}Posts`,
             method: "GET",
             path: `/${contentTypeId === "category" ? "categories" : `${contentTypeId}s`}/{slug}/posts`,
             reachableContentTypeIds: [contentTypeId, "post"],
@@ -653,7 +656,7 @@ export const makeDeliveryOperations = (
         definitionRequirements: [postDefinitionRequirement, commentDefinitionRequirement],
         execute: ({ cms, parameters, request }) =>
           Effect.gen(function* execute() {
-            const idempotencyKey = request.headers.get("idempotency-key")!,
+            const idempotencyKey = request.headers.get("idempotency-key") ?? "",
               body = yield* parseBody(request),
               canonicalInput = JSON.stringify(body, (_propertyName, leftValue) => {
                 if (
@@ -669,7 +672,10 @@ export const makeDeliveryOperations = (
                 return Object.fromEntries(entries);
               }),
               prior = yield* commandReceiptStore
-                .read(`comment-submission:${requiredParameter(parameters, "postId")}`, idempotencyKey)
+                .read(
+                  `comment-submission:${requiredParameter(parameters, "postId")}`,
+                  idempotencyKey,
+                )
                 .pipe(
                   Effect.mapError((cause) =>
                     CmsError.InfrastructureFailure.make({
@@ -710,7 +716,7 @@ export const makeDeliveryOperations = (
               return yield* CmsError.NotFound.make({ message: "Published Post was not found" });
             }
             const { displayName } = body,
-             commentBody = body["body"],
+              commentBody = body["body"],
               { websiteUrl } = body;
             if (
               typeof displayName !== "string" ||
@@ -733,10 +739,14 @@ export const makeDeliveryOperations = (
               submissionId = "writeToken" in result ? result.entry.id : result.id,
               receipt = { status: "pending", submissionId };
             yield* commandReceiptStore
-              .write(`comment-submission:${requiredParameter(parameters, "postId")}`, idempotencyKey, {
-                canonicalInput,
-                receipt,
-              })
+              .write(
+                `comment-submission:${requiredParameter(parameters, "postId")}`,
+                idempotencyKey,
+                {
+                  canonicalInput,
+                  receipt,
+                },
+              )
               .pipe(
                 Effect.mapError((cause) =>
                   CmsError.InfrastructureFailure.make({
