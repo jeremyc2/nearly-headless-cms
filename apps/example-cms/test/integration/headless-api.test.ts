@@ -221,4 +221,34 @@ describe("Example CMS Headless API", () => {
       ).status,
     ).toBe(404);
   });
+
+  test("replays durable Comment receipts and Definition state after restart", async () => {
+    const restartRoot = await mkdtemp(join(import.meta.dir, ".restart-api-")),
+      firstSystem = await createExampleSystem({ seed: true, storageRoot: restartRoot }),
+      postId = firstSystem.seed!.publishedPostId,
+      makeRequest = () =>
+        new Request(`http://cms.test/api/v1/headless/posts/${postId}/comments`, {
+          body: JSON.stringify({ body: "Persist this receipt.", displayName: "Restart reader" }),
+          headers: {
+            "content-type": "application/json",
+            "idempotency-key": "restart-comment-key",
+          },
+          method: "POST",
+        }),
+      firstReceipt = await (await firstSystem.handler(makeRequest())).json();
+    await firstSystem.dispose();
+
+    const restartedSystem = await createExampleSystem({ storageRoot: restartRoot });
+    try {
+      const replayedReceipt = await (await restartedSystem.handler(makeRequest())).json(),
+        schema = await restartedSystem.handler(
+          new Request("http://cms.test/api/v1/headless/schema"),
+        );
+      expect(replayedReceipt).toEqual(firstReceipt);
+      expect(schema.status).toBe(200);
+    } finally {
+      await restartedSystem.dispose();
+      await rm(restartRoot, { force: true, recursive: true });
+    }
+  });
 });

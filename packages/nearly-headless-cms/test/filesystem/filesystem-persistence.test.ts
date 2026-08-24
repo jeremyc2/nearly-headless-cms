@@ -3,11 +3,100 @@ import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Effect, Exit, Layer, Stream } from "effect";
-import { Asset, Persistence } from "../../src/index.ts";
+import { Asset, ContentDefinition, Persistence } from "../../src/index.ts";
 import { CryptoIdentifierGenerator } from "../../src/adapters/index.ts";
 import { BunFilesystemPersistence } from "../../src/bun/filesystem/index.ts";
 
 describe("BunFilesystemPersistence", () => {
+  test("durably commits the Definition Catalog and Entry generation in one cutover", async () => {
+    const root = await mkdtemp(join(tmpdir(), "nearly-headless-cms-cutover-")),
+      initialSnapshot = ContentDefinition.compile({
+        definitionSpaceId: "durable-catalog",
+        definitions: [
+          {
+            fields: [{ key: "title", kind: { kind: "text" }, label: "Title", required: true }],
+            id: "note",
+            kind: "contentType",
+            name: "Note",
+          },
+        ],
+        snapshotId: "initial",
+      }),
+      targetSnapshot = ContentDefinition.compile({
+        definitionSpaceId: "durable-catalog",
+        definitions: [
+          {
+            fields: [
+              { key: "title", kind: { kind: "text" }, label: "Title", required: true },
+              { key: "slug", kind: { kind: "text" }, label: "Slug", required: true },
+            ],
+            id: "note",
+            kind: "contentType",
+            name: "Note",
+          },
+        ],
+        snapshotId: "with-slug",
+      }),
+      makeLayer = () =>
+        BunFilesystemPersistence.cmsLayer({
+          acknowledgement: "durable",
+          definitionSnapshot: initialSnapshot,
+          root,
+        }).pipe(Layer.provide(CryptoIdentifierGenerator.layer));
+
+    await Effect.runPromise(
+      Effect.gen(function* commitCutover() {
+        const entries = yield* Persistence.EntryPersistence,
+          catalog = yield* Persistence.DefinitionCatalog,
+          sourceGeneration = yield* entries.readGeneration,
+          generationWithEntry = yield* entries.commitGeneration(
+            sourceGeneration.generation,
+            new Map([
+              [
+                "note-1",
+                {
+                  entry: {
+                    contentTypeId: "note",
+                    id: "note-1",
+                    values: { title: "Durable", slug: "durable" },
+                  },
+                  revisions: [],
+                },
+              ],
+            ]),
+          ),
+          catalogState = yield* catalog.read,
+          activatedAt = new Date().toISOString(),
+          snapshotRecord = {
+            activatedAt,
+            compiled: targetSnapshot,
+            input: targetSnapshot.input,
+          };
+        expect(catalog.commitCutover).toBeDefined();
+        yield* catalog.commitCutover!(
+          catalogState.version,
+          {
+            ...catalogState,
+            active: snapshotRecord,
+            snapshots: [...catalogState.snapshots, snapshotRecord],
+          },
+          generationWithEntry.generation,
+          generationWithEntry.records,
+        );
+      }).pipe(Effect.provide(makeLayer())),
+    );
+
+    const recovered = await Effect.runPromise(
+      Effect.gen(function* recoverCutover() {
+        const entries = yield* Persistence.EntryPersistence,
+          catalog = yield* Persistence.DefinitionCatalog;
+        return { catalog: yield* catalog.read, entries: yield* entries.readGeneration };
+      }).pipe(Effect.provide(makeLayer())),
+    );
+    expect(recovered.catalog.active.compiled.snapshotId).toBe("with-slug");
+    expect(recovered.entries.records.get("note-1")?.entry.values["slug"]).toBe("durable");
+  });
+
   test("recovers committed Entry generations and digest-verified Assets after restart", async () => {
     const root = await mkdtemp(join(tmpdir(), "nearly-headless-cms-")),
       filesystemLayer = BunFilesystemPersistence.layer({ acknowledgement: "atomic", root }).pipe(

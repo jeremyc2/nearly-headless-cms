@@ -1,6 +1,79 @@
 {
   "components": {
     "schemas": {
+      "Asset": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "metadata": {
+            "properties": {
+              "byteLength": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "digest": {
+                "type": "string"
+              },
+              "filename": {
+                "type": "string"
+              },
+              "mediaType": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "filename",
+              "mediaType",
+              "byteLength",
+              "digest"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "id",
+          "metadata"
+        ],
+        "type": "object"
+      },
+      "Entry": {
+        "properties": {
+          "contentTypeId": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "values": {
+            "additionalProperties": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "contentTypeId",
+          "id",
+          "values"
+        ],
+        "type": "object"
+      },
+      "EntryPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Entry"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
       "Error": {
         "properties": {
           "code": {
@@ -14,7 +87,15 @@
             "type": "string"
           }
         },
-        "required": ["code", "message", "requestId"],
+        "required": [
+          "code",
+          "message",
+          "requestId"
+        ],
+        "type": "object"
+      },
+      "JsonObject": {
+        "additionalProperties": true,
         "type": "object"
       }
     }
@@ -27,185 +108,1855 @@
   "paths": {
     "/api/v1/management/definition-spaces/{definitionSpaceId}/content-types/{contentTypeId}/entries": {
       "post": {
-        "operationId": "createEntry"
+        "operationId": "createEntry",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "contentTypeId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonObject"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/management/definition-spaces/{definitionSpaceId}/content-types/{contentTypeId}/entries/{entryId}": {
       "get": {
-        "operationId": "getEntry"
+        "operationId": "getEntry",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "contentTypeId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "entryId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       },
       "put": {
-        "operationId": "replaceEntry"
+        "operationId": "replaceEntry",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "contentTypeId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "entryId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonObject"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       },
       "delete": {
-        "operationId": "deleteEntry"
+        "operationId": "deleteEntry",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "contentTypeId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "entryId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Operation completed without a response body"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/management/definition-spaces/{definitionSpaceId}/content-types/{contentTypeId}/entries/{entryId}/read": {
       "post": {
-        "operationId": "readEntry"
+        "operationId": "readEntry",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "contentTypeId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "entryId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonObject"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/management/definition-spaces/{definitionSpaceId}/content-types/{contentTypeId}/entries/query": {
       "post": {
-        "operationId": "queryEntries"
+        "operationId": "queryEntries",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "contentTypeId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonObject"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/management/definition-spaces/{definitionSpaceId}/content-types/{contentTypeId}/entries/{entryId}/state": {
       "get": {
-        "operationId": "getCurrentEntryState"
+        "operationId": "getCurrentEntryState",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "contentTypeId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "entryId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/management/definition-spaces/{definitionSpaceId}/content-types/{contentTypeId}/entries/{entryId}/revisions": {
       "get": {
-        "operationId": "listEntryRevisions"
+        "operationId": "listEntryRevisions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "contentTypeId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "entryId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/management/definition-spaces/{definitionSpaceId}/content-types/{contentTypeId}/entries/{entryId}/revisions/{revisionNumber}": {
       "get": {
-        "operationId": "inspectEntryRevision"
+        "operationId": "inspectEntryRevision",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "contentTypeId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "entryId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "revisionNumber",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/management/definition-spaces/{definitionSpaceId}/content-types/{contentTypeId}/entries/{entryId}/restorations": {
       "post": {
-        "operationId": "restoreEntryRevision"
+        "operationId": "restoreEntryRevision",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "contentTypeId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "entryId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonObject"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/management/definition-spaces/{definitionSpaceId}/content-types/{contentTypeId}/entries/{entryId}/purges": {
       "post": {
-        "operationId": "permanentlyPurgeEntry"
+        "operationId": "permanentlyPurgeEntry",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "contentTypeId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "entryId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonObject"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Operation completed without a response body"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/management/definition-spaces/{definitionSpaceId}/assets": {
       "post": {
-        "operationId": "ingestAsset"
+        "operationId": "ingestAsset",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonObject"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/management/definition-spaces/{definitionSpaceId}/assets/{assetId}": {
       "get": {
-        "operationId": "getAsset"
+        "operationId": "getAsset",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "assetId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       },
       "delete": {
-        "operationId": "deleteAsset"
+        "operationId": "deleteAsset",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "assetId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Operation completed without a response body"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/management/definition-spaces/{definitionSpaceId}/assets/{assetId}/content": {
       "get": {
-        "operationId": "readAsset"
+        "operationId": "readAsset",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "assetId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       },
       "head": {
-        "operationId": "inspectAssetContent"
+        "operationId": "inspectAssetContent",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "assetId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed without a response body"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/management/definition-spaces/{definitionSpaceId}/definitions": {
       "get": {
-        "operationId": "listDefinitions"
+        "operationId": "listDefinitions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/management/definition-spaces/{definitionSpaceId}/definitions/{definitionId}": {
       "get": {
-        "operationId": "getDefinition"
+        "operationId": "getDefinition",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "definitionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/management/definition-spaces/{definitionSpaceId}/definitions/{definitionId}/revisions": {
       "get": {
-        "operationId": "listDefinitionRevisions"
+        "operationId": "listDefinitionRevisions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "definitionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       },
       "post": {
-        "operationId": "appendDefinitionRevision"
+        "operationId": "appendDefinitionRevision",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "definitionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonObject"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/management/definition-spaces/{definitionSpaceId}/definitions/{definitionId}/retirements": {
       "post": {
-        "operationId": "retireDefinition"
+        "operationId": "retireDefinition",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "definitionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonObject"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/management/definition-spaces/{definitionSpaceId}/definition-snapshot": {
       "get": {
-        "operationId": "getActiveDefinitionSnapshot"
+        "operationId": "getActiveDefinitionSnapshot",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/management/definition-spaces/{definitionSpaceId}/definition-snapshots": {
       "get": {
-        "operationId": "listDefinitionSnapshots"
+        "operationId": "listDefinitionSnapshots",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/management/definition-spaces/{definitionSpaceId}/definition-snapshots/{snapshotId}": {
       "get": {
-        "operationId": "inspectDefinitionSnapshot"
+        "operationId": "inspectDefinitionSnapshot",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "snapshotId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/management/definition-spaces/{definitionSpaceId}/definition-snapshot-activations": {
       "post": {
-        "operationId": "activateDefinitionSnapshot"
+        "operationId": "activateDefinitionSnapshot",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonObject"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/management/definition-spaces/{definitionSpaceId}/catalog-events": {
       "get": {
-        "operationId": "listCatalogEvents"
+        "operationId": "listCatalogEvents",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/management/definition-spaces/{definitionSpaceId}/migration-manifests": {
       "get": {
-        "operationId": "listMigrationManifests"
+        "operationId": "listMigrationManifests",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       },
       "post": {
-        "operationId": "appendMigrationManifest"
+        "operationId": "appendMigrationManifest",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonObject"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/management/definition-spaces/{definitionSpaceId}/migration-manifests/{migrationManifestId}": {
       "get": {
-        "operationId": "inspectMigrationManifest"
+        "operationId": "inspectMigrationManifest",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "migrationManifestId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/management/definition-spaces/{definitionSpaceId}/migration-preparations/{migrationPreparationId}": {
       "get": {
-        "operationId": "inspectMigrationPreparation"
+        "operationId": "inspectMigrationPreparation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "migrationPreparationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/management/definition-spaces/{definitionSpaceId}/migration-preparations": {
       "post": {
-        "operationId": "prepareDefinitionMigration"
+        "operationId": "prepareDefinitionMigration",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonObject"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/management/definition-spaces/{definitionSpaceId}/operations/posts/{entryId}/publications": {
       "post": {
-        "operationId": "publishPost"
+        "operationId": "publishPost",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "entryId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonObject"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/management/definition-spaces/{definitionSpaceId}/operations/posts/{entryId}/draft-returns": {
       "post": {
-        "operationId": "returnPostToDraft"
+        "operationId": "returnPostToDraft",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "entryId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonObject"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/management/definition-spaces/{definitionSpaceId}/operations/comments/{entryId}/approvals": {
       "post": {
-        "operationId": "approveComment"
+        "operationId": "approveComment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "entryId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonObject"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/management/definition-spaces/{definitionSpaceId}/operations/comments/{entryId}/rejections": {
       "post": {
-        "operationId": "rejectComment"
+        "operationId": "rejectComment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "entryId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonObject"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/management/definition-spaces/{definitionSpaceId}/operations/posts/{entryId}/cascade-deletions": {
       "post": {
-        "operationId": "deletePostWithComments"
+        "operationId": "deletePostWithComments",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "entryId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonObject"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/management/definition-spaces/{definitionSpaceId}/operations/categories/{entryId}/detachments": {
       "post": {
-        "operationId": "detachAndDeleteCategory"
+        "operationId": "detachAndDeleteCategory",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "entryId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonObject"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/management/definition-spaces/{definitionSpaceId}/operations/tags/{entryId}/detachments": {
       "post": {
-        "operationId": "detachAndDeleteTag"
+        "operationId": "detachAndDeleteTag",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "entryId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonObject"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/management/definition-spaces/{definitionSpaceId}/operations/assets/{assetId}/replacements": {
       "post": {
-        "operationId": "replaceImage"
+        "operationId": "replaceImage",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "definitionSpaceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "assetId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonObject"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     }
   }

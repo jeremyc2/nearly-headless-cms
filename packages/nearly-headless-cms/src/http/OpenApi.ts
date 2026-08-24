@@ -13,21 +13,140 @@ export interface Document {
 }
 
 const errorSchema = {
-  properties: {
-    code: { type: "string" },
-    details: {},
-    message: { type: "string" },
-    requestId: { type: "string" },
+    properties: {
+      code: { type: "string" },
+      details: {},
+      message: { type: "string" },
+      requestId: { type: "string" },
+    },
+    required: ["code", "message", "requestId"],
+    type: "object",
   },
-  required: ["code", "message", "requestId"],
-  type: "object",
-};
+  entrySchema = {
+    properties: {
+      contentTypeId: { type: "string" },
+      id: { type: "string" },
+      values: { additionalProperties: true, type: "object" },
+    },
+    required: ["contentTypeId", "id", "values"],
+    type: "object",
+  },
+  schemas = {
+    Asset: {
+      properties: {
+        id: { type: "string" },
+        metadata: {
+          properties: {
+            byteLength: { minimum: 0, type: "integer" },
+            digest: { type: "string" },
+            filename: { type: "string" },
+            mediaType: { type: "string" },
+          },
+          required: ["filename", "mediaType", "byteLength", "digest"],
+          type: "object",
+        },
+      },
+      required: ["id", "metadata"],
+      type: "object",
+    },
+    Entry: entrySchema,
+    EntryPage: {
+      properties: {
+        items: { items: { $ref: "#/components/schemas/Entry" }, type: "array" },
+        nextCursor: { type: "string" },
+      },
+      required: ["items"],
+      type: "object",
+    },
+    Error: errorSchema,
+    JsonObject: { additionalProperties: true, type: "object" },
+  },
+  successStatuses = new Map<string, string>([
+    ["createEntry", "201"],
+    ["ingestAsset", "201"],
+    ["appendDefinitionRevision", "201"],
+    ["retireDefinition", "201"],
+    ["activateDefinitionSnapshot", "201"],
+    ["appendMigrationManifest", "201"],
+    ["deleteEntry", "204"],
+    ["deleteAsset", "204"],
+    ["permanentlyPurgeEntry", "204"],
+  ]),
+  pathParameters = (path: string): readonly Readonly<Record<string, unknown>>[] =>
+    [...path.matchAll(/\{([^}]+)\}/gu)].map((match) => ({
+      in: "path",
+      name: match[1],
+      required: true,
+      schema: { type: match[1] === "revisionNumber" ? "integer" : "string" },
+    })),
+  completeOperation = (
+    path: string,
+    method: string,
+    rawOperation: unknown,
+  ): Readonly<Record<string, unknown>> => {
+    const operation = rawOperation as Readonly<Record<string, unknown>>,
+      operationIdentifier = String(operation["operationId"]),
+      successStatus = successStatuses.get(operationIdentifier) ?? "200",
+      bodyless = method === "head" || successStatus === "204",
+      requestBody =
+        method === "post" || method === "put"
+          ? {
+              content: {
+                [operationIdentifier === "ingestAsset"
+                  ? "multipart/form-data"
+                  : "application/json"]: {
+                  schema: { $ref: "#/components/schemas/JsonObject" },
+                },
+              },
+              required: true,
+            }
+          : undefined;
+    return {
+      ...operation,
+      ...(pathParameters(path).length === 0 ? {} : { parameters: pathParameters(path) }),
+      ...(requestBody === undefined ? {} : { requestBody }),
+      responses: {
+        [successStatus]: {
+          description: bodyless
+            ? "Operation completed without a response body"
+            : "Successful response",
+          ...(bodyless
+            ? {}
+            : {
+                content: {
+                  "application/json": { schema: {} },
+                },
+              }),
+        },
+        default: {
+          content: {
+            "application/json": { schema: { $ref: "#/components/schemas/Error" } },
+          },
+          description: "Declared API or transport failure",
+        },
+      },
+    };
+  },
+  completePaths = (
+    paths: Readonly<Record<string, Readonly<Record<string, unknown>>>>,
+  ): Readonly<Record<string, Readonly<Record<string, unknown>>>> =>
+    Object.fromEntries(
+      Object.entries(paths).map(([path, methods]) => [
+        path,
+        Object.fromEntries(
+          Object.entries(methods).map(([method, operation]) => [
+            method,
+            completeOperation(path, method, operation),
+          ]),
+        ),
+      ]),
+    );
 
 export const management = (operations: readonly ManagementOperation[] = []): Document => ({
-  components: { schemas: { Error: errorSchema } },
+  components: { schemas },
   info: { title: "Nearly Headless CMS Management API", version: "1.0.0" },
   openapi: "3.1.0",
-  paths: {
+  paths: completePaths({
     [`${managementPrefix}/definition-spaces/{definitionSpaceId}/content-types/{contentTypeId}/entries`]:
       { post: { operationId: "createEntry" } },
     [`${managementPrefix}/definition-spaces/{definitionSpaceId}/content-types/{contentTypeId}/entries/{entryId}`]:
@@ -105,25 +224,43 @@ export const management = (operations: readonly ManagementOperation[] = []): Doc
         { [operation.method.toLowerCase()]: { operationId: operation.identifier } },
       ]),
     ),
-  },
+  }),
 });
 
 export const headless = (operations: readonly DeliveryOperation[]): Document => ({
-  components: { schemas: { Error: errorSchema } },
+  components: { schemas },
   info: { title: "Nearly Headless CMS Headless API", version: "1.0.0" },
   openapi: "3.1.0",
-  paths: operations.reduce<Record<string, Record<string, unknown>>>(
-    (paths, operation) => {
-      const path = `${headlessPrefix}${operation.path}`;
-      paths[path] = {
-        ...paths[path],
-        [operation.method.toLowerCase()]: { operationId: operation.identifier },
-      };
-      return paths;
-    },
-    { [`${headlessPrefix}/schema`]: { get: { operationId: "discoverPublicDefinitionSnapshot" } } },
+  paths: completePaths(
+    operations.reduce<Record<string, Record<string, unknown>>>(
+      (paths, operation) => {
+        const path = `${headlessPrefix}${operation.path}`;
+        paths[path] = {
+          ...paths[path],
+          [operation.method.toLowerCase()]: { operationId: operation.identifier },
+        };
+        return paths;
+      },
+      {
+        [`${headlessPrefix}/schema`]: { get: { operationId: "discoverPublicDefinitionSnapshot" } },
+      },
+    ),
   ),
 });
 
+const sortValue = (value: unknown): unknown => {
+  if (Array.isArray(value)) {
+    return value.map(sortValue);
+  }
+  if (value === null || typeof value !== "object") {
+    return value;
+  }
+  return Object.fromEntries(
+    Object.entries(value)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, child]) => [key, sortValue(child)]),
+  );
+};
+
 export const stringify = (document: Document): string =>
-  `${JSON.stringify(document, Object.keys(document).sort(), 2)}\n`;
+  `${JSON.stringify(sortValue(document), null, 2)}\n`;

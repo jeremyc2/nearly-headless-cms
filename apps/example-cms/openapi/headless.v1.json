@@ -1,6 +1,79 @@
 {
   "components": {
     "schemas": {
+      "Asset": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "metadata": {
+            "properties": {
+              "byteLength": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "digest": {
+                "type": "string"
+              },
+              "filename": {
+                "type": "string"
+              },
+              "mediaType": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "filename",
+              "mediaType",
+              "byteLength",
+              "digest"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "id",
+          "metadata"
+        ],
+        "type": "object"
+      },
+      "Entry": {
+        "properties": {
+          "contentTypeId": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "values": {
+            "additionalProperties": true,
+            "type": "object"
+          }
+        },
+        "required": [
+          "contentTypeId",
+          "id",
+          "values"
+        ],
+        "type": "object"
+      },
+      "EntryPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Entry"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
       "Error": {
         "properties": {
           "code": {
@@ -14,7 +87,15 @@
             "type": "string"
           }
         },
-        "required": ["code", "message", "requestId"],
+        "required": [
+          "code",
+          "message",
+          "requestId"
+        ],
+        "type": "object"
+      },
+      "JsonObject": {
+        "additionalProperties": true,
         "type": "object"
       }
     }
@@ -27,73 +108,498 @@
   "paths": {
     "/api/v1/headless/schema": {
       "get": {
-        "operationId": "discoverPublicDefinitionSnapshot"
+        "operationId": "discoverPublicDefinitionSnapshot",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/headless/posts": {
       "get": {
-        "operationId": "listPublishedPosts"
+        "operationId": "listPublishedPosts",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/headless/posts/{slug}": {
       "get": {
-        "operationId": "getPublishedPostBySlug"
+        "operationId": "getPublishedPostBySlug",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/headless/authors/{slug}": {
       "get": {
-        "operationId": "getPublicAuthorBySlug"
+        "operationId": "getPublicAuthorBySlug",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/headless/authors/{slug}/posts": {
       "get": {
-        "operationId": "listAuthorPosts"
+        "operationId": "listAuthorPosts",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/headless/categories/{slug}": {
       "get": {
-        "operationId": "getPublicCategoryBySlug"
+        "operationId": "getPublicCategoryBySlug",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/headless/categories/{slug}/posts": {
       "get": {
-        "operationId": "listCategoryPosts"
+        "operationId": "listCategoryPosts",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/headless/tags/{slug}": {
       "get": {
-        "operationId": "getPublicTagBySlug"
+        "operationId": "getPublicTagBySlug",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/headless/tags/{slug}/posts": {
       "get": {
-        "operationId": "listTagPosts"
+        "operationId": "listTagPosts",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/headless/posts/{postId}/comments": {
       "get": {
-        "operationId": "listApprovedComments"
+        "operationId": "listApprovedComments",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "postId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       },
       "post": {
-        "operationId": "submitComment"
+        "operationId": "submitComment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "postId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonObject"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/headless/references/entries/{entryId}": {
       "get": {
-        "operationId": "resolvePublicEntryReference"
+        "operationId": "resolvePublicEntryReference",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "entryId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/headless/assets/{assetId}": {
       "get": {
-        "operationId": "deliverPublicAsset"
+        "operationId": "deliverPublicAsset",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assetId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       },
       "head": {
-        "operationId": "inspectPublicAsset"
+        "operationId": "inspectPublicAsset",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "assetId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operation completed without a response body"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     },
     "/api/v1/headless/export": {
       "get": {
-        "operationId": "exportPublicBlog"
+        "operationId": "exportPublicBlog",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Declared API or transport failure"
+          }
+        }
       }
     }
   }

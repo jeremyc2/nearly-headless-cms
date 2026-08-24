@@ -96,5 +96,31 @@ describe("HTTP contract", () => {
       }),
     );
     expect(largeHeaders.status).toBe(431);
+
+    const unacceptable = await handler(
+      new Request("http://cms.test/api/v1/headless/schema", {
+        headers: { accept: "text/csv" },
+      }),
+    );
+    expect(unacceptable.status).toBe(406);
+    expect(((await unacceptable.json()) as { code: string }).code).toBe("NotAcceptable");
+
+    const timeoutHandler = await Effect.runPromise(
+        HttpTransport.makeHandler({
+          deliveryOperations: [
+            {
+              execute: () => Effect.never,
+              identifier: "waitForever",
+              method: "GET",
+              path: "/wait-forever",
+              reachableContentTypeIds: ["post"],
+            },
+          ],
+          requestTimeoutMilliseconds: 5,
+        }).pipe(Effect.provide(DevelopmentCms.layer({ snapshot }))),
+      ),
+      timedOut = await timeoutHandler(new Request("http://cms.test/api/v1/headless/wait-forever"));
+    expect(timedOut.status).toBe(408);
+    expect(((await timedOut.json()) as { code: string }).code).toBe("RequestTimeout");
   });
 });

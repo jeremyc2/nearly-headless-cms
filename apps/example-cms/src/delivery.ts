@@ -2,6 +2,7 @@ import type { Cms, ContentDefinition } from "nearly-headless-cms";
 import { CmsError, EntryQuery } from "nearly-headless-cms";
 import type { HttpContract } from "nearly-headless-cms/http";
 import { Effect } from "effect";
+import { type CommandReceiptStore, memoryCommandReceiptStore } from "./command-receipt-store.ts";
 
 type PublicValue = ContentDefinition.JsonObject;
 
@@ -214,11 +215,14 @@ const lowerCamelCase = (key: string): string =>
     });
   };
 
-export const makeDeliveryOperations = (): readonly HttpContract.DeliveryOperation[] => {
-  const commentReceipts = new Map<
-      string,
-      { readonly canonicalInput: string; readonly receipt: PublicValue }
-    >(),
+export interface DeliveryOperationOptions {
+  readonly commandReceiptStore?: CommandReceiptStore;
+}
+
+export const makeDeliveryOperations = (
+  options: DeliveryOperationOptions = {},
+): readonly HttpContract.DeliveryOperation[] => {
+  const commandReceiptStore = options.commandReceiptStore ?? memoryCommandReceiptStore(),
     operations: readonly HttpContract.DeliveryOperation[] = [
       {
         execute: ({ cms, request }) =>
@@ -305,15 +309,36 @@ export const makeDeliveryOperations = (): readonly HttpContract.DeliveryOperatio
             const idempotencyKey = request.headers.get("idempotency-key")!;
             const body = yield* parseBody(request);
             const canonicalInput = JSON.stringify(body, Object.keys(body).sort());
-            const prior = commentReceipts.get(idempotencyKey);
-            if (prior !== undefined) {
+            const prior = yield* Effect.tryPromise({
+              catch: (cause) =>
+                new CmsError.InfrastructureFailure({
+                  cause,
+                  message: "Comment receipt lookup failed",
+                  retryable: true,
+                }),
+              try: () =>
+                commandReceiptStore.read(
+                  `comment-submission:${parameters["postId"]!}`,
+                  idempotencyKey,
+                ),
+            });
+            if (
+              prior !== undefined &&
+              prior !== null &&
+              typeof prior === "object" &&
+              "canonicalInput" in prior &&
+              "receipt" in prior &&
+              typeof prior.canonicalInput === "string" &&
+              prior.receipt !== null &&
+              typeof prior.receipt === "object"
+            ) {
               if (prior.canonicalInput !== canonicalInput)
                 return yield* Effect.fail(
                   new CmsError.IdempotencyConflict({
                     message: "Idempotency key was reused with different Comment input",
                   }),
                 );
-              return prior.receipt;
+              return prior.receipt as PublicValue;
             }
             const post = yield* cms.getEntry({
               contentTypeId: "post",
@@ -347,7 +372,20 @@ export const makeDeliveryOperations = (): readonly HttpContract.DeliveryOperatio
             });
             const submissionId = "writeToken" in result ? result.entry.id : result.id;
             const receipt = { submissionId, status: "pending" };
-            commentReceipts.set(idempotencyKey, { canonicalInput, receipt });
+            yield* Effect.tryPromise({
+              catch: (cause) =>
+                new CmsError.InfrastructureFailure({
+                  cause,
+                  message: "Comment receipt persistence failed",
+                  retryable: true,
+                }),
+              try: () =>
+                commandReceiptStore.write(
+                  `comment-submission:${parameters["postId"]!}`,
+                  idempotencyKey,
+                  { canonicalInput, receipt },
+                ),
+            });
             return receipt;
           }),
         identifier: "submitComment",

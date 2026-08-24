@@ -2,6 +2,7 @@ import type { Cms, ContentDefinition } from "nearly-headless-cms";
 import { CmsError } from "nearly-headless-cms";
 import type { HttpContract } from "nearly-headless-cms/http";
 import { Effect } from "effect";
+import { type CommandReceiptStore, memoryCommandReceiptStore } from "./command-receipt-store.ts";
 
 const transition =
     (
@@ -171,8 +172,14 @@ const transition =
     return richText !== undefined && JSON.stringify(richText).includes(`"assetId":"${assetId}"`);
   };
 
-export const makeManagementOperations = (): readonly HttpContract.ManagementOperation[] => {
-  const replacementReceipts = new Map<string, unknown>(),
+export interface ManagementOperationOptions {
+  readonly commandReceiptStore?: CommandReceiptStore;
+}
+
+export const makeManagementOperations = (
+  options: ManagementOperationOptions = {},
+): readonly HttpContract.ManagementOperation[] => {
+  const commandReceiptStore = options.commandReceiptStore ?? memoryCommandReceiptStore(),
     replaceImage: HttpContract.ManagementOperation["execute"] = ({ cms, parameters, request }) =>
       Effect.gen(function* replaceImage() {
         const oldAssetId = parameters["assetId"]!,
@@ -182,7 +189,16 @@ export const makeManagementOperations = (): readonly HttpContract.ManagementOper
             new CmsError.InvalidInput({ message: "Idempotency-Key is required" }),
           );
         }
-        const prior = replacementReceipts.get(commandKey);
+        const receiptScope = `image-replacement:${oldAssetId}`,
+          prior = yield* Effect.tryPromise({
+            catch: (cause) =>
+              new CmsError.InfrastructureFailure({
+                cause,
+                message: "Image replacement receipt lookup failed",
+                retryable: true,
+              }),
+            try: () => commandReceiptStore.read(receiptScope, commandKey),
+          });
         if (prior !== undefined) {
           return prior;
         }
@@ -261,7 +277,15 @@ export const makeManagementOperations = (): readonly HttpContract.ManagementOper
           reassignedEntryCount: mutations.length,
           reassignmentCompleted: true,
         };
-        replacementReceipts.set(commandKey, receipt);
+        yield* Effect.tryPromise({
+          catch: (cause) =>
+            new CmsError.InfrastructureFailure({
+              cause,
+              message: "Image replacement receipt persistence failed",
+              retryable: true,
+            }),
+          try: () => commandReceiptStore.write(receiptScope, commandKey, receipt),
+        });
         return receipt;
       });
 

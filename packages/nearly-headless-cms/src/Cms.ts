@@ -1782,26 +1782,33 @@ export const makeLayer = (
               committedCatalog =
                 compatibility === "compatible"
                   ? yield* catalog.replace(input.expectedCatalogVersion, replacement)
-                  : yield* Effect.uninterruptible(
-                      Effect.gen(function* committedCatalog() {
-                        const committedGeneration = yield* persistence.commitGeneration(
-                          generation.generation,
-                          records,
-                        );
-                        return yield* catalog
-                          .replace(input.expectedCatalogVersion, replacement)
-                          .pipe(
-                            Effect.catchCause((cause) =>
-                              persistence
-                                .commitGeneration(
-                                  committedGeneration.generation,
-                                  generation.records,
-                                )
-                                .pipe(Effect.flatMap(() => Effect.failCause(cause))),
-                            ),
+                  : catalog.commitCutover !== undefined
+                    ? (yield* catalog.commitCutover(
+                        input.expectedCatalogVersion,
+                        replacement,
+                        generation.generation,
+                        records,
+                      )).catalog
+                    : yield* Effect.uninterruptible(
+                        Effect.gen(function* committedCatalog() {
+                          const committedGeneration = yield* persistence.commitGeneration(
+                            generation.generation,
+                            records,
                           );
-                      }),
-                    );
+                          return yield* catalog
+                            .replace(input.expectedCatalogVersion, replacement)
+                            .pipe(
+                              Effect.catchCause((cause) =>
+                                persistence
+                                  .commitGeneration(
+                                    committedGeneration.generation,
+                                    generation.records,
+                                  )
+                                  .pipe(Effect.flatMap(() => Effect.failCause(cause))),
+                              ),
+                            );
+                        }),
+                      );
             for (const handler of input.migration?.handlers ?? []) {
               migrationHandlers.set(`${handler.identifier}@${handler.version}`, handler);
             }

@@ -11,7 +11,15 @@ import {
   NotFound,
 } from "../../CmsError.ts";
 import { Generator } from "../../Identifier.ts";
-import { type EntryGeneration, EntryPersistence, type EntryRecord } from "../../Persistence.ts";
+import { type CompiledSnapshot, type CompileOptions, compile } from "../../ContentDefinition.ts";
+import {
+  type CatalogState,
+  DefinitionCatalog,
+  type DefinitionSnapshotRecord,
+  type EntryGeneration,
+  EntryPersistence,
+  type EntryRecord,
+} from "../../Persistence.ts";
 
 const storageFormat = "nearly-headless-cms/filesystem",
   storageFormatVersion = 1,
@@ -25,6 +33,11 @@ export interface Configuration {
   readonly maximumMetadataByteLength?: number;
 }
 
+export interface CmsConfiguration extends Configuration {
+  readonly definitionSnapshot: CompiledSnapshot;
+  readonly compileOptions?: CompileOptions;
+}
+
 interface DiskAsset {
   readonly id: string;
   readonly metadata: Metadata;
@@ -34,8 +47,21 @@ interface DiskGeneration {
   readonly format: typeof storageFormat;
   readonly version: typeof storageFormatVersion;
   readonly generation: number;
+  readonly entryGeneration?: number;
   readonly records: readonly (readonly [string, EntryRecord])[];
   readonly assets: readonly DiskAsset[];
+  readonly catalog?: DiskCatalog;
+}
+
+interface DiskCatalog {
+  readonly active: Omit<DefinitionSnapshotRecord, "compiled">;
+  readonly events: CatalogState["events"];
+  readonly migrationManifests: CatalogState["migrationManifests"];
+  readonly migrationPreparations: CatalogState["migrationPreparations"];
+  readonly retiredDefinitionIds: readonly string[];
+  readonly revisions: CatalogState["revisions"];
+  readonly snapshots: readonly Omit<DefinitionSnapshotRecord, "compiled">[];
+  readonly version: number;
 }
 
 interface DiskManifest {
@@ -47,13 +73,15 @@ interface DiskManifest {
 }
 
 interface State {
+  readonly catalog?: CatalogState;
+  readonly entryGeneration: number;
   readonly generation: number;
   readonly records: ReadonlyMap<string, EntryRecord>;
   readonly assets: ReadonlyMap<string, DiskAsset>;
 }
 
 interface Acquired {
-  readonly context: Context.Context<EntryPersistence | Management>;
+  readonly context: Context.Context<DefinitionCatalog | EntryPersistence | Management>;
   readonly lockPath: string;
 }
 
@@ -99,13 +127,94 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
       }),
     );
   },
+  cloneCatalog = (catalog: CatalogState): CatalogState => ({
+    ...catalog,
+    active: { ...catalog.active, input: structuredClone(catalog.active.input) },
+    events: structuredClone(catalog.events),
+    migrationManifests: structuredClone(catalog.migrationManifests),
+    migrationPreparations: structuredClone(catalog.migrationPreparations),
+    retiredDefinitionIds: new Set(catalog.retiredDefinitionIds),
+    revisions: structuredClone(catalog.revisions),
+    snapshots: catalog.snapshots.map((snapshot) => ({
+      ...snapshot,
+      input: structuredClone(snapshot.input),
+    })),
+  }),
   cloneState = (state: State): State => ({
     assets: new Map([...state.assets].map(([assetId, asset]) => [assetId, structuredClone(asset)])),
+    ...(state.catalog === undefined ? {} : { catalog: cloneCatalog(state.catalog) }),
+    entryGeneration: state.entryGeneration,
     generation: state.generation,
     records: new Map(
       [...state.records].map(([entryId, record]) => [entryId, structuredClone(record)]),
     ),
   }),
+  encodeCatalog = (catalog: CatalogState): DiskCatalog => ({
+    active: { activatedAt: catalog.active.activatedAt, input: catalog.active.input },
+    events: catalog.events,
+    migrationManifests: catalog.migrationManifests,
+    migrationPreparations: catalog.migrationPreparations,
+    retiredDefinitionIds: [...catalog.retiredDefinitionIds],
+    revisions: catalog.revisions,
+    snapshots: catalog.snapshots.map((snapshot) => ({
+      activatedAt: snapshot.activatedAt,
+      input: snapshot.input,
+    })),
+    version: catalog.version,
+  }),
+  decodeCatalog = (catalog: DiskCatalog, compileOptions: CompileOptions): CatalogState => {
+    const snapshots = catalog.snapshots.map((snapshot) => ({
+        ...snapshot,
+        compiled: compile(snapshot.input, compileOptions),
+      })),
+      active = snapshots.find(
+        (snapshot) => snapshot.input.snapshotId === catalog.active.input.snapshotId,
+      );
+    if (active === undefined) {
+      throw new Error("Committed Definition Catalog active Snapshot is missing");
+    }
+    return {
+      active,
+      events: structuredClone(catalog.events),
+      migrationManifests: structuredClone(catalog.migrationManifests),
+      migrationPreparations: structuredClone(catalog.migrationPreparations),
+      retiredDefinitionIds: new Set(catalog.retiredDefinitionIds),
+      revisions: structuredClone(catalog.revisions),
+      snapshots,
+      version: catalog.version,
+    };
+  },
+  initialCatalog = (snapshot: CompiledSnapshot, activatedAt: string): CatalogState => {
+    const snapshotRecord: DefinitionSnapshotRecord = {
+      activatedAt,
+      compiled: snapshot,
+      input: snapshot.input,
+    };
+    return {
+      active: snapshotRecord,
+      events: [
+        {
+          eventType: "snapshotActivated",
+          recordedAt: activatedAt,
+          snapshotId: snapshot.snapshotId,
+          source: "initialization",
+        },
+      ],
+      migrationManifests: [],
+      migrationPreparations: [],
+      retiredDefinitionIds: new Set(),
+      revisions: snapshot.input.definitions.map((definition) => ({
+        definition,
+        definitionId: definition.id,
+        ...(definition.parentRevision === undefined
+          ? {}
+          : { parentRevision: definition.parentRevision }),
+        revision: definition.revision ?? 1,
+      })),
+      snapshots: [snapshotRecord],
+      version: 1,
+    };
+  },
   synchronize = async (path: string): Promise<void> => {
     const handle = await open(path, "r");
     try {
@@ -141,6 +250,8 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
       generationPath = join(generationsDirectory, generationName),
       generation: DiskGeneration = {
         assets: [...state.assets.values()],
+        ...(state.catalog === undefined ? {} : { catalog: encodeCatalog(state.catalog) }),
+        entryGeneration: state.entryGeneration,
         format: storageFormat,
         generation: state.generation,
         records: [...state.records],
@@ -178,7 +289,11 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
       }
     }
   },
-  initializeRoot = async (configuration: Configuration): Promise<State> => {
+  initializeRoot = async (
+    configuration: Configuration,
+    definitionSnapshot?: CompiledSnapshot,
+    compileOptions: CompileOptions = {},
+  ): Promise<State> => {
     await mkdir(configuration.root, { recursive: true });
     await mkdir(join(configuration.root, "generations"), { recursive: true });
     await mkdir(join(configuration.root, "blobs"), { recursive: true });
@@ -198,7 +313,15 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
         encode({ format: storageFormat, version: storageFormatVersion }),
         configuration.acknowledgement,
       );
-      const state: State = { assets: new Map(), generation: 0, records: new Map() };
+      const state: State = {
+        assets: new Map(),
+        ...(definitionSnapshot === undefined
+          ? {}
+          : { catalog: initialCatalog(definitionSnapshot, new Date().toISOString()) }),
+        entryGeneration: 0,
+        generation: 0,
+        records: new Map(),
+      };
       await persistState(configuration, state);
       return state;
     }
@@ -239,8 +362,23 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
     ) {
       throw new Error("Committed generation is corrupt");
     }
+    const catalog =
+      generation.catalog === undefined
+        ? undefined
+        : decodeCatalog(generation.catalog, compileOptions);
+    if (definitionSnapshot !== undefined && catalog === undefined) {
+      throw new Error("Filesystem Persistence root has no durable Definition Catalog");
+    }
+    if (
+      definitionSnapshot !== undefined &&
+      catalog?.active.compiled.definitionSpaceId !== definitionSnapshot.definitionSpaceId
+    ) {
+      throw new Error("Filesystem Persistence Definition Space does not match configuration");
+    }
     return {
       assets: new Map(generation.assets.map((asset) => [asset.id, asset])),
+      ...(catalog === undefined ? {} : { catalog }),
+      entryGeneration: generation.entryGeneration ?? generation.generation,
       generation: generation.generation,
       records: new Map(generation.records),
     };
@@ -249,7 +387,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
     configuration: Configuration,
     identifiers: Generator["Service"],
     initialState: State,
-  ): Effect.Effect<Context.Context<EntryPersistence | Management>> =>
+  ): Effect.Effect<Context.Context<DefinitionCatalog | EntryPersistence | Management>> =>
     Effect.gen(function* makeServices() {
       const state = yield* SynchronizedRef.make(initialState),
         entryService = EntryPersistence.of({
@@ -257,14 +395,16 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
             SynchronizedRef.modifyEffect(
               state,
               (current): Effect.Effect<readonly [EntryGeneration, State], CmsError> => {
-                if (current.generation !== expectedGeneration)
+                if (current.entryGeneration !== expectedGeneration)
                   return Effect.fail(
                     new Conflict({ message: "Filesystem Entry generation is stale" }),
                   );
                 const next: State = {
                   generation: current.generation + 1,
+                  entryGeneration: current.entryGeneration + 1,
                   records: new Map(records),
                   assets: current.assets,
+                  ...(current.catalog === undefined ? {} : { catalog: current.catalog }),
                 };
                 const entryEncodingByteLength = encode([...records]).byteLength;
                 if (
@@ -283,7 +423,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
                   Effect.map(
                     () =>
                       [
-                        { generation: next.generation, records: cloneState(next).records },
+                        { generation: next.entryGeneration, records: cloneState(next).records },
                         next,
                       ] as const,
                   ),
@@ -292,7 +432,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
             ),
           readGeneration: SynchronizedRef.get(state).pipe(
             Effect.map((current) => ({
-              generation: current.generation,
+              generation: current.entryGeneration,
               records: cloneState(current).records,
             })),
           ),
@@ -310,8 +450,10 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
                 assets.delete(assetId);
                 const next: State = {
                   generation: current.generation + 1,
+                  entryGeneration: current.entryGeneration,
                   records: current.records,
                   assets,
+                  ...(current.catalog === undefined ? {} : { catalog: current.catalog }),
                 };
                 return fromPromise(
                   async () => persistState(configuration, next),
@@ -376,8 +518,10 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
               yield* SynchronizedRef.modifyEffect(state, (current) => {
                 const next: State = {
                   generation: current.generation + 1,
+                  entryGeneration: current.entryGeneration,
                   records: current.records,
                   assets: new Map(current.assets).set(assetId, diskAsset),
+                  ...(current.catalog === undefined ? {} : { catalog: current.catalog }),
                 };
                 return fromPromise(
                   async () => persistState(configuration, next),
@@ -417,13 +561,107 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
                 );
               return { id: asset.id, metadata: asset.metadata, bytes };
             }),
+        }),
+        missingCatalog = (): InfrastructureFailure =>
+          failure("Filesystem Definition Catalog is not configured", new Error("missing catalog")),
+        catalogService = DefinitionCatalog.of({
+          commitCutover: (expectedVersion, replacement, expectedEntryGeneration, records) =>
+            SynchronizedRef.modifyEffect(
+              state,
+              (
+                current,
+              ): Effect.Effect<
+                readonly [
+                  {
+                    readonly catalog: CatalogState;
+                    readonly entries: EntryGeneration;
+                  },
+                  State,
+                ],
+                CmsError
+              > => {
+                if (current.catalog === undefined) {
+                  return Effect.fail(missingCatalog());
+                }
+                if (current.catalog.version !== expectedVersion) {
+                  return Effect.fail(
+                    new Conflict({ message: "Definition Catalog version is stale" }),
+                  );
+                }
+                if (current.entryGeneration !== expectedEntryGeneration) {
+                  return Effect.fail(
+                    new Conflict({ message: "Filesystem Entry generation is stale" }),
+                  );
+                }
+                const catalog = { ...cloneCatalog(replacement), version: expectedVersion + 1 },
+                  next: State = {
+                    assets: current.assets,
+                    catalog,
+                    entryGeneration: current.entryGeneration + 1,
+                    generation: current.generation + 1,
+                    records: new Map(records),
+                  };
+                return fromPromise(
+                  async () => persistState(configuration, next),
+                  "Atomic Definition Cutover commit failed",
+                ).pipe(
+                  Effect.map(
+                    () =>
+                      [
+                        {
+                          catalog: cloneCatalog(catalog),
+                          entries: {
+                            generation: next.entryGeneration,
+                            records: cloneState(next).records,
+                          },
+                        },
+                        next,
+                      ] as const,
+                  ),
+                );
+              },
+            ),
+          read: SynchronizedRef.get(state).pipe(
+            Effect.flatMap((current) =>
+              current.catalog === undefined
+                ? Effect.fail(missingCatalog())
+                : Effect.succeed(cloneCatalog(current.catalog)),
+            ),
+          ),
+          replace: (expectedVersion, replacement) =>
+            SynchronizedRef.modifyEffect(
+              state,
+              (current): Effect.Effect<readonly [CatalogState, State], CmsError> => {
+                if (current.catalog === undefined) {
+                  return Effect.fail(missingCatalog());
+                }
+                if (current.catalog.version !== expectedVersion) {
+                  return Effect.fail(
+                    new Conflict({ message: "Definition Catalog version is stale" }),
+                  );
+                }
+                const catalog = { ...cloneCatalog(replacement), version: expectedVersion + 1 },
+                  next: State = {
+                    ...current,
+                    catalog,
+                    generation: current.generation + 1,
+                  };
+                return fromPromise(
+                  async () => persistState(configuration, next),
+                  "Filesystem Definition Catalog commit failed",
+                ).pipe(Effect.map(() => [cloneCatalog(catalog), next] as const));
+              },
+            ),
         });
       return Context.make(EntryPersistence, entryService).pipe(
         Context.add(Management, assetService),
+        Context.add(DefinitionCatalog, catalogService),
       );
     }),
   acquire = (
     configuration: Configuration,
+    definitionSnapshot?: CompiledSnapshot,
+    compileOptions: CompileOptions = {},
   ): Effect.Effect<Acquired, InfrastructureFailure, Generator> =>
     Effect.gen(function* acquire() {
       if (configuration.root.length === 0) {
@@ -452,7 +690,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
         }
       }, "Filesystem Persistence root already has an initialized writer");
       const initialState = yield* fromPromise(
-          async () => initializeRoot(configuration),
+          async () => initializeRoot(configuration, definitionSnapshot, compileOptions),
           "Filesystem Persistence initialization failed",
         ),
         context = yield* makeServices(configuration, identifiers, initialState);
@@ -468,6 +706,24 @@ export const layer = (
         async () => rm(acquired.lockPath, { force: true }),
         "Filesystem Persistence writer lock cleanup failed",
       ).pipe(Effect.ignore),
+    ).pipe(Effect.map((acquired) => acquired.context)),
+  );
+
+export const cmsLayer = (
+  configuration: CmsConfiguration,
+): Layer.Layer<
+  DefinitionCatalog | EntryPersistence | Management,
+  InfrastructureFailure,
+  Generator
+> =>
+  Layer.effectContext(
+    Effect.acquireRelease(
+      acquire(configuration, configuration.definitionSnapshot, configuration.compileOptions ?? {}),
+      (acquired) =>
+        fromPromise(
+          async () => rm(acquired.lockPath, { force: true }),
+          "Filesystem Persistence writer lock cleanup failed",
+        ).pipe(Effect.ignore),
     ).pipe(Effect.map((acquired) => acquired.context)),
   );
 

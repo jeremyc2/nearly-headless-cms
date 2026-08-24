@@ -69,5 +69,20 @@ export class DefinitionCatalog extends Context.Service<
       expectedVersion: number,
       state: CatalogState,
     ) => Effect.Effect<CatalogState, CmsError>;
+    /**
+     * Atomically advances the active Definition Catalog and Entry generation when
+     * both are owned by one persistence adapter. Adapters without a shared durable
+     * transaction may omit this capability; the CMS retains its in-process
+     * rollback protocol for those volatile or independently managed services.
+     */
+    readonly commitCutover?: (
+      expectedVersion: number,
+      state: CatalogState,
+      expectedEntryGeneration: number,
+      records: ReadonlyMap<string, EntryRecord>,
+    ) => Effect.Effect<
+      { readonly catalog: CatalogState; readonly entries: EntryGeneration },
+      CmsError
+    >;
   }
 >()("nearly-headless-cms/Persistence/DefinitionCatalog") {}

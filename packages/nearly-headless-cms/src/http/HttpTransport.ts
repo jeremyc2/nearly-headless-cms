@@ -33,6 +33,7 @@ export interface Options {
   readonly maximumHeaderByteLength?: number;
   readonly maximumJsonBodyByteLength?: number;
   readonly maximumUrlLength?: number;
+  readonly requestTimeoutMilliseconds?: number;
   readonly requestIdentifier?: () => string;
   readonly cors?: {
     readonly origins: readonly string[];
@@ -62,6 +63,7 @@ class RequestFailure extends Error {
 
 const run = async <Value>(
     effect: Effect.Effect<Value, CmsError>,
+    signal?: AbortSignal,
   ): Promise<OperationOutcome<Value>> =>
     Effect.runPromise(
       effect.pipe(
@@ -70,6 +72,7 @@ const run = async <Value>(
           onSuccess: (value): OperationOutcome<Value> => ({ success: true, value }),
         }),
       ),
+      { signal },
     ),
   errorStatus = (error: CmsError): number => {
     if (error instanceof InvalidInput) {
@@ -228,12 +231,13 @@ const run = async <Value>(
         )
       : Effect.void;
   },
-  withOutcome = async <Value>(
+  respondWithOutcome = async <Value>(
     effect: Effect.Effect<Value, CmsError>,
     requestId: string,
     success: (value: Value) => Response,
+    signal?: AbortSignal,
   ): Promise<Response> => {
-    const outcome = await run(effect);
+    const outcome = await run(effect, signal);
     return outcome.success
       ? success(outcome.value as Value)
       : errorResponse(outcome.error!, requestId);
@@ -332,10 +336,19 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
       maximumHeaderByteLength = options.maximumHeaderByteLength ?? 32_768,
       maximumJsonBodyByteLength = options.maximumJsonBodyByteLength ?? 1_000_000,
       maximumUrlLength = options.maximumUrlLength ?? 8_192,
+      requestTimeoutMilliseconds = options.requestTimeoutMilliseconds ?? 30_000,
       requestIdentifier = options.requestIdentifier ?? (() => crypto.randomUUID());
 
-    return async (request): Promise<Response> => {
-      const requestId = requestIdentifier(),
+    const handleRequest = async (
+      request: Request,
+      signal: AbortSignal,
+      requestId: string,
+    ): Promise<Response> => {
+      const withOutcome = <Value>(
+          effect: Effect.Effect<Value, CmsError>,
+          operationRequestId: string,
+          success: (value: Value) => Response,
+        ): Promise<Response> => respondWithOutcome(effect, operationRequestId, success, signal),
         headerByteLength = [...request.headers].reduce(
           (total, [name, value]) => total + name.length + value.length + 4,
           0,
@@ -352,6 +365,28 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
           requestId,
         );
       }
+      const accept = request.headers.get("accept"),
+        assetRequest =
+          request.method === "GET" || request.method === "HEAD"
+            ? /\/assets\/[^/]+$/u.test(new URL(request.url).pathname)
+            : false;
+      if (
+        !assetRequest &&
+        accept !== null &&
+        !accept.split(",").some((mediaRange) => {
+          const mediaType = mediaRange.split(";", 1)[0]?.trim().toLowerCase();
+          return mediaType === "*/*" || mediaType === "application/json";
+        })
+      ) {
+        return requestFailureResponse(
+          new RequestFailure(
+            "NotAcceptable",
+            "The requested response media type is not available",
+            406,
+          ),
+          requestId,
+        );
+      }
       const declaredBodyByteLength = Number(request.headers.get("content-length"));
       if (
         Number.isFinite(declaredBodyByteLength) &&
@@ -363,12 +398,12 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
         );
       }
       const url = new URL(request.url),
-        activeOutcome = await run(cms.activeDefinitionSnapshot);
+        activeOutcome = await run(cms.activeDefinitionSnapshot, signal);
       if (!activeOutcome.success) {
         return errorResponse(activeOutcome.error!, requestId);
       }
       const snapshot = activeOutcome.value!,
-        fingerprintOutcome = await run(ensureFingerprint(request, snapshot.fingerprint));
+        fingerprintOutcome = await run(ensureFingerprint(request, snapshot.fingerprint), signal);
       if (!fingerprintOutcome.success) {
         return errorResponse(fingerprintOutcome.error!, requestId);
       }
@@ -1195,5 +1230,54 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
         404,
         requestId,
       );
+    };
+
+    return async (request): Promise<Response> => {
+      const requestId = requestIdentifier(),
+        controller = new AbortController(),
+        onClientAbort = (): void => controller.abort(request.signal.reason),
+        timeout = setTimeout(
+          () => controller.abort(new Error("request timeout")),
+          requestTimeoutMilliseconds,
+        );
+      request.signal.addEventListener("abort", onClientAbort, { once: true });
+      try {
+        const scopedRequest = new Request(request, { signal: controller.signal });
+        return await Promise.race([
+          handleRequest(scopedRequest, controller.signal, requestId).catch((error: unknown) => {
+            if (controller.signal.aborted) {
+              return requestFailureResponse(
+                new RequestFailure(
+                  "RequestTimeout",
+                  "The request was interrupted or exceeded its configured duration",
+                  408,
+                ),
+                requestId,
+              );
+            }
+            throw error;
+          }),
+          new Promise<Response>((resolve) => {
+            controller.signal.addEventListener(
+              "abort",
+              () =>
+                resolve(
+                  requestFailureResponse(
+                    new RequestFailure(
+                      "RequestTimeout",
+                      "The request was interrupted or exceeded its configured duration",
+                      408,
+                    ),
+                    requestId,
+                  ),
+                ),
+              { once: true },
+            );
+          }),
+        ]);
+      } finally {
+        clearTimeout(timeout);
+        request.signal.removeEventListener("abort", onClientAbort);
+      }
     };
   });
