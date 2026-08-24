@@ -31,4 +31,26 @@ describe("RichTextEditor transaction engine", () => {
     state = RichTextEditor.transact(state, { type: "redo" });
     expect(state.document.children).toHaveLength(2);
   });
+
+  test("creates, splits, and outdents semantic list items", () => {
+    let state = RichTextEditor.create();
+    state = RichTextEditor.transact(state, { text: "First", type: "insertText" });
+    state = RichTextEditor.transact(state, {
+      listType: "unordered-list",
+      type: "toggleList",
+    });
+    expect(state.document.children[0]?.type).toBe("unordered-list");
+    state = RichTextEditor.transact(state, { type: "splitBlock" });
+    const list = state.document.children[0];
+    expect(list?.type).toBe("unordered-list");
+    if (list?.type !== "unordered-list") {
+      throw new Error("Expected an unordered list");
+    }
+    expect(list.children).toHaveLength(2);
+    state = RichTextEditor.transact(state, { type: "deleteBackward" });
+    expect(state.document.children.map((block) => block.type)).toEqual([
+      "unordered-list",
+      "paragraph",
+    ]);
+  });
 });

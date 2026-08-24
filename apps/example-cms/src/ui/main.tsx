@@ -1,4 +1,10 @@
-import { QueryClient, QueryClientProvider, useMutation, useQuery } from "@tanstack/react-query";
+import {
+  QueryClient,
+  QueryClientProvider,
+  useMutation,
+  useQueries,
+  useQuery,
+} from "@tanstack/react-query";
 import {
   Link,
   Outlet,
@@ -10,9 +16,9 @@ import {
   useParams,
 } from "@tanstack/react-router";
 import { Effect } from "effect";
-import { StrictMode, useEffect, useMemo, useRef, useState } from "react";
+import { StrictMode, type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import type { RichText } from "nearly-headless-cms";
+import { RichText } from "nearly-headless-cms";
 import {
   type AssetRepresentation,
   type EntryRepresentation,
@@ -33,6 +39,14 @@ const managementClient = makeManagementClient(),
     { identifier: "tag", label: "Tags", symbol: "T" },
     { identifier: "comment", label: "Comments", symbol: "M" },
   ] as const;
+
+const richTextDocumentFrom = (value: unknown): RichText.Document | undefined => {
+  try {
+    return RichText.validate(value);
+  } catch {
+    return undefined;
+  }
+};
 
 function Workbench() {
   return (
@@ -465,12 +479,7 @@ function EntryEditor() {
         readonly writeToken?: string;
       }) =>
         Effect.runPromise(
-          managementClient.replaceEntry(
-            contentTypeId,
-            entryId,
-            replacementValues,
-            writeToken,
-          ),
+          managementClient.replaceEntry(contentTypeId, entryId, replacementValues, writeToken),
         ),
       onError: async (error) => {
         if (error instanceof ManagementClientFailure && error.status === 409) {
@@ -512,6 +521,8 @@ function EntryEditor() {
     }),
     titleField = "title" in values ? "title" : "name" in values ? "name" : "display-name";
   const title = String(values[titleField] ?? ""),
+    bodyDocument = richTextDocumentFrom(values["body"]),
+    profileDocument = richTextDocumentFrom(values["profile"]),
     updateField = (key: string, value: unknown) => {
       setValues((current) => ({ ...current, [key]: value }));
     },
@@ -562,7 +573,7 @@ function EntryEditor() {
             <p className="eyebrow">Conflict</p>
             <h2 id="conflict-title">A newer CMS revision exists</h2>
             <p>
-              Your complete local draft is preserved. Compare it with revision {" "}
+              Your complete local draft is preserved. Compare it with revision{" "}
               {conflict.latest.revisionNumber}, then deliberately reapply or discard it.
             </p>
           </div>
@@ -592,10 +603,7 @@ function EntryEditor() {
               type="button"
               onClick={() => {
                 setValues(structuredClone(conflict.latest.entry.values));
-                queryClient.setQueryData(
-                  ["entry-state", contentTypeId, entryId],
-                  conflict.latest,
-                );
+                queryClient.setQueryData(["entry-state", contentTypeId, entryId], conflict.latest);
                 setConflict(undefined);
               }}
             >
@@ -678,19 +686,19 @@ function EntryEditor() {
                 />
               </label>
             )}
-            {"body" in values && typeof values["body"] === "object" && (
+            {bodyDocument !== undefined && (
               <RichTextField
-                value={values["body"] as RichText.Document}
+                value={bodyDocument}
                 onChange={(document) => {
                   updateField("body", document);
                 }}
               />
             )}
-            {"profile" in values && values["profile"] !== null && (
+            {profileDocument !== undefined && (
               <div className="field full">
                 <span>Author profile</span>
                 <RichTextField
-                  value={values["profile"] as RichText.Document}
+                  value={profileDocument}
                   onChange={(document) => {
                     updateField("profile", document);
                   }}
@@ -703,7 +711,9 @@ function EntryEditor() {
                 <label className="field">
                   <span>Immutable Asset</span>
                   <select
-                    value={typeof values["featured-asset"] === "string" ? values["featured-asset"] : ""}
+                    value={
+                      typeof values["featured-asset"] === "string" ? values["featured-asset"] : ""
+                    }
                     onChange={(event) => {
                       const assetIdentifier = event.target.value;
                       const selectedAsset = assets.data?.find(
@@ -805,9 +815,7 @@ function EntryEditor() {
                     <select
                       multiple
                       value={
-                        Array.isArray(values["categories"])
-                          ? values["categories"].map(String)
-                          : []
+                        Array.isArray(values["categories"]) ? values["categories"].map(String) : []
                       }
                       onChange={(event) => {
                         updateField(
@@ -866,9 +874,7 @@ function EntryEditor() {
               {"status" in values && (
                 <div className="field">
                   <span>Status</span>
-                  <output className="status-readout">
-                    {String(values["status"] ?? "active")}
-                  </output>
+                  <output className="status-readout">{String(values["status"] ?? "active")}</output>
                   <small>Status changes only through the explicit editorial command below.</small>
                 </div>
               )}
@@ -955,9 +961,52 @@ function RichTextField({
   readonly onChange: (document: RichText.Document) => void;
 }) {
   const host = useRef<HTMLDivElement>(null),
+    toolbar = useRef<HTMLDivElement>(null),
     adapter = useRef<BrowserAdapter | null>(null),
     onChangeReference = useRef(onChange),
-    initialValue = useMemo(() => value, []);
+    initialValue = useMemo(() => value, []),
+    [dialog, setDialog] = useState<
+      | { readonly type: "link"; readonly label: string; readonly url: string }
+      | { readonly type: "entry"; readonly entryId: string; readonly label: string }
+      | {
+          readonly type: "asset";
+          readonly assetId: string;
+          readonly alternativeText: string;
+          readonly caption: string;
+        }
+    >(),
+    assets = useQuery({
+      queryFn: async () => Effect.runPromise(managementClient.listAssets()),
+      queryKey: ["assets"],
+    }),
+    entryQueries = useQueries({
+      queries: contentTypes.map((contentType) => ({
+        queryFn: async () =>
+          Effect.runPromise(
+            managementClient.queryEntries(contentType.identifier, { pageSize: 100 }),
+          ),
+        queryKey: ["rich-text-entry-picker", contentType.identifier],
+      })),
+    }),
+    entryOptions = contentTypes.flatMap((contentType, index) =>
+      (entryQueries[index]?.data?.items ?? []).map((entry) => ({
+        identifier: entry.id,
+        label:
+          typeof entry.values["title"] === "string"
+            ? entry.values["title"]
+            : typeof entry.values["name"] === "string"
+              ? entry.values["name"]
+              : entry.id,
+        type: contentType.label,
+      })),
+    ),
+    closeDialog = () => {
+      setDialog(undefined);
+      queueMicrotask(() => toolbar.current?.querySelector<HTMLButtonElement>("button")?.focus());
+    },
+    preserveSelection = (event: MouseEvent<HTMLButtonElement>) => {
+      event.preventDefault();
+    };
   useEffect(() => {
     onChangeReference.current = onChange;
   }, [onChange]);
@@ -971,6 +1020,9 @@ function RichTextField({
       onChange: (document) => {
         onChangeReference.current(document);
       },
+      onRequestLink: () => {
+        setDialog({ label: "", type: "link", url: "" });
+      },
     });
     adapter.current = browserAdapter;
     return () => {
@@ -979,10 +1031,46 @@ function RichTextField({
   }, [initialValue]);
   return (
     <div className="rich-text-shell" id="field-body">
-      <div className="rich-toolbar" role="toolbar" aria-label="Rich Text formatting">
+      <div ref={toolbar} className="rich-toolbar" role="toolbar" aria-label="Rich Text formatting">
+        <label className="rich-block-picker">
+          <span className="visually-hidden">Block type</span>
+          <select
+            aria-label="Block type"
+            defaultValue="paragraph"
+            onChange={(event) => {
+              const blockType = event.target.value;
+              if (
+                blockType === "heading-2" ||
+                blockType === "heading-3" ||
+                blockType === "heading-4"
+              ) {
+                adapter.current?.dispatch({
+                  blockType: "heading",
+                  headingLevel:
+                    Number(blockType.at(-1)) === 2 ? 2 : Number(blockType.at(-1)) === 3 ? 3 : 4,
+                  type: "setBlockKind",
+                });
+              } else if (
+                blockType === "paragraph" ||
+                blockType === "quote" ||
+                blockType === "code-block"
+              ) {
+                adapter.current?.dispatch({ blockType, type: "setBlockKind" });
+              }
+            }}
+          >
+            <option value="paragraph">Paragraph</option>
+            <option value="heading-2">Heading 2</option>
+            <option value="heading-3">Heading 3</option>
+            <option value="heading-4">Heading 4</option>
+            <option value="quote">Quote</option>
+            <option value="code-block">Code block</option>
+          </select>
+        </label>
         <button
           type="button"
           aria-label="Bold"
+          onMouseDown={preserveSelection}
           onClick={() => adapter.current?.dispatch({ mark: "bold", type: "toggleMark" })}
         >
           <strong>B</strong>
@@ -990,18 +1078,227 @@ function RichTextField({
         <button
           type="button"
           aria-label="Italic"
+          onMouseDown={preserveSelection}
           onClick={() => adapter.current?.dispatch({ mark: "italic", type: "toggleMark" })}
         >
           <em>I</em>
         </button>
-        <button type="button" onClick={() => adapter.current?.dispatch({ type: "undo" })}>
+        <button
+          type="button"
+          aria-label="Strikethrough"
+          onMouseDown={preserveSelection}
+          onClick={() => adapter.current?.dispatch({ mark: "strikethrough", type: "toggleMark" })}
+        >
+          <s>S</s>
+        </button>
+        <button
+          type="button"
+          aria-label="Inline code"
+          onMouseDown={preserveSelection}
+          onClick={() => adapter.current?.dispatch({ mark: "code", type: "toggleMark" })}
+        >
+          Code
+        </button>
+        <button
+          type="button"
+          aria-label="Unordered list"
+          onMouseDown={preserveSelection}
+          onClick={() =>
+            adapter.current?.dispatch({ listType: "unordered-list", type: "toggleList" })
+          }
+        >
+          • List
+        </button>
+        <button
+          type="button"
+          aria-label="Ordered list"
+          onMouseDown={preserveSelection}
+          onClick={() =>
+            adapter.current?.dispatch({ listType: "ordered-list", type: "toggleList" })
+          }
+        >
+          1. List
+        </button>
+        <button
+          type="button"
+          onMouseDown={preserveSelection}
+          onClick={() => setDialog({ label: "", type: "link", url: "" })}
+        >
+          Link
+        </button>
+        <button
+          type="button"
+          onMouseDown={preserveSelection}
+          onClick={() => setDialog({ entryId: "", label: "", type: "entry" })}
+        >
+          Entry reference
+        </button>
+        <button
+          type="button"
+          onMouseDown={preserveSelection}
+          onClick={() =>
+            setDialog({
+              alternativeText: "",
+              assetId: "",
+              caption: "",
+              type: "asset",
+            })
+          }
+        >
+          Asset
+        </button>
+        <button
+          type="button"
+          onMouseDown={preserveSelection}
+          onClick={() => adapter.current?.dispatch({ type: "undo" })}
+        >
           Undo
         </button>
-        <button type="button" onClick={() => adapter.current?.dispatch({ type: "redo" })}>
+        <button
+          type="button"
+          onMouseDown={preserveSelection}
+          onClick={() => adapter.current?.dispatch({ type: "redo" })}
+        >
           Redo
         </button>
       </div>
       <div ref={host} className="rich-surface" aria-label="Rich Text content" />
+      {dialog !== undefined && (
+        <div
+          className="rich-dialog-backdrop"
+          onKeyDown={(event) => {
+            if (event.key === "Escape") closeDialog();
+          }}
+        >
+          <div
+            className="rich-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Insert ${dialog.type} reference`}
+          >
+            <h3>Insert {dialog.type === "entry" ? "Entry reference" : dialog.type}</h3>
+            {dialog.type === "link" && (
+              <>
+                <label>
+                  <span>URL</span>
+                  <input
+                    autoFocus
+                    type="url"
+                    value={dialog.url}
+                    onChange={(event) => setDialog({ ...dialog, url: event.target.value })}
+                  />
+                </label>
+                <label>
+                  <span>Label for a collapsed selection</span>
+                  <input
+                    value={dialog.label}
+                    onChange={(event) => setDialog({ ...dialog, label: event.target.value })}
+                  />
+                </label>
+              </>
+            )}
+            {dialog.type === "entry" && (
+              <>
+                <label>
+                  <span>Entry ID</span>
+                  <select
+                    autoFocus
+                    value={dialog.entryId}
+                    onChange={(event) => setDialog({ ...dialog, entryId: event.target.value })}
+                  >
+                    <option value="">Select an Entry</option>
+                    {entryOptions.map((entry) => (
+                      <option key={entry.identifier} value={entry.identifier}>
+                        {entry.type} · {entry.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  <span>Label for a collapsed selection</span>
+                  <input
+                    value={dialog.label}
+                    onChange={(event) => setDialog({ ...dialog, label: event.target.value })}
+                  />
+                </label>
+              </>
+            )}
+            {dialog.type === "asset" && (
+              <>
+                <label>
+                  <span>Asset</span>
+                  <select
+                    autoFocus
+                    value={dialog.assetId}
+                    onChange={(event) => setDialog({ ...dialog, assetId: event.target.value })}
+                  >
+                    <option value="">Select an Asset</option>
+                    {assets.data?.map((asset) => (
+                      <option key={asset.id} value={asset.id}>
+                        {asset.metadata.filename}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  <span>Alternative text</span>
+                  <input
+                    value={dialog.alternativeText}
+                    onChange={(event) =>
+                      setDialog({ ...dialog, alternativeText: event.target.value })
+                    }
+                  />
+                </label>
+                <label>
+                  <span>Caption (optional)</span>
+                  <input
+                    value={dialog.caption}
+                    onChange={(event) => setDialog({ ...dialog, caption: event.target.value })}
+                  />
+                </label>
+              </>
+            )}
+            <div className="editor-actions">
+              <button className="secondary-button" type="button" onClick={closeDialog}>
+                Cancel
+              </button>
+              <button
+                className="primary-button"
+                type="button"
+                disabled={
+                  (dialog.type === "link" && dialog.url.length === 0) ||
+                  (dialog.type === "entry" && dialog.entryId.length === 0) ||
+                  (dialog.type === "asset" && dialog.assetId.length === 0)
+                }
+                onClick={() => {
+                  if (dialog.type === "link")
+                    adapter.current?.dispatch({
+                      label: dialog.label,
+                      type: "wrapLink",
+                      url: dialog.url,
+                    });
+                  else if (dialog.type === "entry")
+                    adapter.current?.dispatch({
+                      entryId: dialog.entryId,
+                      label: dialog.label,
+                      type: "insertEntryReference",
+                    });
+                  else
+                    adapter.current?.dispatch({
+                      alternativeText: dialog.alternativeText,
+                      assetId: dialog.assetId,
+                      ...(dialog.caption.length === 0 ? {} : { caption: dialog.caption }),
+                      type: "insertAssetReference",
+                    });
+                  closeDialog();
+                }}
+              >
+                Insert
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

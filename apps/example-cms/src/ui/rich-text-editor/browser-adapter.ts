@@ -5,11 +5,13 @@ export interface BrowserAdapterOptions {
   readonly host: HTMLDivElement;
   readonly initialState: State;
   readonly onChange: (document: RichText.Document) => void;
+  readonly onRequestLink?: () => void;
 }
 
 export class BrowserAdapter {
   readonly #host: HTMLDivElement;
   readonly #onChange: (document: RichText.Document) => void;
+  readonly #onRequestLink: (() => void) | undefined;
   #state: State;
   readonly #observer: MutationObserver;
   #rendering = false;
@@ -18,6 +20,7 @@ export class BrowserAdapter {
     this.#host = options.host;
     this.#state = options.initialState;
     this.#onChange = options.onChange;
+    this.#onRequestLink = options.onRequestLink;
     this.#host.contentEditable = "true";
     this.#host.setAttribute("role", "textbox");
     this.#host.setAttribute("aria-multiline", "true");
@@ -72,7 +75,11 @@ export class BrowserAdapter {
     document.removeEventListener("selectionchange", this.#handleSelectionChange);
   }
 
-  #renderBlock(block: RichText.BlockNode, blockIndex?: number): HTMLElement {
+  #renderBlock(
+    block: RichText.BlockNode,
+    blockIndex?: number,
+    listItemIndex?: number,
+  ): HTMLElement {
     const element = document.createElement(
       block.type === "heading"
         ? `h${block.level}`
@@ -108,6 +115,9 @@ export class BrowserAdapter {
           if (blockIndex !== undefined) {
             text.dataset["blockIndex"] = String(blockIndex);
             text.dataset["inlineIndex"] = String(inlineIndex);
+            if (listItemIndex !== undefined) {
+              text.dataset["listItemIndex"] = String(listItemIndex);
+            }
           }
           text.textContent = child.text.length === 0 ? "\u200b" : child.text;
           if (child.marks?.includes("bold")) {
@@ -129,7 +139,7 @@ export class BrowserAdapter {
           child.type === "unordered-list" ||
           child.type === "asset-reference"
         )
-          element.append(this.#renderBlock(child));
+          element.append(this.#renderBlock(child, blockIndex, listItemIndex));
         else if (child.type === "link" || child.type === "entry-reference") {
           const inline = document.createElement(child.type === "link" ? "a" : "span");
           inline.dataset["nodeType"] = child.type;
@@ -140,7 +150,9 @@ export class BrowserAdapter {
           element.append(inline);
         } else if (child.type === "list-item") {
           const listItem = document.createElement("li");
-          for (const grandchild of child.children) listItem.append(this.#renderBlock(grandchild));
+          for (const grandchild of child.children) {
+            listItem.append(this.#renderBlock(grandchild, blockIndex, inlineIndex));
+          }
           element.append(listItem);
         } else {
           const unsupported = document.createElement("aside");
@@ -170,7 +182,14 @@ export class BrowserAdapter {
         text.textContent === "\u200b" ? 0 : (text.textContent?.length ?? 0),
       );
     return Number.isSafeInteger(blockIndex) && Number.isSafeInteger(inlineIndex)
-      ? { blockIndex, inlineIndex, offset: boundedOffset }
+      ? {
+          blockIndex,
+          inlineIndex,
+          ...(text.dataset["listItemIndex"] === undefined
+            ? {}
+            : { listItemIndex: Number(text.dataset["listItemIndex"]) }),
+          offset: boundedOffset,
+        }
       : undefined;
   }
 
@@ -195,10 +214,10 @@ export class BrowserAdapter {
     }
     const { anchor, focus } = this.#state.selection,
       anchorElement = this.#host.querySelector<HTMLElement>(
-        `[data-block-index="${anchor.blockIndex}"][data-inline-index="${anchor.inlineIndex}"]`,
+        `[data-block-index="${anchor.blockIndex}"][data-inline-index="${anchor.inlineIndex}"]${anchor.listItemIndex === undefined ? "" : `[data-list-item-index="${anchor.listItemIndex}"]`}`,
       ),
       focusElement = this.#host.querySelector<HTMLElement>(
-        `[data-block-index="${focus.blockIndex}"][data-inline-index="${focus.inlineIndex}"]`,
+        `[data-block-index="${focus.blockIndex}"][data-inline-index="${focus.inlineIndex}"]${focus.listItemIndex === undefined ? "" : `[data-list-item-index="${focus.listItemIndex}"]`}`,
       ),
       anchorNode = anchorElement?.firstChild,
       focusNode = focusElement?.firstChild;
@@ -259,6 +278,10 @@ export class BrowserAdapter {
     if (event.key.toLowerCase() === "i") {
       event.preventDefault();
       this.dispatch({ mark: "italic", type: "toggleMark" });
+    }
+    if (event.key.toLowerCase() === "k") {
+      event.preventDefault();
+      this.#onRequestLink?.();
     }
     if (event.key.toLowerCase() === "z") {
       event.preventDefault();
