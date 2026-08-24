@@ -1,9 +1,9 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
 import { DateTime, Effect } from "effect";
-import { useState } from "react";
-import { revisionClass, revisionLabel } from "./main-labels.ts";
 import { managementClient, queryClient } from "./main-shared.ts";
+import { revisionClass, revisionLabel } from "./main-labels.ts";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { EntryEditorRevisionInspection } from "./entry-editor-revision-inspection.tsx";
+import { useState } from "react";
 
 export const EntryEditorHistoryPanel = ({
   contentTypeId,
@@ -15,10 +15,6 @@ export const EntryEditorHistoryPanel = ({
   readonly writeToken?: string;
 }) => {
   const [selectedRevisionNumber, setSelectedRevisionNumber] = useState<number | undefined>(),
-    revisions = useQuery({
-      queryFn: () => Effect.runPromise(managementClient.listRevisions(contentTypeId, entryId)),
-      queryKey: ["revisions", contentTypeId, entryId],
-    }),
     restore = useMutation({
       mutationFn: (revisionNumber: number) => {
         if (writeToken === undefined) {
@@ -39,6 +35,10 @@ export const EntryEditorHistoryPanel = ({
         await queryClient.invalidateQueries({ queryKey: ["entry-state", contentTypeId, entryId] });
         await queryClient.invalidateQueries({ queryKey: ["revisions", contentTypeId, entryId] });
       },
+    }),
+    revisions = useQuery({
+      queryFn: () => Effect.runPromise(managementClient.listRevisions(contentTypeId, entryId)),
+      queryKey: ["revisions", contentTypeId, entryId],
     });
   return (
     <section className="history-panel panel">
@@ -49,24 +49,10 @@ export const EntryEditorHistoryPanel = ({
           {restore.error.message}
         </p>
       )}
-      {revisions.data?.items.map((revision, index) => (
-        <button
-          className="revision-row"
-          key={revision.revisionNumber}
-          onClick={() => {
-            setSelectedRevisionNumber(revision.revisionNumber);
-          }}
-        >
-          <span className={revisionClass(index)} />
-          <span>
-            <strong>Revision {revision.revisionNumber}</strong>
-            <small>
-              {revisionLabel(index)}
-              {DateTime.toDate(DateTime.makeUnsafe(revision.recordedAt)).toLocaleString()}
-            </small>
-          </span>
-        </button>
-      ))}
+      <EntryEditorRevisionList
+        onSelectRevision={setSelectedRevisionNumber}
+        revisions={revisions.data?.items}
+      />
       {selectedRevisionNumber !== undefined && (
         <EntryEditorRevisionInspection
           contentTypeId={contentTypeId}
@@ -84,4 +70,33 @@ export const EntryEditorHistoryPanel = ({
       )}
     </section>
   );
-};
+},
+
+EntryEditorRevisionList = ({
+  onSelectRevision,
+  revisions,
+}: {
+  readonly onSelectRevision: (revisionNumber: number) => void;
+  readonly revisions?: readonly { readonly recordedAt: string; readonly revisionNumber: number }[];
+}) => (
+  <>
+    {revisions?.map((revision, index) => (
+      <button
+        className="revision-row"
+        key={revision.revisionNumber}
+        onClick={() => {
+          onSelectRevision(revision.revisionNumber);
+        }}
+      >
+        <span className={revisionClass(index)} />
+        <span>
+          <strong>Revision {revision.revisionNumber}</strong>
+          <small>
+            {revisionLabel(index)}
+            {DateTime.toDate(DateTime.makeUnsafe(revision.recordedAt)).toLocaleString()}
+          </small>
+        </span>
+      </button>
+    ))}
+  </>
+);

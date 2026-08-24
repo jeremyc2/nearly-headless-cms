@@ -1,7 +1,7 @@
-import type { AssetRepresentation } from "../generated/management-client.ts";
 import { stringValue, suggestedSlug } from "./main-entry-support.ts";
 import { assetSelectValue } from "./main-labels.ts";
 import { richTextDocumentFrom } from "./main-shared.ts";
+import type { AssetRepresentation } from "../generated/management-client.ts";
 import { EntryEditorRichTextField } from "./entry-editor-rich-text-field.tsx";
 
 export const EntryEditorStoryCanvas = ({
@@ -31,27 +31,11 @@ export const EntryEditorStoryCanvas = ({
         values={values}
       />
       <EntryEditorTextAreaFields onUpdateField={onUpdateField} values={values} />
-      {"body" in values && typeof values["body"] === "string" && (
-        <label className="field full">
-          <span>Body</span>
-          <textarea
-            onChange={(event) => {
-              onUpdateField("body", event.target.value);
-            }}
-            rows={8}
-            value={values["body"]}
-          />
-        </label>
-      )}
-      {bodyDocument !== undefined && (
-        <EntryEditorRichTextField
-          onChange={(document) => {
-            onUpdateField("body", document);
-          }}
-          surfaceId="field-body"
-          value={bodyDocument}
-        />
-      )}
+      <EntryEditorBodyFields
+        bodyDocument={bodyDocument}
+        onUpdateField={onUpdateField}
+        values={values}
+      />
       {profileDocument !== undefined && (
         <div className="field full">
           <span>Author profile</span>
@@ -72,9 +56,43 @@ export const EntryEditorStoryCanvas = ({
       )}
     </section>
   );
-};
+},
 
-const EntryEditorTitleField = ({
+EntryEditorBodyFields = ({
+  bodyDocument,
+  onUpdateField,
+  values,
+}: {
+  readonly bodyDocument: ReturnType<typeof richTextDocumentFrom>;
+  readonly onUpdateField: (key: string, value: unknown) => void;
+  readonly values: Record<string, unknown>;
+}) => (
+  <>
+    {"body" in values && typeof values["body"] === "string" && (
+      <label className="field full">
+        <span>Body</span>
+        <textarea
+          onChange={(event) => {
+            onUpdateField("body", event.target.value);
+          }}
+          rows={8}
+          value={values["body"]}
+        />
+      </label>
+    )}
+    {bodyDocument !== undefined && (
+      <EntryEditorRichTextField
+        onChange={(document) => {
+          onUpdateField("body", document);
+        }}
+        surfaceId="field-body"
+        value={bodyDocument}
+      />
+    )}
+  </>
+),
+
+EntryEditorTitleField = ({
   onUpdateField,
   title,
   titleField,
@@ -119,7 +137,7 @@ const EntryEditorTitleField = ({
   </>
 ),
 
- EntryEditorTextAreaFields = ({
+EntryEditorTextAreaFields = ({
   onUpdateField,
   values,
 }: {
@@ -166,7 +184,7 @@ const EntryEditorTitleField = ({
   </>
 ),
 
- EntryEditorFeaturedImage = ({
+EntryEditorFeaturedImage = ({
   assets,
   onUpdateField,
   values,
@@ -225,7 +243,7 @@ const EntryEditorTitleField = ({
   </fieldset>
 ),
 
- EntryEditorPortrait = ({
+EntryEditorPortrait = ({
   assets,
   onUpdateField,
   values,

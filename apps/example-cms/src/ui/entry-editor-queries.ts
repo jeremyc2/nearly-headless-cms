@@ -1,7 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
-import { useParams } from "@tanstack/react-router";
 import { Effect } from "effect";
 import { managementClient } from "./main-shared.ts";
+import { useParams } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 
 export const useEntryEditorQueries = () => {
   const { contentTypeId, entryId } = useParams({ from: "/content/$contentTypeId/$entryId" }),

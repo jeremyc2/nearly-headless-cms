@@ -31,4 +31,4 @@ export type {
 
 export { capabilitiesFor } from "./content-definition-capabilities.ts";
 export { classifyCompatibility } from "./content-definition-compatibility.ts";
-export { compile } from "./content-definition-compile.ts";
+export { compile, compileSnapshot } from "./content-definition-compile.ts";

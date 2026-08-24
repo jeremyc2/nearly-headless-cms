@@ -90,6 +90,7 @@ const {
     }
     return contentTypes;
   },
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- compileSnapshot is exported for typed internal call sites.
   compileSnapshot = (input: SnapshotInput, options: CompileOptions = {}): CompiledSnapshot => {
     const acceptedDefinitions = acceptSnapshotDefinitions(input),
       compilerFormatVersion = input.compilerFormatVersion ?? defaultCompilerFormatVersion,
@@ -139,4 +140,4 @@ const {
   );
 
 /** Compiles and fingerprints a complete snapshot or throws `InvalidInput` atomically. */
-export { pipeableCompile as compile };
+export { compileSnapshot, pipeableCompile as compile };

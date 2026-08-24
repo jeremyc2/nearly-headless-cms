@@ -1,6 +1,6 @@
-import { deletionConsequence } from "./main-entry-support.ts";
 import { deletionStatus, entryDeletionTitle, purgeStatus } from "./main-labels.ts";
 import type { DeletionRecord } from "./entry-editor-types.ts";
+import { deletionConsequence } from "./main-entry-support.ts";
 
 export const EntryEditorDeletionDialog = ({
   confirmPurge,
@@ -60,9 +60,9 @@ export const EntryEditorDeletionDialog = ({
       )}
     </div>
   </div>
-);
+),
 
-const EntryEditorDeletionConfirm = ({
+EntryEditorDeletionConfirm = ({
   contentTypeId,
   isDeleting,
   onCancel,
@@ -91,7 +91,7 @@ const EntryEditorDeletionConfirm = ({
   </>
 ),
 
- EntryEditorPurgeConfirm = ({
+EntryEditorPurgeConfirm = ({
   isPurging,
   onCancel,
   onConfirm,
@@ -122,7 +122,7 @@ const EntryEditorDeletionConfirm = ({
   </>
 ),
 
- EntryEditorDeletionComplete = ({
+EntryEditorDeletionComplete = ({
   onReturnToList,
   onStartPurge,
 }: {

@@ -1,13 +1,13 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Effect } from "effect";
 import type { RichText } from "nearly-headless-cms";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { EntryEditorRichTextInsertDialog } from "./entry-editor-rich-text-insert-dialog.tsx";
+import { EntryEditorRichTextToolbar } from "./entry-editor-rich-text-toolbar.tsx";
+import type { RichTextInsertDialog } from "./entry-editor-types.ts";
 import { entryOptionLabel } from "./main-labels.ts";
 import { contentTypes, managementClient } from "./main-shared.ts";
 import { BrowserAdapter, RichTextEditor } from "./rich-text-editor/index.ts";
-import type { RichTextInsertDialog } from "./entry-editor-types.ts";
-import { EntryEditorRichTextInsertDialog } from "./entry-editor-rich-text-insert-dialog.tsx";
-import { EntryEditorRichTextToolbar } from "./entry-editor-rich-text-toolbar.tsx";
 
 export const EntryEditorRichTextField = ({
   onChange,
@@ -19,15 +19,11 @@ export const EntryEditorRichTextField = ({
   readonly value: RichText.Document;
 }) => {
   const adapter = useRef<BrowserAdapter | null>(null),
-    host = useRef<HTMLDivElement>(null),
-    initialValue = useMemo(() => value, []),
-    onChangeReference = useRef(onChange),
-    toolbar = useRef<HTMLDivElement>(null),
-    [dialog, setDialog] = useState<RichTextInsertDialog | undefined>(),
     assets = useQuery({
       queryFn: () => Effect.runPromise(managementClient.listAssets()),
       queryKey: ["assets"],
     }),
+    [dialog, setDialog] = useState<RichTextInsertDialog | undefined>(),
     entryQueries = useQueries({
       queries: contentTypes.map((contentType) => ({
         queryFn: () =>
@@ -44,19 +40,20 @@ export const EntryEditorRichTextField = ({
         type: contentType.label,
       })),
     ),
-    closeDialog = () => {
-      setDialog(undefined);
-      queueMicrotask(() => toolbar.current?.querySelector<HTMLButtonElement>("button")?.focus());
-    };
+    host = useRef<HTMLDivElement>(null),
+    initialValue = useMemo(() => value, []),
+    onChangeReference = useRef(onChange),
+    toolbar = useRef<HTMLDivElement>(null);
   useEffect(() => {
     onChangeReference.current = onChange;
   }, [onChange]);
   useEffect(() => {
-    if (host.current === null) {
+    const hostElement = host.current;
+    if (hostElement === null) {
       return;
     }
     const browserAdapter = new BrowserAdapter({
-      host: host.current,
+      host: hostElement,
       initialState: RichTextEditor.create(initialValue),
       onChange: (document) => {
         onChangeReference.current(document);
@@ -90,7 +87,10 @@ export const EntryEditorRichTextField = ({
         <EntryEditorRichTextInsertDialog
           adapter={adapter}
           assets={assets.data}
-          closeDialog={closeDialog}
+          closeDialog={() => {
+            setDialog(undefined);
+            queueMicrotask(() => toolbar.current?.querySelector<HTMLButtonElement>("button")?.focus());
+          }}
           dialog={dialog}
           entryOptions={entryOptions}
           setDialog={setDialog}

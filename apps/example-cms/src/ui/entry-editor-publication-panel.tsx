@@ -1,5 +1,3 @@
-import type { EntryRepresentation } from "../generated/management-client.ts";
-import { displayName, editorialIssues, stringValue } from "./main-entry-support.ts";
 import {
   editorialButtonLabel,
   editorialStatus,
@@ -8,6 +6,8 @@ import {
   publicationValue,
   stringArrayValue,
 } from "./main-labels.ts";
+import type { EntryRepresentation } from "../generated/management-client.ts";
+import { displayName, editorialIssues, stringValue } from "./main-entry-support.ts";
 import type { EditorialConfirmationStatus } from "./entry-editor-types.ts";
 
 export const EntryEditorPublicationPanel = ({
@@ -53,9 +53,7 @@ export const EntryEditorPublicationPanel = ({
     <p className="boundary-note">
       Saving changes the CMS. Publishing makes a Post eligible for the next static build.
     </p>
-    {editorialError !== undefined && (
-      <EntryEditorEditorialError error={editorialError} />
-    )}
+    {editorialError !== undefined && <EntryEditorEditorialError error={editorialError} />}
     {contentTypeId === "post" && (
       <button
         className="full-button primary-button"
@@ -75,9 +73,9 @@ export const EntryEditorPublicationPanel = ({
       />
     )}
   </section>
-);
+),
 
-const EntryEditorPostRelationships = ({
+EntryEditorPostRelationships = ({
   authors,
   categories,
   onUpdateField,
@@ -91,60 +89,9 @@ const EntryEditorPostRelationships = ({
   readonly values: Record<string, unknown>;
 }) => (
   <>
-    <label className="field">
-      <span>Author</span>
-      <select
-        onChange={(event) => {
-          onUpdateField("author", event.target.value);
-        }}
-        value={stringValue(values["author"], "")}
-      >
-        {authors?.map((author) => (
-          <option key={author.id} value={author.id}>
-            {displayName(author)}
-          </option>
-        ))}
-      </select>
-      <small>The Author describes the content; it is not a login identity.</small>
-    </label>
-    <label className="field">
-      <span>Categories</span>
-      <select
-        multiple
-        onChange={(event) => {
-          onUpdateField(
-            "categories",
-            [...event.currentTarget.selectedOptions].map((option) => option.value),
-          );
-        }}
-        value={stringArrayValue(values["categories"])}
-      >
-        {categories?.map((category) => (
-          <option key={category.id} value={category.id}>
-            {displayName(category)}
-          </option>
-        ))}
-      </select>
-    </label>
-    <label className="field">
-      <span>Tags</span>
-      <select
-        multiple
-        onChange={(event) => {
-          onUpdateField(
-            "tags",
-            [...event.currentTarget.selectedOptions].map((option) => option.value),
-          );
-        }}
-        value={stringArrayValue(values["tags"])}
-      >
-        {tags?.map((tag) => (
-          <option key={tag.id} value={tag.id}>
-            {displayName(tag)}
-          </option>
-        ))}
-      </select>
-    </label>
+    <EntryEditorAuthorField authors={authors} onUpdateField={onUpdateField} values={values} />
+    <EntryEditorCategoryField categories={categories} onUpdateField={onUpdateField} values={values} />
+    <EntryEditorTagField onUpdateField={onUpdateField} tags={tags} values={values} />
     <label className="field">
       <span>Publication time</span>
       <input
@@ -158,7 +105,94 @@ const EntryEditorPostRelationships = ({
   </>
 ),
 
- EntryEditorEditorialError = ({ error }: { readonly error: Error }) => (
+EntryEditorAuthorField = ({
+  authors,
+  onUpdateField,
+  values,
+}: {
+  readonly authors: readonly EntryRepresentation[] | undefined;
+  readonly onUpdateField: (key: string, value: unknown) => void;
+  readonly values: Record<string, unknown>;
+}) => (
+  <label className="field">
+    <span>Author</span>
+    <select
+      onChange={(event) => {
+        onUpdateField("author", event.target.value);
+      }}
+      value={stringValue(values["author"], "")}
+    >
+      {authors?.map((author) => (
+        <option key={author.id} value={author.id}>
+          {displayName(author)}
+        </option>
+      ))}
+    </select>
+    <small>The Author describes the content; it is not a login identity.</small>
+  </label>
+),
+
+EntryEditorCategoryField = ({
+  categories,
+  onUpdateField,
+  values,
+}: {
+  readonly categories: readonly EntryRepresentation[] | undefined;
+  readonly onUpdateField: (key: string, value: unknown) => void;
+  readonly values: Record<string, unknown>;
+}) => (
+  <label className="field">
+    <span>Categories</span>
+    <select
+      multiple
+      onChange={(event) => {
+        onUpdateField(
+          "categories",
+          [...event.currentTarget.selectedOptions].map((option) => option.value),
+        );
+      }}
+      value={stringArrayValue(values["categories"])}
+    >
+      {categories?.map((category) => (
+        <option key={category.id} value={category.id}>
+          {displayName(category)}
+        </option>
+      ))}
+    </select>
+  </label>
+),
+
+EntryEditorTagField = ({
+  onUpdateField,
+  tags,
+  values,
+}: {
+  readonly onUpdateField: (key: string, value: unknown) => void;
+  readonly tags: readonly EntryRepresentation[] | undefined;
+  readonly values: Record<string, unknown>;
+}) => (
+  <label className="field">
+    <span>Tags</span>
+    <select
+      multiple
+      onChange={(event) => {
+        onUpdateField(
+          "tags",
+          [...event.currentTarget.selectedOptions].map((option) => option.value),
+        );
+      }}
+      value={stringArrayValue(values["tags"])}
+    >
+      {tags?.map((tag) => (
+        <option key={tag.id} value={tag.id}>
+          {displayName(tag)}
+        </option>
+      ))}
+    </select>
+  </label>
+),
+
+EntryEditorEditorialError = ({ error }: { readonly error: Error }) => (
   <div className="error-state issue-summary" role="alert">
     <strong>{error.message}</strong>
     {editorialIssues(error).length > 0 && (
@@ -179,7 +213,7 @@ const EntryEditorPostRelationships = ({
   </div>
 ),
 
- EntryEditorCommentActions = ({
+EntryEditorCommentActions = ({
   isEditorialPending,
   onRequestEditorialConfirmation,
 }: {

@@ -1,7 +1,7 @@
 import type { ReactNode, RefObject } from "react";
+import type { BrowserAdapter } from "./rich-text-editor/index.ts";
 import { headingLevel } from "./main-labels.ts";
 import { preserveSelection } from "./main-shared.ts";
-import type { BrowserAdapter } from "./rich-text-editor/index.ts";
 
 export const EntryEditorRichTextToolbar = ({
   adapter,
@@ -51,22 +51,7 @@ export const EntryEditorRichTextToolbar = ({
     <RichTextMarkButton adapter={adapter} ariaLabel="Inline code" mark="code">
       Code
     </RichTextMarkButton>
-    <button
-      aria-label="Unordered list"
-      onClick={() => adapter.current?.dispatch({ listType: "unordered-list", type: "toggleList" })}
-      onMouseDown={preserveSelection}
-      type="button"
-    >
-      • List
-    </button>
-    <button
-      aria-label="Ordered list"
-      onClick={() => adapter.current?.dispatch({ listType: "ordered-list", type: "toggleList" })}
-      onMouseDown={preserveSelection}
-      type="button"
-    >
-      1. List
-    </button>
+    <RichTextToolbarListButtons adapter={adapter} />
     <button onClick={onOpenLinkDialog} onMouseDown={preserveSelection} type="button">
       Link
     </button>
@@ -76,24 +61,11 @@ export const EntryEditorRichTextToolbar = ({
     <button onClick={onOpenAssetDialog} onMouseDown={preserveSelection} type="button">
       Asset
     </button>
-    <button
-      onClick={() => adapter.current?.dispatch({ type: "undo" })}
-      onMouseDown={preserveSelection}
-      type="button"
-    >
-      Undo
-    </button>
-    <button
-      onClick={() => adapter.current?.dispatch({ type: "redo" })}
-      onMouseDown={preserveSelection}
-      type="button"
-    >
-      Redo
-    </button>
+    <RichTextToolbarHistoryButtons adapter={adapter} />
   </div>
-);
+),
 
-const RichTextMarkButton = ({
+RichTextMarkButton = ({
   adapter,
   ariaLabel,
   children,
@@ -114,10 +86,58 @@ const RichTextMarkButton = ({
   </button>
 ),
 
- dispatchBlockKind = (
+RichTextToolbarListButtons = ({
+  adapter,
+}: {
+  readonly adapter: RefObject<BrowserAdapter | null>;
+}) => (
+  <>
+    <button
+      aria-label="Unordered list"
+      onClick={() => adapter.current?.dispatch({ listType: "unordered-list", type: "toggleList" })}
+      onMouseDown={preserveSelection}
+      type="button"
+    >
+      • List
+    </button>
+    <button
+      aria-label="Ordered list"
+      onClick={() => adapter.current?.dispatch({ listType: "ordered-list", type: "toggleList" })}
+      onMouseDown={preserveSelection}
+      type="button"
+    >
+      1. List
+    </button>
+  </>
+),
+
+RichTextToolbarHistoryButtons = ({
+  adapter,
+}: {
+  readonly adapter: RefObject<BrowserAdapter | null>;
+}) => (
+  <>
+    <button
+      onClick={() => adapter.current?.dispatch({ type: "undo" })}
+      onMouseDown={preserveSelection}
+      type="button"
+    >
+      Undo
+    </button>
+    <button
+      onClick={() => adapter.current?.dispatch({ type: "redo" })}
+      onMouseDown={preserveSelection}
+      type="button"
+    >
+      Redo
+    </button>
+  </>
+);
+
+function dispatchBlockKind(
   adapter: RefObject<BrowserAdapter | null>,
   blockType: string,
-): void => {
+): void {
   if (blockType === "heading-2" || blockType === "heading-3" || blockType === "heading-4") {
     adapter.current?.dispatch({
       blockType: "heading",
@@ -129,4 +149,4 @@ const RichTextMarkButton = ({
   if (blockType === "paragraph" || blockType === "quote" || blockType === "code-block") {
     adapter.current?.dispatch({ blockType, type: "setBlockKind" });
   }
-};
+}

@@ -1,8 +1,8 @@
 import type { RefObject } from "react";
 import type { AssetRepresentation } from "../generated/management-client.ts";
-import { assetCaption, dialogHeading } from "./main-labels.ts";
-import type { RichTextInsertDialog } from "./entry-editor-types.ts";
 import type { BrowserAdapter } from "./rich-text-editor/index.ts";
+import type { RichTextInsertDialog } from "./entry-editor-types.ts";
+import { assetCaption, dialogHeading } from "./main-labels.ts";
 
 export const EntryEditorRichTextInsertDialog = ({
   adapter,
@@ -38,9 +38,7 @@ export const EntryEditorRichTextInsertDialog = ({
       role="dialog"
     >
       <h3>Insert {dialogHeading(dialog.type)}</h3>
-      {dialog.type === "link" && (
-        <RichTextLinkFields dialog={dialog} setDialog={setDialog} />
-      )}
+      {dialog.type === "link" && <RichTextLinkFields dialog={dialog} setDialog={setDialog} />}
       {dialog.type === "entry" && (
         <RichTextEntryFields dialog={dialog} entryOptions={entryOptions} setDialog={setDialog} />
       )}
@@ -64,9 +62,9 @@ export const EntryEditorRichTextInsertDialog = ({
       </div>
     </div>
   </div>
-);
+),
 
-const RichTextLinkFields = ({
+RichTextLinkFields = ({
   dialog,
   setDialog,
 }: {
@@ -97,7 +95,7 @@ const RichTextLinkFields = ({
   </>
 ),
 
- RichTextEntryFields = ({
+RichTextEntryFields = ({
   dialog,
   entryOptions,
   setDialog,
@@ -140,7 +138,7 @@ const RichTextLinkFields = ({
   </>
 ),
 
- RichTextAssetFields = ({
+RichTextAssetFields = ({
   assets,
   dialog,
   setDialog,
@@ -186,23 +184,13 @@ const RichTextLinkFields = ({
       />
     </label>
   </>
-),
+);
 
- isInsertDisabled = (dialog: RichTextInsertDialog): boolean => {
-  if (dialog.type === "link") {
-    return dialog.url.length === 0;
-  }
-  if (dialog.type === "entry") {
-    return dialog.entryId.length === 0;
-  }
-  return dialog.assetId.length === 0;
-},
-
- insertReference = (
+function insertReference(
   adapter: RefObject<BrowserAdapter | null>,
   closeDialog: () => void,
   dialog: RichTextInsertDialog,
-): void => {
+): void {
   if (dialog.type === "link") {
     adapter.current?.dispatch({ label: dialog.label, type: "wrapLink", url: dialog.url });
   } else if (dialog.type === "entry") {
@@ -220,4 +208,14 @@ const RichTextLinkFields = ({
     });
   }
   closeDialog();
-};
+}
+
+function isInsertDisabled(dialog: RichTextInsertDialog): boolean {
+  if (dialog.type === "link") {
+    return dialog.url.length === 0;
+  }
+  if (dialog.type === "entry") {
+    return dialog.entryId.length === 0;
+  }
+  return dialog.assetId.length === 0;
+}
