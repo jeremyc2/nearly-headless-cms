@@ -1,0 +1,108 @@
+import { RequestFailureError } from "./http-transport-request-failure.ts";
+import dispatchRouteHandlers from "./http-transport-route-dispatch.ts";
+import transportOperation from "./http-transport-operation.ts";
+import transportRequestParsing from "./http-transport-request-parsing.ts";
+import transportResponse from "./http-transport-response.ts";
+import type { RouteHandlerContext, RouteHandlerResult } from "./http-transport-types.ts";
+
+const {
+    assetContentResponse,
+    bodylessResponse,
+    invalidRequestResponse,
+    jsonResponse,
+  } = transportResponse,
+  { matchPath, requiredPathParameter } = transportOperation,
+  { stageMultipartAsset } = transportRequestParsing,
+  handleAssetContentRoute = (context: RouteHandlerContext): RouteHandlerResult | Promise<RouteHandlerResult> => {
+    const assetContentMatch = matchPath(
+      `${context.managementBase}/assets/{assetId}/content`,
+      context.requestUrl.pathname,
+    );
+    if (
+      assetContentMatch === undefined ||
+      (context.request.method !== "GET" && context.request.method !== "HEAD")
+    ) {
+      return undefined;
+    }
+    return context.withOutcome(
+      context.cms.readAsset(requiredPathParameter(assetContentMatch, "assetId")),
+      context.requestId,
+      (asset) => assetContentResponse(asset, context.request, context.requestId),
+    );
+  },
+  handleAssetResourceRoute = (context: RouteHandlerContext): RouteHandlerResult | Promise<RouteHandlerResult> => {
+    const assetMatch = matchPath(`${context.managementBase}/assets/{assetId}`, context.requestUrl.pathname);
+    if (assetMatch === undefined) {
+      return undefined;
+    }
+    const assetId = requiredPathParameter(assetMatch, "assetId");
+    if (context.request.method === "GET") {
+      return context.withOutcome(context.cms.getAsset(assetId), context.requestId, (asset) =>
+        jsonResponse({
+          fingerprint: context.fingerprint,
+          requestId: context.requestId,
+          status: 200,
+          value: asset,
+        }),
+      );
+    }
+    if (context.request.method === "DELETE") {
+      return context.withOutcome(context.cms.deleteAsset(assetId), context.requestId, () =>
+        bodylessResponse(204, context.requestId, context.fingerprint),
+      );
+    }
+    return undefined;
+  },
+  // oxlint-disable-next-line effecttsgo/async-function -- route handlers await JSON body parsing before Effect execution.
+  handleAssetUploadRoute = async (context: RouteHandlerContext): Promise<RouteHandlerResult> => {
+    if (
+      context.requestUrl.pathname !== `${context.managementBase}/assets` ||
+      context.request.method !== "POST"
+    ) {
+      return undefined;
+    }
+    try {
+      if (
+        !(context.request.headers.get("content-type") ?? "")
+          .toLowerCase()
+          .startsWith("multipart/form-data")
+      ) {
+        throw new RequestFailureError(
+          "UnsupportedMediaType",
+          "Asset upload requires multipart/form-data",
+          415,
+        );
+      }
+      const stagedUpload = await stageMultipartAsset(context.request, context.signal, {
+        body: context.maximumMultipartBodyByteLength,
+        file: context.maximumMultipartFileByteLength,
+        metadata: context.maximumMultipartMetadataByteLength,
+      });
+      try {
+        return await context.withOutcome(
+          context.cms.ingestAsset({ ...stagedUpload.metadata, content: stagedUpload.content }),
+          context.requestId,
+          (asset) =>
+            jsonResponse({
+              fingerprint: context.fingerprint,
+              requestId: context.requestId,
+              status: 201,
+              value: asset,
+            }),
+        );
+      } finally {
+        await stagedUpload.cleanup();
+      }
+    } catch (error) {
+      return invalidRequestResponse(error, "Invalid multipart Asset upload", context.requestId);
+    }
+  },
+  assetRouteHandlers = [
+    handleAssetResourceRoute,
+    handleAssetContentRoute,
+    handleAssetUploadRoute,
+  ],
+  handleAssetRoutes = (context: RouteHandlerContext): Promise<RouteHandlerResult> =>
+    dispatchRouteHandlers(assetRouteHandlers, context);
+
+export default handleAssetRoutes;

@@ -32,12 +32,12 @@ describe("RichText", () => {
   });
 
   test("rejects unsupported extensions instead of silently discarding them", () => {
-    expect(() =>
+    expect(() => {
       RichText.validate({
         children: [{ children: [], configuration: {}, type: "com.example.callout", version: 1 }],
         format: "nearly-headless-cms/rich-text",
         version: 1,
-      }),
-    ).toThrow("Unsupported Rich Text extension");
+      });
+    }).toThrow("Unsupported Rich Text extension");
   });
 });

@@ -7,8 +7,31 @@ const ACCEPTANCE_RUN_COUNT = 10,
   POLLING_INTERVAL_MILLISECONDS = 50,
   RUN_NUMBER_INCREMENT = 1,
   WAIT_TIMEOUT_MILLISECONDS = 15_000,
-  ZERO = 0,
+  // oxlint-disable-next-line effecttsgo/async-function -- qualification assertions compose awaited WebView navigation and evaluation.
+  assertQualificationPage = async (
+    view: Bun.WebView,
+    consoleErrors: readonly unknown[],
+  ): Promise<void> => {
+    await view.navigate("http://localhost:3000/");
+    const heading = await waitFor<string | undefined>(
+        view,
+        "document.querySelector('h1')?.textContent",
+        (value) => value === "Good afternoon",
+      ),
+      healthText = await view.evaluate<string>(
+        "fetch('/health').then(response => response.text())",
+      );
+    expect(heading).toBe("Good afternoon");
+    expect(healthText).toBe("ok");
+    expect(consoleErrors).toHaveLength(NO_CONSOLE_ERRORS);
+  },
   enabled = Bun.env["ACCEPTANCE_SERVERS_READY"] === "1",
+  selectAcceptanceTest = (enabledRun: boolean): typeof test => {
+    if (enabledRun) {
+      return test;
+    }
+    return test.skip;
+  },
   waitFor = <Value>(
     view: Bun.WebView,
     expression: string,
@@ -28,12 +51,6 @@ const ACCEPTANCE_RUN_COUNT = 10,
         return poll();
       };
     return poll();
-  },
-  selectAcceptanceTest = (enabledRun: boolean): typeof test => {
-    if (enabledRun) {
-      return test;
-    }
-    return test.skip;
   };
 
 afterAll(() => {
@@ -58,21 +75,10 @@ describe("Bun WebView qualification", () => {
             width: 800,
           });
         try {
-          await view.navigate("http://localhost:3000/");
-          const heading = await waitFor<string | undefined>(
-            view,
-            "document.querySelector('h1')?.textContent",
-            (value) => value === "Good afternoon",
-          );
-          expect(heading).toBe("Good afternoon");
-          expect(await view.evaluate("fetch('/health').then(response => response.text())")).toBe(
-            "ok",
-          );
-          expect(consoleErrors).toHaveLength(NO_CONSOLE_ERRORS);
+          await assertQualificationPage(view, consoleErrors);
         } finally {
           view.close();
         }
-        expect(runNumber).toBeGreaterThan(ZERO);
         if (runNumber < ACCEPTANCE_RUN_COUNT) {
           return runQualification(runNumber + RUN_NUMBER_INCREMENT);
         }

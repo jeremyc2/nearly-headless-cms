@@ -1,12 +1,70 @@
+import * as Function from "effect/Function";
 import { InvalidInput, type ValidationIssue } from "./cms-error.ts";
-import { dual } from "effect/Function";
-import { type JsonObject, type JsonValue, isJsonValue } from "./internal/json.ts";
+import { type JsonObject, type JsonValue, isJsonObject } from "./internal/json.ts";
+import blockValidation from "./rich-text-validation-block.ts";
+import rendering from "./rich-text-rendering.ts";
 
 /** Stable identifier and serialized format constants for every Rich Text document. */
-export const emptyLength = 0,
+const cloneValidatedDocument = (document: Document): Document => structuredClone(document),
+  emptyLength = 0,
   format = "nearly-headless-cms/rich-text",
   formatVersion = 1,
-  headingLevels = [2, 3, 4] as const;
+  headingLevels = [2, 3, 4] as const,
+  /** Collects live references in linear time over the Rich Text tree. */
+  references = (document: Document): References => rendering.collectReferences(document),
+  /** Renders a validated document through a Content Client-owned Renderer. */
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- dual's generic overload is not inferred by the linter for this public helper.
+  render = Function.dual(2, <Result>(document: Document, renderer: Renderer<Result>): readonly Result[] =>
+    rendering.renderDocument(document, renderer),
+  ),
+  /** Validates and normalizes a Rich Text value, rejecting unsupported content visibly. */
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- dual's generic overload is not inferred by the linter for this public helper.
+  toJson = Function.dual(
+    (arguments_) => arguments_.length === 2 || blockValidation.isObject(arguments_[0]),
+    (document: Document, options: ValidationOptions = {}): JsonObject => {
+      validate(document, options);
+      if (!isJsonObject(document)) {
+        throw InvalidInput.make({ message: "Rich Text document is not JSON-compatible" });
+      }
+      return document;
+    },
+  ),
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- dual's generic overload is not inferred by the linter for this public helper.
+  validate = Function.dual(
+    (arguments_) => arguments_.length === 2 || blockValidation.isObject(arguments_[0]),
+    (value: unknown, options: ValidationOptions = {}): Document => {
+      if (
+        !blockValidation.isObject(value) ||
+        value["format"] !== format ||
+        value["version"] !== formatVersion ||
+        !Array.isArray(value["children"])
+      ) {
+        throw InvalidInput.make({
+          message: `Rich Text must use ${format} version ${formatVersion}`,
+        });
+      }
+      const extensions = new Map(
+          (options.extensions ?? []).map((extension) => [
+            `${extension.identifier}@${extension.version}`,
+            extension,
+          ]),
+        ),
+        issues = value["children"].flatMap((child, index) =>
+          blockValidation.validateBlock(child, ["children", index], extensions),
+        );
+      if (issues.length > emptyLength) {
+        throw InvalidInput.make({
+          issues,
+          message: issues.at(emptyLength)?.message ?? "Invalid Rich Text",
+        });
+      }
+      return cloneValidatedDocument({
+        children: value["children"],
+        format,
+        version: formatVersion,
+      });
+    },
+  );
 
 /** The closed core vocabulary of semantic inline text marks. */
 export type Mark = "bold" | "italic" | "code" | "strikethrough";
@@ -124,450 +182,22 @@ export interface ValidationOptions {
   readonly extensions?: readonly Extension[];
 }
 
-const coreNodeTypes = new Set([
-    "text",
-    "link",
-    "entry-reference",
-    "paragraph",
-    "heading",
-    "quote",
-    "code-block",
-    "ordered-list",
-    "unordered-list",
-    "list-item",
-    "asset-reference",
-  ]),
-  isObject = (value: unknown): value is Readonly<Record<string, unknown>> =>
-    value !== null && typeof value === "object" && !Array.isArray(value),
-  makeIssue = (
-    path: readonly (string | number)[],
-    reason: string,
-    message: string,
-  ): ValidationIssue => ({ message, path, reason }),
-  validateText = (
-    node: Readonly<Record<string, unknown>>,
-    path: readonly (string | number)[],
-  ): readonly ValidationIssue[] => {
-    const issues: ValidationIssue[] = [],
-      { marks } = node;
-    if (typeof node["text"] !== "string") {
-      issues.push(makeIssue([...path, "text"], "expectedText", "Text leaves require text"));
-    }
-    if (marks !== undefined) {
-      if (
-        !Array.isArray(marks) ||
-        marks.some((mark) => !["bold", "italic", "code", "strikethrough"].includes(String(mark))) ||
-        new Set(marks).size !== marks.length
-      ) {
-        issues.push(
-          makeIssue(
-            [...path, "marks"],
-            "invalidMarks",
-            "Marks must be distinct core semantic marks",
-          ),
-        );
-      }
-    }
-    return issues;
-  },
-  validateLink = (
-    node: Readonly<Record<string, unknown>>,
-    path: readonly (string | number)[],
-  ): readonly ValidationIssue[] => {
-    const issues: ValidationIssue[] = [];
-    if (typeof node["url"] !== "string" || !URL.canParse(node["url"])) {
-      issues.push(makeIssue([...path, "url"], "expectedUrl", "Link requires a valid URL"));
-    }
-    if (Array.isArray(node["children"])) {
-      for (const [index, child] of node["children"].entries()) {
-        issues.push(...validateTextChild(child, [...path, "children", index]));
-      }
-    } else {
-      issues.push(
-        makeIssue([...path, "children"], "expectedChildren", "Link requires text children"),
-      );
-    }
-    return issues;
-  },
-  validateEntryReference = (
-    node: Readonly<Record<string, unknown>>,
-    path: readonly (string | number)[],
-  ): readonly ValidationIssue[] => {
-    const issues: ValidationIssue[] = [];
-    if (typeof node["entryId"] !== "string" || node["entryId"].length === emptyLength) {
-      issues.push(
-        makeIssue([...path, "entryId"], "expectedEntryId", "Entry reference requires an Entry ID"),
-      );
-    }
-    if (!Array.isArray(node["children"]) || node["children"].length === emptyLength) {
-      issues.push(
-        makeIssue(
-          [...path, "children"],
-          "requiredLabel",
-          "Entry reference requires an authored label",
-        ),
-      );
-    } else {
-      for (const [index, child] of node["children"].entries()) {
-        issues.push(...validateTextChild(child, [...path, "children", index]));
-      }
-    }
-    return issues;
-  },
-  validateInline = (
-    node: unknown,
-    path: readonly (string | number)[],
-  ): readonly ValidationIssue[] => {
-    if (!isObject(node) || typeof node["type"] !== "string") {
-      return [makeIssue(path, "invalidNode", "Expected a Rich Text inline node")];
-    }
-    switch (node["type"]) {
-      case "text": {
-        return validateText(node, path);
-      }
-      case "link": {
-        return validateLink(node, path);
-      }
-      case "entry-reference": {
-        return validateEntryReference(node, path);
-      }
-      default: {
-        return [makeIssue(path, "invalidInlineNode", `Node ${node["type"]} is not allowed inline`)];
-      }
-    }
-  },
-  validateTextChild = (
-    node: unknown,
-    path: readonly (string | number)[],
-  ): readonly ValidationIssue[] => {
-    if (!isObject(node) || node["type"] !== "text") {
-      return [
-        makeIssue(
-          path,
-          "expectedTextLeaf",
-          "Links and Entry references can contain only text leaves",
-        ),
-      ];
-    }
-    return validateText(node, path);
-  },
-  validateInlineChildren = (
-    children: unknown[],
-    path: readonly (string | number)[],
-  ): readonly ValidationIssue[] =>
-    children.flatMap((child, index) => validateInline(child, [...path, index])),
-  validateTextChildren = (
-    children: unknown[],
-    path: readonly (string | number)[],
-  ): readonly ValidationIssue[] =>
-    children.flatMap((child, index) => validateTextChild(child, [...path, index])),
-  validateAssetReference = (
-    node: Readonly<Record<string, unknown>>,
-    path: readonly (string | number)[],
-  ): readonly ValidationIssue[] => {
-    const issues: ValidationIssue[] = [];
-    if (typeof node["assetId"] !== "string" || node["assetId"].length === emptyLength) {
-      issues.push(
-        makeIssue([...path, "assetId"], "expectedAssetId", "Asset reference requires an Asset ID"),
-      );
-    }
-    if (typeof node["alternativeText"] !== "string") {
-      issues.push(
-        makeIssue(
-          [...path, "alternativeText"],
-          "expectedAlternativeText",
-          "Asset reference requires authored alternative text",
-        ),
-      );
-    }
-    if (node["caption"] !== undefined && typeof node["caption"] !== "string") {
-      issues.push(makeIssue([...path, "caption"], "expectedCaption", "Caption must be text"));
-    }
-    if (!Array.isArray(node["children"]) || node["children"].length > emptyLength) {
-      issues.push(
-        makeIssue(
-          [...path, "children"],
-          "assetReferenceIsAtomic",
-          "Asset reference cannot contain children",
-        ),
-      );
-    }
-    return issues;
-  },
-  validateBlock = (
-    node: unknown,
-    path: readonly (string | number)[],
-    extensions: ReadonlyMap<string, Extension>,
-  ): readonly ValidationIssue[] => {
-    if (!isObject(node) || typeof node["type"] !== "string") {
-      return [makeIssue(path, "invalidNode", "Expected a Rich Text block node")];
-    }
-    const issues: ValidationIssue[] = [];
-    switch (node["type"]) {
-      case "paragraph":
-      case "heading": {
-        if (
-          node["type"] === "heading" &&
-          !headingLevels.some((level) => level === Number(node["level"]))
-        ) {
-          issues.push(
-            makeIssue(
-              [...path, "level"],
-              "invalidHeadingLevel",
-              "Heading level must be 2, 3, or 4",
-            ),
-          );
-        }
-        if (Array.isArray(node["children"])) {
-          issues.push(...validateInlineChildren(node["children"], [...path, "children"]));
-        } else {
-          issues.push(
-            makeIssue([...path, "children"], "expectedChildren", "Block requires inline children"),
-          );
-        }
-        return issues;
-      }
-      case "quote": {
-        if (!Array.isArray(node["children"]) || node["children"].length === emptyLength) {
-          return [
-            makeIssue(
-              [...path, "children"],
-              "expectedParagraph",
-              "Quote requires paragraph children",
-            ),
-          ];
-        }
-        for (const [index, child] of node["children"].entries()) {
-          if (!isObject(child) || child["type"] !== "paragraph") {
-            issues.push(
-              makeIssue(
-                [...path, "children", index],
-                "expectedParagraph",
-                "Quote children must be paragraphs",
-              ),
-            );
-          } else {
-            issues.push(...validateBlock(child, [...path, "children", index], extensions));
-          }
-        }
-        return issues;
-      }
-      case "code-block": {
-        if (!Array.isArray(node["children"])) {
-          return [
-            makeIssue([...path, "children"], "expectedTextLeaf", "Code block requires text leaves"),
-          ];
-        }
-        issues.push(...validateTextChildren(node["children"], [...path, "children"]));
-        return issues;
-      }
-      case "ordered-list":
-      case "unordered-list": {
-        if (!Array.isArray(node["children"]) || node["children"].length === emptyLength) {
-          return [makeIssue([...path, "children"], "expectedListItem", "List requires List items")];
-        }
-        for (const [index, child] of node["children"].entries()) {
-          const childPath = [...path, "children", index];
-          if (
-            !isObject(child) ||
-            child["type"] !== "list-item" ||
-            !Array.isArray(child["children"])
-          ) {
-            issues.push(
-              makeIssue(childPath, "expectedListItem", "List children must be List items"),
-            );
-          } else {
-            for (const [listChildIndex, listChild] of child["children"].entries()) {
-              issues.push(
-                ...validateBlock(listChild, [...childPath, "children", listChildIndex], extensions),
-              );
-            }
-          }
-        }
-        return issues;
-      }
-      case "asset-reference": {
-        return validateAssetReference(node, path);
-      }
-      default: {
-        if (coreNodeTypes.has(node["type"])) {
-          return [
-            makeIssue(path, "invalidBlockNode", `Node ${node["type"]} is not allowed as a block`),
-          ];
-        }
-        const { version } = node;
-        let extension: Extension | undefined;
-        if (typeof version === "number") {
-          extension = extensions.get(`${node["type"]}@${version}`);
-        }
-        if (extension === undefined) {
-          return [
-            makeIssue(
-              path,
-              "unsupportedExtension",
-              `Unsupported Rich Text extension ${node["type"]}@${String(version)}`,
-            ),
-          ];
-        }
-        if (isJsonValue(node["configuration"])) {
-          issues.push(
-            ...extension.validateConfiguration(node["configuration"]).map((extensionIssue) =>
-              Object.assign(extensionIssue, {
-                path: [...path, "configuration", ...extensionIssue.path],
-              }),
-            ),
-          );
-        } else {
-          issues.push(
-            makeIssue(
-              [...path, "configuration"],
-              "expectedJsonValue",
-              "Extension configuration must be JSON-compatible",
-            ),
-          );
-        }
-        if (!Array.isArray(node["children"])) {
-          issues.push(
-            makeIssue(
-              [...path, "children"],
-              "expectedChildren",
-              "Extension requires a children array",
-            ),
-          );
-        } else if (extension.allowedChildren === "none" && node["children"].length > emptyLength) {
-          issues.push(
-            makeIssue(
-              [...path, "children"],
-              "childrenNotAllowed",
-              "Extension does not permit children",
-            ),
-          );
-        } else if (extension.allowedChildren === "inline") {
-          for (const [index, child] of node["children"].entries()) {
-            issues.push(...validateInline(child, [...path, "children", index]));
-          }
-        } else if (extension.allowedChildren === "block") {
-          for (const [index, child] of node["children"].entries()) {
-            issues.push(...validateBlock(child, [...path, "children", index], extensions));
-          }
-        }
-        if (isJsonValue(node) && !Array.isArray(node)) {
-          issues.push(
-            ...extension.validateNode(node as unknown as ExtensionNode).map((extensionIssue) =>
-              Object.assign(extensionIssue, {
-                path: [...path, ...extensionIssue.path],
-              }),
-            ),
-          );
-        }
-        return issues;
-      }
-    }
-  };
-
-/** Validates and normalizes a Rich Text value, rejecting unsupported content visibly. */
-// oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- dual's generic overload is not inferred by the linter for this public helper.
-export const validate = dual(
-  (arguments_) => arguments_.length === 2 || isObject(arguments_[0]),
-  (value: unknown, options: ValidationOptions = {}): Document => {
-    if (
-      !isObject(value) ||
-      value["format"] !== format ||
-      value["version"] !== formatVersion ||
-      !Array.isArray(value["children"])
-    ) {
-      throw InvalidInput.make({ message: `Rich Text must use ${format} version ${formatVersion}` });
-    }
-    const extensions = new Map(
-        (options.extensions ?? []).map((extension) => [
-          `${extension.identifier}@${extension.version}`,
-          extension,
-        ]),
-      ),
-      issues = value["children"].flatMap((child, index) =>
-        validateBlock(child, ["children", index], extensions),
-      );
-    if (issues.length > emptyLength) {
-      throw InvalidInput.make({
-        issues,
-        message: issues.at(emptyLength)?.message ?? "Invalid Rich Text",
-      });
-    }
-    return structuredClone(value) as unknown as Document;
-  },
-);
-
-/** Validates a typed Rich Text document and returns its JSON-compatible persisted form. */
-/** Validates and converts a Rich Text document to a JSON-compatible persisted value. */
-// oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- dual's generic overload is not inferred by the linter for this public helper.
-export const toJson = dual(
-  (arguments_) => arguments_.length === 2 || isObject(arguments_[0]),
-  (document: Document, options: ValidationOptions = {}): JsonObject =>
-    validate(document, options) as unknown as JsonObject,
-);
-
 /** All distinct live Entry and Asset identifiers reachable from a document. */
 export interface References {
   readonly entryIds: readonly string[];
   readonly assetIds: readonly string[];
 }
 
-/** Collects live references in linear time over the Rich Text tree. */
-export const references = (document: Document): References => {
-  const assetIds: string[] = [],
-    entryIds: string[] = [],
-    visit = (node: Node): void => {
-      if (node.type === "entry-reference") {
-        entryIds.push(node.entryId);
-      }
-      if (node.type === "asset-reference") {
-        assetIds.push(node.assetId);
-      }
-      if ("children" in node) {
-        for (const child of node.children) {
-          visit(child);
-        }
-      }
-    };
-  for (const child of document.children) {
-    visit(child);
-  }
-  return { assetIds: [...new Set(assetIds)], entryIds: [...new Set(entryIds)] };
-};
-
 /** Content Client callbacks for visibly rendering every supported semantic node. */
 export interface Renderer<Result> {
   readonly text: (node: TextNode) => Result;
   readonly link: (node: LinkNode, children: readonly Result[]) => Result;
   readonly entryReference: (node: EntryReferenceNode, children: readonly Result[]) => Result;
-  readonly block: (node: Exclude<BlockNode, ExtensionNode>, children: readonly Result[]) => Result;
+  readonly block: (
+    node: Exclude<BlockNode, ExtensionNode> | ListItemNode,
+    children: readonly Result[],
+  ) => Result;
   readonly extension: (node: ExtensionNode, children: readonly Result[]) => Result;
 }
 
-/** Renders a validated document through a Content Client-owned Renderer. */
-// oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- dual's generic overload is not inferred by the linter for this public helper.
-export const render = dual(
-  2,
-  <Result>(document: Document, renderer: Renderer<Result>): readonly Result[] => {
-    const renderNode = (node: Node): Result => {
-      if (node.type === "text") {
-        return renderer.text(node);
-      }
-      let children: readonly Result[] = [];
-      if ("children" in node) {
-        children = node.children.map(renderNode);
-      }
-      if (node.type === "link") {
-        return renderer.link(node, children);
-      }
-      if (node.type === "entry-reference") {
-        return renderer.entryReference(node, children);
-      }
-      if (coreNodeTypes.has(node.type)) {
-        return renderer.block(node as Exclude<BlockNode, ExtensionNode>, children);
-      }
-      return renderer.extension(node as ExtensionNode, children);
-    };
-    return document.children.map(renderNode);
-  },
-);
+export { emptyLength, format, formatVersion, headingLevels, references, render, toJson, validate };

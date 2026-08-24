@@ -1,11 +1,19 @@
-import { describe, expect, test } from "bun:test";
-import { Effect, Option } from "effect";
 import { Cms, ContentDefinition } from "../../src/index.ts";
+import { Effect, Option } from "effect";
+import { describe, expect, test } from "bun:test";
 import { DevelopmentCms } from "../../src/testing/index.ts";
 
 const FOURTH_REVISION_NUMBER = 4,
   SECOND_REVISION_NUMBER = 2,
   THIRD_REVISION_NUMBER = 3,
+  run = <Value, Error>(effect: Effect.Effect<Value, Error, Cms.Service>): Promise<Value> => {
+    const layer = DevelopmentCms.layer({ snapshot }),
+      // This test helper is the application entry point for each isolated test run.
+      // The layer must be provided here so every run gets a fresh in-memory CMS.
+      // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer per run.
+      providedEffect = effect.pipe(Effect.provide(layer));
+    return Effect.runPromise(providedEffect);
+  },
   snapshot = ContentDefinition.compile({
     definitionSpaceId: "history-contract",
     definitions: [
@@ -19,32 +27,104 @@ const FOURTH_REVISION_NUMBER = 4,
       },
     ],
     snapshotId: "initial",
-  });
-
-describe("Entry History state machine", () => {
-  const runHistoryScenario = Effect.gen(function* runHistoryScenario() {
+  }),
+  verifyCreatedNote = Effect.gen(function* verifyCreatedNote() {
     const cms = yield* Cms.Service,
       created = yield* cms.createEntry({ contentTypeId: "note", values: { title: "One" } });
     if (!("entry" in created)) {
-      return;
+      return yield* Effect.die("Expected entry on create");
     }
-    const second = yield* cms.updateEntry({
-      contentTypeId: "note",
-      entryId: created.entry.id,
-      values: { title: "Two" },
-      writeToken: created.writeToken,
-    });
-    if (!("entry" in second)) {
-      return;
-    }
-    const third = yield* cms.updateEntry({
-      contentTypeId: "note",
-      entryId: created.entry.id,
-      values: { title: "Three" },
-      writeToken: second.writeToken,
-    });
-    if (!("entry" in third)) {
-      return;
+    return { cms, created };
+  }),
+  verifyDeletionAndRestore = Effect.gen(function* verifyDeletionAndRestore() {
+    const { cms, created, third } = yield* verifyRevisionRetention;
+    return yield* cms
+      .deleteEntry({
+        contentTypeId: "note",
+        entryId: created.entry.id,
+        writeToken: third.writeToken,
+      })
+      .pipe(
+        Effect.flatMap((deletion) => {
+          if (deletion === undefined) {
+            return Effect.die("Expected deletion record");
+          }
+          return Effect.gen(function* verifyDeletionRestoration() {
+            const entryAfterDeletion = yield* Effect.option(
+                cms.getEntry({ contentTypeId: "note", entryId: created.entry.id }),
+              ),
+              restored = yield* cms.restoreEntryRevision({
+                contentTypeId: "note",
+                entryId: created.entry.id,
+                revisionNumber: SECOND_REVISION_NUMBER,
+                writeToken: deletion.writeToken,
+              });
+            expect(deletion.latestRevisionNumber).toBe(THIRD_REVISION_NUMBER);
+            expect(Option.isNone(entryAfterDeletion)).toBeTrue();
+            expect(restored.revisionNumber).toBe(FOURTH_REVISION_NUMBER);
+            expect(restored.entry.values["title"]).toBe("Two");
+            return { cms, created, restored };
+          });
+        }),
+      );
+  }),
+  verifyPermanentPurge = Effect.gen(function* verifyPermanentPurge() {
+    const { cms, created, restored } = yield* verifyDeletionAndRestore;
+    return yield* cms
+      .deleteEntry({
+        contentTypeId: "note",
+        entryId: created.entry.id,
+        writeToken: restored.writeToken,
+      })
+      .pipe(
+        Effect.flatMap((finalDeletion) => {
+          if (finalDeletion === undefined) {
+            return Effect.die("Expected final deletion record");
+          }
+          return cms
+            .permanentlyPurgeEntry({
+              contentTypeId: "note",
+              entryId: created.entry.id,
+              writeToken: finalDeletion.writeToken,
+            })
+            .pipe(
+              Effect.flatMap(() =>
+                Effect.option(
+                  cms.inspectEntryRevision({
+                    contentTypeId: "note",
+                    entryId: created.entry.id,
+                    revisionNumber: FOURTH_REVISION_NUMBER,
+                  }),
+                ),
+              ),
+              Effect.tap((purgedRevision) =>
+                Effect.sync(() => {
+                  expect(Option.isNone(purgedRevision)).toBeTrue();
+                }),
+              ),
+              Effect.asVoid,
+            );
+        }),
+      );
+  }),
+  verifyRevisionRetention = Effect.gen(function* verifyRevisionRetention() {
+    const { cms, created, second } = yield* verifySecondNoteUpdate,
+      revisionThreeUpdate = yield* cms.updateEntry({
+        contentTypeId: "note",
+        entryId: created.entry.id,
+        values: { title: "Three" },
+        writeToken: second.writeToken,
+      }),
+      staleWriteAttempt = yield* Effect.option(
+        cms.updateEntry({
+          contentTypeId: "note",
+          entryId: created.entry.id,
+          values: { title: "Stale" },
+          writeToken: second.writeToken,
+        }),
+      );
+    if (!("entry" in revisionThreeUpdate)) {
+      return yield* Effect.die("Expected entry on third update");
     }
     expect(
       (yield* cms.listEntryRevisions({
@@ -53,67 +133,24 @@ describe("Entry History state machine", () => {
         pageSize: 10,
       })).items.map((revision) => revision.revisionNumber),
     ).toEqual([THIRD_REVISION_NUMBER, SECOND_REVISION_NUMBER]);
-
-    const stale = yield* Effect.option(
-      cms.updateEntry({
+    expect(Option.isNone(staleWriteAttempt)).toBeTrue();
+    return { cms, created, third: revisionThreeUpdate };
+  }),
+  verifySecondNoteUpdate = Effect.gen(function* verifySecondNoteUpdate() {
+    const { cms, created } = yield* verifyCreatedNote,
+      second = yield* cms.updateEntry({
         contentTypeId: "note",
         entryId: created.entry.id,
-        values: { title: "Stale" },
-        writeToken: second.writeToken,
-      }),
-    );
-    expect(Option.isNone(stale)).toBeTrue();
-    const deletion = yield* cms.deleteEntry({
-      contentTypeId: "note",
-      entryId: created.entry.id,
-      writeToken: third.writeToken,
-    });
-    if (deletion === undefined) {
-      return;
+        values: { title: "Two" },
+        writeToken: created.writeToken,
+      });
+    if (!("entry" in second)) {
+      return yield* Effect.die("Expected entry on second update");
     }
-    expect(deletion.latestRevisionNumber).toBe(THIRD_REVISION_NUMBER);
-    expect(
-      Option.isNone(
-        yield* Effect.option(cms.getEntry({ contentTypeId: "note", entryId: created.entry.id })),
-      ),
-    ).toBeTrue();
-
-    const restored = yield* cms.restoreEntryRevision({
-      contentTypeId: "note",
-      entryId: created.entry.id,
-      revisionNumber: SECOND_REVISION_NUMBER,
-      writeToken: deletion.writeToken,
-    });
-    expect(restored.revisionNumber).toBe(FOURTH_REVISION_NUMBER);
-    expect(restored.entry.values["title"]).toBe("Two");
-    const finalDeletion = yield* cms.deleteEntry({
-      contentTypeId: "note",
-      entryId: created.entry.id,
-      writeToken: restored.writeToken,
-    });
-    if (finalDeletion === undefined) {
-      return;
-    }
-    yield* cms.permanentlyPurgeEntry({
-      contentTypeId: "note",
-      entryId: created.entry.id,
-      writeToken: finalDeletion.writeToken,
-    });
-    expect(
-      Option.isNone(
-        yield* Effect.option(
-          cms.inspectEntryRevision({
-            contentTypeId: "note",
-            entryId: created.entry.id,
-            revisionNumber: FOURTH_REVISION_NUMBER,
-          }),
-        ),
-      ),
-    ).toBeTrue();
+    return { cms, created, second };
   });
 
+describe("Entry History state machine", () => {
   test("keeps opaque tokens, retained revisions, deletion records, restoration, and purge coherent", () =>
-    // This test invocation is the application entry point and owns the isolated CMS layer.
-    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer.
-    Effect.runPromise(runHistoryScenario.pipe(Effect.provide(DevelopmentCms.layer({ snapshot })))));
+    run(verifyPermanentPurge));
 });

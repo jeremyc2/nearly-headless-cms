@@ -31,7 +31,13 @@ import { DevelopmentCms } from "nearly-headless-cms/testing";
 import type { Layer } from "effect";
 import { default as packageManifest } from "nearly-headless-cms/package.json" with { type: "json" };
 
-export const publicApiValues = [
+type PublicEntry = Entry.Representation;
+type PublicRevision = EntryHistory.Revision;
+type PublicAction = Operation.Action;
+
+export const asUnknown = (value: unknown): unknown => value,
+  deepService = asUnknown(DeepService),
+  publicApiValues = [
   AllowAllAuthorization,
   AnonymousIdentity,
   Asset,
@@ -56,26 +62,19 @@ export const publicApiValues = [
   Persistence,
   RichText,
   Transport,
-];
-
-type PublicEntry = Entry.Representation;
-type PublicRevision = EntryHistory.Revision;
-type PublicAction = Operation.Action;
-export const publicTypeFixture: readonly [PublicEntry?, PublicRevision?, PublicAction?] = [];
-
-export const serviceLayer: Layer.Layer<Cms.Service> = DevelopmentCms.layer({
-  snapshot: ContentDefinition.compile({
-    definitionSpaceId: "type-fixture",
-    definitions: [
-      {
-        fields: [{ key: "title", kind: { kind: "text" }, label: "Title", required: true }],
-        id: "note",
-        kind: "contentType",
-        name: "Note",
-      },
-    ],
-    snapshotId: "first",
-  }),
-});
-const asUnknown = (value: unknown): unknown => value;
-export const deepService = asUnknown(DeepService);
+],
+  publicTypeFixture: readonly [PublicEntry?, PublicRevision?, PublicAction?] = [],
+  serviceLayer: Layer.Layer<Cms.Service> = DevelopmentCms.layer({
+    snapshot: ContentDefinition.compile({
+      definitionSpaceId: "type-fixture",
+      definitions: [
+        {
+          fields: [{ key: "title", kind: { kind: "text" }, label: "Title", required: true }],
+          id: "note",
+          kind: "contentType",
+          name: "Note",
+        },
+      ],
+      snapshotId: "first",
+    }),
+  });

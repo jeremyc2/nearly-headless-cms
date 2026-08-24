@@ -9,6 +9,35 @@ if (Bun.env["ACCEPTANCE_SERVERS_READY"] === "1") {
   acceptanceTest = test;
 }
 const baselineDirectory = join(import.meta.dir, "baselines"),
+  // oxlint-disable-next-line effecttsgo/async-function -- screenshot and filesystem APIs are Promise-based Bun platform operations.
+  captureAndCheckBaseline = async (
+    view: Bun.WebView,
+    pageName: string,
+    viewport: { readonly height: number; readonly width: number },
+  ): Promise<void> => {
+    const baselinePath = join(
+        baselineDirectory,
+        `${pageName}-${viewport.width}x${viewport.height}.png`,
+      ),
+      screenshotBuffer = await view.screenshot({ encoding: "buffer" }),
+      screenshotBytes = new Uint8Array(screenshotBuffer);
+    if (updateBaselines) {
+      await Bun.write(baselinePath, screenshotBytes);
+      return;
+    }
+    if (!(await Bun.file(baselinePath).exists())) {
+      throw new Error(`Visual baseline is missing: ${baselinePath}`);
+    }
+    await compareToBaseline(screenshotBytes, baselinePath);
+  },
+  // oxlint-disable-next-line effecttsgo/async-function -- baseline bytes are read through Promise-based Bun filesystem APIs.
+  compareToBaseline = async (
+    screenshotBytes: Uint8Array,
+    baselinePath: string,
+  ): Promise<void> => {
+    const baselineBytes = new Uint8Array(await Bun.file(baselinePath).arrayBuffer());
+    expect(digest(screenshotBytes), `Visual mismatch for ${baselinePath}`).toBe(digest(baselineBytes));
+  },
   digest = (bytes: Uint8Array): string => createHash("sha256").update(bytes).digest("hex"),
   pages = [
     {
@@ -53,29 +82,6 @@ const baselineDirectory = join(import.meta.dir, "baselines"),
 afterAll(() => {
   Bun.WebView.closeAll();
 });
-
-// oxlint-disable-next-line effecttsgo/async-function -- screenshot and filesystem APIs are Promise-based Bun platform operations.
-const captureAndCheckBaseline = async (
-  view: Bun.WebView,
-  pageName: string,
-  viewport: { readonly height: number; readonly width: number },
-): Promise<void> => {
-  const baselinePath = join(
-      baselineDirectory,
-      `${pageName}-${viewport.width}x${viewport.height}.png`,
-    ),
-    screenshotBuffer = await view.screenshot({ encoding: "buffer" }),
-    screenshot = new Uint8Array(screenshotBuffer);
-  if (updateBaselines) {
-    await Bun.write(baselinePath, screenshot);
-    return;
-  }
-  if (!(await Bun.file(baselinePath).exists())) {
-    throw new Error(`Visual baseline is missing: ${baselinePath}`);
-  }
-  const baseline = new Uint8Array(await Bun.file(baselinePath).arrayBuffer());
-  expect(digest(screenshot), `Visual mismatch for ${baselinePath}`).toBe(digest(baseline));
-};
 
 describe("responsive visual baselines", () => {
   for (const page of pages) {

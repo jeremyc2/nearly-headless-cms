@@ -1,9 +1,46 @@
-import { describe, expect, test } from "bun:test";
-import { Effect } from "effect";
 import { Cms, ContentDefinition } from "../../src/index.ts";
+import { describe, expect, test } from "bun:test";
 import { DevelopmentCms } from "../../src/testing/index.ts";
+import { Effect } from "effect";
 
-const snapshot = ContentDefinition.compile({
+const createVerifiedAuthor = Effect.gen(function* createVerifiedAuthor() {
+    const author = yield* Cms.Service.pipe(
+        Effect.flatMap((cms) =>
+          cms.createEntry({ contentTypeId: "author", values: { name: "Ada" } }),
+        ),
+      );
+    expect("writeToken" in author).toBeFalse();
+    if ("writeToken" in author) {
+      return yield* Effect.die("Author entry unexpectedly returned a write token");
+    }
+    return author;
+  }),
+  createVerifiedPost = Effect.gen(function* createVerifiedPost() {
+    const author = yield* createVerifiedAuthor,
+      post = yield* Cms.Service.pipe(
+        Effect.flatMap((cms) =>
+          cms.createEntry({
+            contentTypeId: "post",
+            values: { author: author.id, title: "First" },
+          }),
+        ),
+      );
+    expect("writeToken" in post).toBeTrue();
+    if (!("writeToken" in post)) {
+      return yield* Effect.die("Expected write token on post create");
+    }
+    expect(post.entry.values["status"]).toBe("draft");
+    return { author, post };
+  }),
+  run = <Value, Error>(effect: Effect.Effect<Value, Error, Cms.Service>): Promise<Value> => {
+    const layer = DevelopmentCms.layer({ snapshot }),
+      // This test helper is the application entry point for each isolated test run.
+      // The layer must be provided here so every run gets a fresh in-memory CMS.
+      // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer per run.
+      providedEffect = effect.pipe(Effect.provide(layer));
+    return Effect.runPromise(providedEffect);
+  },
+  snapshot = ContentDefinition.compile({
     definitionSpaceId: "example-blog",
     definitions: [
       {
@@ -38,50 +75,33 @@ const snapshot = ContentDefinition.compile({
     ],
     snapshotId: "initial",
   }),
-  run = <Value, Error>(effect: Effect.Effect<Value, Error, Cms.Service>): Promise<Value> =>
-    // This test helper is the application entry point for each isolated test run.
-    // The layer must be provided here so every run gets a fresh in-memory CMS.
-    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer per run.
-    Effect.runPromise(effect.pipe(Effect.provide(DevelopmentCms.layer({ snapshot })))),
-  verifySuccessfulOperations = Effect.gen(function* verifySuccessfulOperations() {
-    const cms = yield* Cms.Service,
-      author = yield* cms.createEntry({ contentTypeId: "author", values: { name: "Ada" } });
-    expect("writeToken" in author).toBeFalse();
-    if ("writeToken" in author) {
-      return;
-    }
-    const post = yield* cms.createEntry({
-      contentTypeId: "post",
-      values: { author: author.id, title: "First" },
-    });
-    expect("writeToken" in post).toBeTrue();
-    if (!("writeToken" in post)) {
-      return;
-    }
-    expect(post.entry.values["status"]).toBe("draft");
-    const updated = yield* cms.updateEntry({
-      contentTypeId: "post",
-      entryId: post.entry.id,
-      values: { author: author.id, status: "published", title: "Published" },
-      writeToken: post.writeToken,
-    });
-    if (!("writeToken" in updated)) {
-      return;
-    }
-    expect(updated.revisionNumber).toBe(2);
-    const revisions = yield* cms.listEntryRevisions({
-      contentTypeId: "post",
-      entryId: post.entry.id,
-      pageSize: 10,
-    });
-    expect(revisions.items.map((revision) => revision.revisionNumber)).toEqual([2, 1]);
-  }),
   verifyFailedRelationship = Effect.gen(function* verifyFailedRelationship() {
     const cms = yield* Cms.Service;
     yield* cms.createEntry({
       contentTypeId: "post",
       values: { author: "missing", title: "Broken" },
     });
+  }),
+  verifySuccessfulOperations = Effect.gen(function* verifySuccessfulOperations() {
+    const { author, post } = yield* createVerifiedPost,
+      cms = yield* Cms.Service,
+      publishedPost = yield* cms.updateEntry({
+        contentTypeId: "post",
+        entryId: post.entry.id,
+        values: { author: author.id, status: "published", title: "Published" },
+        writeToken: post.writeToken,
+      }),
+      revisionListing = yield* cms.listEntryRevisions({
+        contentTypeId: "post",
+        entryId: post.entry.id,
+        pageSize: 10,
+      });
+    if (!("writeToken" in publishedPost)) {
+      return yield* Effect.die("Expected write token on post update");
+    }
+    expect(publishedPost.revisionNumber).toBe(2);
+    expect(revisionListing.items.map((revision) => revision.revisionNumber)).toEqual([2, 1]);
+    return yield* Effect.void;
   });
 
 describe("Cms.Service", () => {

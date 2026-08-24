@@ -1,21 +1,19 @@
-import type { RichText } from "nearly-headless-cms";
 import { type Command, type State, transact } from "./transactions.ts";
+import type { RichText } from "nearly-headless-cms";
 
-const EMPTY_TEXT_OFFSET = 0;
-
-function textLength(text: string | null | undefined): number {
-  if (text === "\u200B") {
-    return EMPTY_TEXT_OFFSET;
-  }
-  return text?.length ?? EMPTY_TEXT_OFFSET;
-}
-
-function listItemSelectorSuffix(listItemIndex: number | undefined): string {
-  if (listItemIndex === undefined) {
-    return "";
-  }
-  return `[data-list-item-index="${listItemIndex}"]`;
-}
+const EMPTY_TEXT_OFFSET = 0,
+  listItemSelectorSuffix = (listItemIndex: number | undefined): string => {
+    if (listItemIndex === undefined) {
+      return "";
+    }
+    return `[data-list-item-index="${listItemIndex}"]`;
+  },
+  textLength = (text: string | null | undefined): number => {
+    if (text === "\u200B") {
+      return EMPTY_TEXT_OFFSET;
+    }
+    return text?.length ?? EMPTY_TEXT_OFFSET;
+  };
 
 export interface BrowserAdapterOptions {
   readonly host: HTMLDivElement;
@@ -163,11 +161,11 @@ export class BrowserAdapter {
         ) {
           element.append(this.#renderBlock(child, blockIndex, listItemIndex));
         } else if (child.type === "link" || child.type === "entry-reference") {
-          let elementName = "span";
+          let inlineElementName = "span";
           if (child.type === "link") {
-            elementName = "a";
+            inlineElementName = "a";
           }
-          const inline = document.createElement(elementName);
+          const inline = document.createElement(inlineElementName);
           inline.dataset["nodeType"] = child.type;
           if (child.type === "link") {
             inline.setAttribute("href", child.url);
@@ -203,7 +201,7 @@ export class BrowserAdapter {
         readonly offset: number;
       }
     | undefined {
-    let element: Element | null | undefined;
+    let element: Element | null | undefined = undefined;
     if (node instanceof Element) {
       element = node;
     } else {
@@ -253,17 +251,15 @@ export class BrowserAdapter {
       focusElement = this.#host.querySelector<HTMLElement>(
         `[data-block-index="${focus.blockIndex}"][data-inline-index="${focus.inlineIndex}"]${listItemSelectorSuffix(focus.listItemIndex)}`,
       ),
-      focusNode = focusElement?.firstChild;
+      focusNode = focusElement?.firstChild,
+      nativeSelection = document.getSelection();
     if (
       anchorNode === undefined ||
       anchorNode === null ||
       focusNode === undefined ||
-      focusNode === null
+      focusNode === null ||
+      nativeSelection === null
     ) {
-      return;
-    }
-    const nativeSelection = document.getSelection();
-    if (nativeSelection === null) {
       return;
     }
     nativeSelection.setBaseAndExtent(

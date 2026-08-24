@@ -754,9 +754,24 @@ const validateCalendarDate = (value: string): boolean => {
   };
 
 /** Compiles and fingerprints a complete snapshot or throws `InvalidInput` atomically. */
-// oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- dual's generic overload is not inferred by the linter for this public helper.
-export const compile = dual(
-  2,
+export const compile: {
+  (options?: CompileOptions): (input: SnapshotInput) => CompiledSnapshot;
+  (input: SnapshotInput, options?: CompileOptions): CompiledSnapshot;
+} = dual(
+  (arguments_) => {
+    if (arguments_.length >= 2) {
+      return true;
+    }
+    const [firstArgument] = arguments_;
+    return (
+      arguments_.length === 1 &&
+      typeof firstArgument === "object" &&
+      firstArgument !== null &&
+      "definitionSpaceId" in firstArgument &&
+      "definitions" in firstArgument &&
+      "snapshotId" in firstArgument
+    );
+  },
   (input: SnapshotInput, options: CompileOptions = {}): CompiledSnapshot => {
     const definitions = new Map<string, Definition>(),
       inputIssues = [

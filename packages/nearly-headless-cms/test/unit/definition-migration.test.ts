@@ -1,8 +1,9 @@
-import { ContentDefinition, DefinitionMigration } from "../../src/index.ts";
+import { type CompiledSnapshot, type JsonObject, compile } from "../../src/content-definition.ts";
 import { describe, expect, test } from "bun:test";
+import { DefinitionMigration } from "../../src/index.ts";
 
 const firstEntryIndex = 0,
-  source = ContentDefinition.compile({
+  source: CompiledSnapshot = compile({
     definitionSpaceId: "example-blog",
     definitions: [
       {
@@ -15,7 +16,7 @@ const firstEntryIndex = 0,
     snapshotId: "source",
   }),
   staleSourceGeneration = 4,
-  target = ContentDefinition.compile({
+  target: CompiledSnapshot = compile({
     definitionSpaceId: "example-blog",
     definitions: [
       {
@@ -42,7 +43,7 @@ describe("DefinitionMigration preparation", () => {
         handlers: [
           {
             identifier: "com.example.rename-title",
-            transform: ({ values }): ContentDefinition.JsonObject => ({
+            transform: ({ values }): JsonObject => ({
               headline: values["title"] ?? "",
             }),
             version: 1,

@@ -463,7 +463,7 @@ const lowerCamelCase = (key: string): string =>
     if (request.method === "HEAD") {
       return null;
     }
-    return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+    return new Uint8Array(bytes).buffer;
   },
   publicOwnerPath = (contentTypeId: "author" | "category" | "tag"): string => {
     if (contentTypeId === "category") {

@@ -2,7 +2,14 @@
 // oxlint-disable-next-line effecttsgo/node-builtin-import
 import path from "node:path";
 
-const repository = path.join(import.meta.dir, ".."),
+const acceptanceServers: {
+    exampleCms: ReturnType<typeof Bun.spawn> | undefined;
+    publicBlog: ReturnType<typeof Bun.spawn> | undefined;
+  } = {
+    exampleCms: undefined,
+    publicBlog: undefined,
+  },
+  repository = path.join(import.meta.dir, ".."),
   // oxlint-disable-next-line effecttsgo/async-function -- CLI command runner awaits process completion.
   run = async (
     command: readonly string[],
@@ -51,16 +58,15 @@ await run(["bun", "run", "test:contract"]);
 await run(["bun", "run", "test:integration"]);
 await run(["bun", "run", "test:filesystem"]);
 
-const exampleCms = Bun.spawn(["bun", "run", "--cwd", "apps/example-cms", "start"], {
+acceptanceServers.exampleCms = Bun.spawn(["bun", "run", "--cwd", "apps/example-cms", "start"], {
   cwd: repository,
   stderr: "inherit",
   stdout: "inherit",
 });
-let publicBlog: ReturnType<typeof Bun.spawn> | undefined;
 try {
   await waitFor("http://localhost:3000/health");
   await run(["bun", "run", "--cwd", "apps/public-blog", "build"]);
-  publicBlog = Bun.spawn(["bun", "run", "--cwd", "apps/public-blog", "start"], {
+  acceptanceServers.publicBlog = Bun.spawn(["bun", "run", "--cwd", "apps/public-blog", "start"], {
     cwd: repository,
     stderr: "inherit",
     stdout: "inherit",
@@ -69,11 +75,11 @@ try {
   await run(["bun", "run", "test:webview"], { ACCEPTANCE_SERVERS_READY: "1" });
   await run(["bun", "run", "test:visual"], { ACCEPTANCE_SERVERS_READY: "1" });
 } finally {
-  publicBlog?.kill();
-  exampleCms.kill();
-  const processes = [exampleCms.exited];
-  if (publicBlog !== undefined) {
-    processes.push(publicBlog.exited);
+  acceptanceServers.publicBlog?.kill();
+  acceptanceServers.exampleCms.kill();
+  const processes = [acceptanceServers.exampleCms.exited];
+  if (acceptanceServers.publicBlog !== undefined) {
+    processes.push(acceptanceServers.publicBlog.exited);
   }
   await Promise.allSettled(processes);
 }

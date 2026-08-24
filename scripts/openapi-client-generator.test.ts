@@ -36,9 +36,7 @@ describe("OpenAPI client generator", () => {
     const first = generateOpenApiClient(document),
       second = generateOpenApiClient(document);
     expect(first).toBe(second);
-    expect(first).toContain(
-      'getGreeting: (input: OperationInputs["getGreeting"], signal?: AbortSignal)',
-    );
+    expect(first).toContain('createOperationMethod(baseAddress, "getGreeting")');
     expect(first).toContain("readonly getGreeting: Greeting;");
     expect(first).toContain("Effect.tryPromise");
   });

@@ -1,16 +1,9 @@
+import { Effect, Schema } from "effect";
 import {
-  type Asset as AssetRepresentation,
-  type Entry as EntryRepresentation,
   type MutationResult,
   type OperationResponses,
-  type EntryPage as QueryPage,
   makeGeneratedClient,
 } from "./management-openapi-client.ts";
-import { Effect, Schema } from "effect";
-
-const makeTaggedErrorClass = Schema.TaggedError;
-
-export const generatorFormatVersion = 1;
 
 export type {
   Asset as AssetRepresentation,
@@ -39,45 +32,6 @@ export interface RunEditorialCommandInput {
   readonly writeToken: string;
 }
 
-export class ManagementClientFailure extends makeTaggedErrorClass<ManagementClientFailure>()(
-  "ManagementClientFailure",
-  {
-    code: Schema.optional(Schema.String),
-    details: Schema.optional(Schema.Json),
-    message: Schema.String,
-    status: Schema.Finite,
-  },
-) {}
-
-const definitionSpaceId = "example-blog",
-  unknownStatus = 0,
-  mapFailure = <Value, Failure extends { readonly message: string }>(
-    operation: Effect.Effect<Value, Failure>,
-  ): Effect.Effect<Value, ManagementClientFailure> =>
-    operation.pipe(
-      Effect.mapError((failure) => {
-        const failureProperties: {
-          readonly code?: string;
-          readonly details?: unknown;
-          readonly message: string;
-          readonly status: number;
-        } = {
-          message: failure.message,
-          status: unknownStatus,
-        };
-        if (typeof failure === "object" && failure !== null && "code" in failure) {
-          Object.assign(failureProperties, { code: String(failure.code) });
-        }
-        if (typeof failure === "object" && failure !== null && "details" in failure) {
-          Object.assign(failureProperties, { details: failure.details });
-        }
-        if (typeof failure === "object" && failure !== null && "status" in failure) {
-          Object.assign(failureProperties, { status: Number(failure.status) });
-        }
-        return ManagementClientFailure.make(failureProperties);
-      }),
-    );
-
 type ContentDeletionResponse =
   | OperationResponses["deleteAuthorWithPostsAndComments"]
   | OperationResponses["deleteEntry"]
@@ -85,74 +39,97 @@ type ContentDeletionResponse =
   | OperationResponses["detachAndDeleteCategory"]
   | OperationResponses["detachAndDeleteTag"];
 
-export const makeManagementClient = (baseAddress = "") => {
-  const generatedClient = makeGeneratedClient(baseAddress);
-  function pathFor(contentTypeId: string): {
+type GeneratedClient = ReturnType<typeof makeGeneratedClient>;
+
+interface PathFor {
+  (contentTypeId: string): {
     readonly contentTypeId: string;
     readonly definitionSpaceId: string;
   };
-  function pathFor(
-    contentTypeId: string,
-    entryId: string,
-  ): {
+  (contentTypeId: string, entryId: string): {
     readonly contentTypeId: string;
     readonly definitionSpaceId: string;
     readonly entryId: string;
   };
-  function pathFor(contentTypeId: string, entryId?: string) {
-    const path = { contentTypeId, definitionSpaceId } as {
-      contentTypeId: string;
-      definitionSpaceId: string;
-      entryId?: string;
+}
+
+const buildAssetFormData = (file: File): FormData => {
+    const formData = new FormData();
+    formData.set(
+      "metadata",
+      JSON.stringify({ filename: file.name, mediaType: file.type || "application/octet-stream" }),
+    );
+    formData.set("content", file);
+    return formData;
+  },
+  createPathFor = (): PathFor => {
+    function pathFor(contentTypeId: string): {
+      readonly contentTypeId: string;
+      readonly definitionSpaceId: string;
     };
-    if (entryId !== undefined) {
-      path.entryId = entryId;
-    }
-    return path;
-  }
-  return {
-    createEntry: (
+    function pathFor(
       contentTypeId: string,
-      values: Readonly<Record<string, unknown>>,
-    ): Effect.Effect<MutationResult, ManagementClientFailure> =>
-      mapFailure(
-        generatedClient.createEntry({
-          body: { values },
-          path: pathFor(contentTypeId),
-        }),
-      ),
-    deleteContentEntry: (
-      contentTypeId: "post" | "author" | "category" | "tag" | "comment",
       entryId: string,
-      writeToken: string,
-    ): Effect.Effect<ContentDeletionResponse, ManagementClientFailure> => {
-      const commandInput = {
-        headers: { "cms-write-token": writeToken },
-        path: { definitionSpaceId, entryId },
+    ): {
+      readonly contentTypeId: string;
+      readonly definitionSpaceId: string;
+      readonly entryId: string;
+    };
+    function pathFor(contentTypeId: string, entryId?: string) {
+      const path = { contentTypeId, definitionSpaceId } as {
+        contentTypeId: string;
+        definitionSpaceId: string;
+        entryId?: string;
       };
-      switch (contentTypeId) {
-        case "post": {
-          return mapFailure(generatedClient.deletePostWithComments(commandInput));
-        }
-        case "author": {
-          return mapFailure(generatedClient.deleteAuthorWithPostsAndComments(commandInput));
-        }
-        case "category": {
-          return mapFailure(generatedClient.detachAndDeleteCategory(commandInput));
-        }
-        case "tag": {
-          return mapFailure(generatedClient.detachAndDeleteTag(commandInput));
-        }
-        case "comment": {
-          return mapFailure(
-            generatedClient.deleteEntry({
-              headers: { "CMS-Write-Token": writeToken },
-              path: pathFor(contentTypeId, entryId),
-            }),
-          );
-        }
+      if (entryId !== undefined) {
+        path.entryId = entryId;
       }
+      return path;
+    }
+    return pathFor;
+  },
+  definitionSpaceId = "example-blog",
+  deleteContentEntryFor = (
+    generatedClient: GeneratedClient,
+    pathFor: PathFor,
+    input: {
+      readonly contentTypeId: "post" | "author" | "category" | "tag" | "comment";
+      readonly entryId: string;
+      readonly writeToken: string;
     },
+  ): Effect.Effect<ContentDeletionResponse, ManagementClientFailure> => {
+    const commandInput = {
+      headers: { "cms-write-token": input.writeToken },
+      path: { definitionSpaceId, entryId: input.entryId },
+    };
+    switch (input.contentTypeId) {
+      case "post": {
+        return mapFailure(generatedClient.deletePostWithComments(commandInput));
+      }
+      case "author": {
+        return mapFailure(generatedClient.deleteAuthorWithPostsAndComments(commandInput));
+      }
+      case "category": {
+        return mapFailure(generatedClient.detachAndDeleteCategory(commandInput));
+      }
+      case "tag": {
+        return mapFailure(generatedClient.detachAndDeleteTag(commandInput));
+      }
+      case "comment": {
+        return mapFailure(
+          generatedClient.deleteEntry({
+            headers: { "CMS-Write-Token": input.writeToken },
+            path: pathFor(input.contentTypeId, input.entryId),
+          }),
+        );
+      }
+      default: {
+        input.contentTypeId satisfies never;
+        return Effect.die("Unexpected content type");
+      }
+    }
+  },
+  makeAssetMethods = (generatedClient: GeneratedClient) => ({
     deleteImageAndClearAssignments: (assetId: string, idempotencyKey: string) =>
       mapFailure(
         generatedClient.deleteImageAndClearAssignments({
@@ -160,118 +137,27 @@ export const makeManagementClient = (baseAddress = "") => {
           path: { assetId, definitionSpaceId },
         }),
       ),
-    getCurrentState: (
-      contentTypeId: string,
-      entryId: string,
-    ): Effect.Effect<OperationResponses["getCurrentEntryState"], ManagementClientFailure> =>
-      mapFailure(generatedClient.getCurrentEntryState({ path: pathFor(contentTypeId, entryId) })),
-    getEntry: (
-      contentTypeId: string,
-      entryId: string,
-    ): Effect.Effect<EntryRepresentation, ManagementClientFailure> =>
-      mapFailure(generatedClient.getEntry({ path: pathFor(contentTypeId, entryId) })),
-    inspectRevision: (
-      contentTypeId: string,
-      entryId: string,
-      revisionNumber: number,
-    ): Effect.Effect<OperationResponses["inspectEntryRevision"], ManagementClientFailure> =>
+    listAssets: () => mapFailure(generatedClient.listExampleAssets({ path: { definitionSpaceId } })),
+    replaceImage: (assetId: string, file: File, idempotencyKey: string) =>
       mapFailure(
-        generatedClient.inspectEntryRevision({
-          path: { ...pathFor(contentTypeId, entryId), revisionNumber },
-        }),
-      ),
-    listAssets: (): Effect.Effect<readonly AssetRepresentation[], ManagementClientFailure> =>
-      mapFailure(generatedClient.listExampleAssets({ path: { definitionSpaceId } })),
-    listRevisions: (
-      contentTypeId: string,
-      entryId: string,
-    ): Effect.Effect<OperationResponses["listEntryRevisions"], ManagementClientFailure> =>
-      mapFailure(
-        generatedClient.listEntryRevisions({
-          path: pathFor(contentTypeId, entryId),
-          query: { pageSize: 20 },
-        }),
-      ),
-    permanentlyPurgeEntry: (
-      contentTypeId: string,
-      entryId: string,
-      writeToken: string,
-    ): Effect.Effect<undefined, ManagementClientFailure> =>
-      mapFailure(
-        generatedClient.permanentlyPurgeEntry({
-          body: { writeToken },
-          path: pathFor(contentTypeId, entryId),
-        }),
-      ),
-    queryEntries: (
-      contentTypeId: string,
-      query: Readonly<Record<string, unknown>>,
-    ): Effect.Effect<QueryPage, ManagementClientFailure> =>
-      mapFailure(
-        generatedClient.queryEntries({
-          body: query,
-          path: pathFor(contentTypeId),
-        }),
-      ),
-    replaceEntry: ({
-      contentTypeId,
-      entryId,
-      values,
-      writeToken,
-    }: ReplaceEntryInput): Effect.Effect<MutationResult, ManagementClientFailure> =>
-      mapFailure(
-        generatedClient.replaceEntry({
-          body: { values },
-          headers: { "CMS-Write-Token": writeToken ?? "" },
-          path: pathFor(contentTypeId, entryId),
-        }),
-      ),
-    replaceImage: (
-      assetId: string,
-      file: File,
-      idempotencyKey: string,
-    ): Effect.Effect<OperationResponses["replaceImage"], ManagementClientFailure> => {
-      const formData = new FormData();
-      formData.set(
-        "metadata",
-        JSON.stringify({
-          filename: file.name,
-          mediaType: file.type || "application/octet-stream",
-        }),
-      );
-      formData.set("content", file);
-      return mapFailure(
         generatedClient.replaceImage({
-          body: formData,
+          body: buildAssetFormData(file),
           headers: { "idempotency-key": idempotencyKey },
           path: { assetId, definitionSpaceId },
         }),
-      );
-    },
-    restoreRevision: ({
-      contentTypeId,
-      entryId,
-      revisionNumber,
-      writeToken,
-    }: RestoreRevisionInput): Effect.Effect<
-      OperationResponses["restoreEntryRevision"],
-      ManagementClientFailure
-    > =>
-      mapFailure(
-        generatedClient.restoreEntryRevision({
-          body: { revisionNumber, writeToken },
-          path: pathFor(contentTypeId, entryId),
-        }),
       ),
+    uploadAsset: (file: File) =>
+      mapFailure(
+        generatedClient.ingestAsset({ body: buildAssetFormData(file), path: { definitionSpaceId } }),
+      ),
+  }),
+  makeEditorialMethods = (generatedClient: GeneratedClient) => ({
     runEditorialCommand: ({
       contentTypeId,
       entryId,
       status,
       writeToken,
-    }: RunEditorialCommandInput): Effect.Effect<
-      OperationResponses["publishPost"],
-      ManagementClientFailure
-    > => {
+    }: RunEditorialCommandInput) => {
       const input = {
         headers: { "cms-write-token": writeToken },
         path: { definitionSpaceId, entryId },
@@ -287,22 +173,114 @@ export const makeManagementClient = (baseAddress = "") => {
       }
       return mapFailure(generatedClient.rejectComment(input));
     },
-    uploadAsset: (file: File): Effect.Effect<AssetRepresentation, ManagementClientFailure> => {
-      const formData = new FormData();
-      formData.set(
-        "metadata",
-        JSON.stringify({
-          filename: file.name,
-          mediaType: file.type || "application/octet-stream",
+  }),
+  makeEntryMutationMethods = (generatedClient: GeneratedClient, pathFor: PathFor) => ({
+    createEntry: (contentTypeId: string, values: Readonly<Record<string, unknown>>) =>
+      mapFailure(generatedClient.createEntry({ body: { values }, path: pathFor(contentTypeId) })),
+    deleteContentEntry: (
+      contentTypeId: "post" | "author" | "category" | "tag" | "comment",
+      entryId: string,
+      writeToken: string,
+    ) => deleteContentEntryFor(generatedClient, pathFor, { contentTypeId, entryId, writeToken }),
+    permanentlyPurgeEntry: (contentTypeId: string, entryId: string, writeToken: string) =>
+      mapFailure(
+        generatedClient.permanentlyPurgeEntry({
+          body: { writeToken },
+          path: pathFor(contentTypeId, entryId),
         }),
-      );
-      formData.set("content", file);
-      return mapFailure(
-        generatedClient.ingestAsset({
-          body: formData,
-          path: { definitionSpaceId },
+      ),
+    replaceEntry: ({
+      contentTypeId,
+      entryId,
+      values,
+      writeToken,
+    }: ReplaceEntryInput): Effect.Effect<MutationResult, ManagementClientFailure> =>
+      mapFailure(
+        generatedClient.replaceEntry({
+          body: { values },
+          headers: { "CMS-Write-Token": writeToken ?? "" },
+          path: pathFor(contentTypeId, entryId),
         }),
-      );
-    },
-  };
-};
+      ),
+    restoreRevision: ({
+      contentTypeId,
+      entryId,
+      revisionNumber,
+      writeToken,
+    }: RestoreRevisionInput) =>
+      mapFailure(
+        generatedClient.restoreEntryRevision({
+          body: { revisionNumber, writeToken },
+          path: pathFor(contentTypeId, entryId),
+        }),
+      ),
+  }),
+  makeEntryQueryMethods = (generatedClient: GeneratedClient, pathFor: PathFor) => ({
+    getCurrentState: (contentTypeId: string, entryId: string) =>
+      mapFailure(generatedClient.getCurrentEntryState({ path: pathFor(contentTypeId, entryId) })),
+    getEntry: (contentTypeId: string, entryId: string) =>
+      mapFailure(generatedClient.getEntry({ path: pathFor(contentTypeId, entryId) })),
+    inspectRevision: (contentTypeId: string, entryId: string, revisionNumber: number) =>
+      mapFailure(
+        generatedClient.inspectEntryRevision({
+          path: { ...pathFor(contentTypeId, entryId), revisionNumber },
+        }),
+      ),
+    listRevisions: (contentTypeId: string, entryId: string) =>
+      mapFailure(
+        generatedClient.listEntryRevisions({
+          path: pathFor(contentTypeId, entryId),
+          query: { pageSize: 20 },
+        }),
+      ),
+    queryEntries: (contentTypeId: string, query: Readonly<Record<string, unknown>>) =>
+      mapFailure(generatedClient.queryEntries({ body: query, path: pathFor(contentTypeId) })),
+  }),
+  makeManagementClient = (baseAddress = "") => {
+    const generatedClient = makeGeneratedClient(baseAddress),
+      pathFor = createPathFor();
+    return {
+      ...makeEntryQueryMethods(generatedClient, pathFor),
+      ...makeEntryMutationMethods(generatedClient, pathFor),
+      ...makeAssetMethods(generatedClient),
+      ...makeEditorialMethods(generatedClient),
+    };
+  },
+  makeTaggedErrorClass = Schema.TaggedError,
+  mapFailure = <Value, Failure extends { readonly message: string }>(
+    operation: Effect.Effect<Value, Failure>,
+  ): Effect.Effect<Value, ManagementClientFailure> =>
+    operation.pipe(
+      Effect.mapError((failure) => {
+        const failureProperties: {
+          readonly code?: string;
+          readonly details?: unknown;
+          readonly message: string;
+          readonly status: number;
+        } = { message: failure.message, status: unknownStatus };
+        if (typeof failure === "object" && failure !== null && "code" in failure) {
+          Object.assign(failureProperties, { code: String(failure.code) });
+        }
+        if (typeof failure === "object" && failure !== null && "details" in failure) {
+          Object.assign(failureProperties, { details: failure.details });
+        }
+        if (typeof failure === "object" && failure !== null && "status" in failure) {
+          Object.assign(failureProperties, { status: Number(failure.status) });
+        }
+        return ManagementClientFailure.make(failureProperties);
+      }),
+    ),
+  generatorFormatVersion = 1,
+  unknownStatus = 0;
+
+export class ManagementClientFailure extends makeTaggedErrorClass<ManagementClientFailure>()(
+  "ManagementClientFailure",
+  {
+    code: Schema.optional(Schema.String),
+    details: Schema.optional(Schema.Json),
+    message: Schema.String,
+    status: Schema.Finite,
+  },
+) {}
+
+export { generatorFormatVersion, makeManagementClient };
