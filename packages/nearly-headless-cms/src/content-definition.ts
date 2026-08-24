@@ -12,7 +12,13 @@ import {
 export type { JsonObject, JsonValue } from "./internal/json.ts";
 
 const calendarDatePattern = /^\d{4}-\d{2}-\d{2}$/u,
+  calendarMonthOffset = 1,
   customIdentifierPattern = /^(?:[a-z][a-z0-9-]*\.)+[a-z][a-z0-9-]*$/u,
+  defaultCalendarDay = 1,
+  defaultCalendarMonth = 1,
+  defaultCalendarYear = 0,
+  defaultCompilerFormatVersion = 1,
+  emptyLength = 0,
   emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u,
   identifierPattern = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/u,
   utcDatetimePattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/u;
@@ -319,10 +325,16 @@ const validateCalendarDate = (value: string): boolean => {
       return false;
     }
     const [year, month, day] = value.split("-").map(Number),
-      date = new Date(Date.UTC(year ?? 0, (month ?? 1) - 1, day ?? 1));
+      date = new Date(
+        Date.UTC(
+          year ?? defaultCalendarYear,
+          (month ?? defaultCalendarMonth) - calendarMonthOffset,
+          day ?? defaultCalendarDay,
+        ),
+      );
     return (
       date.getUTCFullYear() === year &&
-      date.getUTCMonth() + 1 === month &&
+      date.getUTCMonth() + calendarMonthOffset === month &&
       date.getUTCDate() === day
     );
   },
@@ -428,12 +440,12 @@ const validateCalendarDate = (value: string): boolean => {
           : [issue(path, "expectedJsonValue", "Expected a JSON-compatible value")];
       }
       case "asset": {
-        return typeof value === "string" && value.length > 0
+        return typeof value === "string" && value.length > emptyLength
           ? []
           : [issue(path, "expectedAssetId", "Expected an Asset ID")];
       }
       case "relationship": {
-        return typeof value === "string" && value.length > 0
+        return typeof value === "string" && value.length > emptyLength
           ? []
           : [issue(path, "expectedEntryId", "Expected an Entry ID")];
       }
@@ -511,7 +523,7 @@ const validateCalendarDate = (value: string): boolean => {
     customRegistrations: ReadonlyMap<string, CustomFieldRegistration>,
   ): readonly ValidationIssue[] => {
     const issues = [...validateIdentifier(field.key, [...path, "key"])];
-    if (field.label.trim().length === 0) {
+    if (field.label.trim().length === emptyLength) {
       issues.push(issue([...path, "label"], "requiredLabel", "Field label cannot be empty"));
     }
     if (field.required && field.defaultValue === null && !field.nullable) {
@@ -537,7 +549,7 @@ const validateCalendarDate = (value: string): boolean => {
     }
     if (
       field.kind.kind === "enum" &&
-      (field.kind.values.length === 0 ||
+      (field.kind.values.length === emptyLength ||
         new Set(field.kind.values).size !== field.kind.values.length)
     ) {
       issues.push(
@@ -548,7 +560,10 @@ const validateCalendarDate = (value: string): boolean => {
         ),
       );
     }
-    if (field.kind.kind === "relationship" && field.kind.targetContentTypeIds.length === 0) {
+    if (
+      field.kind.kind === "relationship" &&
+      field.kind.targetContentTypeIds.length === emptyLength
+    ) {
       issues.push(
         issue(
           [...path, "kind", "targetContentTypeIds"],
@@ -628,7 +643,7 @@ const validateCalendarDate = (value: string): boolean => {
         ["definitions", definition.id, "fields", fieldIndex],
         customRegistrations,
       );
-      if (fieldIssues.length > 0) {
+      if (fieldIssues.length > emptyLength) {
         fail("Invalid Field definition", fieldIssues);
       }
       if (field.kind.kind === "list" && field.kind.element.kind === "fieldGroup") {
@@ -727,7 +742,7 @@ export const compile = (input: SnapshotInput, options: CompileOptions = {}): Com
     }
     definitions.set(definition.id, definition);
   }
-  if (inputIssues.length > 0) {
+  if (inputIssues.length > emptyLength) {
     fail("Invalid Definition Snapshot", inputIssues);
   }
   const customRegistrations = new Map(
@@ -787,7 +802,7 @@ export const compile = (input: SnapshotInput, options: CompileOptions = {}): Com
       "fields",
     ]);
   }
-  const compilerFormatVersion = input.compilerFormatVersion ?? 1,
+  const compilerFormatVersion = input.compilerFormatVersion ?? defaultCompilerFormatVersion,
     snapshotFingerprint = fingerprint(input),
     validateFields = ({
       fields,
@@ -947,7 +962,7 @@ export const compile = (input: SnapshotInput, options: CompileOptions = {}): Com
         validateOptions,
         values,
       });
-      if (validated.issues.length > 0) {
+      if (validated.issues.length > emptyLength) {
         fail("Entry validation failed", validated.issues);
       }
       return validated.result;

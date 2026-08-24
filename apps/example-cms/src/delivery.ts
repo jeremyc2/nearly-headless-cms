@@ -63,6 +63,23 @@ interface PublicAssetResponseInput {
   readonly requestId: string;
 }
 
+const DEFAULT_PAGE_SIZE = 20;
+const MAX_QUERY_PAGE_SIZE = 100;
+const FIRST_INDEX = 0;
+const ONE_ITEM = 1;
+const MAX_PUBLIC_EXPORT_BYTES = 5_000_000;
+
+const requiredParameter = (
+  parameters: Readonly<Record<string, string | undefined>>,
+  name: string,
+): string => {
+  const value = parameters[name];
+  if (value === undefined) {
+    throw new Error(`Missing required parameter: ${name}`);
+  }
+  return value;
+};
+
 export const postDefinitionRequirement = {
     contentTypeId: "post",
     fields: [
@@ -146,7 +163,13 @@ const lowerCamelCase = (key: string): string =>
       const entries: Cms.ConsistentReadSnapshot["entries"][number][] = [];
       let cursor: string | undefined;
       do {
-        const page = yield* cms.queryEntries({ contentTypeId, cursor, pageSize: 100, sort, where });
+        const page = yield* cms.queryEntries({
+          contentTypeId,
+          cursor,
+          pageSize: MAX_QUERY_PAGE_SIZE,
+          sort,
+          where,
+        });
         entries.push(...page.items);
         cursor = page.nextCursor;
       } while (cursor !== undefined);
@@ -154,7 +177,7 @@ const lowerCamelCase = (key: string): string =>
     }),
   queryPage = ({ cms, contentTypeId, request, sort, where }: QueryPageInput) => {
     const requestUrl = new URL(request.url),
-      pageSize = Number(requestUrl.searchParams.get("pageSize") ?? "20"),
+      pageSize = Number(requestUrl.searchParams.get("pageSize") ?? String(DEFAULT_PAGE_SIZE)),
       cursor = requestUrl.searchParams.get("cursor") ?? undefined;
     return cms.queryEntries({ contentTypeId, cursor, pageSize, sort, where }).pipe(
       Effect.map((page) => ({
@@ -198,9 +221,9 @@ const lowerCamelCase = (key: string): string =>
         : { operator: "equals", path: "slug", value: slug },
     }).pipe(
       Effect.flatMap((entries) =>
-        entries[0] === undefined
+        entries[FIRST_INDEX] === undefined
           ? Effect.fail(CmsError.NotFound.make({ message: `${contentTypeId} was not found` }))
-          : Effect.succeed(publicValue(entries[0])),
+          : Effect.succeed(publicValue(entries[FIRST_INDEX])),
       ),
     ),
   collectRichTextAssetIds = (value: unknown, assetIds: Set<string>): void => {
@@ -436,7 +459,7 @@ const lowerCamelCase = (key: string): string =>
       request.headers.get("if-range") !== null &&
       request.headers.get("if-range") !== etag
     ) {
-      return new Response(request.method === "HEAD" ? null : [...asset.bytes].buffer, {
+      return new Response(request.method === "HEAD" ? null : new Uint8Array(asset.bytes), {
         headers,
         status: 200,
       });
@@ -450,18 +473,18 @@ const lowerCamelCase = (key: string): string =>
       }
       const start =
           match[1] === ""
-            ? Math.max(0, asset.bytes.byteLength - Number(match[2]))
+            ? Math.max(FIRST_INDEX, asset.bytes.byteLength - Number(match[2]))
             : Number(match[1]),
         end =
           match[1] === ""
-            ? asset.bytes.byteLength - 1
+            ? asset.bytes.byteLength - ONE_ITEM
             : (match[2] === ""
-              ? asset.bytes.byteLength - 1
+              ? asset.bytes.byteLength - ONE_ITEM
               : Number(match[2]));
       if (
         !Number.isSafeInteger(start) ||
         !Number.isSafeInteger(end) ||
-        start < 0 ||
+        start < FIRST_INDEX ||
         end < start ||
         start >= asset.bytes.byteLength
       ) {
@@ -469,16 +492,16 @@ const lowerCamelCase = (key: string): string =>
         headers.delete("content-length");
         return new Response(null, { headers, status: 416 });
       }
-      const boundedEnd = Math.min(end, asset.bytes.byteLength - 1),
+      const boundedEnd = Math.min(end, asset.bytes.byteLength - ONE_ITEM),
         bytes = asset.bytes.slice(start, boundedEnd + 1);
       headers.set("content-range", `bytes ${start}-${boundedEnd}/${asset.bytes.byteLength}`);
       headers.set("content-length", String(bytes.byteLength));
-      return new Response(request.method === "HEAD" ? null : bytes.buffer, {
+      return new Response(request.method === "HEAD" ? null : new Uint8Array(bytes), {
         headers,
         status: 206,
       });
     }
-    return new Response(request.method === "HEAD" ? null : [...asset.bytes].buffer, {
+    return new Response(request.method === "HEAD" ? null : new Uint8Array(asset.bytes), {
       headers,
       status: 200,
     });
@@ -526,7 +549,7 @@ export const makeDeliveryOperations = (
             cms,
             contentTypeId: "post",
             publicOnly: true,
-            slug: parameters["slug"]!,
+            slug: requiredParameter(parameters, "slug"),
           }),
         identifier: "getPublishedPostBySlug",
         method: "GET",
@@ -544,7 +567,7 @@ export const makeDeliveryOperations = (
               postDefinitionRequirement,
             ],
             execute: ({ cms, parameters }) =>
-              publicOwnerBySlug(cms, contentTypeId, parameters["slug"]!),
+              publicOwnerBySlug(cms, contentTypeId, requiredParameter(parameters, "slug")),
             identifier: `getPublic${contentTypeId[0]!.toUpperCase()}${contentTypeId.slice(1)}BySlug`,
             method: "GET",
             path: `/${contentTypeId === "category" ? "categories" : `${contentTypeId}s`}/{slug}`,
@@ -562,7 +585,7 @@ export const makeDeliveryOperations = (
             ],
             execute: ({ cms, parameters, request }) =>
               Effect.gen(function* execute() {
-                const owner = yield* publicOwnerBySlug(cms, contentTypeId, parameters["slug"]!),
+                const owner = yield* publicOwnerBySlug(cms, contentTypeId, requiredParameter(parameters, "slug")),
                   ownerIdentifier = owner["id"];
                 if (typeof ownerIdentifier !== "string") {
                   return yield* CmsError.InvalidInput.make({
@@ -602,7 +625,7 @@ export const makeDeliveryOperations = (
           Effect.gen(function* listApprovedComments() {
             const post = yield* cms.getEntry({
               contentTypeId: "post",
-              entryId: parameters["postId"]!,
+              entryId: requiredParameter(parameters, "postId"),
             });
             if (post.values["status"] !== "published") {
               return yield* CmsError.NotFound.make({ message: "Published Post was not found" });
@@ -646,7 +669,7 @@ export const makeDeliveryOperations = (
                 return Object.fromEntries(entries);
               }),
               prior = yield* commandReceiptStore
-                .read(`comment-submission:${parameters["postId"]!}`, idempotencyKey)
+                .read(`comment-submission:${requiredParameter(parameters, "postId")}`, idempotencyKey)
                 .pipe(
                   Effect.mapError((cause) =>
                     CmsError.InfrastructureFailure.make({
@@ -681,7 +704,7 @@ export const makeDeliveryOperations = (
             }
             const post = yield* cms.getEntry({
               contentTypeId: "post",
-              entryId: parameters["postId"]!,
+              entryId: requiredParameter(parameters, "postId"),
             });
             if (post.values["status"] !== "published") {
               return yield* CmsError.NotFound.make({ message: "Published Post was not found" });
@@ -710,7 +733,7 @@ export const makeDeliveryOperations = (
               submissionId = "writeToken" in result ? result.entry.id : result.id,
               receipt = { status: "pending", submissionId };
             yield* commandReceiptStore
-              .write(`comment-submission:${parameters["postId"]!}`, idempotencyKey, {
+              .write(`comment-submission:${requiredParameter(parameters, "postId")}`, idempotencyKey, {
                 canonicalInput,
                 receipt,
               })
@@ -750,7 +773,7 @@ export const makeDeliveryOperations = (
           Effect.gen(function* execute() {
             const consistentSnapshot = yield* cms.readConsistentSnapshot,
               content = publicContent(consistentSnapshot),
-              entryIdentifier = parameters["entryId"]!;
+              entryIdentifier = requiredParameter(parameters, "entryId");
             if (content.reachability.richTextReachableIdentifiers.has(entryIdentifier)) {
               const entry = [
                 ...content.posts,
@@ -780,7 +803,7 @@ export const makeDeliveryOperations = (
             Effect.gen(function* execute() {
               const consistentSnapshot = yield* cms.readConsistentSnapshot,
                 content = publicContent(consistentSnapshot),
-                assetIdentifier = parameters["assetId"]!;
+                assetIdentifier = requiredParameter(parameters, "assetId");
               if (!publicAssetIds(content.posts, content.authors).has(assetIdentifier)) {
                 return yield* CmsError.NotFound.make({ message: "Public Asset was not found" });
               }
@@ -833,7 +856,7 @@ export const makeDeliveryOperations = (
                 tags: content.tags.map(publicValue),
               },
               bytes = new TextEncoder().encode(JSON.stringify(artifact));
-            if (bytes.byteLength > 5_000_000) {
+            if (bytes.byteLength > MAX_PUBLIC_EXPORT_BYTES) {
               return yield* CmsError.ExportTooLarge.make({
                 message: "Public Content Export exceeds the configured 5000000-byte bound",
               });
