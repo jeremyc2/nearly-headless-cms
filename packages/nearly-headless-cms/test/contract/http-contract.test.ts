@@ -6,6 +6,9 @@ import * as HttpApiContract from "../../src/http/http-api.ts";
 import { HttpTransport, OpenApi } from "../../src/http/index.ts";
 import { DevelopmentCms } from "../../src/testing/index.ts";
 
+const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
+  value !== null && typeof value === "object" && !Array.isArray(value);
+
 const snapshot = ContentDefinition.compile({
   definitionSpaceId: "example-blog",
   definitions: [
@@ -20,6 +23,87 @@ const snapshot = ContentDefinition.compile({
 });
 
 describe("HTTP contract", () => {
+  test("returns a deletion receipt only for history-enabled Entries", async () => {
+    const deletionSnapshot = ContentDefinition.compile({
+        definitionSpaceId: "delete-contract",
+        definitions: [
+          {
+            fields: [{ key: "title", label: "Title", required: true, kind: { kind: "text" } }],
+            history: true,
+            id: "historical-note",
+            kind: "contentType",
+            name: "Historical Note",
+          },
+          {
+            fields: [{ key: "title", label: "Title", required: true, kind: { kind: "text" } }],
+            id: "temporary-note",
+            kind: "contentType",
+            name: "Temporary Note",
+          },
+        ],
+        snapshotId: "initial",
+      }),
+      handler = await Effect.runPromise(
+        HttpTransport.makeHandler().pipe(
+          Effect.provide(DevelopmentCms.layer({ snapshot: deletionSnapshot })),
+        ),
+      ),
+      createEntry = async (contentTypeId: string): Promise<Readonly<Record<string, unknown>>> => {
+        const response = await handler(
+          new Request(
+            `http://cms.test/api/v1/management/definition-spaces/delete-contract/content-types/${contentTypeId}/entries`,
+            {
+              body: JSON.stringify({ values: { title: "Delete me" } }),
+              headers: { "content-type": "application/json" },
+              method: "POST",
+            },
+          ),
+        );
+        const body: unknown = await response.json();
+        if (!isRecord(body)) {
+          throw new Error("Expected an Entry creation object");
+        }
+        return body;
+      },
+      historicalCreation = await createEntry("historical-note"),
+      historicalEntry = historicalCreation["entry"],
+      historicalWriteToken = historicalCreation["writeToken"];
+    if (
+      !isRecord(historicalEntry) ||
+      typeof historicalEntry["id"] !== "string" ||
+      typeof historicalWriteToken !== "string"
+    ) {
+      throw new Error("Expected history state from Entry creation");
+    }
+    const historicalDeletion = await handler(
+        new Request(
+          `http://cms.test/api/v1/management/definition-spaces/delete-contract/content-types/historical-note/entries/${historicalEntry["id"]}`,
+          { headers: { "cms-write-token": historicalWriteToken }, method: "DELETE" },
+        ),
+      ),
+      historicalDeletionBody: unknown = await historicalDeletion.json();
+    expect(historicalDeletion.status).toBe(200);
+    expect(historicalDeletionBody).toMatchObject({
+      contentTypeId: "historical-note",
+      entryId: historicalEntry["id"],
+      latestRevisionNumber: 1,
+    });
+
+    const temporaryCreation = await createEntry("temporary-note"),
+      temporaryEntryId = temporaryCreation["id"];
+    if (typeof temporaryEntryId !== "string") {
+      throw new Error("Expected ordinary Entry from creation");
+    }
+    const temporaryDeletion = await handler(
+      new Request(
+        `http://cms.test/api/v1/management/definition-spaces/delete-contract/content-types/temporary-note/entries/${temporaryEntryId}`,
+        { method: "DELETE" },
+      ),
+    );
+    expect(temporaryDeletion.status).toBe(204);
+    expect(await temporaryDeletion.text()).toBe("");
+  });
+
   test("serves versioned Management operations while keeping Headless CRUD absent", async () => {
     const handler = await Effect.runPromise(
         HttpTransport.makeHandler().pipe(Effect.provide(DevelopmentCms.layer({ snapshot }))),
@@ -257,6 +341,25 @@ describe("HTTP contract", () => {
               },
             },
           },
+        },
+      },
+    });
+
+    expect(
+      OpenApi.management().paths[
+        "/api/v1/management/definition-spaces/{definitionSpaceId}/content-types/{contentTypeId}/entries/{entryId}"
+      ],
+    ).toMatchObject({
+      delete: {
+        responses: {
+          "200": {
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/DeletionRecord" },
+              },
+            },
+          },
+          "204": { description: "Operation completed without a response body" },
         },
       },
     });

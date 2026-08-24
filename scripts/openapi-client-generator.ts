@@ -1,10 +1,16 @@
-export const generatorFormatVersion = 1;
+export const generatorFormatVersion = 2;
 
 interface Parameter {
   readonly location: "header" | "path" | "query";
   readonly name: string;
   readonly required: boolean;
   readonly schema: Readonly<Record<string, unknown>>;
+}
+
+interface GeneratedSuccessResponse {
+  readonly mediaType?: string;
+  readonly schema?: Readonly<Record<string, unknown>>;
+  readonly status: number;
 }
 
 interface GeneratedOperation {
@@ -15,9 +21,7 @@ interface GeneratedOperation {
   readonly requestBodyRequired: boolean;
   readonly requestBodySchema?: Readonly<Record<string, unknown>>;
   readonly requestMediaType?: string;
-  readonly responseMediaType?: string;
-  readonly responseSchema?: Readonly<Record<string, unknown>>;
-  readonly successStatus: number;
+  readonly successResponses: readonly GeneratedSuccessResponse[];
 }
 
 const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
@@ -211,15 +215,25 @@ const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
           successResponses = Object.entries(responses).filter(([status]) =>
             /^2\d\d$/u.test(status),
           );
-        if (successResponses.length !== 1) {
-          throw new Error(`OpenAPI operation ${identifier} requires exactly one 2xx response`);
+        if (successResponses.length === 0) {
+          throw new Error(`OpenAPI operation ${identifier} requires at least one 2xx response`);
         }
-        const [successStatusText, successResponseValue] = successResponses[0]!,
-          successResponse = requireRecord(
-            successResponseValue,
-            `success response for ${identifier}`,
-          ),
-          responseContent = contentSchema(successResponse["content"], "response"),
+        const generatedSuccessResponses = sortedBy(
+            successResponses,
+            ([leftStatus], [rightStatus]) => Number(leftStatus) - Number(rightStatus),
+          ).map(([successStatusText, successResponseValue]) => {
+            const successResponse = requireRecord(
+                successResponseValue,
+                `success response for ${identifier}`,
+              ),
+              responseContent = contentSchema(successResponse["content"], "response");
+            return {
+              ...(responseContent === undefined
+                ? {}
+                : { mediaType: responseContent.mediaType, schema: responseContent.schema }),
+              status: Number(successStatusText),
+            };
+          }),
           requestBody =
             operation["requestBody"] === undefined
               ? undefined
@@ -237,13 +251,7 @@ const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
                 requestBodySchema: requestContent.schema,
                 requestMediaType: requestContent.mediaType,
               }),
-          ...(responseContent === undefined
-            ? {}
-            : {
-                responseMediaType: responseContent.mediaType,
-                responseSchema: responseContent.schema,
-              }),
-          successStatus: Number(successStatusText),
+          successResponses: generatedSuccessResponses,
         });
       }
     }
@@ -292,12 +300,14 @@ const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
       ];
     return fields.length === 0 ? "Readonly<Record<never, never>>" : `{ ${fields.join("; ")} }`;
   },
-  operationResponseType = (operation: GeneratedOperation): string =>
-    operation.responseSchema === undefined
+  successResponseType = (response: GeneratedSuccessResponse): string =>
+    response.schema === undefined
       ? "undefined"
-      : operation.responseMediaType === "application/octet-stream"
+      : response.mediaType === "application/octet-stream"
         ? "Uint8Array"
-        : schemaType(operation.responseSchema),
+        : schemaType(response.schema),
+  operationResponseType = (operation: GeneratedOperation): string =>
+    [...new Set(operation.successResponses.map(successResponseType))].join(" | "),
   componentTypes = (document: Readonly<Record<string, unknown>>): string => {
     const components = requireRecord(document["components"], "components"),
       componentSchemas = requireRecord(components["schemas"], "component schemas");
@@ -323,8 +333,10 @@ export const generateOpenApiClient = (documentValue: unknown): string => {
           method: operation.method,
           path: operation.path,
           requestMediaType: operation.requestMediaType,
-          responseMediaType: operation.responseMediaType,
-          successStatus: operation.successStatus,
+          successResponses: operation.successResponses.map(({ mediaType, status }) => ({
+            responseMediaType: mediaType,
+            status,
+          })),
         },
       ]),
     ),
@@ -342,5 +354,5 @@ export const generateOpenApiClient = (documentValue: unknown): string => {
           `  ${operation.identifier}: (input: OperationInputs["${operation.identifier}"], signal?: AbortSignal): Effect.Effect<OperationResponses["${operation.identifier}"], TransportFailure | ProtocolFailure | DeclaredFailure> => requestOperation<"${operation.identifier}">(baseAddress, operationSpecifications.${operation.identifier}, input, signal),`,
       )
       .join("\n");
-  return `// Generated by scripts/openapi-client-generator.ts. Do not edit.\nimport { Effect, Schema } from "effect";\n\nexport const generatorFormatVersion = ${generatorFormatVersion};\n\n${componentTypes(document)}\n\nexport interface OperationInputs {\n${inputTypes}\n}\n\nexport interface OperationResponses {\n${responseTypes}\n}\n\nexport class TransportFailure extends Schema.TaggedError<TransportFailure>()("TransportFailure", { message: Schema.String }) {}\nexport class ProtocolFailure extends Schema.TaggedError<ProtocolFailure>()("ProtocolFailure", { message: Schema.String, status: Schema.Number }) {}\nexport class DeclaredFailure extends Schema.TaggedError<DeclaredFailure>()("DeclaredFailure", { code: Schema.String, details: Schema.optional(Schema.Json), message: Schema.String, status: Schema.Number }) {}\n\ninterface OperationSpecification {\n  readonly method: string;\n  readonly path: string;\n  readonly requestMediaType?: string;\n  readonly responseMediaType?: string;\n  readonly successStatus: number;\n}\n\nconst operationSpecifications = ${JSON.stringify(specifications, null, 2)} satisfies Readonly<Record<keyof OperationInputs, OperationSpecification>>;\n\nfunction requestOperation<Identifier extends keyof OperationInputs>(\n  baseAddress: string,\n  specification: OperationSpecification,\n  input: OperationInputs[Identifier],\n  signal?: AbortSignal,\n): Effect.Effect<OperationResponses[Identifier], TransportFailure | ProtocolFailure | DeclaredFailure>;\nfunction requestOperation(\n  baseAddress: string,\n  specification: OperationSpecification,\n  input: OperationInputs[keyof OperationInputs],\n  signal?: AbortSignal,\n): Effect.Effect<unknown, TransportFailure | ProtocolFailure | DeclaredFailure> {\n  return Effect.tryPromise({\n      catch: (cause) =>\n        cause instanceof TransportFailure || cause instanceof ProtocolFailure || cause instanceof DeclaredFailure\n          ? cause\n          : TransportFailure.make({ message: cause instanceof Error ? cause.message : "Connection failed" }),\n      try: async () => {\n        let path = specification.path;\n        if ("path" in input && input.path !== undefined) {\n          for (const [name, value] of Object.entries(input.path)) {\n            path = path.replace(\`{\${name}}\`, encodeURIComponent(String(value)));\n          }\n        }\n        const requestUrl = new URL(\`\${baseAddress}\${path}\`, baseAddress || globalThis.location?.origin || "http://localhost");\n        if ("query" in input && input.query !== undefined) {\n          for (const [name, value] of Object.entries(input.query)) {\n            if (value !== undefined) requestUrl.searchParams.set(name, String(value));\n          }\n        }\n        const headers = new Headers("headers" in input ? input.headers : undefined);\n        let body: BodyInit | undefined;\n        if ("body" in input && input.body !== undefined) {\n          if (input.body instanceof FormData) body = input.body;\n          else {\n            headers.set("content-type", specification.requestMediaType ?? "application/json");\n            body = JSON.stringify(input.body);\n          }\n        }\n        let response: Response;\n        try {\n          response = await fetch(requestUrl, { body, headers, method: specification.method, signal });\n        } catch (cause) {\n          throw TransportFailure.make({ message: cause instanceof Error ? cause.message : "Connection failed" });\n        }\n        const mediaType = response.headers.get("content-type") ?? "";\n        if (response.status !== specification.successStatus) {\n          if (mediaType.includes("application/json")) {\n            const failure: unknown = await response.json();\n            if (failure !== null && typeof failure === "object" && "code" in failure && "message" in failure) {\n              throw DeclaredFailure.make({ code: String(failure.code), details: "details" in failure ? failure.details : undefined, message: String(failure.message), status: response.status });\n            }\n          }\n          throw ProtocolFailure.make({ message: \`Unexpected response status \${response.status}\`, status: response.status });\n        }\n        if (specification.successStatus === 204 || specification.method === "HEAD") return undefined;\n        if (specification.responseMediaType === "application/octet-stream") return new Uint8Array(await response.arrayBuffer());\n        if (!mediaType.includes("application/json")) throw ProtocolFailure.make({ message: "Expected application/json response", status: response.status });\n        try {\n          return await response.json();\n        } catch {\n          throw ProtocolFailure.make({ message: "Malformed JSON response", status: response.status });\n        }\n      },\n    });\n}\n\nexport const makeGeneratedClient = (baseAddress = "") => ({\n${methods}\n});\n`;
+  return `// Generated by scripts/openapi-client-generator.ts. Do not edit.\nimport { Effect, Schema } from "effect";\n\nexport const generatorFormatVersion = ${generatorFormatVersion};\n\n${componentTypes(document)}\n\nexport interface OperationInputs {\n${inputTypes}\n}\n\nexport interface OperationResponses {\n${responseTypes}\n}\n\nexport class TransportFailure extends Schema.TaggedError<TransportFailure>()("TransportFailure", { message: Schema.String }) {}\nexport class ProtocolFailure extends Schema.TaggedError<ProtocolFailure>()("ProtocolFailure", { message: Schema.String, status: Schema.Number }) {}\nexport class DeclaredFailure extends Schema.TaggedError<DeclaredFailure>()("DeclaredFailure", { code: Schema.String, details: Schema.optional(Schema.Json), message: Schema.String, status: Schema.Number }) {}\n\ninterface OperationSpecification {\n  readonly method: string;\n  readonly path: string;\n  readonly requestMediaType?: string;\n  readonly successResponses: ReadonlyArray<{\n    readonly responseMediaType?: string;\n    readonly status: number;\n  }>;\n}\n\nconst operationSpecifications = ${JSON.stringify(specifications, null, 2)} satisfies Readonly<Record<keyof OperationInputs, OperationSpecification>>;\n\nfunction requestOperation<Identifier extends keyof OperationInputs>(\n  baseAddress: string,\n  specification: OperationSpecification,\n  input: OperationInputs[Identifier],\n  signal?: AbortSignal,\n): Effect.Effect<OperationResponses[Identifier], TransportFailure | ProtocolFailure | DeclaredFailure>;\nfunction requestOperation(\n  baseAddress: string,\n  specification: OperationSpecification,\n  input: OperationInputs[keyof OperationInputs],\n  signal?: AbortSignal,\n): Effect.Effect<unknown, TransportFailure | ProtocolFailure | DeclaredFailure> {\n  return Effect.tryPromise({\n      catch: (cause) =>\n        cause instanceof TransportFailure || cause instanceof ProtocolFailure || cause instanceof DeclaredFailure\n          ? cause\n          : TransportFailure.make({ message: cause instanceof Error ? cause.message : "Connection failed" }),\n      try: async () => {\n        let path = specification.path;\n        if ("path" in input && input.path !== undefined) {\n          for (const [name, value] of Object.entries(input.path)) {\n            path = path.replace(\`{\${name}}\`, encodeURIComponent(String(value)));\n          }\n        }\n        const requestUrl = new URL(\`\${baseAddress}\${path}\`, baseAddress || globalThis.location?.origin || "http://localhost");\n        if ("query" in input && input.query !== undefined) {\n          for (const [name, value] of Object.entries(input.query)) {\n            if (value !== undefined) requestUrl.searchParams.set(name, String(value));\n          }\n        }\n        const headers = new Headers("headers" in input ? input.headers : undefined);\n        let body: BodyInit | undefined;\n        if ("body" in input && input.body !== undefined) {\n          if (input.body instanceof FormData) body = input.body;\n          else {\n            headers.set("content-type", specification.requestMediaType ?? "application/json");\n            body = JSON.stringify(input.body);\n          }\n        }\n        let response: Response;\n        try {\n          response = await fetch(requestUrl, { body, headers, method: specification.method, signal });\n        } catch (cause) {\n          throw TransportFailure.make({ message: cause instanceof Error ? cause.message : "Connection failed" });\n        }\n        const mediaType = response.headers.get("content-type") ?? "";\n        const successResponse = specification.successResponses.find(({ status }) => status === response.status);\n        if (successResponse === undefined) {\n          if (mediaType.includes("application/json")) {\n            const failure: unknown = await response.json();\n            if (failure !== null && typeof failure === "object" && "code" in failure && "message" in failure) {\n              throw DeclaredFailure.make({ code: String(failure.code), details: "details" in failure ? failure.details : undefined, message: String(failure.message), status: response.status });\n            }\n          }\n          throw ProtocolFailure.make({ message: \`Unexpected response status \${response.status}\`, status: response.status });\n        }\n        if (response.status === 204 || specification.method === "HEAD") return undefined;\n        if (successResponse.responseMediaType === "application/octet-stream") return new Uint8Array(await response.arrayBuffer());\n        if (!mediaType.includes("application/json")) throw ProtocolFailure.make({ message: "Expected application/json response", status: response.status });\n        try {\n          return await response.json();\n        } catch {\n          throw ProtocolFailure.make({ message: "Malformed JSON response", status: response.status });\n        }\n      },\n    });\n}\n\nexport const makeGeneratedClient = (baseAddress = "") => ({\n${methods}\n});\n`;
 };

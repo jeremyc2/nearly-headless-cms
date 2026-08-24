@@ -80,6 +80,17 @@ const errorSchema = {
       required: ["entry", "revisionNumber", "writeToken"],
       type: "object",
     },
+    DeletionRecord: {
+      properties: {
+        contentTypeId: { type: "string" },
+        deletedAt: { format: "date-time", type: "string" },
+        entryId: { type: "string" },
+        latestRevisionNumber: { minimum: 1, type: "integer" },
+        writeToken: { type: "string" },
+      },
+      required: ["entryId", "contentTypeId", "deletedAt", "latestRevisionNumber", "writeToken"],
+      type: "object",
+    },
     Discovery: {
       additionalProperties: false,
       properties: {
@@ -146,7 +157,6 @@ const errorSchema = {
     ["retireDefinition", 201],
     ["activateDefinitionSnapshot", 201],
     ["appendMigrationManifest", 201],
-    ["deleteEntry", 204],
     ["deleteAsset", 204],
     ["permanentlyPurgeEntry", 204],
   ]),
@@ -160,6 +170,7 @@ const errorSchema = {
     ["listEntryRevisions", { $ref: "#/components/schemas/RevisionPage" }],
     ["inspectEntryRevision", { $ref: "#/components/schemas/Revision" }],
     ["restoreEntryRevision", { $ref: "#/components/schemas/CurrentEntryState" }],
+    ["deleteEntry", { $ref: "#/components/schemas/DeletionRecord" }],
     ["ingestAsset", { $ref: "#/components/schemas/Asset" }],
     ["getAsset", { $ref: "#/components/schemas/Asset" }],
     ["readAsset", { format: "binary", type: "string" }],
@@ -225,6 +236,7 @@ const errorSchema = {
     "listMigrationManifests",
   ]),
   writeTokenHeaderOperations = new Set(["replaceEntry", "deleteEntry"]),
+  additionalBodylessSuccessStatuses = new Map<string, readonly number[]>([["deleteEntry", [204]]]),
   errorResponses = (): Readonly<Record<string, unknown>> =>
     Object.fromEntries(
       [
@@ -363,6 +375,12 @@ const errorSchema = {
             : "Successful response",
           ...(bodyless ? {} : { content: { [responseMediaType]: { schema: responseSchema } } }),
         },
+        ...Object.fromEntries(
+          (additionalBodylessSuccessStatuses.get(operationIdentifier) ?? []).map((status) => [
+            String(status),
+            { description: "Operation completed without a response body" },
+          ]),
+        ),
         ...errorResponses(),
       },
     };

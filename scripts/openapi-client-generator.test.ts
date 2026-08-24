@@ -60,22 +60,23 @@ describe("OpenAPI client generator", () => {
     ).toThrow("Duplicate OpenAPI operation identifier");
   });
 
-  test("rejects ambiguous successful responses", () => {
-    expect(() =>
-      generateOpenApiClient({
-        ...document,
-        paths: {
-          "/greetings/{name}": {
-            get: {
-              ...document.paths["/greetings/{name}"].get,
-              responses: {
-                ...document.paths["/greetings/{name}"].get.responses,
-                "201": document.paths["/greetings/{name}"].get.responses["200"],
-              },
+  test("generates response unions for operations with multiple successful statuses", () => {
+    const generated = generateOpenApiClient({
+      ...document,
+      paths: {
+        "/greetings/{name}": {
+          get: {
+            ...document.paths["/greetings/{name}"].get,
+            responses: {
+              ...document.paths["/greetings/{name}"].get.responses,
+              "204": { description: "No greeting" },
             },
           },
         },
-      }),
-    ).toThrow("requires exactly one 2xx response");
+      },
+    });
+    expect(generated).toContain("readonly getGreeting: Greeting | undefined;");
+    expect(generated).toContain('"status": 200');
+    expect(generated).toContain('"status": 204');
   });
 });

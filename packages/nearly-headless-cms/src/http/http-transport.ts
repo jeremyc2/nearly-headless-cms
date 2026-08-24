@@ -1039,7 +1039,10 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
               writeToken: request.headers.get("cms-write-token") ?? undefined,
             }),
             requestId,
-            () => bodylessResponse(204, requestId, snapshot.fingerprint),
+            (deletionRecord) =>
+              deletionRecord === undefined
+                ? bodylessResponse(204, requestId, snapshot.fingerprint)
+                : jsonResponse(deletionRecord, 200, requestId, snapshot.fingerprint),
           );
         }
         return jsonResponse(
