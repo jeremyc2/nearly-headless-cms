@@ -339,9 +339,9 @@ const collectRichTextPublicationRules = ({
           ),
           mutations: Cms.EntryBatchMutation[] = postStates.map((state) => {
             const currentRelationships = state.entry.values[relationshipField],
-             relationships = Array.isArray(currentRelationships)
-              ? currentRelationships.filter((entryId) => entryId !== taxonomyEntryId)
-              : [];
+              relationships = Array.isArray(currentRelationships)
+                ? currentRelationships.filter((entryId) => entryId !== taxonomyEntryId)
+                : [];
             return {
               input: {
                 contentTypeId: "post",

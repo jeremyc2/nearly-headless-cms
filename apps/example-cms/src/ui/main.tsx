@@ -39,7 +39,7 @@ const managementClient = makeManagementClient(),
     { identifier: "tag", label: "Tags", symbol: "T" },
     { identifier: "comment", label: "Comments", symbol: "M" },
   ] as const,
-  preserveSelection = (event: MouseEvent<HTMLButtonElement>) => {
+  preserveSelection = (event: MouseEvent<HTMLButtonElement>): void => {
     event.preventDefault();
   },
   richTextDocumentFrom = (value: unknown): RichText.Document | undefined => {
@@ -49,6 +49,27 @@ const managementClient = makeManagementClient(),
       return undefined;
     }
   };
+
+function rebuildLabel(isPending: boolean): string {
+  if (isPending) {
+    return "Building…";
+  }
+  return "Rebuild demonstration";
+}
+
+function draftPluralSuffix(count: number): string {
+  if (count === 1) {
+    return "";
+  }
+  return "s";
+}
+
+function pendingCommentClass(count: number): string {
+  if (count > 0) {
+    return "attention";
+  }
+  return "";
+}
 
 function Workbench() {
   const pendingComments = useQuery({
@@ -188,7 +209,7 @@ function Overview() {
             <span>Posts</span>
           </div>
           <small>
-            {draftPostCount} draft{["s", ""][Number(draftPostCount === 1)]}
+            {draftPostCount} draft{draftPluralSuffix(draftPostCount)}
           </small>
         </article>
         <article className="signal-card">
@@ -197,7 +218,7 @@ function Overview() {
             <strong>{counts["comment"]}</strong>
             <span>Comments</span>
           </div>
-          <small className={["", "attention"][Number(pendingCommentCount > 0)]}>
+          <small className={pendingCommentClass(pendingCommentCount)}>
             {pendingCommentCount} pending
           </small>
         </article>
@@ -274,7 +295,7 @@ function Overview() {
                 rebuild.mutate();
               }}
             >
-              {rebuild.isPending ? "Building…" : "Rebuild demonstration"}
+              {rebuildLabel(rebuild.isPending)}
             </button>
             {rebuild.isSuccess && <p role="status">The Public Blog static build completed.</p>}
             {rebuild.error && (
@@ -317,8 +338,12 @@ function Overview() {
   );
 }
 
-const stringValue = (value: unknown, fallback: string): string =>
-    typeof value === "string" ? value : fallback,
+const stringValue = (value: unknown, fallback: string): string => {
+    if (typeof value === "string") {
+      return value;
+    }
+    return fallback;
+  },
   suggestedSlug = (value: string): string =>
     value
       .normalize("NFKD")
@@ -354,7 +379,10 @@ const editorialIssues = (error: unknown): readonly EditorialIssue[] => {
       }
       const path = Reflect.get(candidate, "path"),
         reason = Reflect.get(candidate, "reason");
-      return Array.isArray(path) && typeof reason === "string" ? [{ path, reason }] : [];
+      if (Array.isArray(path) && typeof reason === "string") {
+        return [{ path, reason }];
+      }
+      return [];
     });
   },
   isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
@@ -368,18 +396,23 @@ const editorialIssues = (error: unknown): readonly EditorialIssue[] => {
         readonly writeToken: string;
       }
     | undefined => {
-    const candidate =
-      isRecord(value) && isRecord(value["deletionRecord"]) ? value["deletionRecord"] : value;
-    return isRecord(candidate) &&
+    let candidate = value;
+    if (isRecord(value) && isRecord(value["deletionRecord"])) {
+      candidate = value["deletionRecord"];
+    }
+    if (
+      isRecord(candidate) &&
       typeof candidate["contentTypeId"] === "string" &&
       typeof candidate["entryId"] === "string" &&
       typeof candidate["writeToken"] === "string"
-      ? {
-          contentTypeId: candidate["contentTypeId"],
-          entryId: candidate["entryId"],
-          writeToken: candidate["writeToken"],
-        }
-      : undefined;
+    ) {
+      return {
+        contentTypeId: candidate["contentTypeId"],
+        entryId: candidate["entryId"],
+        writeToken: candidate["writeToken"],
+      };
+    }
+    return undefined;
   },
   deletionConsequence = (contentTypeId: string): string => {
     switch (contentTypeId) {
