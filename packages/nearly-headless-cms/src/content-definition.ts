@@ -18,8 +18,8 @@ const calendarDatePattern = /^\d{4}-\d{2}-\d{2}$/u,
   defaultCalendarMonth = 1,
   defaultCalendarYear = 0,
   defaultCompilerFormatVersion = 1,
-  emptyLength = 0,
   emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u,
+  emptyLength = 0,
   identifierPattern = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/u,
   utcDatetimePattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/u;
 

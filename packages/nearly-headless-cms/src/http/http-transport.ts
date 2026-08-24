@@ -578,9 +578,9 @@ const runOperationInterruptibly = async <Value>(
         end =
           match[1] === ""
             ? storedAsset.bytes.byteLength - 1
-            : match[2] === ""
+            : (match[2] === ""
               ? storedAsset.bytes.byteLength - 1
-              : Number(match[2]);
+              : Number(match[2]));
       if (
         !Number.isSafeInteger(start) ||
         !Number.isSafeInteger(end) ||
@@ -1600,14 +1600,14 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
             (value) =>
               value instanceof Response
                 ? value
-                : value === undefined
+                : (value === undefined
                   ? bodylessResponse(204, requestId, snapshot.fingerprint)
                   : jsonResponse({
                       fingerprint: snapshot.fingerprint,
                       requestId,
                       status: 200,
                       value,
-                    }),
+                    })),
           );
         }
 
@@ -1652,7 +1652,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
             (value) =>
               value instanceof Response
                 ? value
-                : value === undefined
+                : (value === undefined
                   ? bodylessResponse(204, requestId, snapshot.fingerprint)
                   : jsonResponse({
                       cacheControl: matcher.operation.cacheControl ?? "no-cache",
@@ -1660,7 +1660,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
                       requestId,
                       status: matcher.operation.successStatus ?? 200,
                       value,
-                    }),
+                    })),
           );
         }
 

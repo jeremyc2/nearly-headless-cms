@@ -1,6 +1,6 @@
-import { join } from "node:path";
+import path from "node:path";
 
-const repository = join(import.meta.dir, ".."),
+const repository = path.join(import.meta.dir, ".."),
   run = async (
     command: readonly string[],
     environment: Record<string, string> = {},
@@ -24,7 +24,9 @@ const repository = join(import.meta.dir, ".."),
         if (response.ok) {
           return;
         }
-      } catch {}
+      } catch {
+        // Keep polling until the service becomes reachable.
+      }
       await Bun.sleep(100);
     }
     throw new Error(`Timed out waiting for ${requestUrl}`);
@@ -58,16 +60,17 @@ try {
 } finally {
   publicBlog?.kill();
   exampleCms.kill();
-  await Promise.allSettled([
-    exampleCms.exited,
-    ...(publicBlog === undefined ? [] : [publicBlog.exited]),
-  ]);
+  const processes = [exampleCms.exited];
+  if (publicBlog !== undefined) {
+    processes.push(publicBlog.exited);
+  }
+  await Promise.allSettled(processes);
 }
 
 await run(["bun", "run", "--cwd", "packages/nearly-headless-cms", "package:inspect"]);
 await run(["bun", "run", "--cwd", "packages/nearly-headless-cms", "build:determinism"]);
 await run(["bun", "run", "--cwd", "packages/nearly-headless-cms", "readme:verify"]);
 await run(["bun", "run", "--cwd", "packages/nearly-headless-cms", "package:smoke"], {
-  PACKAGE_ARCHIVE: join(repository, ".artifacts/npm/nearly-headless-cms-0.1.0.tgz"),
+  PACKAGE_ARCHIVE: path.join(repository, ".artifacts/npm/nearly-headless-cms-0.1.0.tgz"),
 });
 console.log("\nNearly Headless CMS v0.1 automated acceptance passed.");

@@ -21,7 +21,15 @@ import {
   type EntryRecord,
 } from "../../persistence.ts";
 
-const stagingPrefix = ".nhcms-stage-",
+const defaultAssetMaximumByteLength = 25_000_000,
+  defaultEntryMaximumByteLength = 50_000_000,
+  defaultMetadataMaximumByteLength = 16_384,
+  emptyLength = 0,
+  generationFilenameWidth = 16,
+  initialGeneration = 0,
+  initialVersion = 1,
+  lockProbeSignal = 0,
+  stagingPrefix = ".nhcms-stage-",
   storageFormat = "nearly-headless-cms/filesystem",
   storageFormatVersion = 1;
 
@@ -187,10 +195,10 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
         ...(definition.parentRevision === undefined
           ? {}
           : { parentRevision: definition.parentRevision }),
-        revision: definition.revision ?? 1,
+        revision: definition.revision ?? initialVersion,
       })),
       snapshots: [snapshotRecord],
-      version: 1,
+      version: initialVersion,
     };
   },
   synchronize = async (path: string): Promise<void> => {
@@ -235,17 +243,17 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
     }
     const processId = Reflect.get(parsed, "processId"),
       token = Reflect.get(parsed, "token");
-    if (!Number.isInteger(processId) || typeof processId !== "number" || processId <= 0) {
+    if (!Number.isInteger(processId) || typeof processId !== "number" || processId <= emptyLength) {
       throw new Error("Writer lock is corrupt");
     }
-    if (token !== undefined && (typeof token !== "string" || token.length === 0)) {
+    if (token !== undefined && (typeof token !== "string" || token.length === emptyLength)) {
       throw new Error("Writer lock is corrupt");
     }
     return { processId, ...(token === undefined ? {} : { token }) };
   },
   processIsActive = (processId: number): boolean => {
     try {
-      process.kill(processId, 0);
+      process.kill(processId, lockProbeSignal);
       return true;
     } catch (error) {
       return filesystemErrorCode(error) !== "ESRCH";
@@ -372,7 +380,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
   > => {
     const blobsDirectory = join(configuration.root, "blobs"),
       stagePath = join(blobsDirectory, `${stagingPrefix}blob-${crypto.randomUUID()}`),
-      maximumByteLength = configuration.maximumAssetByteLength ?? 25_000_000,
+      maximumByteLength = configuration.maximumAssetByteLength ?? defaultAssetMaximumByteLength,
       contentStream = content instanceof Uint8Array ? Stream.make(content) : content;
     return Effect.acquireUseRelease(
       fromPromise(
@@ -385,7 +393,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
       (stage) =>
         Effect.gen(function* writeAssetBlob() {
           const hasher = new Bun.CryptoHasher("sha256");
-          let byteLength = 0;
+          let byteLength = emptyLength;
           yield* Stream.runForEach(
             contentStream,
             (chunk): Effect.Effect<void, InfrastructureFailure | InvalidInput> => {
@@ -442,7 +450,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
   },
   persistState = async (configuration: Configuration, state: State): Promise<void> => {
     const generationsDirectory = join(configuration.root, "generations"),
-      generationName = `generation-${String(state.generation).padStart(16, "0")}.json`,
+      generationName = `generation-${String(state.generation).padStart(generationFilenameWidth, "0")}.json`,
       generationPath = join(generationsDirectory, generationName),
       generation: DiskGeneration = {
         assets: [...state.assets.values()],
@@ -515,8 +523,8 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
         ...(definitionSnapshot === undefined
           ? {}
           : { catalog: initialCatalog(definitionSnapshot, new Date().toISOString()) }),
-        entryGeneration: 0,
-        generation: 0,
+        entryGeneration: initialGeneration,
+        generation: initialGeneration,
         records: new Map(),
       };
       await persistState(configuration, state);
@@ -599,15 +607,15 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
                 }
                 const next: State = {
                   assets: current.assets,
-                  entryGeneration: current.entryGeneration + 1,
-                  generation: current.generation + 1,
+                  entryGeneration: current.entryGeneration + initialVersion,
+                  generation: current.generation + initialVersion,
                   records: new Map(records),
                   ...(current.catalog === undefined ? {} : { catalog: current.catalog }),
                 },
                  entryEncodingByteLength = encode([...records]).byteLength;
                 if (
                   entryEncodingByteLength >
-                  (configuration.maximumEntryEncodingByteLength ?? 50_000_000)
+                  (configuration.maximumEntryEncodingByteLength ?? defaultEntryMaximumByteLength)
                 ) {
                   return Effect.fail(
                     InvalidInput.make({
@@ -672,7 +680,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
             ),
           ingest: (input) =>
             Effect.gen(function*  ingest() {
-              if (input.filename.trim().length === 0 || !input.mediaType.includes("/")) {
+              if (input.filename.trim().length === emptyLength || !input.mediaType.includes("/")) {
                 return yield* InvalidInput.make({
                   message: "Asset filename and media type are required",
                 });
@@ -684,7 +692,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
                 mediaType: input.mediaType,
                 width: input.width,
               }).byteLength;
-              if (metadataByteLength > (configuration.maximumMetadataByteLength ?? 16_384)) {
+              if (metadataByteLength > (configuration.maximumMetadataByteLength ?? defaultMetadataMaximumByteLength)) {
                 return yield* InvalidInput.make({
                   message: "Asset metadata exceeds the configured limit",
                 });

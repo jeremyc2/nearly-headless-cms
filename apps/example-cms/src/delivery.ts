@@ -63,13 +63,13 @@ interface PublicAssetResponseInput {
   readonly requestId: string;
 }
 
-const DEFAULT_PAGE_SIZE = 20;
-const MAX_QUERY_PAGE_SIZE = 100;
-const FIRST_INDEX = 0;
-const ONE_ITEM = 1;
-const MAX_PUBLIC_EXPORT_BYTES = 5_000_000;
+const DEFAULT_PAGE_SIZE = 20,
+ MAX_QUERY_PAGE_SIZE = 100,
+ FIRST_INDEX = 0,
+ ONE_ITEM = 1,
+ MAX_PUBLIC_EXPORT_BYTES = 5_000_000,
 
-const requiredParameter = (
+ requiredParameter = (
   parameters: Readonly<Record<string, string | undefined>>,
   name: string,
 ): string => {

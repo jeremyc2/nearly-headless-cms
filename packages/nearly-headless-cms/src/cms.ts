@@ -205,6 +205,31 @@ interface References {
   readonly assetIds: readonly string[];
 }
 
+interface EnsureUniqueValuesInput {
+  readonly contentType: CompiledContentType;
+  readonly ignoredEntryId?: string;
+  readonly records: Iterable<EntryRecord>;
+  readonly values: JsonObject;
+}
+
+interface ExpandObjectInput {
+  readonly ancestorEntryIds: ReadonlySet<string>;
+  readonly expansion: readonly string[];
+  readonly fields: readonly ResolvedField[];
+  readonly generation: EntryGeneration;
+  readonly object: JsonObject;
+  readonly parentPath?: string;
+  readonly snapshot: CompiledSnapshot;
+}
+
+interface ExpandRepresentationInput {
+  readonly ancestorEntryIds?: ReadonlySet<string>;
+  readonly entry: Representation;
+  readonly expansion?: readonly string[];
+  readonly generation: EntryGeneration;
+  readonly snapshot: CompiledSnapshot;
+}
+
 const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
     if (field.kind.kind === "relationship") {
       return field.kind;

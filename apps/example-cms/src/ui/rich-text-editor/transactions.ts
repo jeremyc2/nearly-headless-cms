@@ -280,9 +280,9 @@ const insertText = (state: State, text: string): State => {
         type: "text",
         ...((selected.text.marks?.length ?? emptyIndex) > emptyIndex
           ? { marks: selected.text.marks }
-          : state.pendingMarks.length > emptyIndex
+          : (state.pendingMarks.length > emptyIndex
             ? { marks: state.pendingMarks }
-            : {}),
+            : {})),
       },
       children = selected.block.children.map((node, index) =>
         index === position.inlineIndex ? replacement : node,

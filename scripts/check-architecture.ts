@@ -4,12 +4,12 @@ const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
     value !== null && typeof value === "object" && !Array.isArray(value),
   dependencyAt = (manifest: Readonly<Record<string, unknown>>, name: string): unknown => {
     const { dependencies } = manifest;
-    if (isRecord(dependencies)) return dependencies[name];
+    if (isRecord(dependencies)) {return dependencies[name];}
     return undefined;
   },
   repository = join(import.meta.dir, ".."),
-  rootManifest: unknown = await Bun.file(join(repository, "package.json")).json();
-const expectedWorkspaceCount = 3,
+  rootManifest: unknown = await Bun.file(join(repository, "package.json")).json(),
+ expectedWorkspaceCount = 3,
   firstIndex = 0,
   oneItem = 1,
   twoSpaceIndent = 2;
@@ -77,7 +77,7 @@ for (const forbidden of [
   "orval",
 ]) {
   if (dependencyAt(publicBlog, forbidden) !== undefined)
-    throw new Error(`Public Blog has forbidden direct dependency ${forbidden}`);
+    {throw new Error(`Public Blog has forbidden direct dependency ${forbidden}`);}
 }
 for (const forbidden of [
   "vite",
@@ -88,11 +88,11 @@ for (const forbidden of [
   "concurrently",
 ]) {
   if (dependencyAt(exampleCms, forbidden) !== undefined)
-    throw new Error(`Example CMS has forbidden dependency ${forbidden}`);
+    {throw new Error(`Example CMS has forbidden dependency ${forbidden}`);}
 }
 
-const sourceGlob = new Bun.Glob("apps/public-blog/src/**/*.{ts,astro}");
-const sourcePaths = await Array.fromAsync(sourceGlob.scan({ cwd: repository }));
+const sourceGlob = new Bun.Glob("apps/public-blog/src/**/*.{ts,astro}"),
+ sourcePaths = await Array.fromAsync(sourceGlob.scan({ cwd: repository }));
 await Promise.all(
   sourcePaths.map(async (relativePath) => {
     const source = await Bun.file(join(repository, relativePath)).text();
@@ -100,7 +100,7 @@ await Promise.all(
       /from\s+["']nearly-headless-cms(?:\/|["'])/u.test(source) ||
       /from\s+["'][^"']*example-cms/u.test(source)
     )
-      throw new Error(`Public Blog imports a forbidden runtime at ${relativePath}`);
+      {throw new Error(`Public Blog imports a forbidden runtime at ${relativePath}`);}
   }),
 );
 const libraryExports = workspaceManifests[0]["exports"],
@@ -118,8 +118,8 @@ if (
 ) {
   throw new Error("Library exports map is not the complete settled public seam");
 }
-const portableDistributionGlob = new Bun.Glob("packages/nearly-headless-cms/dist/**/*.{js,d.ts}");
-const portableDistributionPaths = await Array.fromAsync(
+const portableDistributionGlob = new Bun.Glob("packages/nearly-headless-cms/dist/**/*.{js,d.ts}"),
+ portableDistributionPaths = await Array.fromAsync(
   portableDistributionGlob.scan({ cwd: repository }),
 );
 await Promise.all(
@@ -128,7 +128,7 @@ await Promise.all(
     .map(async (relativePath) => {
       const source = await Bun.file(join(repository, relativePath)).text();
       if (/\bBun\.|["']bun:/u.test(source))
-        throw new Error(`Portable package entry point leaks a Bun-only runtime at ${relativePath}`);
+        {throw new Error(`Portable package entry point leaks a Bun-only runtime at ${relativePath}`);}
     }),
 );
 
@@ -174,9 +174,7 @@ for (const sourcePath of publicApiSourcePaths) {
   for (const [lineIndex, line] of lines.entries()) {
     if (/^export (?:class|const|function|interface|type|\*|\{)/u.test(line)) {
       let commentLineIndex = lineIndex - oneItem;
-      if (!lines[commentLineIndex]?.trimEnd().endsWith("*/")) {
-        undocumentedDeclarations.push(`${packageRelativePath}:${lineIndex + oneItem}`);
-      } else {
+      if (lines[commentLineIndex]?.trimEnd().endsWith("*/")) {
         while (
           commentLineIndex >= firstIndex &&
           !lines[commentLineIndex]?.trimStart().startsWith("/**")
@@ -185,6 +183,8 @@ for (const sourcePath of publicApiSourcePaths) {
         if (commentLineIndex < firstIndex)
           undocumentedDeclarations.push(`${packageRelativePath}:${lineIndex + oneItem}`);
         else documentedPublicDeclarationCount += oneItem;
+      } else {
+        undocumentedDeclarations.push(`${packageRelativePath}:${lineIndex + oneItem}`);
       }
     }
   }
