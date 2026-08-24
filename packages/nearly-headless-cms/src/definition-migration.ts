@@ -78,7 +78,7 @@ export const prepare = (input: PreparationInput): Preparation => {
       candidate.identifier === input.manifest.handlerIdentifier &&
       candidate.version === input.manifest.handlerVersion,
   );
-  if (handler === undefined && !input.manifest.compatible) {
+  if (handler === undefined && input.manifest.compatible !== true) {
     return {
       entries: [],
       id: `${input.manifest.id}@${input.sourceGeneration}`,
@@ -103,7 +103,7 @@ export const prepare = (input: PreparationInput): Preparation => {
   for (const entry of input.entries) {
     try {
       let validatedValues = entry.values;
-      if (!input.manifest.compatible) {
+      if (input.manifest.compatible !== true) {
         if (handler === undefined) {
           throw new Error("Migration handler is missing");
         }
@@ -131,24 +131,33 @@ export const prepare = (input: PreparationInput): Preparation => {
           })),
         );
       } else {
+        let message = "Migration Handler failed";
+        if (error instanceof Error) {
+          message = error.message;
+        }
         issues.push(
           migrationIssue(
             entry.id,
             "migrationHandlerFailure",
-            error instanceof Error ? error.message : "Migration Handler failed",
+            message,
           ),
         );
       }
     }
   }
+  let entries: readonly Representation[] = [],
+   report: Preparation["report"];
+  if (issues.length === NO_PATHS) {
+    entries = transformedEntries;
+    report = { status: "ready", transformedEntryCount: transformedEntries.length };
+  } else {
+    report = { issues, status: "failed" };
+  }
   return {
-    entries: issues.length === NO_PATHS ? transformedEntries : [],
+    entries,
     id: `${input.manifest.id}@${input.sourceGeneration}`,
     manifest: input.manifest,
-    report:
-      issues.length === NO_PATHS
-        ? { status: "ready", transformedEntryCount: transformedEntries.length }
-        : { issues, status: "failed" },
+    report,
     sourceGeneration: input.sourceGeneration,
     sourceSnapshotId: input.source.snapshotId,
     targetSnapshotId: input.target.snapshotId,

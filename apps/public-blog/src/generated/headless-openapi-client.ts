@@ -633,13 +633,13 @@ function requestOperation({
       let response: Response;
       try {
         response = await fetch(requestUrl, { body, headers, method: specification.method, signal });
-      } catch (cause) {
+      } catch (error) {
         throw TransportFailure.make({
-          message: cause instanceof Error ? cause.message : "Connection failed",
+          message: error instanceof Error ? error.message : "Connection failed",
         });
       }
-      const mediaType = response.headers.get("content-type") ?? "";
-      const successResponse = specification.successResponses.find(
+      const mediaType = response.headers.get("content-type") ?? "",
+       successResponse = specification.successResponses.find(
         ({ status }) => status === response.status,
       );
       if (successResponse === undefined) {

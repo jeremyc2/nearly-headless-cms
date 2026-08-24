@@ -6,6 +6,7 @@ This package facilitates the creation of Headless CMSs where the builder of the 
 can bring their own UI and provide their own storage backend, authentication/authorization and user management, API/Transport layer, asset management, and runtime environment via Effect layers.
 
 - Don't use abreviations for variable or function names. Use descriptive names instead.
+- Run `bun lint` after every change. Fix all linting errors and warnings.
 
 ## Linting
 

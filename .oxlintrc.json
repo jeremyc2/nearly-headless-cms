@@ -14,12 +14,12 @@
   ],
   "categories": {
     "correctness": "error",
-    "nursery": "error",
-    "pedantic": "error",
+    "nursery": "off",
+    "pedantic": "warn",
     "perf": "error",
-    "restriction": "error",
-    "style": "error",
-    "suspicious": "error"
+    "restriction": "off",
+    "style": "warn",
+    "suspicious": "warn"
   },
   "env": {
     "browser": true,

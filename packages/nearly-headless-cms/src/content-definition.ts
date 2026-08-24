@@ -480,7 +480,7 @@ const validateCalendarDate = (value: string): boolean => {
           );
         }
         if (
-          fieldKind.distinct &&
+          fieldKind.distinct === true &&
           new Set(value.map((item) => JSON.stringify(item))).size !== value.length
         ) {
           issues.push(issue(path, "duplicateListItem", "List items must be distinct"));
@@ -533,7 +533,7 @@ const validateCalendarDate = (value: string): boolean => {
     if (field.label.trim().length === emptyLength) {
       issues.push(issue([...path, "label"], "requiredLabel", "Field label cannot be empty"));
     }
-    if (field.required && field.defaultValue === null && !field.nullable) {
+    if (field.required === true && field.defaultValue === null && field.nullable !== true) {
       issues.push(
         issue(
           [...path, "defaultValue"],
@@ -543,7 +543,7 @@ const validateCalendarDate = (value: string): boolean => {
       );
     }
     if (
-      field.unique &&
+      field.unique === true &&
       ["json", "rich-text", "list", "asset", "relationship", "custom"].includes(field.kind.kind)
     ) {
       issues.push(
@@ -686,7 +686,7 @@ const validateCalendarDate = (value: string): boolean => {
     }
     for (const composition of definition.fieldGroups ?? []) {
       const target = definitions.get(composition.fieldGroupId);
-      if (target === undefined || target.kind !== "fieldGroup") {
+      if (target?.kind !== "fieldGroup") {
         return fail("Missing Field Group", [
           issue(
             ["definitions", definition.id, "fieldGroups"],
@@ -842,13 +842,13 @@ export const compile = (input: SnapshotInput, options: CompileOptions = {}): Com
         if (fieldValue === undefined) {
           if (validateOptions.applyDefaults && field.defaultValue !== undefined) {
             result[field.key] = cloneJson(field.defaultValue);
-          } else if (field.required) {
+          } else if (field.required === true) {
             entryIssues.push(issue(fieldPath, "required", `${field.label} is required`));
           }
           continue;
         }
         if (fieldValue === null) {
-          if (field.nullable) {
+          if (field.nullable === true) {
             result[field.key] = null;
           } else {
             entryIssues.push(issue(fieldPath, "notNullable", `${field.label} cannot be null`));
@@ -885,7 +885,7 @@ export const compile = (input: SnapshotInput, options: CompileOptions = {}): Com
             );
           }
           if (
-            field.kind.distinct &&
+            field.kind.distinct === true &&
             new Set(fieldValue.map((item) => JSON.stringify(item))).size !== fieldValue.length
           ) {
             entryIssues.push(issue(fieldPath, "duplicateListItem", "List items must be distinct"));
@@ -1021,7 +1021,7 @@ export const classifyCompatibility = (
     for (const targetField of targetContentType.fields) {
       if (
         !sourceContentType.fields.some((field) => field.key === targetField.key) &&
-        targetField.required
+        targetField.required === true
       ) {
         return "migrationRequired";
       }

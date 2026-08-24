@@ -124,13 +124,13 @@ export class BrowserAdapter {
             }
           }
           text.textContent = child.text.length === EMPTY_TEXT_OFFSET ? "\u200B" : child.text;
-          if (child.marks?.includes("bold")) {
+          if (child.marks?.includes("bold") === true) {
             text.style.fontWeight = "700";
           }
-          if (child.marks?.includes("italic")) {
+          if (child.marks?.includes("italic") === true) {
             text.style.fontStyle = "italic";
           }
-          if (child.marks?.includes("code")) {
+          if (child.marks?.includes("code") === true) {
             text.className = "rich-inline-code";
           }
           element.append(text);

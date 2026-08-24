@@ -168,8 +168,8 @@ const encodeCursor = (cursor: CursorPayload): string =>
       return left - right;
     }
     if (typeof left === "string" && typeof right === "string") {
-      if (left < right) return NEGATIVE_ONE;
-      if (left > right) return ONE;
+      if (left < right) {return NEGATIVE_ONE;}
+      if (left > right) {return ONE;}
       return ZERO;
     }
     if (typeof left === "boolean" && typeof right === "boolean") {
@@ -302,9 +302,9 @@ const encodeCursor = (cursor: CursorPayload): string =>
       return;
     }
     let children: readonly Predicate[];
-    if (isAllPredicate(predicate)) children = predicate.all;
-    else if (isAnyPredicate(predicate)) children = predicate.any;
-    else children = [predicate.not];
+    if (isAllPredicate(predicate)) {children = predicate.all;}
+    else if (isAnyPredicate(predicate)) {children = predicate.any;}
+    else {children = [predicate.not];}
     if (children.length === ZERO) {
       throw InvalidInput.make({ message: "Boolean Query groups cannot be empty" });
     }
@@ -388,7 +388,7 @@ export const evaluate = ({ entries, options, query, snapshot }: EvaluationInput)
     if (field === undefined) {
       throw InvalidInput.make({ message: `Unknown sort Field Path ${sort.path}` });
     }
-    if (!capabilitiesFor(field.kind).sortable) {
+    if (capabilitiesFor(field.kind).sortable !== true) {
       throw UnsupportedQueryCapability.make({ message: `Field ${sort.path} is not sortable` });
     }
   }
@@ -433,8 +433,8 @@ export const evaluate = ({ entries, options, query, snapshot }: EvaluationInput)
         }
       }
     }
-    if (leftEntry.id < rightEntry.id) return NEGATIVE_ONE;
-    if (leftEntry.id > rightEntry.id) return ONE;
+    if (leftEntry.id < rightEntry.id) {return NEGATIVE_ONE;}
+    if (leftEntry.id > rightEntry.id) {return ONE;}
     return ZERO;
   });
   const items = matchingEntries

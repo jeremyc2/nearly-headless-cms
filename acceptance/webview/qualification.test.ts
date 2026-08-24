@@ -9,7 +9,6 @@ const ACCEPTANCE_RUN_COUNT = 10,
   WAIT_TIMEOUT_MILLISECONDS = 15_000,
   ZERO = 0,
   enabled = Bun.env["ACCEPTANCE_SERVERS_READY"] === "1",
-  acceptanceTest = enabled ? test : test.skip,
   waitFor = async <Value>(
     view: Bun.WebView,
     expression: string,
@@ -24,14 +23,21 @@ const ACCEPTANCE_RUN_COUNT = 10,
       await Bun.sleep(POLLING_INTERVAL_MILLISECONDS);
     }
     throw new Error(`WebView condition timed out: ${expression}`);
-  };
+  },
+
+ selectAcceptanceTest = (enabledRun: boolean): typeof test => {
+  if (enabledRun) {
+    return test;
+  }
+  return test.skip;
+};
 
 afterAll(() => {
   Bun.WebView.closeAll();
 });
 
 describe("Bun WebView qualification", () => {
-  acceptanceTest(
+  selectAcceptanceTest(enabled)(
     "completes ten consecutive native WebKit lifecycle runs without a retry",
     async () => {
       for (

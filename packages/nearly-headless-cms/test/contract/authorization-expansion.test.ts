@@ -112,12 +112,22 @@ describe("Authorization and Relationship Expansion contract", () => {
             contentTypeId: "person",
             values: { friend: null, name: "Ada" },
           }),
-          adaEntry = "entry" in ada ? ada.entry : ada,
+          adaEntry = (() => {
+            if ("entry" in ada) {
+              return ada.entry;
+            }
+            return ada;
+          })(),
           grace = yield* cms.createEntry({
             contentTypeId: "person",
             values: { friend: adaEntry.id, name: "Grace" },
           }),
-          graceEntry = "entry" in grace ? grace.entry : grace;
+          graceEntry = (() => {
+            if ("entry" in grace) {
+              return grace.entry;
+            }
+            return grace;
+          })();
         yield* cms.createEntry({
           contentTypeId: "article",
           values: {

@@ -85,8 +85,8 @@ describe("Example CMS public visibility", () => {
   );
 
   test("hides Comments, taxonomies, and Entry references outside published reachability", async () => {
-    const draftPostId = system.seed?.draftPostId ?? "";
-    const categoryResponse = await system.handler(
+    const draftPostId = system.seed?.draftPostId ?? "",
+     categoryResponse = await system.handler(
         new Request(managementEntriesUrl("category"), {
           body: JSON.stringify({
             values: {

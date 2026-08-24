@@ -307,9 +307,7 @@ const createdStatus = 201,
     if (declared === undefined && paginatedOperations.has(operationIdentifier)) {
       declared = { cursor: Schema.String, pageSize: Schema.Int };
     }
-    if (declared === undefined) {
-      declared = {};
-    }
+    declared ??= {};
     return Object.entries(declared).map(([name, schema]) => ({
       in: "query",
       name,
@@ -535,7 +533,7 @@ export const headless = (operations: readonly DeliveryOperation[]): Document => 
 });
 
 const sortedEntries = (value: object): readonly (readonly [string, unknown])[] =>
-    Object.entries(value).sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey)),
+    Object.entries(value).toSorted(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey)),
   sortValue = (value: unknown): unknown => {
     if (Array.isArray(value)) {
       return value.map(sortValue);

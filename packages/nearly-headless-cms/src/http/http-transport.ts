@@ -119,32 +119,32 @@ const runOperationInterruptibly = async <Value>(
       { signal },
     ),
   errorStatus = (error: CmsError): number => {
-    if (error instanceof InvalidInput) {
+    if (Schema.is(InvalidInput)(error)) {
       return 400;
     }
-    if (error instanceof Forbidden) {
+    if (Schema.is(Forbidden)(error)) {
       return 403;
     }
-    if (error instanceof NotFound) {
+    if (Schema.is(NotFound)(error)) {
       return 404;
     }
-    if (error instanceof DefinitionSnapshotChanged) {
+    if (Schema.is(DefinitionSnapshotChanged)(error)) {
       return 412;
     }
-    if (error instanceof UnsupportedQueryCapability || error instanceof ExportTooLarge) {
+    if (Schema.is(UnsupportedQueryCapability)(error) || Schema.is(ExportTooLarge)(error)) {
       return 422;
     }
-    if (error instanceof InfrastructureFailure) {
+    if (Schema.is(InfrastructureFailure)(error)) {
       if (error.retryable) {
         return 503;
       }
       return 500;
     }
     if (
-      error instanceof Conflict ||
-      error instanceof AssetReferenced ||
-      error instanceof ReferenceBlockedDeletion ||
-      error instanceof IdempotencyConflict
+      Schema.is(Conflict)(error) ||
+      Schema.is(AssetReferenced)(error) ||
+      Schema.is(ReferenceBlockedDeletion)(error) ||
+      Schema.is(IdempotencyConflict)(error)
     ) {
       return 409;
     }
@@ -164,7 +164,7 @@ const runOperationInterruptibly = async <Value>(
   },
   errorResponse = (error: CmsError, requestId: string): Response => {
     let details: JsonValue | undefined;
-    if (error instanceof InvalidInput && error.issues !== undefined) {
+    if (Schema.is(InvalidInput)(error) && error.issues !== undefined) {
       details = {
         issues: error.issues.map((issue: ValidationIssue) => ({
           path: issue.path,
@@ -182,16 +182,16 @@ const runOperationInterruptibly = async <Value>(
     }
     const headers = responseHeaders(requestId);
     headers.set("content-type", "application/json; charset=utf-8");
-    if (error instanceof InfrastructureFailure && error.retryable) {
+    if (Schema.is(InfrastructureFailure)(error) && error.retryable) {
       headers.set("retry-after", "1");
     }
-    return new Response(JSON.stringify(document), { headers, status: errorStatus(error) });
+    return Response.json(document, { headers, status: errorStatus(error) });
   },
   requestFailureResponse = (failure: RequestFailure, requestId: string): Response => {
     const headers = responseHeaders(requestId);
     headers.set("content-type", "application/json; charset=utf-8");
-    return new Response(
-      JSON.stringify({ code: failure.code, message: failure.message, requestId }),
+    return Response.json(
+      { code: failure.code, message: failure.message, requestId },
       { headers, status: failure.status },
     );
   },
@@ -203,7 +203,7 @@ const runOperationInterruptibly = async <Value>(
     if (error instanceof RequestFailure) {
       return requestFailureResponse(error, requestId);
     }
-    if (error instanceof InvalidInput) {
+    if (Schema.is(InvalidInput)(error)) {
       return errorResponse(error, requestId);
     }
     return errorResponse(InvalidInput.make({ message: fallbackMessage }), requestId);
@@ -217,7 +217,7 @@ const runOperationInterruptibly = async <Value>(
   }: JsonResponseInput): Response => {
     const headers = responseHeaders(requestId, fingerprint, cacheControl);
     headers.set("content-type", "application/json; charset=utf-8");
-    return new Response(JSON.stringify(value), { headers, status });
+    return Response.json(value, { headers, status });
   },
   bodylessResponse = (status: number, requestId: string, fingerprint?: string): Response =>
     new Response(null, { headers: responseHeaders(requestId, fingerprint), status }),
@@ -597,7 +597,7 @@ const runOperationInterruptibly = async <Value>(
         baseHeaders.set("content-range", `bytes */${storedAsset.bytes.byteLength}`);
         return new Response(null, { headers: baseHeaders, status: 416 });
       }
-      let start: number, end: number;
+      let end: number, start: number;
       if (match[1] === "") {
         start = Math.max(0, storedAsset.bytes.byteLength - Number(match[2]));
         end = storedAsset.bytes.byteLength - 1;
@@ -785,7 +785,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
           if (request.headers.get("if-none-match") === `"${snapshot.fingerprint}"`) {
             return new Response(null, { headers, status: 304 });
           }
-          return new Response(JSON.stringify(discovery({ operations, snapshot })), {
+          return Response.json(discovery({ operations, snapshot }), {
             headers,
             status: 200,
           });
@@ -1680,8 +1680,8 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
             );
           }
           if (
-            matcher.operation.requiresIdempotencyKey &&
-            !request.headers.get("idempotency-key")?.length
+            matcher.operation.requiresIdempotencyKey === true &&
+            (request.headers.get("idempotency-key")?.length ?? 0) === 0
           ) {
             return errorResponse(
               InvalidInput.make({ message: "Idempotency-Key is required" }),

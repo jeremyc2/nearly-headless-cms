@@ -200,17 +200,28 @@ describe("Example CMS destructive workflows", () => {
 
   test("declares image replacement as multipart for generated Management clients", async () => {
     const document = await jsonRecord(
-        await system.handler(new Request("http://cms.test/api/v1/management/openapi.json")),
-      ),
-      { paths } = document,
-      replacementPath = isRecord(paths)
-        ? paths[
-            "/api/v1/management/definition-spaces/{definitionSpaceId}/operations/assets/{assetId}/replacements"
-          ]
-        : undefined,
-      replacementPost = isRecord(replacementPath) ? replacementPath["post"] : undefined,
-      requestBody = isRecord(replacementPost) ? replacementPost["requestBody"] : undefined,
-      content = isRecord(requestBody) ? requestBody["content"] : undefined;
+      await system.handler(new Request("http://cms.test/api/v1/management/openapi.json")),
+    ),
+     { paths } = document;
+    let replacementPath: unknown;
+    if (isRecord(paths)) {
+      replacementPath =
+        paths[
+          "/api/v1/management/definition-spaces/{definitionSpaceId}/operations/assets/{assetId}/replacements"
+        ];
+    }
+    let replacementPost: unknown;
+    if (isRecord(replacementPath)) {
+      replacementPost = replacementPath["post"];
+    }
+    let requestBody: unknown;
+    if (isRecord(replacementPost)) {
+      requestBody = replacementPost["requestBody"];
+    }
+    let content: unknown;
+    if (isRecord(requestBody)) {
+      content = requestBody["content"];
+    }
     expect(isRecord(content) && content["multipart/form-data"] !== undefined).toBeTrue();
   });
 });

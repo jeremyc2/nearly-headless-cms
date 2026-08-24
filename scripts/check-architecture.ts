@@ -181,10 +181,10 @@ for (const sourcePath of publicApiSourcePaths) {
   for (const [lineIndex, line] of lines.entries()) {
     if (/^export (?:class|const|function|interface|type|\*|\{)/u.test(line)) {
       let commentLineIndex = lineIndex - oneItem;
-      if (lines[commentLineIndex]?.trimEnd().endsWith("*/")) {
+      if (lines[commentLineIndex]?.trimEnd().endsWith("*/") === true) {
         while (
           commentLineIndex >= firstIndex &&
-          !lines[commentLineIndex]?.trimStart().startsWith("/**")
+          lines[commentLineIndex]?.trimStart().startsWith("/**") !== true
         ) {
           commentLineIndex -= oneItem;
         }

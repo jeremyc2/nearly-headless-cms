@@ -379,9 +379,11 @@ const coreNodeTypes = new Set([
             makeIssue(path, "invalidBlockNode", `Node ${node["type"]} is not allowed as a block`),
           ];
         }
-        const { version } = node,
-         extension =
-          typeof version === "number" ? extensions.get(`${node["type"]}@${version}`) : undefined;
+        const { version } = node;
+        let extension: Extension | undefined;
+        if (typeof version === "number") {
+          extension = extensions.get(`${node["type"]}@${version}`);
+        }
         if (extension === undefined) {
           return [
             makeIssue(
@@ -522,7 +524,10 @@ export const render = <Result>(
     if (node.type === "text") {
       return renderer.text(node);
     }
-    const children = "children" in node ? node.children.map(renderNode) : [];
+    let children: readonly Result[] = [];
+    if ("children" in node) {
+      children = node.children.map(renderNode);
+    }
     if (node.type === "link") {
       return renderer.link(node, children);
     }

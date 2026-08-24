@@ -184,7 +184,27 @@ export class Service extends Context.Service<Service, ServiceShape>()(
   "nearly-headless-cms/Cms/Service",
 ) {}
 
-const attempt = <Value>(operation: () => Value): Effect.Effect<Value, InvalidInput> =>
+const sourceProperty = (source: string | undefined): { readonly source?: string } => {
+    if (source === undefined) {
+      return {};
+    }
+    return { source };
+  },
+  writeTokenProperty = (writeToken: string | undefined): { readonly writeToken?: string } => {
+    if (writeToken === undefined) {
+      return {};
+    }
+    return { writeToken };
+  },
+  parentRevisionProperty = (
+    parentRevision: number | undefined,
+  ): { readonly parentRevision?: number } => {
+    if (parentRevision === undefined) {
+      return {};
+    }
+    return { parentRevision };
+  },
+  attempt = <Value>(operation: () => Value): Effect.Effect<Value, InvalidInput> =>
     Effect.try({
       catch: (cause) => {
         if (cause instanceof InvalidInput) {
@@ -342,7 +362,7 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
     values,
   }: EnsureUniqueValuesInput): void => {
     for (const { path } of fieldsAtPaths(contentType.fields).filter(
-      (candidate) => candidate.field.unique,
+      (candidate) => candidate.field.unique === true,
     )) {
       const candidateValue = valueAtPath(values, path);
       if (candidateValue === undefined || candidateValue === null) {
@@ -535,7 +555,7 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
         configuredCapabilities?.expandable === false ||
         (configuredCapabilities === undefined &&
           field.kind.kind !== "list" &&
-          !capabilitiesFor(field.kind).expandable)
+          capabilitiesFor(field.kind).expandable !== true)
       ) {
         throw UnsupportedQueryCapability.make({
           message: `Field ${fieldPath} does not support Relationship Expansion`,
@@ -761,7 +781,7 @@ export const makeLayer = (
             const entryId = yield* identifiers.generate("entry"),
               entry: Representation = { contentTypeId: input.contentTypeId, id: entryId, values },
               records = new Map(generation.records);
-            if (!contentType.definition.history) {
+            if (contentType.definition.history !== true) {
               records.set(entryId, { entry, revisions: [] });
               yield* persistence.commitGeneration(generation.generation, records);
               return entry;
@@ -834,7 +854,10 @@ export const makeLayer = (
             ) {
               return yield* NotFound.make({ message: `Entry ${input.entryId} was not found` });
             }
-            if (contentType.definition.history && current.writeToken !== input.writeToken) {
+            if (
+              contentType.definition.history === true &&
+              current.writeToken !== input.writeToken
+            ) {
               return yield* Conflict.make({ message: "Write Token is stale" });
             }
             const values = yield* attempt(() =>
@@ -859,7 +882,7 @@ export const makeLayer = (
                 values,
               },
               records = new Map(generation.records);
-            if (!contentType.definition.history) {
+            if (contentType.definition.history !== true) {
               records.set(input.entryId, { entry, revisions: [] });
               yield* persistence.commitGeneration(generation.generation, records);
               return entry;
@@ -899,7 +922,10 @@ export const makeLayer = (
             ) {
               return yield* NotFound.make({ message: `Entry ${input.entryId} was not found` });
             }
-            if (contentType.definition.history && current.writeToken !== input.writeToken) {
+            if (
+              contentType.definition.history === true &&
+              current.writeToken !== input.writeToken
+            ) {
               return yield* Conflict.make({ message: "Write Token is stale" });
             }
             for (const candidate of liveRecords(generation)) {
@@ -919,7 +945,7 @@ export const makeLayer = (
               }
             }
             const records = new Map(generation.records);
-            if (!contentType.definition.history) {
+            if (contentType.definition.history !== true) {
               records.delete(input.entryId);
               yield* persistence.commitGeneration(generation.generation, records);
               return;
@@ -976,7 +1002,10 @@ export const makeLayer = (
               ) {
                 return yield* NotFound.make({ message: `Entry ${input.entryId} was not found` });
               }
-              if (contentType.definition.history && current.writeToken !== input.writeToken) {
+              if (
+                contentType.definition.history === true &&
+                current.writeToken !== input.writeToken
+              ) {
                 return yield* Conflict.make({ message: "Write Token is stale" });
               }
               if (mutation.kind === "replace") {
@@ -1003,7 +1032,7 @@ export const makeLayer = (
                   id: input.entryId,
                   values,
                 };
-                if (!contentType.definition.history) {
+                if (contentType.definition.history !== true) {
                   records.set(input.entryId, { entry, revisions: [] });
                   results.push(entry);
                   continue;
@@ -1049,7 +1078,7 @@ export const makeLayer = (
                   });
                 }
               }
-              if (!contentType.definition.history) {
+              if (contentType.definition.history !== true) {
                 records.delete(input.entryId);
                 results.push(undefined);
                 continue;
@@ -1222,7 +1251,7 @@ export const makeLayer = (
               generation = yield* persistence.readGeneration,
               current = generation.records.get(input.entryId);
             if (
-              !contentType?.definition.history ||
+              contentType?.definition.history !== true ||
               current === undefined ||
               current.writeToken !== input.writeToken
             ) {
@@ -1538,7 +1567,7 @@ export const makeLayer = (
                   definitionId: input.definition.id,
                   eventType: "revisionAppended",
                   recordedAt,
-                  ...(input.source === undefined ? {} : { source: input.source }),
+                  ...sourceProperty(input.source),
                 },
               ],
               revisions: [
@@ -1547,9 +1576,7 @@ export const makeLayer = (
                   definition: structuredClone(input.definition),
                   definitionId: input.definition.id,
                   revision,
-                  ...(input.definition.parentRevision === undefined
-                    ? {}
-                    : { parentRevision: input.definition.parentRevision }),
+                  ...parentRevisionProperty(input.definition.parentRevision),
                 },
               ],
             });
@@ -1578,7 +1605,7 @@ export const makeLayer = (
                   definitionId: input.definitionId,
                   eventType: "definitionRetired",
                   recordedAt,
-                  ...(input.source === undefined ? {} : { source: input.source }),
+                  ...sourceProperty(input.source),
                 },
               ],
               retiredDefinitionIds: new Set(state.retiredDefinitionIds).add(input.definitionId),
@@ -1721,29 +1748,31 @@ export const makeLayer = (
                 message: "A migration manifest is required for this Definition change",
               });
             }
-            const generation = yield* persistence.readGeneration,
-              manifest: Manifest =
-                compatibility === "compatible"
-                  ? {
-                      compatible: true,
-                      handlerIdentifier: "nearly-headless-cms.compatible-identity",
-                      handlerVersion: 1,
-                      id: `compatible-${source.snapshotId}-${target.snapshotId}`,
-                      sourceSnapshotId: source.snapshotId,
-                      targetSnapshotId: target.snapshotId,
-                    }
-                  : (() => {
-                      if (migrationManifest === undefined) {
-                        throw new Error("Migration manifest is missing");
-                      }
-                      return migrationManifest;
-                    })(),
-              storedPreparation =
-                input.migration?.preparationId === undefined
-                  ? undefined
-                  : state.migrationPreparations.find(
-                      (candidate) => candidate.id === input.migration?.preparationId,
-                    ),
+            const generation = yield* persistence.readGeneration;
+            let manifest: Manifest;
+            if (compatibility === "compatible") {
+              manifest = {
+                compatible: true,
+                handlerIdentifier: "nearly-headless-cms.compatible-identity",
+                handlerVersion: 1,
+                id: `compatible-${source.snapshotId}-${target.snapshotId}`,
+                sourceSnapshotId: source.snapshotId,
+                targetSnapshotId: target.snapshotId,
+              };
+            } else {
+              if (migrationManifest === undefined) {
+                throw new Error("Migration manifest is missing");
+              }
+              manifest = migrationManifest;
+            }
+            const storedPreparation = (() => {
+                if (input.migration?.preparationId === undefined) {
+                  return;
+                }
+                return state.migrationPreparations.find(
+                  (candidate) => candidate.id === input.migration?.preparationId,
+                );
+              })(),
               preparation =
                 storedPreparation ??
                 (yield* attempt(() =>
@@ -1789,14 +1818,14 @@ export const makeLayer = (
                     message: "Migration Preparation no longer matches the Entry generation",
                   });
                 }
-                const writeToken =
-                  current.writeToken === undefined
-                    ? undefined
-                    : yield* identifiers.generate("write-token");
+                let writeToken: string | undefined;
+                if (current.writeToken !== undefined) {
+                  writeToken = yield* identifiers.generate("write-token");
+                }
                 records.set(entry.id, {
                   ...current,
                   entry,
-                  ...(writeToken === undefined ? {} : { writeToken }),
+                  ...writeTokenProperty(writeToken),
                 });
               }
               const preparedGeneration: EntryGeneration = {
@@ -1836,46 +1865,52 @@ export const makeLayer = (
             for (const definition of input.snapshot.definitions) {
               nextRetiredDefinitionIds.delete(definition.id);
             }
+            let { migrationManifests } = state;
+            if (!migrationManifests.some((candidate) => candidate.id === manifest.id)) {
+              migrationManifests = [...migrationManifests, manifest];
+            }
+            let { migrationPreparations } = state;
+            if (!migrationPreparations.some((candidate) => candidate.id === preparation.id)) {
+              migrationPreparations = [...migrationPreparations, preparation];
+            }
             const replacement: CatalogState = {
-                ...state,
-                active: snapshotRecord,
-                events: [
-                  ...state.events,
-                  {
-                    eventType: "snapshotActivated",
-                    recordedAt: activatedAt,
-                    snapshotId: target.snapshotId,
-                    ...(input.source === undefined ? {} : { source: input.source }),
-                  },
-                ],
-                migrationManifests: state.migrationManifests.some(
-                  (candidate) => candidate.id === manifest.id,
-                )
-                  ? state.migrationManifests
-                  : [...state.migrationManifests, manifest],
-                migrationPreparations: state.migrationPreparations.some(
-                  (candidate) => candidate.id === preparation.id,
-                )
-                  ? state.migrationPreparations
-                  : [...state.migrationPreparations, preparation],
-                retiredDefinitionIds: nextRetiredDefinitionIds,
-                snapshots: [...state.snapshots, snapshotRecord],
-              },
-              committedCatalog =
-                compatibility === "compatible"
-                  ? yield* catalog.replace(input.expectedCatalogVersion, replacement)
-                  : (yield* catalog.commitCutover({
-                      catalogState: replacement,
-                      entryRecords: records,
-                      expectedCatalogVersion: input.expectedCatalogVersion,
-                      expectedEntryGeneration: generation.generation,
-                    })).catalog;
+              ...state,
+              active: snapshotRecord,
+              events: [
+                ...state.events,
+                {
+                  eventType: "snapshotActivated",
+                  recordedAt: activatedAt,
+                  snapshotId: target.snapshotId,
+                  ...sourceProperty(input.source),
+                },
+              ],
+              migrationManifests,
+              migrationPreparations,
+              retiredDefinitionIds: nextRetiredDefinitionIds,
+              snapshots: [...state.snapshots, snapshotRecord],
+            };
+            let committedCatalog: CatalogState;
+            if (compatibility === "compatible") {
+              committedCatalog = yield* catalog.replace(input.expectedCatalogVersion, replacement);
+            } else {
+              committedCatalog = (yield* catalog.commitCutover({
+                catalogState: replacement,
+                entryRecords: records,
+                expectedCatalogVersion: input.expectedCatalogVersion,
+                expectedEntryGeneration: generation.generation,
+              })).catalog;
+            }
             for (const handler of input.migration?.handlers ?? []) {
               migrationHandlers.set(`${handler.identifier}@${handler.version}`, handler);
             }
+            let migratedEntryCount = preparation.entries.length;
+            if (compatibility === "compatible") {
+              migratedEntryCount = 0;
+            }
             return {
               catalogVersion: committedCatalog.version,
-              migratedEntryCount: compatibility === "compatible" ? 0 : preparation.entries.length,
+              migratedEntryCount,
               snapshot: target,
             };
           }),

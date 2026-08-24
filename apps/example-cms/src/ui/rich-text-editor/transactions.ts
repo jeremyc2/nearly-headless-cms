@@ -8,6 +8,34 @@ const emptyIndex = 0,
   secondHeadingLevel = 2,
   thirdHeadingLevel = 3;
 
+function marksProperty(marks: readonly RichText.Mark[] | undefined): {
+  readonly marks?: readonly RichText.Mark[];
+} {
+  if (marks === undefined || marks.length === emptyIndex) {
+    return {};
+  }
+  return { marks: canonicalMarks(marks) };
+}
+
+function normalizeHeadingLevel(level: HeadingLevel): HeadingLevel {
+  if ([secondHeadingLevel, thirdHeadingLevel, fourthHeadingLevel].includes(level)) {
+    return level;
+  }
+  return secondHeadingLevel;
+}
+
+function replaceInlineNode(
+  node: RichText.InlineNode,
+  index: number,
+  targetIndex: number,
+  replacement: RichText.InlineNode,
+): RichText.InlineNode {
+  if (index === targetIndex) {
+    return replacement;
+  }
+  return node;
+}
+
 type HeadingLevel =
   | typeof secondHeadingLevel
   | typeof thirdHeadingLevel
@@ -99,17 +127,13 @@ const emptyParagraph = (): RichText.ParagraphNode => ({
           normalized[normalized.length - firstIndex] = {
             text: `${previous.text}${node.text}`,
             type: "text",
-            ...((node.marks?.length ?? emptyIndex) === emptyIndex
-              ? {}
-              : { marks: canonicalMarks(node.marks ?? []) }),
+            ...marksProperty(node.marks),
           };
         } else if (node.type === "text") {
           normalized.push({
             text: node.text,
             type: "text",
-            ...((node.marks?.length ?? emptyIndex) === emptyIndex
-              ? {}
-              : { marks: canonicalMarks(node.marks ?? []) }),
+            ...marksProperty(node.marks),
           });
         } else {
           normalized.push(structuredClone(node));
@@ -132,9 +156,7 @@ export const normalize = (document: RichText.Document): RichText.Document => {
       return {
         ...block,
         children: normalizeInlineNodes(block.children),
-        level: [secondHeadingLevel, thirdHeadingLevel, fourthHeadingLevel].includes(block.level)
-          ? block.level
-          : secondHeadingLevel,
+        level: normalizeHeadingLevel(block.level),
       };
     }
     return structuredClone(block);
@@ -298,7 +320,7 @@ const insertText = (state: State, text: string): State => {
         ...marks,
       },
       children = selected.block.children.map((node, index) =>
-        index === position.inlineIndex ? replacement : node,
+        replaceInlineNode(node, index, position.inlineIndex, replacement),
       ),
       block = { ...selected.block, children } as RichText.ParagraphNode | RichText.HeadingNode,
       offset = selected.start + text.length,

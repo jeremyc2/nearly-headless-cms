@@ -71,6 +71,48 @@ function pendingCommentClass(count: number): string {
   return "";
 }
 
+function assetSelectValue(value: unknown): string {
+  if (typeof value === "string") {
+    return value;
+  }
+  return "";
+}
+
+function sortDirectionValue(value: string): "ascending" | "descending" {
+  if (value === "ascending") {
+    return "ascending";
+  }
+  return "descending";
+}
+
+function editorialStatus(value: unknown): "draft" | "published" {
+  if (value === "published") {
+    return "draft";
+  }
+  return "published";
+}
+
+function saveStatus(isPending: boolean): string {
+  if (isPending) {
+    return "Saving…";
+  }
+  return "Saved in CMS";
+}
+
+function deletionStatus(isPending: boolean): string {
+  if (isPending) {
+    return "Deleting…";
+  }
+  return "Delete Entry";
+}
+
+function purgeStatus(isPending: boolean): string {
+  if (isPending) {
+    return "Purging…";
+  }
+  return "Permanently purge";
+}
+
 function Workbench() {
   const pendingComments = useQuery({
     queryFn: async () =>
@@ -463,18 +505,26 @@ function ContentList() {
   } else if (contentTypeId === "post") {
     sortPath = "published-at";
   }
+  const queryOptions = {
+    pageSize: 20,
+    sort: [{ direction: sortDirection, path: sortPath }],
+  } as {
+    cursor?: string;
+    pageSize: number;
+    sort: readonly { direction: "ascending" | "descending"; path: string }[];
+    where?: unknown;
+  };
+  if (cursor !== undefined) {
+    queryOptions.cursor = cursor;
+  }
+  if (predicates.length === 1) {
+    queryOptions.where = predicates[0];
+  } else if (predicates.length > 1) {
+    queryOptions.where = { all: predicates };
+  }
   const entries = useQuery({
       queryFn: async () =>
-        Effect.runPromise(
-          managementClient.queryEntries(contentTypeId, {
-            ...(cursor === undefined ? {} : { cursor }),
-            pageSize: 20,
-            sort: [{ direction: sortDirection, path: sortPath }],
-            ...(predicates.length === 0
-              ? {}
-              : { where: predicates.length === 1 ? predicates[0] : { all: predicates } }),
-          }),
-        ),
+        Effect.runPromise(managementClient.queryEntries(contentTypeId, queryOptions)),
       queryKey: ["entries", contentTypeId, cursor, filterText, sortDirection, statusFilter],
     }),
     createEntry = useMutation({
@@ -606,7 +656,7 @@ function ContentList() {
               aria-label="Sort entries"
               value={sortDirection}
               onChange={(event) => {
-                setSortDirection(event.target.value === "ascending" ? "ascending" : "descending");
+                setSortDirection(sortDirectionValue(event.target.value));
               }}
             >
               <option value="descending">
@@ -880,7 +930,7 @@ function EntryEditor() {
           </Link>
           <h1>{title || "Entry"}</h1>
           <p>
-            <span className="saved-dot" /> {save.isPending ? "Saving…" : "Saved in CMS"} · Revision{" "}
+            <span className="saved-dot" /> {saveStatus(save.isPending)} · Revision{" "}
             {state.data?.revisionNumber ?? "—"}
           </p>
         </div>
@@ -1059,9 +1109,7 @@ function EntryEditor() {
                 <label className="field">
                   <span>Immutable Asset</span>
                   <select
-                    value={
-                      typeof values["featured-asset"] === "string" ? values["featured-asset"] : ""
-                    }
+                    value={assetSelectValue(values["featured-asset"])}
                     onChange={(event) => {
                       const assetIdentifier = event.target.value,
                         selectedAsset = assets.data?.find(
@@ -1070,7 +1118,9 @@ function EntryEditor() {
                       updateField("featured-asset", assetIdentifier || null);
                       if (
                         selectedAsset?.metadata.defaultAlternativeText !== undefined &&
-                        !values["featured-alternative-text"]
+                        (values["featured-alternative-text"] === undefined ||
+                          values["featured-alternative-text"] === null ||
+                          values["featured-alternative-text"] === "")
                       ) {
                         updateField(
                           "featured-alternative-text",
@@ -1111,7 +1161,7 @@ function EntryEditor() {
                 <label className="field">
                   <span>Immutable Asset</span>
                   <select
-                    value={typeof values["portrait"] === "string" ? values["portrait"] : ""}
+                    value={assetSelectValue(values["portrait"])}
                     onChange={(event) => {
                       updateField("portrait", event.target.value || null);
                     }}
@@ -1260,9 +1310,7 @@ function EntryEditor() {
                   disabled={editorialCommand.isPending}
                   type="button"
                   onClick={() => {
-                    setEditorialConfirmation(
-                      values["status"] === "published" ? "draft" : "published",
-                    );
+                    setEditorialConfirmation(editorialStatus(values["status"]));
                   }}
                 >
                   {values["status"] === "published" ? "Return to draft" : "Publish Post"}
@@ -1401,11 +1449,11 @@ function EntryEditor() {
                       deleteEntry.mutate();
                     }}
                   >
-                    {deleteEntry.isPending ? "Deleting…" : "Delete Entry"}
+                    {deletionStatus(deleteEntry.isPending)}
                   </button>
                 </div>
               </>
-            ) : confirmPurge ? (
+            ) : (confirmPurge ? (
               <>
                 <p className="eyebrow">Irreversible action</p>
                 <h2 id="entry-deletion-title">Permanently purge retained history?</h2>
@@ -1435,7 +1483,7 @@ function EntryEditor() {
                       permanentlyPurge.mutate();
                     }}
                   >
-                    {permanentlyPurge.isPending ? "Purging…" : "Permanently purge"}
+                    {purgeStatus(permanentlyPurge.isPending)}
                   </button>
                 </div>
               </>
@@ -1465,7 +1513,7 @@ function EntryEditor() {
                   </button>
                 </div>
               </>
-            )}
+            ))}
           </div>
         </div>
       )}
@@ -1514,9 +1562,9 @@ function RichTextField({
         label:
           typeof entry.values["title"] === "string"
             ? entry.values["title"]
-            : typeof entry.values["name"] === "string"
+            : (typeof entry.values["name"] === "string"
               ? entry.values["name"]
-              : entry.id,
+              : entry.id),
         type: contentType.label,
       })),
     ),
@@ -1564,7 +1612,7 @@ function RichTextField({
                 adapter.current?.dispatch({
                   blockType: "heading",
                   headingLevel:
-                    Number(blockType.at(-1)) === 2 ? 2 : Number(blockType.at(-1)) === 3 ? 3 : 4,
+                    Number(blockType.at(-1)) === 2 ? 2 : (Number(blockType.at(-1)) === 3 ? 3 : 4),
                   type: "setBlockKind",
                 });
               } else if (

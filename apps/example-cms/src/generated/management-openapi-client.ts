@@ -841,9 +841,9 @@ const operationSpecifications = {
       },
     ],
   },
-  listDefinitions: {
+  listDefinitionSnapshots: {
     method: "GET",
-    path: "/api/v1/management/definition-spaces/{definitionSpaceId}/definitions",
+    path: "/api/v1/management/definition-spaces/{definitionSpaceId}/definition-snapshots",
     successResponses: [
       {
         responseMediaType: "application/json",
@@ -851,9 +851,9 @@ const operationSpecifications = {
       },
     ],
   },
-  listDefinitionSnapshots: {
+  listDefinitions: {
     method: "GET",
-    path: "/api/v1/management/definition-spaces/{definitionSpaceId}/definition-snapshots",
+    path: "/api/v1/management/definition-spaces/{definitionSpaceId}/definitions",
     successResponses: [
       {
         responseMediaType: "application/json",
@@ -1081,13 +1081,13 @@ function requestOperation({
       let response: Response;
       try {
         response = await fetch(requestUrl, { body, headers, method: specification.method, signal });
-      } catch (cause) {
+      } catch (error) {
         throw TransportFailure.make({
-          message: cause instanceof Error ? cause.message : "Connection failed",
+          message: error instanceof Error ? error.message : "Connection failed",
         });
       }
-      const mediaType = response.headers.get("content-type") ?? "";
-      const successResponse = specification.successResponses.find(
+      const mediaType = response.headers.get("content-type") ?? "",
+       successResponse = specification.successResponses.find(
         ({ status }) => status === response.status,
       );
       if (successResponse === undefined) {
@@ -1459,19 +1459,6 @@ export const makeGeneratedClient = (baseAddress = "") => ({
       signal,
       specification: operationSpecifications.listDefinitionRevisions,
     }),
-  listDefinitions: (
-    input: OperationInputs["listDefinitions"],
-    signal?: AbortSignal,
-  ): Effect.Effect<
-    OperationResponses["listDefinitions"],
-    TransportFailure | ProtocolFailure | DeclaredFailure
-  > =>
-    requestOperation<"listDefinitions">({
-      baseAddress,
-      input,
-      signal,
-      specification: operationSpecifications.listDefinitions,
-    }),
   listDefinitionSnapshots: (
     input: OperationInputs["listDefinitionSnapshots"],
     signal?: AbortSignal,
@@ -1484,6 +1471,19 @@ export const makeGeneratedClient = (baseAddress = "") => ({
       input,
       signal,
       specification: operationSpecifications.listDefinitionSnapshots,
+    }),
+  listDefinitions: (
+    input: OperationInputs["listDefinitions"],
+    signal?: AbortSignal,
+  ): Effect.Effect<
+    OperationResponses["listDefinitions"],
+    TransportFailure | ProtocolFailure | DeclaredFailure
+  > =>
+    requestOperation<"listDefinitions">({
+      baseAddress,
+      input,
+      signal,
+      specification: operationSpecifications.listDefinitions,
     }),
   listEntryRevisions: (
     input: OperationInputs["listEntryRevisions"],

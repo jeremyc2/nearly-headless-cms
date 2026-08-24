@@ -27,7 +27,12 @@ describe("runtime Content Definition lifecycle", () => {
             contentTypeId: "note",
             values: { title: "A durable note" },
           }),
-          entry = "entry" in created ? created.entry : created,
+          entry = (() => {
+            if ("entry" in created) {
+              return created.entry;
+            }
+            return created;
+          })(),
           optionalSummary = {
             fields: [
               { key: "title", kind: { kind: "text" as const }, label: "Title", required: true },
@@ -168,16 +173,18 @@ describe("runtime Content Definition lifecycle", () => {
       formatVersion: 1,
       identifier: "com.example.rating",
       validateConfiguration: () => [],
-      validateValue: (value) =>
-        typeof value === "number" && Number.isSafeInteger(value) && value >= 1 && value <= 5
-          ? []
-          : [
-              {
-                message: "Rating must be an integer from one through five",
-                path: [],
-                reason: "invalidRating",
-              },
-            ],
+      validateValue: (value) => {
+        if (typeof value === "number" && Number.isSafeInteger(value) && value >= 1 && value <= 5) {
+          return [];
+        }
+        return [
+          {
+            message: "Rating must be an integer from one through five",
+            path: [],
+            reason: "invalidRating",
+          },
+        ];
+      },
     };
     return Effect.runPromise(
       Effect.gen(function* retainCustomFieldRegistrations() {
