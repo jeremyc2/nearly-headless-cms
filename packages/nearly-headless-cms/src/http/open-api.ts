@@ -279,6 +279,12 @@ const createdStatus = 201,
     }
     return { ...document.schema, $defs: document.definitions };
   },
+  conditionalValue = <Value>(condition: boolean, whenTrue: Value, whenFalse: Value): Value => {
+    if (condition) {
+      return whenTrue;
+    }
+    return whenFalse;
+  },
   pathParameters = (
     path: string,
     operationSchemas?: OperationSchemas,
@@ -288,7 +294,10 @@ const createdStatus = 201,
         declaredSchema = operationSchemas?.pathParameters?.[parameterName];
       let parameterSchema: Readonly<Record<string, unknown>>;
       if (declaredSchema === undefined) {
-        parameterSchema = { type: parameterName === "revisionNumber" ? "integer" : "string" };
+        parameterSchema = { type: "string" };
+        if (parameterName === "revisionNumber") {
+          parameterSchema = { type: "integer" };
+        }
       } else {
         parameterSchema = effectSchema(declaredSchema);
       }
@@ -349,18 +358,26 @@ const createdStatus = 201,
         ...headerParameters(operationIdentifier, operationDescriptor.schemas),
       ],
       declaredRequestBody = operationDescriptor.schemas?.requestBody,
-      requestBodySchema =
-        declaredRequestBody === undefined
-          ? requestBodySchemas.get(operationIdentifier)
-          : effectSchema(declaredRequestBody),
       requestMediaType =
         operationDescriptor.schemas?.requestMediaType ??
-        (operationIdentifier === "ingestAsset" ? "multipart/form-data" : "application/json"),
+        conditionalValue(
+          operationIdentifier === "ingestAsset",
+          "multipart/form-data",
+          "application/json",
+        ),
       responseMediaType =
         operationDescriptor.schemas?.responseMediaType ??
-        (operationIdentifier === "readAsset" || operationIdentifier === "inspectAssetContent"
-          ? "application/octet-stream"
-          : "application/json");
+        conditionalValue(
+          operationIdentifier === "readAsset" || operationIdentifier === "inspectAssetContent",
+          "application/octet-stream",
+          "application/json",
+        );
+    let requestBodySchema: Readonly<Record<string, unknown>> | undefined;
+    if (declaredRequestBody === undefined) {
+      requestBodySchema = requestBodySchemas.get(operationIdentifier);
+    } else {
+      requestBodySchema = effectSchema(declaredRequestBody);
+    }
     let responseSchema: Readonly<Record<string, unknown>>;
     if (operationDescriptor.schemas === undefined) {
       responseSchema = successSchemas.get(operationIdentifier) ?? {
@@ -371,23 +388,21 @@ const createdStatus = 201,
     } else {
       responseSchema = effectSchema(operationDescriptor.schemas.response);
     }
-    return {
+    let responseDescription = "Successful response";
+    if (bodyless) {
+      responseDescription = "Operation completed without a response body";
+    }
+    const operation: Record<string, unknown> = {
       operationId: operationIdentifier,
-      ...(parameters.length === firstIndex ? {} : { parameters }),
-      ...(requestBodySchema === undefined
-        ? {}
-        : {
-            requestBody: {
-              content: { [requestMediaType]: { schema: requestBodySchema } },
-              required: true,
-            },
-          }),
+      ...conditionalValue(parameters.length === firstIndex, {}, { parameters }),
       responses: {
         [String(successStatus)]: {
-          description: bodyless
-            ? "Operation completed without a response body"
-            : "Successful response",
-          ...(bodyless ? {} : { content: { [responseMediaType]: { schema: responseSchema } } }),
+          description: responseDescription,
+          ...conditionalValue(
+            bodyless,
+            {},
+            { content: { [responseMediaType]: { schema: responseSchema } } },
+          ),
         },
         ...Object.fromEntries(
           (additionalBodylessSuccessStatuses.get(operationIdentifier) ?? []).map((status) => [
@@ -398,6 +413,13 @@ const createdStatus = 201,
         ...errorResponses(),
       },
     };
+    if (requestBodySchema !== undefined) {
+      operation["requestBody"] = {
+        content: { [requestMediaType]: { schema: requestBodySchema } },
+        required: true,
+      };
+    }
+    return operation;
   },
   completePaths = (
     paths: Readonly<Record<string, Readonly<Record<string, OperationDescriptor>>>>,
@@ -414,13 +436,16 @@ const createdStatus = 201,
       ]),
     ),
   descriptor = (operationIdentifier: string): OperationDescriptor => ({ operationIdentifier }),
-  customDescriptor = (operation: DeliveryOperation | ManagementOperation): OperationDescriptor => ({
-    operationIdentifier: operation.identifier,
-    schemas: operation.schemas,
-    ...("successStatus" in operation && operation.successStatus !== undefined
-      ? { successStatus: operation.successStatus }
-      : {}),
-  });
+  customDescriptor = (operation: DeliveryOperation | ManagementOperation): OperationDescriptor => {
+    const operationDescriptor: OperationDescriptor = {
+      operationIdentifier: operation.identifier,
+      schemas: operation.schemas,
+    };
+    if ("successStatus" in operation && operation.successStatus !== undefined) {
+      return { ...operationDescriptor, successStatus: operation.successStatus };
+    }
+    return operationDescriptor;
+  };
 
 /** Builds the complete generic plus Builder-defined Management OpenAPI document. */
 export const management = (operations: readonly ManagementOperation[] = []): Document => ({

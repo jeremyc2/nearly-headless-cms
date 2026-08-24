@@ -259,7 +259,10 @@ const coreNodeTypes = new Set([
     switch (node["type"]) {
       case "paragraph":
       case "heading": {
-        if (node["type"] === "heading" && !headingLevels.some((level) => level === Number(node["level"]))) {
+        if (
+          node["type"] === "heading" &&
+          !headingLevels.some((level) => level === Number(node["level"]))
+        ) {
           issues.push(
             makeIssue(
               [...path, "level"],
@@ -395,10 +398,11 @@ const coreNodeTypes = new Set([
         }
         if (isJsonValue(node["configuration"])) {
           issues.push(
-            ...extension.validateConfiguration(node["configuration"]).map((extensionIssue) => ({
-              ...extensionIssue,
-              path: [...path, "configuration", ...extensionIssue.path],
-            })),
+            ...extension.validateConfiguration(node["configuration"]).map((extensionIssue) =>
+              Object.assign(extensionIssue, {
+                path: [...path, "configuration", ...extensionIssue.path],
+              }),
+            ),
           );
         } else {
           issues.push(
@@ -436,10 +440,11 @@ const coreNodeTypes = new Set([
         }
         if (isJsonValue(node) && !Array.isArray(node)) {
           issues.push(
-            ...extension.validateNode(node as unknown as ExtensionNode).map((extensionIssue) => ({
-              ...extensionIssue,
-              path: [...path, ...extensionIssue.path],
-            })),
+            ...extension.validateNode(node as unknown as ExtensionNode).map((extensionIssue) =>
+              Object.assign(extensionIssue, {
+                path: [...path, ...extensionIssue.path],
+              }),
+            ),
           );
         }
         return issues;
@@ -467,7 +472,10 @@ export const validate = (value: unknown, options: ValidationOptions = {}): Docum
       validateBlock(child, ["children", index], extensions),
     );
   if (issues.length > emptyLength) {
-    throw InvalidInput.make({ issues, message: issues.at(emptyLength)?.message ?? "Invalid Rich Text" });
+    throw InvalidInput.make({
+      issues,
+      message: issues.at(emptyLength)?.message ?? "Invalid Rich Text",
+    });
   }
   return structuredClone(value) as unknown as Document;
 };

@@ -12,17 +12,21 @@ const ACCEPTANCE_RUN_COUNT = 10,
   waitFor = async <Value>(
     view: Bun.WebView,
     expression: string,
-    predicate: (value: Value) => boolean,
-  ): Promise<Value> => {
-    const deadline = Date.now() + WAIT_TIMEOUT_MILLISECONDS;
-    while (Date.now() < deadline) {
+  predicate: (value: Value) => boolean,
+): Promise<Value> => {
+    const deadline = Date.now() + WAIT_TIMEOUT_MILLISECONDS,
+     poll = async (): Promise<Value> => {
+      if (Date.now() >= deadline) {
+        throw new Error(`WebView condition timed out: ${expression}`);
+      }
       const value = await view.evaluate<Value>(expression);
       if (predicate(value)) {
         return value;
       }
       await Bun.sleep(POLLING_INTERVAL_MILLISECONDS);
-    }
-    throw new Error(`WebView condition timed out: ${expression}`);
+      return poll();
+    };
+    return poll();
   },
 
  selectAcceptanceTest = (enabledRun: boolean): typeof test => {
@@ -40,11 +44,7 @@ describe("Bun WebView qualification", () => {
   selectAcceptanceTest(enabled)(
     "completes ten consecutive native WebKit lifecycle runs without a retry",
     async () => {
-      for (
-        let runNumber = INITIAL_RUN_NUMBER;
-        runNumber <= ACCEPTANCE_RUN_COUNT;
-        runNumber += RUN_NUMBER_INCREMENT
-      ) {
+      const runQualification = async (runNumber: number): Promise<void> => {
         const consoleErrors: unknown[] = [],
           view = new Bun.WebView({
             console: (method, ...values) => {
@@ -69,7 +69,11 @@ describe("Bun WebView qualification", () => {
           view.close();
         }
         expect(runNumber).toBeGreaterThan(ZERO);
-      }
+        if (runNumber < ACCEPTANCE_RUN_COUNT) {
+          return runQualification(runNumber + RUN_NUMBER_INCREMENT);
+        }
+      };
+      await runQualification(INITIAL_RUN_NUMBER);
     },
     ACCEPTANCE_TIMEOUT_MILLISECONDS,
   );

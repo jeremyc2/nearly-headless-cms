@@ -7,6 +7,14 @@ import {
 } from "nearly-headless-cms";
 import type { HttpContract } from "nearly-headless-cms/http";
 import { Effect, Schema } from "effect";
+
+function conditionalProperty<T>(condition: boolean, property: string, value: T): Record<string, T> {
+  if (condition) {
+    return { [property]: value };
+  }
+  return {};
+}
+
 import { type CommandReceiptStore, memoryCommandReceiptStore } from "./command-receipt-store.ts";
 import {
   authorDefinitionRequirement,
@@ -175,18 +183,18 @@ const collectRichTextPublicationRules = ({
         if (contentTypeId === "post" && status === "published") {
           yield* validatePostPublication(cms, current.values);
         }
+        const values = { ...current.values, status } as ContentDefinition.JsonObject;
+        if (
+          contentTypeId === "post" &&
+          status === "published" &&
+          current.values["published-at"] == null
+        ) {
+          Object.assign(values, { "published-at": new Date().toISOString() });
+        }
         return yield* cms.updateEntry({
           contentTypeId,
           entryId,
-          values: {
-            ...current.values,
-            status,
-            ...(contentTypeId === "post" &&
-            status === "published" &&
-            current.values["published-at"] == null
-              ? { "published-at": new Date().toISOString() }
-              : {}),
-          },
+          values,
           writeToken,
         });
       }),
@@ -215,8 +223,12 @@ const collectRichTextPublicationRules = ({
     cms: Cms.ServiceShape,
     query: Omit<EntryQuery.Query, "cursor">,
     cursor?: string,
-  ): Effect.Effect<readonly Entry.Representation[], CmsError.CmsError> =>
-    cms.queryEntries({ ...query, ...(cursor === undefined ? {} : { cursor }) }).pipe(
+  ): Effect.Effect<readonly Entry.Representation[], CmsError.CmsError> => {
+    const queryWithCursor = { ...query } as EntryQuery.Query;
+    if (cursor !== undefined) {
+      Object.assign(queryWithCursor, { cursor });
+    }
+    return cms.queryEntries(queryWithCursor).pipe(
       Effect.flatMap((page) => {
         if (page.nextCursor === undefined) {
           return Effect.succeed(page.items);
@@ -225,7 +237,8 @@ const collectRichTextPublicationRules = ({
           Effect.map((remainingEntries) => [...page.items, ...remainingEntries]),
         );
       }),
-    ),
+    );
+  },
   deletePostWithComments: HttpContract.ManagementOperation["execute"] = ({
     cms,
     parameters,
@@ -338,10 +351,14 @@ const collectRichTextPublicationRules = ({
             cms.getCurrentEntryState({ contentTypeId: "post", entryId: post.id }),
           ),
           mutations: Cms.EntryBatchMutation[] = postStates.map((state) => {
-            const currentRelationships = state.entry.values[relationshipField],
-              relationships = Array.isArray(currentRelationships)
-                ? currentRelationships.filter((entryId) => entryId !== taxonomyEntryId)
-                : [];
+            const currentRelationships = state.entry.values[relationshipField];
+            let relationships: ContentDefinition.JsonValue[] = [];
+            if (Array.isArray(currentRelationships)) {
+              relationships = currentRelationships.filter(
+                (entryId): entryId is string =>
+                  typeof entryId === "string" && entryId !== taxonomyEntryId,
+              );
+            }
             return {
               input: {
                 contentTypeId: "post",
@@ -393,9 +410,13 @@ const collectRichTextPublicationRules = ({
           content: new Uint8Array(await contentValue.arrayBuffer()),
           filename,
           mediaType,
-          ...(typeof defaultAlternativeText === "string" ? { defaultAlternativeText } : {}),
-          ...(typeof height === "number" ? { height } : {}),
-          ...(typeof width === "number" ? { width } : {}),
+          ...conditionalProperty(
+            typeof defaultAlternativeText === "string",
+            "defaultAlternativeText",
+            defaultAlternativeText,
+          ),
+          ...conditionalProperty(typeof height === "number", "height", height),
+          ...conditionalProperty(typeof width === "number", "width", width),
         };
       },
     }),
@@ -413,9 +434,12 @@ const collectRichTextPublicationRules = ({
     return Object.fromEntries(
       Object.entries(value).map(([key, child]) => [
         key,
-        key === "assetId" && child === oldAssetId
-          ? newAssetId
-          : replaceRichTextAsset(child, oldAssetId, newAssetId),
+        (() => {
+          if (key === "assetId" && child === oldAssetId) {
+            return newAssetId;
+          }
+          return replaceRichTextAsset(child, oldAssetId, newAssetId);
+        })(),
       ]),
     );
   },
@@ -582,9 +606,11 @@ export const makeManagementOperations = (
                       oldAssetId,
                       newAsset.id,
                     ),
-                    ...(state.entry.values["featured-asset"] === oldAssetId
-                      ? { "featured-asset": newAsset.id }
-                      : {}),
+                    ...conditionalProperty(
+                      state.entry.values["featured-asset"] === oldAssetId,
+                      "featured-asset",
+                      newAsset.id,
+                    ),
                   },
                   writeToken: state.writeToken,
                 },
@@ -603,9 +629,11 @@ export const makeManagementOperations = (
                       oldAssetId,
                       newAsset.id,
                     ),
-                    ...(state.entry.values["portrait"] === oldAssetId
-                      ? { portrait: newAsset.id }
-                      : {}),
+                    ...conditionalProperty(
+                      state.entry.values["portrait"] === oldAssetId,
+                      "portrait",
+                      newAsset.id,
+                    ),
                   },
                   writeToken: state.writeToken,
                 },

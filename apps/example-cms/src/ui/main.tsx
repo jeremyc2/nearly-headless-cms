@@ -113,6 +113,142 @@ function purgeStatus(isPending: boolean): string {
   return "Permanently purge";
 }
 
+function statusOptions(contentTypeId: string): readonly string[] {
+  if (contentTypeId === "post") {
+    return ["draft", "published"];
+  }
+  return ["pending", "approved", "rejected"];
+}
+
+function sortLabel(contentTypeId: string, newest: boolean): string {
+  if (contentTypeId === "post" || contentTypeId === "comment") {
+    if (newest) {
+      return "Newest first";
+    }
+    return "Oldest first";
+  }
+  if (newest) {
+    return "Name Z–A";
+  }
+  return "Name A–Z";
+}
+
+function publicationValue(value: string): string | null {
+  if (value === "") {
+    return null;
+  }
+  return new Date(value).toISOString();
+}
+
+function featuredAlternativeTextField(rootField: string): string {
+  if (rootField === "featured-alternative-text") {
+    return "field-featured-alternative-text";
+  }
+  return "field-body";
+}
+
+function entryOptionLabel(values: Record<string, unknown>, identifier: string): string {
+  if (typeof values["title"] === "string") {
+    return values["title"];
+  }
+  if (typeof values["name"] === "string") {
+    return values["name"];
+  }
+  return identifier;
+}
+
+function headingLevel(blockType: string): 2 | 3 | 4 {
+  if (blockType.endsWith("2")) {
+    return 2;
+  }
+  if (blockType.endsWith("3")) {
+    return 3;
+  }
+  return 4;
+}
+
+function dialogHeading(type: string): string {
+  if (type === "entry") {return "Entry reference";}
+  return type;
+}
+
+function revisionClass(index: number): string {
+  if (index === 0) {return "revision-dot current";}
+  return "revision-dot";
+}
+
+function revisionLabel(index: number): string {
+  if (index === 0) {return "Current · inspect · ";}
+  return "Inspect · ";
+}
+
+function assetDimensions(width: number | undefined, height: number | undefined): string {
+  if (width === undefined) {return "";}
+  return ` · ${width} × ${height ?? "?"}`;
+}
+
+function deleteImageLabel(isPending: boolean): string {
+  if (isPending) {return "Deleting…";}
+  return "Clear assignments and delete";
+}
+
+function editorialConfirmationLabel(value: string): string {
+  if (value === "published") {return "Publish this Post?";}
+  if (value === "draft") {return "Return this Post to draft?";}
+  if (value === "approved") {return "Approve this Comment?";}
+  return "Reject this Comment?";
+}
+
+function editorialConfirmationDescription(value: string): string {
+  if (value === "published" || value === "approved") {
+    return "This content becomes public-eligible and appears after the next static refresh.";
+  }
+  return "This content stops being public-eligible; an existing static build changes only after refresh.";
+}
+
+function entryDeletionTitle(title: string): string {
+  if (title.length > 0) {return title;}
+  return "this Entry";
+}
+
+function assetCaption(caption: string): { caption?: string } {
+  if (caption.length > 0) {return { caption };}
+  return {};
+}
+
+function activeStatusClass(value: unknown): string {
+  if (value === "published" || value === "approved") {
+    return "published";
+  }
+  return "";
+}
+
+function stringArrayValue(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.map(String);
+  }
+  return [];
+}
+
+function publicationInputValue(value: unknown): string {
+  if (typeof value === "string") {
+    return value.slice(0, 16);
+  }
+  return "";
+}
+
+function editorialButtonLabel(value: unknown): string {
+  if (value === "published") {
+    return "Return to draft";
+  }
+  return "Publish Post";
+}
+
+function relatedContentType(contentTypeId: string): string {
+  if (contentTypeId === "comment") {return "post";}
+  return "author";
+}
+
 function Workbench() {
   const pendingComments = useQuery({
     queryFn: async () =>
@@ -491,14 +627,13 @@ function ContentList() {
   } else if (contentTypeId === "comment") {
     filterPath = "display-name";
   }
-  const predicates = [
-    ...(filterText.trim().length === 0
-      ? []
-      : [{ operator: "contains", path: filterPath, value: filterText.trim() }]),
-    ...(statusFilter === "all"
-      ? []
-      : [{ operator: "equals", path: "status", value: statusFilter }]),
-  ];
+  const predicates: { operator: string; path: string; value: string }[] = [];
+  if (filterText.trim().length > 0) {
+    predicates.push({ operator: "contains", path: filterPath, value: filterText.trim() });
+  }
+  if (statusFilter !== "all") {
+    predicates.push({ operator: "equals", path: "status", value: statusFilter });
+  }
   let sortPath = "name";
   if (contentTypeId === "comment") {
     sortPath = "created-at";
@@ -530,14 +665,14 @@ function ContentList() {
     createEntry = useMutation({
       mutationFn: async () => {
         const suffix = crypto.randomUUID().slice(0, 8),
-          relatedContentTypeId = contentTypeId === "comment" ? "post" : "author",
-          related =
-            contentTypeId === "post" || contentTypeId === "comment"
-              ? await Effect.runPromise(
-                  managementClient.queryEntries(relatedContentTypeId, { pageSize: 1 }),
-                )
-              : undefined,
-          relatedEntryId = related?.items[0]?.id;
+          relatedContentTypeId = relatedContentType(contentTypeId);
+        let related: { items: readonly { id: string }[] } | undefined;
+        if (contentTypeId === "post" || contentTypeId === "comment") {
+          related = await Effect.runPromise(
+            managementClient.queryEntries(relatedContentTypeId, { pageSize: 1 }),
+          );
+        }
+        const relatedEntryId = related?.items[0]?.id;
         let values: Readonly<Record<string, unknown>>;
         if (contentTypeId === "post") {
           values = {
@@ -581,7 +716,12 @@ function ContentList() {
         return Effect.runPromise(managementClient.createEntry(contentTypeId, values));
       },
       onSuccess: async (result) => {
-        const entry = "entry" in result ? result.entry : result;
+        let entry;
+        if ("entry" in result) {
+          entry = result.entry;
+        } else {
+          entry = result;
+        }
         await queryClient.invalidateQueries({ queryKey: ["entries", contentTypeId] });
         await navigate({
           params: { contentTypeId, entryId: entry.id },
@@ -639,10 +779,7 @@ function ContentList() {
                 }}
               >
                 <option value="all">Status: all</option>
-                {(contentTypeId === "post"
-                  ? ["draft", "published"]
-                  : ["pending", "approved", "rejected"]
-                ).map((status) => (
+                {statusOptions(contentTypeId).map((status) => (
                   <option key={status} value={status}>
                     {status}
                   </option>
@@ -659,16 +796,8 @@ function ContentList() {
                 setSortDirection(sortDirectionValue(event.target.value));
               }}
             >
-              <option value="descending">
-                {contentTypeId === "post" || contentTypeId === "comment"
-                  ? "Newest first"
-                  : "Name Z–A"}
-              </option>
-              <option value="ascending">
-                {contentTypeId === "post" || contentTypeId === "comment"
-                  ? "Oldest first"
-                  : "Name A–Z"}
-              </option>
+              <option value="descending">{sortLabel(contentTypeId, true)}</option>
+              <option value="ascending">{sortLabel(contentTypeId, false)}</option>
             </select>
           </label>
         </div>
@@ -689,9 +818,7 @@ function ContentList() {
                   {stringValue(entry.values["slug"] ?? entry.values["status"], entry.id)}
                 </small>
               </span>
-              <span
-                className={`status-pill ${entry.values["status"] === "published" || entry.values["status"] === "approved" ? "published" : ""}`}
-              >
+              <span className={`status-pill ${activeStatusClass(entry.values["status"])}`}>
                 {stringValue(entry.values["status"], "active")}
               </span>
               <span>→</span>
@@ -816,7 +943,12 @@ function EntryEditor() {
         }
       },
       onSuccess: async (result) => {
-        const updatedState = "entry" in result ? result : { entry: result };
+        let updatedState;
+        if ("entry" in result) {
+          updatedState = result;
+        } else {
+          updatedState = { entry: result };
+        }
         setValues(structuredClone(updatedState.entry.values));
         setConflict(undefined);
         await queryClient.invalidateQueries({ queryKey: ["entry-state", contentTypeId, entryId] });
@@ -1212,9 +1344,7 @@ function EntryEditor() {
                     <span>Categories</span>
                     <select
                       multiple
-                      value={
-                        Array.isArray(values["categories"]) ? values["categories"].map(String) : []
-                      }
+                      value={stringArrayValue(values["categories"])}
                       onChange={(event) => {
                         updateField(
                           "categories",
@@ -1233,7 +1363,7 @@ function EntryEditor() {
                     <span>Tags</span>
                     <select
                       multiple
-                      value={Array.isArray(values["tags"]) ? values["tags"].map(String) : []}
+                      value={stringArrayValue(values["tags"])}
                       onChange={(event) => {
                         updateField(
                           "tags",
@@ -1252,17 +1382,11 @@ function EntryEditor() {
                     <span>Publication time</span>
                     <input
                       type="datetime-local"
-                      value={
-                        typeof values["published-at"] === "string"
-                          ? values["published-at"].slice(0, 16)
-                          : ""
-                      }
+                      value={publicationInputValue(values["published-at"])}
                       onChange={(event) => {
                         updateField(
                           "published-at",
-                          event.target.value === ""
-                            ? null
-                            : new Date(event.target.value).toISOString(),
+                          publicationValue(event.target.value),
                         );
                       }}
                     />
@@ -1288,10 +1412,7 @@ function EntryEditor() {
                     <ul>
                       {editorialIssues(editorialCommand.error).map((issue) => {
                         const rootField = String(issue.path[0] ?? "body"),
-                          targetIdentifier =
-                            rootField === "featured-alternative-text"
-                              ? "field-featured-alternative-text"
-                              : "field-body";
+                          targetIdentifier = featuredAlternativeTextField(rootField);
                         return (
                           <li key={`${issue.path.join(".")}-${issue.reason}`}>
                             <a href={`#${targetIdentifier}`}>
@@ -1313,7 +1434,7 @@ function EntryEditor() {
                     setEditorialConfirmation(editorialStatus(values["status"]));
                   }}
                 >
-                  {values["status"] === "published" ? "Return to draft" : "Publish Post"}
+                  {editorialButtonLabel(values["status"])}
                 </button>
               )}
               {contentTypeId === "comment" && (
@@ -1379,18 +1500,10 @@ function EntryEditor() {
           >
             <p className="eyebrow">Confirm editorial change</p>
             <h2 id="editorial-command-title">
-              {editorialConfirmation === "published"
-                ? "Publish this Post?"
-                : editorialConfirmation === "draft"
-                  ? "Return this Post to draft?"
-                  : editorialConfirmation === "approved"
-                    ? "Approve this Comment?"
-                    : "Reject this Comment?"}
+              {editorialConfirmationLabel(editorialConfirmation)}
             </h2>
             <p>
-              {editorialConfirmation === "published" || editorialConfirmation === "approved"
-                ? "This content becomes public-eligible and appears after the next static refresh."
-                : "This content stops being public-eligible; an existing static build changes only after refresh."}
+              {editorialConfirmationDescription(editorialConfirmation)}
             </p>
             <div className="editor-actions">
               <button
@@ -1428,7 +1541,7 @@ function EntryEditor() {
             {deletionRecord === undefined ? (
               <>
                 <p className="eyebrow">Confirm deletion</p>
-                <h2 id="entry-deletion-title">Delete “{title || "this Entry"}”?</h2>
+                <h2 id="entry-deletion-title">Delete “{entryDeletionTitle(title)}”?</h2>
                 <p>{deletionConsequence(contentTypeId)}</p>
                 <p>The retained revisions can be restored until you permanently purge them.</p>
                 <div className="editor-actions">
@@ -1559,12 +1672,7 @@ function RichTextField({
     entryOptions = contentTypes.flatMap((contentType, index) =>
       (entryQueries[index]?.data?.items ?? []).map((entry) => ({
         identifier: entry.id,
-        label:
-          typeof entry.values["title"] === "string"
-            ? entry.values["title"]
-            : (typeof entry.values["name"] === "string"
-              ? entry.values["name"]
-              : entry.id),
+        label: entryOptionLabel(entry.values, entry.id),
         type: contentType.label,
       })),
     ),
@@ -1611,8 +1719,7 @@ function RichTextField({
               ) {
                 adapter.current?.dispatch({
                   blockType: "heading",
-                  headingLevel:
-                    Number(blockType.at(-1)) === 2 ? 2 : (Number(blockType.at(-1)) === 3 ? 3 : 4),
+                    headingLevel: headingLevel(blockType),
                   type: "setBlockKind",
                 });
               } else if (
@@ -1747,7 +1854,7 @@ function RichTextField({
             aria-modal="true"
             aria-label={`Insert ${dialog.type} reference`}
           >
-            <h3>Insert {dialog.type === "entry" ? "Entry reference" : dialog.type}</h3>
+            <h3>Insert {dialogHeading(dialog.type)}</h3>
             {dialog.type === "link" && (
               <>
                 <label>
@@ -1870,7 +1977,7 @@ function RichTextField({
                     adapter.current?.dispatch({
                       alternativeText: dialog.alternativeText,
                       assetId: dialog.assetId,
-                      ...(dialog.caption.length === 0 ? {} : { caption: dialog.caption }),
+                      ...assetCaption(dialog.caption),
                       type: "insertAssetReference",
                     });
                   }
@@ -1947,11 +2054,11 @@ function HistoryPanel({
           }}
           key={revision.revisionNumber}
         >
-          <span className={index === 0 ? "revision-dot current" : "revision-dot"} />
+          <span className={revisionClass(index)} />
           <span>
             <strong>Revision {revision.revisionNumber}</strong>
             <small>
-              {index === 0 ? "Current · inspect · " : "Inspect · "}
+              {revisionLabel(index)}
               {new Date(revision.recordedAt).toLocaleString()}
             </small>
           </span>
@@ -2115,9 +2222,7 @@ function AssetsPage() {
             <strong>{asset.metadata.filename}</strong>
             <small>
               {asset.metadata.mediaType} · {asset.metadata.byteLength.toLocaleString()} bytes
-              {asset.metadata.width === undefined
-                ? ""
-                : ` · ${asset.metadata.width} × ${asset.metadata.height ?? "?"}`}
+              {assetDimensions(asset.metadata.width, asset.metadata.height)}
             </small>
             <div className="asset-actions">
               <button
@@ -2218,7 +2323,7 @@ function AssetsPage() {
                   deleteImage.mutate(deletionAssetId);
                 }}
               >
-                {deleteImage.isPending ? "Deleting…" : "Clear assignments and delete"}
+                {deleteImageLabel(deleteImage.isPending)}
               </button>
             </div>
           </div>

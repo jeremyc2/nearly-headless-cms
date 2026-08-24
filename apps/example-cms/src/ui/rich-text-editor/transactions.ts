@@ -91,6 +91,14 @@ const emptyParagraph = (): RichText.ParagraphNode => ({
     children: [{ text: "", type: "text" }],
     type: "paragraph",
   }),
+  asParagraph = (
+    replacement: RichText.ParagraphNode | RichText.HeadingNode,
+  ): RichText.ParagraphNode => {
+    if (replacement.type === "paragraph") {
+      return replacement;
+    }
+    return { children: replacement.children, type: "paragraph" };
+  },
   conditionalValue = <Value>(condition: boolean, whenTrue: Value, whenFalse: Value): Value => {
     if (condition) {
       return whenTrue;
@@ -204,9 +212,7 @@ const selectedText = (
       replace = (replacement) => ({
         ...rootBlock,
         children: [
-          replacement.type === "paragraph"
-            ? replacement
-            : { children: replacement.children, type: "paragraph" },
+          asParagraph(replacement),
           ...rootBlock.children.slice(firstIndex),
         ],
       });
@@ -221,17 +227,17 @@ const selectedText = (
       replace = (replacement) => ({
         ...rootBlock,
         children: rootBlock.children.map((candidate, index) =>
-          index === listItemIndex
-            ? {
+          conditionalValue(
+            index === listItemIndex,
+            {
                 ...candidate,
                 children: [
-                  replacement.type === "paragraph"
-                    ? replacement
-                    : { children: replacement.children, type: "paragraph" },
+                  asParagraph(replacement),
                   ...candidate.children.slice(firstIndex),
                 ],
-              }
-            : candidate,
+              },
+            candidate,
+          ),
         ),
       });
     } else {
@@ -334,43 +340,51 @@ const insertText = (state: State, text: string): State => {
   toggleMark = (state: State, mark: RichText.Mark): State => {
     const selected = selectedText(state);
     if (selected === undefined || selected.start === selected.end) {
-      const pendingMarks = state.pendingMarks.includes(mark)
-        ? state.pendingMarks.filter((candidate) => candidate !== mark)
-        : canonicalMarks([...state.pendingMarks, mark]);
+      const pendingMarks = conditionalValue(
+        state.pendingMarks.includes(mark),
+        state.pendingMarks.filter((candidate) => candidate !== mark),
+        canonicalMarks([...state.pendingMarks, mark]),
+      );
       return { ...state, pendingMarks };
     }
     const position = state.selection.anchor,
       activeMarks = selected.text.marks ?? [],
-      nextMarks = activeMarks.includes(mark)
-        ? activeMarks.filter((candidate) => candidate !== mark)
-        : canonicalMarks([...activeMarks, mark]),
+      nextMarks = conditionalValue(
+        activeMarks.includes(mark),
+        activeMarks.filter((candidate) => candidate !== mark),
+        canonicalMarks([...activeMarks, mark]),
+      ),
       replacement: RichText.TextNode[] = [
-        ...(selected.start === emptyIndex
-          ? []
-          : [
+        ...conditionalValue(
+          selected.start === emptyIndex,
+          [],
+          [
               {
                 text: selected.text.text.slice(emptyIndex, selected.start),
                 type: "text" as const,
-                ...(activeMarks.length === emptyIndex ? {} : { marks: activeMarks }),
+                ...conditionalValue(activeMarks.length === emptyIndex, {}, { marks: activeMarks }),
               },
-            ]),
+          ],
+        ),
         {
           text: selected.text.text.slice(selected.start, selected.end),
           type: "text",
-          ...(nextMarks.length === emptyIndex ? {} : { marks: nextMarks }),
+          ...conditionalValue(nextMarks.length === emptyIndex, {}, { marks: nextMarks }),
         },
-        ...(selected.end === selected.text.text.length
-          ? []
-          : [
+        ...conditionalValue(
+          selected.end === selected.text.text.length,
+          [],
+          [
               {
                 text: selected.text.text.slice(selected.end),
                 type: "text" as const,
-                ...(activeMarks.length === emptyIndex ? {} : { marks: activeMarks }),
+                ...conditionalValue(activeMarks.length === emptyIndex, {}, { marks: activeMarks }),
               },
-            ]),
+          ],
+        ),
       ],
       children = selected.block.children.flatMap((node, index) =>
-        index === position.inlineIndex ? replacement : [node],
+        conditionalValue(index === position.inlineIndex, replacement, [node]),
       );
     return commit(
       state,
@@ -402,12 +416,14 @@ const insertText = (state: State, text: string): State => {
         nextList: RichText.ListNode = {
           ...rootBlock,
           children: rootBlock.children.flatMap((listItem, index) =>
-            index === listItemIndex
-              ? [
+            conditionalValue(
+              index === listItemIndex,
+              [
                   { children: [{ ...secondBlock, children: [before] }], type: "list-item" },
                   { children: [secondBlock], type: "list-item" },
-                ]
-              : [listItem],
+              ],
+              [listItem],
+            ),
           ),
         },
         nextPosition = {
@@ -450,12 +466,12 @@ const insertText = (state: State, text: string): State => {
       before = selected.text.text.slice(emptyIndex, selected.start),
       after = selected.text.text.slice(selected.end),
       replacement: RichText.InlineNode[] = [
-        ...(before.length === emptyIndex ? [] : [{ ...selected.text, text: before }]),
+        ...conditionalValue(before.length === emptyIndex, [], [{ ...selected.text, text: before }]),
         reference,
-        ...(after.length === emptyIndex ? [] : [{ ...selected.text, text: after }]),
+        ...conditionalValue(after.length === emptyIndex, [], [{ ...selected.text, text: after }]),
       ],
       children = selected.block.children.flatMap((node, index) =>
-        index === position.inlineIndex ? replacement : [node],
+        conditionalValue(index === position.inlineIndex, replacement, [node]),
       );
     return commit(
       state,
@@ -495,15 +511,17 @@ export const transact = (state: State, command: Command): State => {
           ),
           replacement = [
             ...state.document.children.slice(emptyIndex, state.selection.anchor.blockIndex),
-            ...(remainingItems.length === emptyIndex
-              ? []
-              : [{ ...selected.rootBlock, children: remainingItems }]),
+            ...conditionalValue(
+              remainingItems.length === emptyIndex,
+              [],
+              [{ ...selected.rootBlock, children: remainingItems }],
+            ),
             paragraph,
             ...state.document.children.slice(state.selection.anchor.blockIndex + firstIndex),
           ],
           nextBlockIndex =
             state.selection.anchor.blockIndex +
-            (remainingItems.length === emptyIndex ? emptyIndex : firstIndex),
+            conditionalValue(remainingItems.length === emptyIndex, emptyIndex, firstIndex),
           position = { blockIndex: nextBlockIndex, inlineIndex: emptyIndex, offset: emptyIndex };
         return commit(
           state,
@@ -511,10 +529,11 @@ export const transact = (state: State, command: Command): State => {
           { anchor: position, focus: position },
         );
       }
-      const start =
-          selected.start === selected.end
-            ? Math.max(emptyIndex, selected.start - firstIndex)
-            : selected.start,
+      const start = conditionalValue(
+          selected.start === selected.end,
+          Math.max(emptyIndex, selected.start - firstIndex),
+          selected.start,
+        ),
         selection = {
           anchor: { ...state.selection.anchor, offset: start },
           focus: { ...state.selection.focus, offset: selected.end },
@@ -548,14 +567,16 @@ export const transact = (state: State, command: Command): State => {
         const remainingItems = rootBlock.children.filter((_, index) => index !== listItemIndex),
           children = [
             ...state.document.children.slice(emptyIndex, blockIndex),
-            ...(remainingItems.length === emptyIndex
-              ? []
-              : [{ ...rootBlock, children: remainingItems }]),
+            ...conditionalValue(
+              remainingItems.length === emptyIndex,
+              [],
+              [{ ...rootBlock, children: remainingItems }],
+            ),
             paragraph,
             ...state.document.children.slice(blockIndex + firstIndex),
           ],
           nextBlockIndex =
-            blockIndex + (remainingItems.length === emptyIndex ? emptyIndex : firstIndex),
+            blockIndex + conditionalValue(remainingItems.length === emptyIndex, emptyIndex, firstIndex),
           position = {
             blockIndex: nextBlockIndex,
             inlineIndex: state.selection.anchor.inlineIndex,
@@ -611,7 +632,14 @@ export const transact = (state: State, command: Command): State => {
         replacement = {
           children: [
             {
-              text: block.children.map((node) => (node.type === "text" ? node.text : "")).join(""),
+              text: block.children
+                .map((node) => {
+                  if ("text" in node) {
+                    return node.text;
+                  }
+                  return "";
+                })
+                .join(""),
               type: "text",
             },
           ],
@@ -645,7 +673,11 @@ export const transact = (state: State, command: Command): State => {
           {
             text: label,
             type: "text",
-            ...(selected.text.marks === undefined ? {} : { marks: selected.text.marks }),
+            ...conditionalValue(
+              selected.text.marks === undefined,
+              {},
+              { marks: selected.text.marks },
+            ),
           },
         ],
         type: "link",
@@ -675,7 +707,7 @@ export const transact = (state: State, command: Command): State => {
           type: "asset-reference",
           assetId: command.assetId,
           alternativeText: command.alternativeText,
-          ...(command.caption === undefined ? {} : { caption: command.caption }),
+          ...conditionalValue(command.caption === undefined, {}, { caption: command.caption }),
           children: [],
         },
         { blockIndex } = state.selection.focus,

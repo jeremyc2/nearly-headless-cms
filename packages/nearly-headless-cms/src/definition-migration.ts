@@ -1,4 +1,5 @@
 import { Conflict, InvalidInput, type ValidationIssue } from "./cms-error.ts";
+import { Schema } from "effect";
 import type { CompiledSnapshot } from "./content-definition.ts";
 import type { Representation } from "./entry.ts";
 import type { JsonObject, JsonValue } from "./internal/json.ts";
@@ -123,7 +124,7 @@ export const prepare = (input: PreparationInput): Preparation => {
         values: validatedValues,
       });
     } catch (error) {
-      if (error instanceof InvalidInput && error.issues !== undefined) {
+      if (Schema.is(InvalidInput)(error) && error.issues !== undefined) {
         issues.push(
           ...error.issues.map((validationIssue) => ({
             ...validationIssue,

@@ -35,37 +35,35 @@ import {
 import * as HttpApiContract from "./http-api.ts";
 
 const requiredPathParameter = (
-  parameters: Readonly<Record<string, string | undefined>>,
-  name: string,
-): string => {
-  const value = parameters[name];
-  if (value === undefined) {
-    throw new Error(`Missing path parameter: ${name}`);
-  }
-  return value;
-},
-
- alternativeTextProperty = (
-  value: string | undefined,
-): { readonly defaultAlternativeText?: string } => {
-  if (value === undefined) {
-    return {};
-  }
-  return { defaultAlternativeText: value };
-},
-
- dimensionProperty = (
-  key: "width" | "height",
-  value: string | undefined,
-): { readonly width?: number; readonly height?: number } => {
-  if (value === undefined) {
-    return {};
-  }
-  if (key === "width") {
-    return { width: Number(value) };
-  }
-  return { height: Number(value) };
-};
+    parameters: Readonly<Record<string, string | undefined>>,
+    name: string,
+  ): string => {
+    const value = parameters[name];
+    if (value === undefined) {
+      throw new Error(`Missing path parameter: ${name}`);
+    }
+    return value;
+  },
+  alternativeTextProperty = (
+    value: string | undefined,
+  ): { readonly defaultAlternativeText?: string } => {
+    if (value === undefined) {
+      return {};
+    }
+    return { defaultAlternativeText: value };
+  },
+  dimensionProperty = (
+    key: "width" | "height",
+    value: string | undefined,
+  ): { readonly width?: number; readonly height?: number } => {
+    if (value === undefined) {
+      return {};
+    }
+    if (key === "width") {
+      return { width: Number(value) };
+    }
+    return { height: Number(value) };
+  };
 
 /** Limits, CORS policy, and composed operation declarations for the HTTP Transport. */
 export interface Options {
@@ -1081,36 +1079,38 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
                 message: "Definition activation requires snapshot and expectedCatalogVersion",
               });
             }
-            const activation =
-              typeof migrationPreparationId === "string"
-                ? cms.readDefinitionCatalog.pipe(
-                    Effect.flatMap((state) => {
-                      const preparation = state.migrationPreparations.find(
-                        (candidate) => candidate.id === migrationPreparationId,
-                      );
-                      if (preparation === undefined) {
-                        return Effect.fail(
-                          NotFound.make({
-                            message: `Migration Preparation ${migrationPreparationId} was not found`,
-                          }),
-                        );
-                      }
-                      return cms.activateDefinitionSnapshot({
-                        expectedCatalogVersion: expectedCatalogVersion as number,
-                        migration: {
-                          manifest: preparation.manifest,
-                          preparationId: preparation.id,
-                        },
-                        snapshot: targetSnapshot as never,
-                        source: "management-http",
-                      });
-                    }),
-                  )
-                : cms.activateDefinitionSnapshot({
+            let activation;
+            if (typeof migrationPreparationId === "string") {
+              activation = cms.readDefinitionCatalog.pipe(
+                Effect.flatMap((state) => {
+                  const preparation = state.migrationPreparations.find(
+                    (candidate) => candidate.id === migrationPreparationId,
+                  );
+                  if (preparation === undefined) {
+                    return Effect.fail(
+                      NotFound.make({
+                        message: `Migration Preparation ${migrationPreparationId} was not found`,
+                      }),
+                    );
+                  }
+                  return cms.activateDefinitionSnapshot({
                     expectedCatalogVersion: expectedCatalogVersion as number,
+                    migration: {
+                      manifest: preparation.manifest,
+                      preparationId: preparation.id,
+                    },
                     snapshot: targetSnapshot as never,
                     source: "management-http",
                   });
+                }),
+              );
+            } else {
+              activation = cms.activateDefinitionSnapshot({
+                expectedCatalogVersion: expectedCatalogVersion as number,
+                snapshot: targetSnapshot as never,
+                source: "management-http",
+              });
+            }
             return await withOutcome(activation, requestId, (result) =>
               jsonResponse({
                 fingerprint: result.snapshot.fingerprint,
@@ -1209,7 +1209,9 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
                     requiredPathParameter(migrationManifestMatch, "migrationManifestId"),
                 );
                 if (manifest === undefined) {
-                  return Effect.fail(NotFound.make({ message: "Migration Manifest was not found" }));
+                  return Effect.fail(
+                    NotFound.make({ message: "Migration Manifest was not found" }),
+                  );
                 }
                 return Effect.succeed(manifest);
               }),

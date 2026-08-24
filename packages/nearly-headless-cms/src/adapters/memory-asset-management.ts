@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { Effect, Layer, Stream, SynchronizedRef } from "effect";
-import { type Asset, Management, type StoredAsset } from "../asset.ts";
+import { type Asset, Management, type Metadata, type StoredAsset } from "../asset.ts";
 import { type InfrastructureFailure, InvalidInput, NotFound } from "../cms-error.ts";
 import { Generator } from "../identifier.ts";
 
@@ -18,7 +18,7 @@ const collectBytes = (
   content: Uint8Array | Stream.Stream<Uint8Array, InfrastructureFailure>,
 ): Effect.Effect<Uint8Array, InfrastructureFailure> => {
   if (content instanceof Uint8Array) {
-    return Effect.succeed(content.slice());
+    return Effect.succeed([...content]);
   }
   return Stream.runCollect(content).pipe(
     Effect.map((arrays) => {
@@ -91,21 +91,26 @@ export const layer = (options: Options = {}): Layer.Layer<Management, never, Gen
             }
             const assetIdentifier = yield* identifiers.generate("asset"),
               digest = createHash("sha256").update(bytes).digest("hex"),
-              stored: StoredAsset = {
-                bytes,
-                id: assetIdentifier,
-                metadata: {
-                  byteLength: bytes.byteLength,
-                  digest,
-                  filename: input.filename,
-                  mediaType: input.mediaType,
-                  ...(input.width === undefined ? {} : { width: input.width }),
-                  ...(input.height === undefined ? {} : { height: input.height }),
-                  ...(input.defaultAlternativeText === undefined
-                    ? {}
-                    : { defaultAlternativeText: input.defaultAlternativeText }),
-                },
-              };
+             metadata: Metadata = {
+              byteLength: bytes.byteLength,
+              digest,
+              filename: input.filename,
+              mediaType: input.mediaType,
+            };
+            if (input.width !== undefined) {
+              Object.assign(metadata, { width: input.width });
+            }
+            if (input.height !== undefined) {
+              Object.assign(metadata, { height: input.height });
+            }
+            if (input.defaultAlternativeText !== undefined) {
+              Object.assign(metadata, { defaultAlternativeText: input.defaultAlternativeText });
+            }
+            const stored: StoredAsset = {
+              bytes,
+              id: assetIdentifier,
+              metadata,
+            };
             yield* SynchronizedRef.update(state, (assets) =>
               new Map(assets).set(assetIdentifier, stored),
             );
@@ -123,7 +128,7 @@ export const layer = (options: Options = {}): Layer.Layer<Management, never, Gen
               if (asset === undefined) {
                 return Effect.fail(NotFound.make({ message: `Asset ${assetId} was not found` }));
               }
-              return Effect.succeed({ ...asset, bytes: asset.bytes.slice() });
+              return Effect.succeed({ ...asset, bytes: [...asset.bytes] });
             }),
           ),
       });

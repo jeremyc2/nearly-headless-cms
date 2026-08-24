@@ -126,15 +126,20 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
       input: structuredClone(snapshot.input),
     })),
   }),
-  cloneState = (state: State): State => ({
-    assets: new Map([...state.assets].map(([assetId, asset]) => [assetId, structuredClone(asset)])),
-    ...(state.catalog === undefined ? {} : { catalog: cloneCatalog(state.catalog) }),
-    entryGeneration: state.entryGeneration,
-    generation: state.generation,
-    records: new Map(
-      [...state.records].map(([entryId, record]) => [entryId, structuredClone(record)]),
-    ),
-  }),
+  cloneState = (state: State): State => {
+    const clonedState: State = {
+      assets: new Map([...state.assets].map(([assetId, asset]) => [assetId, structuredClone(asset)])),
+      entryGeneration: state.entryGeneration,
+      generation: state.generation,
+      records: new Map(
+        [...state.records].map(([entryId, record]) => [entryId, structuredClone(record)]),
+      ),
+    };
+    if (state.catalog === undefined) {
+      return clonedState;
+    }
+    return { ...clonedState, catalog: cloneCatalog(state.catalog) };
+  },
   encodeCatalog = (catalog: CatalogState): DiskCatalog => ({
     active: { activatedAt: catalog.active.activatedAt, input: catalog.active.input },
     events: catalog.events,
@@ -234,7 +239,10 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
     if (typeof error !== "object" || error === null || !("code" in error)) {
       return undefined;
     }
-    return typeof error.code === "string" ? error.code : undefined;
+    if (typeof error.code === "string") {
+      return error.code;
+    }
+    return undefined;
   },
   readWriterLock = async (lockPath: string): Promise<WriterLock> => {
     const parsed: unknown = JSON.parse(await Bun.file(lockPath).text());
@@ -249,7 +257,10 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
     if (token !== undefined && (typeof token !== "string" || token.length === emptyLength)) {
       throw new Error("Writer lock is corrupt");
     }
-    return { processId, ...(token === undefined ? {} : { token }) };
+    if (token === undefined) {
+      return { processId };
+    }
+    return { processId, token };
   },
   processIsActive = (processId: number): boolean => {
     try {
@@ -380,8 +391,13 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
   > => {
     const blobsDirectory = join(configuration.root, "blobs"),
       stagePath = join(blobsDirectory, `${stagingPrefix}blob-${crypto.randomUUID()}`),
-      maximumByteLength = configuration.maximumAssetByteLength ?? defaultAssetMaximumByteLength,
-      contentStream = content instanceof Uint8Array ? Stream.make(content) : content;
+      maximumByteLength = configuration.maximumAssetByteLength ?? defaultAssetMaximumByteLength;
+    let contentStream: Stream.Stream<Uint8Array, InfrastructureFailure>;
+    if (content instanceof Uint8Array) {
+      contentStream = Stream.make(content);
+    } else {
+      contentStream = content;
+    }
     return Effect.acquireUseRelease(
       fromPromise(
         async () => ({

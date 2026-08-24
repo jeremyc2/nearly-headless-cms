@@ -181,7 +181,7 @@ export interface ServiceShape {
 
 /** Public Effect service through which all generic CMS operations are invoked. */
 export class Service extends Context.Service<Service, ServiceShape>()(
-  "nearly-headless-cms/Cms/Service",
+  "nearly-headless-cms/cms/Service",
 ) {}
 
 const sourceProperty = (source: string | undefined): { readonly source?: string } => {

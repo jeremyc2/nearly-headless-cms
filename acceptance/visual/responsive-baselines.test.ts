@@ -2,8 +2,11 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 
-const acceptanceTest = Bun.env["ACCEPTANCE_SERVERS_READY"] === "1" ? test : test.skip,
-  baselineDirectory = join(import.meta.dir, "baselines"),
+let acceptanceTest = test.skip;
+if (Bun.env["ACCEPTANCE_SERVERS_READY"] === "1") {
+  acceptanceTest = test;
+}
+const baselineDirectory = join(import.meta.dir, "baselines"),
   digest = (bytes: Uint8Array): string => createHash("sha256").update(bytes).digest("hex"),
   pages = [
     {
@@ -26,23 +29,49 @@ const acceptanceTest = Bun.env["ACCEPTANCE_SERVERS_READY"] === "1" ? test : test
     { height: 1024, width: 768 },
     { height: 1000, width: 1440 },
   ] as const,
-  waitUntilReady = async (view: Bun.WebView, expression: string): Promise<void> => {
-    const deadline = Date.now() + settleTimeoutMilliseconds;
-    while (Date.now() < deadline) {
-      if (await view.evaluate<boolean>(expression)) {
-        await view.evaluate(
-          "document.fonts.ready.then(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true)))))",
-        );
-        return;
-      }
-      await Bun.sleep(screenshotWaitMilliseconds);
-    }
-    throw new Error(`Visual page did not settle: ${expression}`);
+  waitUntilReady = (view: Bun.WebView, expression: string): Promise<void> => {
+    const deadline = Date.now() + settleTimeoutMilliseconds,
+      poll = async (): Promise<void> => {
+        if (Date.now() >= deadline) {
+          throw new Error(`Visual page did not settle: ${expression}`);
+        }
+        if (await view.evaluate<boolean>(expression)) {
+          await view.evaluate(
+            "document.fonts.ready.then(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true)))))",
+          );
+          return;
+        }
+        await Bun.sleep(screenshotWaitMilliseconds);
+        return poll();
+      };
+    return poll();
   };
 
 afterAll(() => {
   Bun.WebView.closeAll();
 });
+
+const captureAndCheckBaseline = async (
+  view: Bun.WebView,
+  pageName: string,
+  viewport: { readonly height: number; readonly width: number },
+): Promise<void> => {
+  const baselinePath = join(
+      baselineDirectory,
+      `${pageName}-${viewport.width}x${viewport.height}.png`,
+    ),
+    screenshotBuffer = await view.screenshot({ encoding: "buffer" }),
+    screenshot = new Uint8Array(screenshotBuffer);
+  if (updateBaselines) {
+    await Bun.write(baselinePath, screenshot);
+    return;
+  }
+  if (!(await Bun.file(baselinePath).exists())) {
+    throw new Error(`Visual baseline is missing: ${baselinePath}`);
+  }
+  const baseline = new Uint8Array(await Bun.file(baselinePath).arrayBuffer());
+  expect(digest(screenshot), `Visual mismatch for ${baselinePath}`).toBe(digest(baseline));
+};
 
 describe("responsive visual baselines", () => {
   for (const page of pages) {
@@ -54,22 +83,7 @@ describe("responsive visual baselines", () => {
           try {
             await view.navigate(page.url);
             await waitUntilReady(view, page.ready);
-            const baselinePath = join(
-                baselineDirectory,
-                `${page.name}-${viewport.width}x${viewport.height}.png`,
-              ),
-              screenshot = new Uint8Array(await view.screenshot({ encoding: "buffer" }));
-            if (updateBaselines) {
-              await Bun.write(baselinePath, screenshot);
-              return;
-            }
-            if (!(await Bun.file(baselinePath).exists())) {
-              throw new Error(`Visual baseline is missing: ${baselinePath}`);
-            }
-            const baseline = new Uint8Array(await Bun.file(baselinePath).arrayBuffer());
-            expect(digest(screenshot), `Visual mismatch for ${baselinePath}`).toBe(
-              digest(baseline),
-            );
+            await captureAndCheckBaseline(view, page.name, viewport);
           } finally {
             view.close();
           }

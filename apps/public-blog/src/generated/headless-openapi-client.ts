@@ -593,14 +593,20 @@ function requestOperation({
   TransportFailure | ProtocolFailure | DeclaredFailure
 > {
   return Effect.tryPromise({
-    catch: (cause) =>
-      cause instanceof TransportFailure ||
-      cause instanceof ProtocolFailure ||
-      cause instanceof DeclaredFailure
-        ? cause
-        : TransportFailure.make({
-            message: cause instanceof Error ? cause.message : "Connection failed",
-          }),
+    catch: (cause) => {
+      if (
+        cause instanceof TransportFailure ||
+        cause instanceof ProtocolFailure ||
+        cause instanceof DeclaredFailure
+      ) {
+        return cause;
+      }
+      let message = "Connection failed";
+      if (cause instanceof Error) {
+        message = cause.message;
+      }
+      return TransportFailure.make({ message });
+    },
     try: async () => {
       let { path } = specification;
       if ("path" in input && input.path !== undefined) {
@@ -608,10 +614,11 @@ function requestOperation({
           path = path.replace(`{${name}}`, encodeURIComponent(String(value)));
         }
       }
-      const requestUrl = new URL(
-        `${baseAddress}${path}`,
-        baseAddress || globalThis.location?.origin || "http://localhost",
-      );
+      let address = baseAddress;
+      if (address === "") {
+        address = globalThis.location?.origin ?? "http://localhost";
+      }
+      const requestUrl = new URL(`${baseAddress}${path}`, address);
       if ("query" in input && input.query !== undefined) {
         for (const [name, value] of Object.entries(input.query)) {
           if (value !== undefined) {
@@ -619,7 +626,11 @@ function requestOperation({
           }
         }
       }
-      const headers = new Headers("headers" in input ? input.headers : undefined);
+      let requestHeaders: HeadersInit | undefined;
+      if ("headers" in input) {
+        requestHeaders = input.headers;
+      }
+      const headers = new Headers(requestHeaders);
       let body: BodyInit | undefined;
       if ("body" in input && input.body !== undefined) {
         const { body: requestBody } = input;
@@ -634,8 +645,12 @@ function requestOperation({
       try {
         response = await fetch(requestUrl, { body, headers, method: specification.method, signal });
       } catch (error) {
+        let message = "Connection failed";
+        if (error instanceof Error) {
+          message = error.message;
+        }
         throw TransportFailure.make({
-          message: error instanceof Error ? error.message : "Connection failed",
+          message,
         });
       }
       const mediaType = response.headers.get("content-type") ?? "",
@@ -651,9 +666,13 @@ function requestOperation({
             "code" in failure &&
             "message" in failure
           ) {
+            let details: unknown;
+            if ("details" in failure) {
+              details = failure.details;
+            }
             throw DeclaredFailure.make({
               code: String(failure.code),
-              details: "details" in failure ? failure.details : undefined,
+              details,
               message: String(failure.message),
               status: response.status,
             });

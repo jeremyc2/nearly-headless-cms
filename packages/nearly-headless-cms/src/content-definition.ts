@@ -389,13 +389,7 @@ const validateCalendarDate = (value: string): boolean => {
           if (fieldKind.kind === "integer") {
             reason = "expectedSafeInteger";
           }
-          return [
-            issue(
-              path,
-              reason,
-              `Expected ${fieldKind.kind}`,
-            ),
-          ];
+          return [issue(path, reason, `Expected ${fieldKind.kind}`)];
         }
         const issues: ValidationIssue[] = [];
         if (fieldKind.minimum !== undefined && value < fieldKind.minimum) {
@@ -452,7 +446,9 @@ const validateCalendarDate = (value: string): boolean => {
         if (typeof value === "string" && fieldKind.values.includes(value)) {
           return [];
         }
-        return [issue(path, "expectedEnumValue", `Expected one of: ${fieldKind.values.join(", ")}`)];
+        return [
+          issue(path, "expectedEnumValue", `Expected one of: ${fieldKind.values.join(", ")}`),
+        ];
       }
       case "json": {
         if (isJsonValue(value)) {
@@ -539,7 +535,9 @@ const validateCalendarDate = (value: string): boolean => {
         }
         return registration
           .validateValue(value, fieldKind.configuration)
-          .map((customIssue) => ({ ...customIssue, path: [...path, ...customIssue.path] }));
+          .map((customIssue) =>
+            Object.assign(customIssue, { path: [...path, ...customIssue.path] }),
+          );
       }
     }
     return fieldKind;
@@ -624,10 +622,11 @@ const validateCalendarDate = (value: string): boolean => {
         issues.push(
           ...registration
             .validateConfiguration(field.kind.configuration)
-            .map((configurationIssue) => ({
-              ...configurationIssue,
-              path: [...path, "kind", "configuration", ...configurationIssue.path],
-            })),
+            .map((configurationIssue) =>
+              Object.assign(configurationIssue, {
+                path: [...path, "kind", "configuration", ...configurationIssue.path],
+              }),
+            ),
         );
       }
     }

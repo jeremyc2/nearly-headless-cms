@@ -100,11 +100,13 @@ export const makeManagementClient = (baseAddress = "") => {
     readonly entryId: string;
   };
   function pathFor(contentTypeId: string, entryId?: string) {
-    return {
-      contentTypeId,
-      definitionSpaceId,
-      ...(entryId === undefined ? {} : { entryId }),
+    const path = { contentTypeId, definitionSpaceId } as {
+      contentTypeId: string;
+      definitionSpaceId: string;
+      entryId?: string;
     };
+    if (entryId !== undefined) {path.entryId = entryId;}
+    return path;
   }
   return {
     createEntry: (
@@ -273,17 +275,11 @@ export const makeManagementClient = (baseAddress = "") => {
         path: { definitionSpaceId, entryId },
       };
       if (contentTypeId === "post") {
-        return mapFailure(
-          status === "published"
-            ? generatedClient.publishPost(input)
-            : generatedClient.returnPostToDraft(input),
-        );
+        if (status === "published") {return mapFailure(generatedClient.publishPost(input));}
+        return mapFailure(generatedClient.returnPostToDraft(input));
       }
-      return mapFailure(
-        status === "approved"
-          ? generatedClient.approveComment(input)
-          : generatedClient.rejectComment(input),
-      );
+      if (status === "approved") {return mapFailure(generatedClient.approveComment(input));}
+      return mapFailure(generatedClient.rejectComment(input));
     },
     uploadAsset: (file: File): Effect.Effect<AssetRepresentation, ManagementClientFailure> => {
       const formData = new FormData();
