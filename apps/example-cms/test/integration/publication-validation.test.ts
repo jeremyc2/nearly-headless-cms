@@ -1,13 +1,13 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import path from "node:path";
-import { createExampleSystem, type ExampleSystem } from "../../src/system.ts";
+import { type ExampleSystem, createExampleSystem } from "../../src/system.ts";
 
 const badRequestStatus = 400,
   firstItemIndex = 0;
 
 describe("Example CMS Post publication", () => {
-  let system: ExampleSystem, storageRoot: string;
+  let storageRoot: string, system: ExampleSystem;
 
   beforeAll(async () => {
     storageRoot = await mkdtemp(path.join(import.meta.dir, ".publication-validation-"));

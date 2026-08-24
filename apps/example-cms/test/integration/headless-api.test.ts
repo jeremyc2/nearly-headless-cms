@@ -3,19 +3,19 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { type ExampleSystem, createExampleSystem } from "../../src/system.ts";
 
-const FIRST_INDEX = 0;
-const ONE_ITEM = 1;
-const TEN_BYTES = 10;
-const TWO_ITEMS = 2;
-const HTTP_OK = 200;
-const HTTP_CREATED = 201;
-const HTTP_BAD_REQUEST = 400;
-const HTTP_NOT_MODIFIED = 304;
-const HTTP_PARTIAL_CONTENT = 206;
-const HTTP_NOT_FOUND = 404;
-const HTTP_CONFLICT = 409;
+const FIRST_INDEX = 0,
+ ONE_ITEM = 1,
+ TEN_BYTES = 10,
+ TWO_ITEMS = 2,
+ HTTP_OK = 200,
+ HTTP_CREATED = 201,
+ HTTP_BAD_REQUEST = 400,
+ HTTP_NOT_MODIFIED = 304,
+ HTTP_PARTIAL_CONTENT = 206,
+ HTTP_NOT_FOUND = 404,
+ HTTP_CONFLICT = 409,
 
-const firstItem = <Item>(items: readonly Item[]): Item => {
+ firstItem = <Item>(items: readonly Item[]): Item => {
   const item = items[FIRST_INDEX];
   if (item === undefined) {
     throw new Error("Expected at least one item");
