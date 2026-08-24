@@ -209,7 +209,7 @@ const issue = (
   fail = (message: string, issues: readonly ValidationIssue[]): never => {
     const firstIssue = issues[0],
       issueLocation = firstIssue === undefined ? "" : ` at ${firstIssue.path.join(".")}`;
-    throw new InvalidInput({ issues: [...issues], message: `${message}${issueLocation}` });
+    throw InvalidInput.make({ issues: [...issues], message: `${message}${issueLocation}` });
   },
   validateIdentifier = (
     identifier: string,

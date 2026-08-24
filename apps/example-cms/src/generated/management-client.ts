@@ -31,7 +31,7 @@ const request = <Value>(
     catch: (cause) =>
       cause instanceof ManagementClientFailure
         ? cause
-        : new ManagementClientFailure({
+        : ManagementClientFailure.make({
             message: cause instanceof Error ? cause.message : "Management transport failed",
             status: 0,
           }),
@@ -42,7 +42,7 @@ const request = <Value>(
           readonly code?: string;
           readonly message?: string;
         };
-        throw new ManagementClientFailure({
+        throw ManagementClientFailure.make({
           code: error.code,
           message: error.message ?? `Management request failed with ${response.status}`,
           status: response.status,

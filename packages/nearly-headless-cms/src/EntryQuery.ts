@@ -108,7 +108,7 @@ const encodeCursor = (cursor: CursorPayload): string =>
       }
       return decoded as CursorPayload;
     } catch {
-      throw new InvalidInput({ message: "Invalid opaque Query cursor" });
+      throw InvalidInput.make({ message: "Invalid opaque Query cursor" });
     }
   },
   isFieldPredicate = (predicate: Predicate): predicate is FieldPredicate => "path" in predicate,
@@ -246,16 +246,16 @@ const encodeCursor = (cursor: CursorPayload): string =>
     if (isFieldPredicate(predicate)) {
       const field = findField(fields, predicate.path);
       if (field === undefined) {
-        throw new InvalidInput({ message: `Unknown Field Path ${predicate.path}` });
+        throw InvalidInput.make({ message: `Unknown Field Path ${predicate.path}` });
       }
       const capabilities = capabilitiesFor(field.kind);
       if (!(capabilities.filter ?? []).includes(predicate.operator)) {
-        throw new UnsupportedQueryCapability({
+        throw UnsupportedQueryCapability.make({
           message: `Field ${predicate.path} does not support ${predicate.operator}`,
         });
       }
       if (predicate.operator !== "isNull" && predicate.value === undefined) {
-        throw new InvalidInput({ message: `${predicate.operator} requires a value` });
+        throw InvalidInput.make({ message: `${predicate.operator} requires a value` });
       }
       return;
     }
@@ -265,7 +265,7 @@ const encodeCursor = (cursor: CursorPayload): string =>
         ? predicate.any
         : [predicate.not];
     if (children.length === 0) {
-      throw new InvalidInput({ message: "Boolean Query groups cannot be empty" });
+      throw InvalidInput.make({ message: "Boolean Query groups cannot be empty" });
     }
     children.forEach((child) => {
       validatePredicate(child, fields);
@@ -317,24 +317,26 @@ export const evaluate = (
     query.pageSize <= 0 ||
     query.pageSize > limits.maximumPageSize
   ) {
-    throw new InvalidInput({ message: `pageSize must be between 1 and ${limits.maximumPageSize}` });
+    throw InvalidInput.make({
+      message: `pageSize must be between 1 and ${limits.maximumPageSize}`,
+    });
   }
   if ((query.projection?.length ?? 0) > limits.maximumProjectionPaths) {
-    throw new InvalidInput({ message: "Projection exceeds the configured Query Limit" });
+    throw InvalidInput.make({ message: "Projection exceeds the configured Query Limit" });
   }
   if ((query.expansion?.length ?? 0) > limits.maximumExpansionPaths) {
-    throw new InvalidInput({
+    throw InvalidInput.make({
       message: "Relationship Expansion exceeds the configured Query Limit",
     });
   }
   if (entries.length > limits.maximumScanEntries) {
-    throw new UnsupportedQueryCapability({
+    throw UnsupportedQueryCapability.make({
       message: "Authoritative scan exceeds the configured work bound",
     });
   }
   const contentType = snapshot.contentTypes.get(query.contentTypeId);
   if (contentType === undefined) {
-    throw new InvalidInput({ message: `Unknown Content Type ${query.contentTypeId}` });
+    throw InvalidInput.make({ message: `Unknown Content Type ${query.contentTypeId}` });
   }
   if (query.where !== undefined) {
     validatePredicate(query.where, contentType.fields);
@@ -342,27 +344,27 @@ export const evaluate = (
   for (const sort of query.sort ?? []) {
     const field = findField(contentType.fields, sort.path);
     if (field === undefined) {
-      throw new InvalidInput({ message: `Unknown sort Field Path ${sort.path}` });
+      throw InvalidInput.make({ message: `Unknown sort Field Path ${sort.path}` });
     }
     if (!capabilitiesFor(field.kind).sortable) {
-      throw new UnsupportedQueryCapability({ message: `Field ${sort.path} is not sortable` });
+      throw UnsupportedQueryCapability.make({ message: `Field ${sort.path} is not sortable` });
     }
   }
   for (const projectionPath of query.projection ?? []) {
     if (findField(contentType.fields, projectionPath) === undefined)
-      throw new InvalidInput({ message: `Unknown Projection Field Path ${projectionPath}` });
+      throw InvalidInput.make({ message: `Unknown Projection Field Path ${projectionPath}` });
   }
   const queryFingerprint = fingerprint(queryWithoutCursor(query));
   let offset = 0;
   if (query.cursor !== undefined) {
     const cursor = decodeCursor(query.cursor);
     if (cursor.generation !== options.generation) {
-      throw new Conflict({
+      throw Conflict.make({
         message: "Query cursor is stale after a persistence generation change",
       });
     }
     if (cursor.queryFingerprint !== queryFingerprint) {
-      throw new Conflict({ message: "Query cursor belongs to a different Query" });
+      throw Conflict.make({ message: "Query cursor belongs to a different Query" });
     }
     offset = cursor.offset;
   }

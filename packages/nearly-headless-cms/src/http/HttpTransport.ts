@@ -150,7 +150,7 @@ const run = async <Value>(
     error instanceof RequestFailure
       ? requestFailureResponse(error, requestId)
       : errorResponse(
-          error instanceof InvalidInput ? error : new InvalidInput({ message: fallbackMessage }),
+          error instanceof InvalidInput ? error : InvalidInput.make({ message: fallbackMessage }),
           requestId,
         ),
   jsonResponse = (
@@ -186,10 +186,10 @@ const run = async <Value>(
     try {
       value = JSON.parse(new TextDecoder().decode(bytes));
     } catch {
-      throw new InvalidInput({ message: "Malformed JSON request body" });
+      throw InvalidInput.make({ message: "Malformed JSON request body" });
     }
     if (value === null || Array.isArray(value) || typeof value !== "object") {
-      throw new InvalidInput({ message: "JSON request body must be an object" });
+      throw InvalidInput.make({ message: "JSON request body must be an object" });
     }
     return value as JsonObject;
   },
@@ -227,7 +227,7 @@ const run = async <Value>(
     const expected = request.headers.get("cms-expected-definition-fingerprint");
     return expected !== null && expected !== fingerprint
       ? Effect.fail(
-          new DefinitionSnapshotChanged({ message: "The active Definition Snapshot changed" }),
+          DefinitionSnapshotChanged.make({ message: "The active Definition Snapshot changed" }),
         )
       : Effect.void;
   },
@@ -492,7 +492,9 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
                 (candidate) => candidate.id === definitionId,
               );
               return definition === undefined
-                ? Effect.fail(new NotFound({ message: `Definition ${definitionId} was not found` }))
+                ? Effect.fail(
+                    NotFound.make({ message: `Definition ${definitionId} was not found` }),
+                  )
                 : Effect.succeed({
                     catalogVersion: state.version,
                     definition,
@@ -536,7 +538,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
               (definition as { readonly id?: unknown }).id !== definitionId ||
               !Number.isSafeInteger(expectedCatalogVersion)
             ) {
-              throw new InvalidInput({
+              throw InvalidInput.make({
                 message:
                   "Definition revision append requires a matching definition and expectedCatalogVersion",
               });
@@ -575,7 +577,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
           const body = await parseJson(request, maximumJsonBodyByteLength),
             { expectedCatalogVersion } = body;
           if (!Number.isSafeInteger(expectedCatalogVersion)) {
-            throw new InvalidInput({
+            throw InvalidInput.make({
               message: "Definition retirement requires expectedCatalogVersion",
             });
           }
@@ -626,7 +628,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
               );
               return snapshotRecord === undefined
                 ? Effect.fail(
-                    new NotFound({
+                    NotFound.make({
                       message: `Definition Snapshot ${definitionSnapshotMatch["snapshotId"]!} was not found`,
                     }),
                   )
@@ -657,7 +659,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
             typeof targetSnapshot !== "object" ||
             !Number.isSafeInteger(expectedCatalogVersion)
           ) {
-            throw new InvalidInput({
+            throw InvalidInput.make({
               message: "Definition activation requires snapshot and expectedCatalogVersion",
             });
           }
@@ -675,7 +677,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
                     );
                     return preparation === undefined
                       ? Effect.fail(
-                          new NotFound({
+                          NotFound.make({
                             message: `Migration Preparation ${migrationPreparationId} was not found`,
                           }),
                         )
@@ -740,7 +742,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
               typeof manifest !== "object" ||
               !Number.isSafeInteger(expectedCatalogVersion)
             ) {
-              throw new InvalidInput({
+              throw InvalidInput.make({
                 message: "Migration Manifest append requires manifest and expectedCatalogVersion",
               });
             }
@@ -779,7 +781,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
                 (candidate) => candidate.id === migrationManifestMatch["migrationManifestId"]!,
               );
               return manifest === undefined
-                ? Effect.fail(new NotFound({ message: "Migration Manifest was not found" }))
+                ? Effect.fail(NotFound.make({ message: "Migration Manifest was not found" }))
                 : Effect.succeed(manifest);
             }),
           ),
@@ -800,7 +802,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
                   candidate.id === migrationPreparationMatch["migrationPreparationId"]!,
               );
               return preparation === undefined
-                ? Effect.fail(new NotFound({ message: "Migration Preparation was not found" }))
+                ? Effect.fail(NotFound.make({ message: "Migration Preparation was not found" }))
                 : Effect.succeed(preparation);
             }),
           ),
@@ -824,7 +826,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
             typeof targetSnapshot !== "object" ||
             !Number.isSafeInteger(expectedCatalogVersion)
           ) {
-            throw new InvalidInput({
+            throw InvalidInput.make({
               message:
                 "Migration Preparation requires manifestId, snapshot, and expectedCatalogVersion",
             });
@@ -852,7 +854,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
           const body = await parseJson(request, maximumJsonBodyByteLength),
             { values } = body;
           if (values === null || Array.isArray(values) || typeof values !== "object") {
-            throw new InvalidInput({ message: "Entry create requires values" });
+            throw InvalidInput.make({ message: "Entry create requires values" });
           }
           return await withOutcome(
             cms.createEntry({
@@ -897,13 +899,15 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
             projection !== undefined &&
             (!Array.isArray(projection) || !projection.every((path) => typeof path === "string"))
           ) {
-            throw new InvalidInput({ message: "Projection must be an array of Field Paths" });
+            throw InvalidInput.make({ message: "Projection must be an array of Field Paths" });
           }
           if (
             expansion !== undefined &&
             (!Array.isArray(expansion) || !expansion.every((path) => typeof path === "string"))
           ) {
-            throw new InvalidInput({ message: "Expansion must be an array of Relationship paths" });
+            throw InvalidInput.make({
+              message: "Expansion must be an array of Relationship paths",
+            });
           }
           return await withOutcome(
             cms.getEntry({
@@ -937,7 +941,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
             const body = await parseJson(request, maximumJsonBodyByteLength),
               { values } = body;
             if (values === null || Array.isArray(values) || typeof values !== "object") {
-              throw new InvalidInput({ message: "Entry replacement requires values" });
+              throw InvalidInput.make({ message: "Entry replacement requires values" });
             }
             return await withOutcome(
               cms.updateEntry({
@@ -1030,7 +1034,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
             !Number.isSafeInteger(body["revisionNumber"]) ||
             typeof body["writeToken"] !== "string"
           ) {
-            throw new InvalidInput({
+            throw InvalidInput.make({
               message: "Entry restoration requires revisionNumber and writeToken",
             });
           }
@@ -1057,7 +1061,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
         try {
           const body = await parseJson(request, maximumJsonBodyByteLength);
           if (typeof body["writeToken"] !== "string") {
-            throw new InvalidInput({ message: "Permanent Purge requires writeToken" });
+            throw InvalidInput.make({ message: "Permanent Purge requires writeToken" });
           }
           return await withOutcome(
             cms.permanentlyPurgeEntry({
@@ -1119,14 +1123,14 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
             form.getAll("metadata").length !== 1 ||
             form.getAll("content").length !== 1
           ) {
-            throw new InvalidInput({
+            throw InvalidInput.make({
               message: "Asset upload requires exactly metadata and content parts",
             });
           }
           const metadataPart = form.get("metadata"),
             contentPart = form.get("content");
           if (typeof metadataPart !== "string" || !(contentPart instanceof File)) {
-            throw new InvalidInput({ message: "Asset upload parts have invalid media" });
+            throw InvalidInput.make({ message: "Asset upload parts have invalid media" });
           }
           const metadata = JSON.parse(metadataPart) as Omit<IngestInput, "content">;
           return await withOutcome(
@@ -1192,7 +1196,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
           !request.headers.get("idempotency-key")?.length
         ) {
           return errorResponse(
-            new InvalidInput({ message: "Idempotency-Key is required" }),
+            InvalidInput.make({ message: "Idempotency-Key is required" }),
             requestId,
           );
         }

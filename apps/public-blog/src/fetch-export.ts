@@ -23,11 +23,9 @@ const workspace = join(import.meta.dir, ".."),
       richText?.version !== 1 ||
       (Array.isArray(richText?.extensions) && richText.extensions.length > 0)
     ) {
-      return yield* Effect.fail(
-        new UnsupportedDefinition({
-          message: "Public Blog cannot support the advertised Definition Snapshot",
-        }),
-      );
+      return yield* UnsupportedDefinition.make({
+        message: "Public Blog cannot support the advertised Definition Snapshot",
+      });
     }
     const exported = yield* client.exportPublicBlog(fingerprint);
     if (
@@ -35,11 +33,9 @@ const workspace = join(import.meta.dir, ".."),
       exported.posts.some((post) => post.status !== "published") ||
       exported.comments.some((comment) => comment.status !== "approved")
     ) {
-      return yield* Effect.fail(
-        new UnsupportedDefinition({
-          message: "Public export violates its advertised public contract",
-        }),
-      );
+      return yield* UnsupportedDefinition.make({
+        message: "Public export violates its advertised public contract",
+      });
     }
     return exported;
   }),

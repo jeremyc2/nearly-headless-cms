@@ -14,9 +14,7 @@ const transition =
         const entryId = parameters["entryId"]!,
           writeToken = request.headers.get("cms-write-token");
         if (writeToken === null || writeToken.length === 0) {
-          return yield* Effect.fail(
-            new CmsError.InvalidInput({ message: "CMS-Write-Token is required" }),
-          );
+          return yield* CmsError.InvalidInput.make({ message: "CMS-Write-Token is required" });
         }
         const current = yield* cms.getEntry({ contentTypeId, entryId });
         return yield* cms.updateEntry({
@@ -37,7 +35,7 @@ const transition =
   requiredWriteToken = (request: Request): Effect.Effect<string, CmsError.InvalidInput> => {
     const writeToken = request.headers.get("cms-write-token");
     return writeToken === null || writeToken.length === 0
-      ? Effect.fail(new CmsError.InvalidInput({ message: "CMS-Write-Token is required" }))
+      ? Effect.fail(CmsError.InvalidInput.make({ message: "CMS-Write-Token is required" }))
       : Effect.succeed(writeToken);
   },
   deletePostWithComments: HttpContract.ManagementOperation["execute"] = ({
@@ -113,7 +111,7 @@ const transition =
   parseReplacementUpload = (request: Request) =>
     Effect.tryPromise({
       catch: () =>
-        new CmsError.InvalidInput({
+        CmsError.InvalidInput.make({
           message: "Image replacement requires multipart metadata and content",
         }),
       try: async () => {
@@ -185,14 +183,12 @@ export const makeManagementOperations = (
         const oldAssetId = parameters["assetId"]!,
           commandKey = request.headers.get("idempotency-key");
         if (commandKey === null || commandKey.length === 0) {
-          return yield* Effect.fail(
-            new CmsError.InvalidInput({ message: "Idempotency-Key is required" }),
-          );
+          return yield* CmsError.InvalidInput.make({ message: "Idempotency-Key is required" });
         }
         const receiptScope = `image-replacement:${oldAssetId}`,
           prior = yield* Effect.tryPromise({
             catch: (cause) =>
-              new CmsError.InfrastructureFailure({
+              CmsError.InfrastructureFailure.make({
                 cause,
                 message: "Image replacement receipt lookup failed",
                 retryable: true,
@@ -279,7 +275,7 @@ export const makeManagementOperations = (
         };
         yield* Effect.tryPromise({
           catch: (cause) =>
-            new CmsError.InfrastructureFailure({
+            CmsError.InfrastructureFailure.make({
               cause,
               message: "Image replacement receipt persistence failed",
               retryable: true,

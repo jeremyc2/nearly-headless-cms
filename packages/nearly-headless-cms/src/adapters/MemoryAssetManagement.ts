@@ -41,7 +41,7 @@ export const layer = (options: Options = {}): Layer.Layer<Management, never, Gen
         delete: (assetId) =>
           SynchronizedRef.modifyEffect(state, (assets) => {
             if (!assets.has(assetId))
-              return Effect.fail(new NotFound({ message: `Asset ${assetId} was not found` }));
+              return Effect.fail(NotFound.make({ message: `Asset ${assetId} was not found` }));
             const updated = new Map(assets);
             updated.delete(assetId);
             return Effect.succeed([undefined, updated] as const);
@@ -51,28 +51,28 @@ export const layer = (options: Options = {}): Layer.Layer<Management, never, Gen
             Effect.flatMap((assets) => {
               const asset = assets.get(assetId);
               return asset === undefined
-                ? Effect.fail(new NotFound({ message: `Asset ${assetId} was not found` }))
+                ? Effect.fail(NotFound.make({ message: `Asset ${assetId} was not found` }))
                 : Effect.succeed<Asset>({ id: asset.id, metadata: asset.metadata });
             }),
           ),
         ingest: (input) =>
           Effect.gen(function* () {
             if (input.filename.trim().length === 0 || !input.mediaType.includes("/"))
-              return yield* Effect.fail(
-                new InvalidInput({ message: "Asset filename and media type are required" }),
-              );
+              return yield* InvalidInput.make({
+                message: "Asset filename and media type are required",
+              });
             if (
               new TextEncoder().encode(JSON.stringify({ ...input, content: undefined }))
                 .byteLength > maximumMetadataByteLength
             )
-              return yield* Effect.fail(
-                new InvalidInput({ message: "Asset metadata exceeds the configured limit" }),
-              );
+              return yield* InvalidInput.make({
+                message: "Asset metadata exceeds the configured limit",
+              });
             const bytes = yield* collectBytes(input.content);
             if (bytes.byteLength > maximumByteLength)
-              return yield* Effect.fail(
-                new InvalidInput({ message: "Asset bytes exceed the configured limit" }),
-              );
+              return yield* InvalidInput.make({
+                message: "Asset bytes exceed the configured limit",
+              });
             const id = yield* identifiers.generate("asset");
             const digest = createHash("sha256").update(bytes).digest("hex");
             const stored: StoredAsset = {
@@ -103,7 +103,7 @@ export const layer = (options: Options = {}): Layer.Layer<Management, never, Gen
             Effect.flatMap((assets) => {
               const asset = assets.get(assetId);
               return asset === undefined
-                ? Effect.fail(new NotFound({ message: `Asset ${assetId} was not found` }))
+                ? Effect.fail(NotFound.make({ message: `Asset ${assetId} was not found` }))
                 : Effect.succeed({ ...asset, bytes: asset.bytes.slice() });
             }),
           ),

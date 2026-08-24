@@ -21,7 +21,7 @@ export const layer: Layer.Layer<EntryPersistence> = Layer.effect(
       commitGeneration: (expectedGeneration, records) =>
         SynchronizedRef.modifyEffect(state, (current) => {
           if (current.generation !== expectedGeneration)
-            return Effect.fail(new Conflict({ message: "Entry persistence generation is stale" }));
+            return Effect.fail(Conflict.make({ message: "Entry persistence generation is stale" }));
           const committed: EntryGeneration = {
             generation: current.generation + 1,
             records: new Map(

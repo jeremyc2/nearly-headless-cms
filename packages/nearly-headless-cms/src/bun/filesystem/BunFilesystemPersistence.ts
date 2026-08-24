@@ -86,7 +86,7 @@ interface Acquired {
 }
 
 const failure = (message: string, cause: unknown, retryable = false): InfrastructureFailure =>
-    new InfrastructureFailure({ cause, message, retryable }),
+    InfrastructureFailure.make({ cause, message, retryable }),
   fromPromise = <Value>(
     operation: () => Promise<Value>,
     message: string,
@@ -103,7 +103,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
   ): Effect.Effect<Uint8Array, InfrastructureFailure | InvalidInput> => {
     if (input instanceof Uint8Array) {
       return input.byteLength > maximumByteLength
-        ? Effect.fail(new InvalidInput({ message: "Asset bytes exceed the configured limit" }))
+        ? Effect.fail(InvalidInput.make({ message: "Asset bytes exceed the configured limit" }))
         : Effect.succeed(input.slice());
     }
     return Stream.runFoldEffect(
@@ -112,7 +112,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
       (state, chunk) => {
         const totalByteLength = state.totalByteLength + chunk.byteLength;
         return totalByteLength > maximumByteLength
-          ? Effect.fail(new InvalidInput({ message: "Asset bytes exceed the configured limit" }))
+          ? Effect.fail(InvalidInput.make({ message: "Asset bytes exceed the configured limit" }))
           : Effect.succeed({ chunks: [...state.chunks, chunk.slice()], totalByteLength });
       },
     ).pipe(
@@ -397,7 +397,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
               (current): Effect.Effect<readonly [EntryGeneration, State], CmsError> => {
                 if (current.entryGeneration !== expectedGeneration)
                   return Effect.fail(
-                    new Conflict({ message: "Filesystem Entry generation is stale" }),
+                    Conflict.make({ message: "Filesystem Entry generation is stale" }),
                   );
                 const next: State = {
                   assets: current.assets,
@@ -412,7 +412,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
                   (configuration.maximumEntryEncodingByteLength ?? 50_000_000)
                 )
                   return Effect.fail(
-                    new InvalidInput({
+                    InvalidInput.make({
                       message: "Entry generation exceeds the configured encoding limit",
                     }),
                   );
@@ -445,7 +445,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
                 current,
               ): Effect.Effect<readonly [undefined, State], NotFound | InfrastructureFailure> => {
                 if (!current.assets.has(assetId))
-                  return Effect.fail(new NotFound({ message: `Asset ${assetId} was not found` }));
+                  return Effect.fail(NotFound.make({ message: `Asset ${assetId} was not found` }));
                 const assets = new Map(current.assets);
                 assets.delete(assetId);
                 const next: State = {
@@ -466,16 +466,16 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
               Effect.flatMap((current) => {
                 const asset = current.assets.get(assetId);
                 return asset === undefined
-                  ? Effect.fail(new NotFound({ message: `Asset ${assetId} was not found` }))
+                  ? Effect.fail(NotFound.make({ message: `Asset ${assetId} was not found` }))
                   : Effect.succeed(structuredClone(asset));
               }),
             ),
           ingest: (input) =>
             Effect.gen(function* () {
               if (input.filename.trim().length === 0 || !input.mediaType.includes("/"))
-                return yield* Effect.fail(
-                  new InvalidInput({ message: "Asset filename and media type are required" }),
-                );
+                return yield* InvalidInput.make({
+                  message: "Asset filename and media type are required",
+                });
               const metadataByteLength = encode({
                 defaultAlternativeText: input.defaultAlternativeText,
                 filename: input.filename,
@@ -484,9 +484,9 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
                 width: input.width,
               }).byteLength;
               if (metadataByteLength > (configuration.maximumMetadataByteLength ?? 16_384))
-                return yield* Effect.fail(
-                  new InvalidInput({ message: "Asset metadata exceeds the configured limit" }),
-                );
+                return yield* InvalidInput.make({
+                  message: "Asset metadata exceeds the configured limit",
+                });
               const bytes = yield* collectBytes(
                 input.content,
                 configuration.maximumAssetByteLength ?? 25_000_000,
@@ -540,9 +540,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
               const current = yield* SynchronizedRef.get(state);
               const asset = current.assets.get(assetId);
               if (asset === undefined)
-                return yield* Effect.fail(
-                  new NotFound({ message: `Asset ${assetId} was not found` }),
-                );
+                return yield* NotFound.make({ message: `Asset ${assetId} was not found` });
               const bytes = yield* fromPromise(
                 async () =>
                   new Uint8Array(
@@ -556,8 +554,9 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
                 bytes.byteLength !== asset.metadata.byteLength ||
                 digest(bytes) !== asset.metadata.digest
               )
-                return yield* Effect.fail(
-                  failure("Filesystem Asset Blob is corrupt", new Error("digest mismatch")),
+                return yield* failure(
+                  "Filesystem Asset Blob is corrupt",
+                  new Error("digest mismatch"),
                 );
               return { bytes, id: asset.id, metadata: asset.metadata };
             }),
@@ -585,12 +584,12 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
                 }
                 if (current.catalog.version !== expectedVersion) {
                   return Effect.fail(
-                    new Conflict({ message: "Definition Catalog version is stale" }),
+                    Conflict.make({ message: "Definition Catalog version is stale" }),
                   );
                 }
                 if (current.entryGeneration !== expectedEntryGeneration) {
                   return Effect.fail(
-                    new Conflict({ message: "Filesystem Entry generation is stale" }),
+                    Conflict.make({ message: "Filesystem Entry generation is stale" }),
                   );
                 }
                 const catalog = { ...cloneCatalog(replacement), version: expectedVersion + 1 },
@@ -637,7 +636,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
                 }
                 if (current.catalog.version !== expectedVersion) {
                   return Effect.fail(
-                    new Conflict({ message: "Definition Catalog version is stale" }),
+                    Conflict.make({ message: "Definition Catalog version is stale" }),
                   );
                 }
                 const catalog = { ...cloneCatalog(replacement), version: expectedVersion + 1 },
@@ -665,9 +664,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
   ): Effect.Effect<Acquired, InfrastructureFailure, Generator> =>
     Effect.gen(function* acquire() {
       if (configuration.root.length === 0) {
-        return yield* Effect.fail(
-          failure("Filesystem Persistence root is required", new Error("empty root")),
-        );
+        return yield* failure("Filesystem Persistence root is required", new Error("empty root"));
       }
       const identifiers = yield* Generator;
       yield* fromPromise(

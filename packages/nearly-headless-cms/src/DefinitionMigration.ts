@@ -59,7 +59,7 @@ export const prepare = (input: PreparationInput): Preparation => {
     input.manifest.sourceSnapshotId !== input.source.snapshotId ||
     input.manifest.targetSnapshotId !== input.target.snapshotId
   ) {
-    throw new InvalidInput({
+    throw InvalidInput.make({
       message: "Migration Manifest does not match the source and target Definition Snapshots",
     });
   }
@@ -143,12 +143,12 @@ export const prepare = (input: PreparationInput): Preparation => {
 
 export const assertFresh = (preparation: Preparation, currentGeneration: number): void => {
   if (preparation.sourceGeneration !== currentGeneration) {
-    throw new Conflict({
+    throw Conflict.make({
       message: "Migration Preparation is stale because the source generation changed",
     });
   }
   if (preparation.report.status !== "ready") {
-    throw new InvalidInput({ message: "A failed Migration Preparation cannot be cut over" });
+    throw InvalidInput.make({ message: "A failed Migration Preparation cannot be cut over" });
   }
 };
 
@@ -181,11 +181,11 @@ export const validateGraph = (manifests: readonly Manifest[]): void => {
   const manifestIds = new Set<string>();
   for (const manifest of manifests) {
     if (manifestIds.has(manifest.id)) {
-      throw new InvalidInput({ message: `Migration Manifest ${manifest.id} is duplicated` });
+      throw InvalidInput.make({ message: `Migration Manifest ${manifest.id} is duplicated` });
     }
     manifestIds.add(manifest.id);
     if (manifest.sourceSnapshotId === manifest.targetSnapshotId) {
-      throw new InvalidInput({ message: "Migration graph cannot contain self edges" });
+      throw InvalidInput.make({ message: "Migration graph cannot contain self edges" });
     }
   }
   const snapshots = new Set(
@@ -197,7 +197,7 @@ export const validateGraph = (manifests: readonly Manifest[]): void => {
         sourceSnapshotId !== targetSnapshotId &&
         pathCount(manifests, sourceSnapshotId, targetSnapshotId, new Set()) > 1
       ) {
-        throw new InvalidInput({
+        throw InvalidInput.make({
           message: `Migration graph is ambiguous between ${sourceSnapshotId} and ${targetSnapshotId}`,
         });
       }
@@ -234,7 +234,7 @@ export const path = (
     },
     found = search(sourceSnapshotId, new Set());
   if (found === undefined) {
-    throw new InvalidInput({
+    throw InvalidInput.make({
       message: `No Migration Path exists from ${sourceSnapshotId} to ${targetSnapshotId}`,
     });
   }

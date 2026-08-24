@@ -50,15 +50,15 @@ const lowerCamelCase = (key: string): string =>
       catch: (cause) =>
         cause instanceof CmsError.InvalidInput
           ? cause
-          : new CmsError.InvalidInput({ message: "Malformed Comment submission" }),
+          : CmsError.InvalidInput.make({ message: "Malformed Comment submission" }),
       try: async () => {
         if (!(request.headers.get("content-type") ?? "").startsWith("application/json"))
-          throw new CmsError.InvalidInput({
+          throw CmsError.InvalidInput.make({
             message: "Comment submission requires application/json",
           });
         const value = (await request.json()) as unknown;
         if (value === null || Array.isArray(value) || typeof value !== "object")
-          throw new CmsError.InvalidInput({ message: "Comment submission must be an object" });
+          throw CmsError.InvalidInput.make({ message: "Comment submission must be an object" });
         return value as Readonly<Record<string, unknown>>;
       },
     }),
@@ -77,7 +77,7 @@ const lowerCamelCase = (key: string): string =>
     ).pipe(
       Effect.flatMap((entries) =>
         entries[0] === undefined
-          ? Effect.fail(new CmsError.NotFound({ message: `${contentTypeId} was not found` }))
+          ? Effect.fail(CmsError.NotFound.make({ message: `${contentTypeId} was not found` }))
           : Effect.succeed(publicValue(entries[0])),
       ),
     ),
@@ -311,7 +311,7 @@ export const makeDeliveryOperations = (
             const canonicalInput = JSON.stringify(body, Object.keys(body).sort());
             const prior = yield* Effect.tryPromise({
               catch: (cause) =>
-                new CmsError.InfrastructureFailure({
+                CmsError.InfrastructureFailure.make({
                   cause,
                   message: "Comment receipt lookup failed",
                   retryable: true,
@@ -333,11 +333,9 @@ export const makeDeliveryOperations = (
               typeof prior.receipt === "object"
             ) {
               if (prior.canonicalInput !== canonicalInput)
-                return yield* Effect.fail(
-                  new CmsError.IdempotencyConflict({
-                    message: "Idempotency key was reused with different Comment input",
-                  }),
-                );
+                return yield* CmsError.IdempotencyConflict.make({
+                  message: "Idempotency key was reused with different Comment input",
+                });
               return prior.receipt as PublicValue;
             }
             const post = yield* cms.getEntry({
@@ -345,9 +343,7 @@ export const makeDeliveryOperations = (
               entryId: parameters["postId"]!,
             });
             if (post.values["status"] !== "published")
-              return yield* Effect.fail(
-                new CmsError.NotFound({ message: "Published Post was not found" }),
-              );
+              return yield* CmsError.NotFound.make({ message: "Published Post was not found" });
             const displayName = body["displayName"];
             const commentBody = body["body"];
             const websiteUrl = body["websiteUrl"];
@@ -356,9 +352,7 @@ export const makeDeliveryOperations = (
               typeof commentBody !== "string" ||
               (websiteUrl !== undefined && websiteUrl !== null && typeof websiteUrl !== "string")
             )
-              return yield* Effect.fail(
-                new CmsError.InvalidInput({ message: "Comment fields are invalid" }),
-              );
+              return yield* CmsError.InvalidInput.make({ message: "Comment fields are invalid" });
             const result = yield* cms.createEntry({
               contentTypeId: "comment",
               values: {
@@ -374,7 +368,7 @@ export const makeDeliveryOperations = (
             const receipt = { status: "pending", submissionId };
             yield* Effect.tryPromise({
               catch: (cause) =>
-                new CmsError.InfrastructureFailure({
+                CmsError.InfrastructureFailure.make({
                   cause,
                   message: "Comment receipt persistence failed",
                   retryable: true,
@@ -407,9 +401,9 @@ export const makeDeliveryOperations = (
                 return publicValue(entry);
               }
             }
-            return yield* Effect.fail(
-              new CmsError.NotFound({ message: "Public Entry reference was not found" }),
-            );
+            return yield* CmsError.NotFound.make({
+              message: "Public Entry reference was not found",
+            });
           }),
         identifier: "resolvePublicEntryReference",
         method: "GET",
@@ -429,9 +423,7 @@ export const makeDeliveryOperations = (
               const authors = yield* queryAll(cms, "author");
               const assetId = parameters["assetId"]!;
               if (!publicAssetIds(posts, authors).has(assetId))
-                return yield* Effect.fail(
-                  new CmsError.NotFound({ message: "Public Asset was not found" }),
-                );
+                return yield* CmsError.NotFound.make({ message: "Public Asset was not found" });
               const asset = yield* cms.readAsset(assetId);
               return publicAssetResponse(asset, request, requestId, snapshot.fingerprint);
             }),
@@ -478,11 +470,9 @@ export const makeDeliveryOperations = (
               },
               bytes = new TextEncoder().encode(JSON.stringify(artifact));
             if (bytes.byteLength > 5_000_000)
-              return yield* Effect.fail(
-                new CmsError.ExportTooLarge({
-                  message: "Public Content Export exceeds the configured 5000000-byte bound",
-                }),
-              );
+              return yield* CmsError.ExportTooLarge.make({
+                message: "Public Content Export exceeds the configured 5000000-byte bound",
+              });
             const digest = new Bun.CryptoHasher("sha256").update(bytes).digest("hex"),
               etag = `"sha256-${digest}"`,
               headers = new Headers({

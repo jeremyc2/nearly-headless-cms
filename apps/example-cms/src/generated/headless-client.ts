@@ -15,14 +15,14 @@ const get = <Value>(path: string): Effect.Effect<Value, HeadlessClientFailure> =
     catch: (cause) =>
       cause instanceof HeadlessClientFailure
         ? cause
-        : new HeadlessClientFailure({
+        : HeadlessClientFailure.make({
             message: cause instanceof Error ? cause.message : "Headless transport failed",
             status: 0,
           }),
     try: async () => {
       const response = await fetch(path);
       if (!response.ok)
-        throw new HeadlessClientFailure({
+        throw HeadlessClientFailure.make({
           message: `Headless request failed with ${response.status}`,
           status: response.status,
         });

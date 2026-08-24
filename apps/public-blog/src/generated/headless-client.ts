@@ -110,7 +110,7 @@ const fetchJson = <Value>(
       cause instanceof ProtocolFailure ||
       cause instanceof DeclaredFailure
         ? cause
-        : new TransportFailure({
+        : TransportFailure.make({
             message: cause instanceof Error ? cause.message : "Headless request failed",
           }),
     try: async () => {
@@ -118,7 +118,7 @@ const fetchJson = <Value>(
       try {
         response = await fetch(url, init);
       } catch (cause) {
-        throw new TransportFailure({
+        throw TransportFailure.make({
           message: cause instanceof Error ? cause.message : "Connection failed",
         });
       }
@@ -129,26 +129,26 @@ const fetchJson = <Value>(
             readonly code?: string;
             readonly message?: string;
           };
-          throw new DeclaredFailure({
+          throw DeclaredFailure.make({
             code: error.code ?? "Unknown",
             message: error.message ?? "Headless operation failed",
             status: response.status,
           });
         }
-        throw new ProtocolFailure({
+        throw ProtocolFailure.make({
           message: `Unexpected Headless response ${response.status}`,
           status: response.status,
         });
       }
       if (!mediaType.includes("application/json"))
-        throw new ProtocolFailure({
+        throw ProtocolFailure.make({
           message: "Expected a JSON Headless response",
           status: response.status,
         });
       try {
         return (await response.json()) as Value;
       } catch {
-        throw new ProtocolFailure({
+        throw ProtocolFailure.make({
           message: "Malformed Headless JSON response",
           status: response.status,
         });

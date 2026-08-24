@@ -196,7 +196,9 @@ const attempt = <Value>(operation: () => Value): Effect.Effect<Value, InvalidInp
       catch: (cause) =>
         cause instanceof InvalidInput
           ? cause
-          : new InvalidInput({ message: cause instanceof Error ? cause.message : "Invalid input" }),
+          : InvalidInput.make({
+              message: cause instanceof Error ? cause.message : "Invalid input",
+            }),
       try: operation,
     }),
   liveRecords = (generation: EntryGeneration): readonly EntryRecord[] =>
@@ -320,7 +322,7 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
         if (
           JSON.stringify(valueAtPath(record.entry.values, path)) === JSON.stringify(candidateValue)
         ) {
-          throw new Conflict({
+          throw Conflict.make({
             message: `Unique Field ${path.join(".")} already contains this value`,
           });
         }
@@ -341,11 +343,9 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
           (relationship.targetContentTypeIds.length > 0 &&
             !relationship.targetContentTypeIds.includes(target.entry.contentTypeId))
         ) {
-          return yield* Effect.fail(
-            new InvalidInput({
-              message: `Relationship target ${relationship.entryId} does not exist in an allowed Content Type`,
-            }),
-          );
+          return yield* InvalidInput.make({
+            message: `Relationship target ${relationship.entryId} does not exist in an allowed Content Type`,
+          });
         }
       }
       for (const assetId of references.assetIds) {
@@ -381,7 +381,7 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
   maximumExpansionPaths = 20,
   groupExpansionPaths = (paths: readonly string[]): ReadonlyMap<string, readonly string[]> => {
     if (paths.length > maximumExpansionPaths) {
-      throw new InvalidInput({
+      throw InvalidInput.make({
         message: `Relationship Expansion cannot contain more than ${maximumExpansionPaths} paths`,
       });
     }
@@ -389,10 +389,10 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
     for (const path of paths) {
       const segments = path.split(".");
       if (segments.some((segment) => segment.length === 0)) {
-        throw new InvalidInput({ message: `Invalid Relationship Expansion path ${path}` });
+        throw InvalidInput.make({ message: `Invalid Relationship Expansion path ${path}` });
       }
       if (segments.length > maximumExpansionDepth) {
-        throw new InvalidInput({
+        throw InvalidInput.make({
           message: `Relationship Expansion cannot exceed ${maximumExpansionDepth} levels`,
         });
       }
@@ -428,7 +428,7 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
         field = fields.find((candidate) => candidate.key === fieldKey),
         relationship = field === undefined ? undefined : relationshipKind(field);
       if (field === undefined) {
-        throw new InvalidInput({ message: `Field ${fieldPath} is not expandable` });
+        throw InvalidInput.make({ message: `Field ${fieldPath} is not expandable` });
       }
       const value = values[fieldKey];
       if (value === undefined || value === null) {
@@ -436,19 +436,19 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
       }
       if (relationship === undefined) {
         if (field.nestedFields === undefined || nestedPaths.length === 0) {
-          throw new InvalidInput({
+          throw InvalidInput.make({
             message: `Field ${fieldPath} is not an expandable Relationship`,
           });
         }
         if (field.kind.kind === "list") {
           if (!Array.isArray(value)) {
-            throw new InvalidInput({
+            throw InvalidInput.make({
               message: `Field Group List ${fieldPath} contains an invalid value`,
             });
           }
           values[fieldKey] = value.map((item) => {
             if (!isJsonObject(item)) {
-              throw new InvalidInput({
+              throw InvalidInput.make({
                 message: `Field Group List ${fieldPath} contains an invalid item`,
               });
             }
@@ -464,7 +464,7 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
           });
         } else {
           if (!isJsonObject(value)) {
-            throw new InvalidInput({
+            throw InvalidInput.make({
               message: `Field Group ${fieldPath} contains an invalid value`,
             });
           }
@@ -487,13 +487,13 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
           field.kind.kind !== "list" &&
           !capabilitiesFor(field.kind).expandable)
       ) {
-        throw new UnsupportedQueryCapability({
+        throw UnsupportedQueryCapability.make({
           message: `Field ${fieldPath} does not support Relationship Expansion`,
         });
       }
       const expandEntryId = (entryId: JsonValue): JsonValue => {
         if (typeof entryId !== "string") {
-          throw new InvalidInput({
+          throw InvalidInput.make({
             message: `Relationship ${fieldPath} contains an invalid Entry ID`,
           });
         }
@@ -506,7 +506,7 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
           target.deletionRecord !== undefined ||
           !relationship.targetContentTypeIds.includes(target.entry.contentTypeId)
         ) {
-          throw new InvalidInput({
+          throw InvalidInput.make({
             message: `Relationship target ${entryId} does not exist in an allowed Content Type`,
           });
         }
@@ -538,7 +538,7 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
     }
     const contentType = snapshot.contentTypes.get(entry.contentTypeId);
     if (contentType === undefined) {
-      throw new InvalidInput({ message: `Unknown Content Type ${entry.contentTypeId}` });
+      throw InvalidInput.make({ message: `Unknown Content Type ${entry.contentTypeId}` });
     }
     const nextAncestors = new Set(ancestorEntryIds).add(entry.id),
       values = expandObject(
@@ -570,7 +570,7 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
       }
       return parsed["offset"] as number;
     } catch {
-      throw new Conflict({ message: "History cursor is invalid or belongs to another Entry" });
+      throw Conflict.make({ message: "History cursor is invalid or belongs to another Entry" });
     }
   },
   applyRetention = (
@@ -641,7 +641,7 @@ export const makeLayer = (
             const identity = yield* currentIdentity.current,
               allowed = yield* authorization.authorize(identity, action, resource);
             if (!allowed) {
-              return yield* Effect.fail(new Forbidden({ message: "The operation is forbidden" }));
+              return yield* Forbidden.make({ message: "The operation is forbidden" });
             }
           }),
         entryResource = (
@@ -660,9 +660,9 @@ export const makeLayer = (
             yield* authorize("entry.create", entryResource(snapshot, input.contentTypeId));
             const contentType = snapshot.contentTypes.get(input.contentTypeId);
             if (contentType === undefined) {
-              return yield* Effect.fail(
-                new InvalidInput({ message: `Unknown Content Type ${input.contentTypeId}` }),
-              );
+              return yield* InvalidInput.make({
+                message: `Unknown Content Type ${input.contentTypeId}`,
+              });
             }
             const values = yield* attempt(() =>
                 snapshot.validateEntry(input.contentTypeId, input.values, { applyDefaults: true }),
@@ -716,9 +716,7 @@ export const makeLayer = (
               record.deletionRecord !== undefined ||
               record.entry.contentTypeId !== input.contentTypeId
             ) {
-              return yield* Effect.fail(
-                new NotFound({ message: `Entry ${input.entryId} was not found` }),
-              );
+              return yield* NotFound.make({ message: `Entry ${input.entryId} was not found` });
             }
             return project(
               yield* attempt(() =>
@@ -736,9 +734,9 @@ export const makeLayer = (
             );
             const contentType = snapshot.contentTypes.get(input.contentTypeId);
             if (contentType === undefined) {
-              return yield* Effect.fail(
-                new InvalidInput({ message: `Unknown Content Type ${input.contentTypeId}` }),
-              );
+              return yield* InvalidInput.make({
+                message: `Unknown Content Type ${input.contentTypeId}`,
+              });
             }
             const generation = yield* persistence.readGeneration,
               current = generation.records.get(input.entryId);
@@ -747,12 +745,10 @@ export const makeLayer = (
               current.deletionRecord !== undefined ||
               current.entry.contentTypeId !== input.contentTypeId
             ) {
-              return yield* Effect.fail(
-                new NotFound({ message: `Entry ${input.entryId} was not found` }),
-              );
+              return yield* NotFound.make({ message: `Entry ${input.entryId} was not found` });
             }
             if (contentType.definition.history && current.writeToken !== input.writeToken) {
-              return yield* Effect.fail(new Conflict({ message: "Write Token is stale" }));
+              return yield* Conflict.make({ message: "Write Token is stale" });
             }
             const values = yield* attempt(() =>
               snapshot.validateEntry(input.contentTypeId, input.values, { applyDefaults: false }),
@@ -809,12 +805,10 @@ export const makeLayer = (
               current.deletionRecord !== undefined ||
               current.entry.contentTypeId !== input.contentTypeId
             ) {
-              return yield* Effect.fail(
-                new NotFound({ message: `Entry ${input.entryId} was not found` }),
-              );
+              return yield* NotFound.make({ message: `Entry ${input.entryId} was not found` });
             }
             if (contentType.definition.history && current.writeToken !== input.writeToken) {
-              return yield* Effect.fail(new Conflict({ message: "Write Token is stale" }));
+              return yield* Conflict.make({ message: "Write Token is stale" });
             }
             for (const candidate of liveRecords(generation)) {
               const candidateContentType = snapshot.contentTypes.get(candidate.entry.contentTypeId);
@@ -827,11 +821,9 @@ export const makeLayer = (
               if (
                 references.relationships.some((reference) => reference.entryId === input.entryId)
               ) {
-                return yield* Effect.fail(
-                  new ReferenceBlockedDeletion({
-                    message: "Entry deletion is blocked by a live reference",
-                  }),
-                );
+                return yield* ReferenceBlockedDeletion.make({
+                  message: "Entry deletion is blocked by a live reference",
+                });
               }
             }
             const records = new Map(generation.records);
@@ -864,11 +856,9 @@ export const makeLayer = (
         ): Effect.Effect<readonly EntryBatchMutationResult[], CmsError> =>
           Effect.gen(function* mutateEntriesAtomically() {
             if (mutations.length === 0) {
-              return yield* Effect.fail(
-                new InvalidInput({
-                  message: "An atomic Entry batch requires at least one mutation",
-                }),
-              );
+              return yield* InvalidInput.make({
+                message: "An atomic Entry batch requires at least one mutation",
+              });
             }
             const snapshot = yield* currentDefinitionSnapshot,
               generation = yield* persistence.readGeneration,
@@ -888,12 +878,10 @@ export const makeLayer = (
                 current.deletionRecord !== undefined ||
                 current.entry.contentTypeId !== input.contentTypeId
               ) {
-                return yield* Effect.fail(
-                  new NotFound({ message: `Entry ${input.entryId} was not found` }),
-                );
+                return yield* NotFound.make({ message: `Entry ${input.entryId} was not found` });
               }
               if (contentType.definition.history && current.writeToken !== input.writeToken) {
-                return yield* Effect.fail(new Conflict({ message: "Write Token is stale" }));
+                return yield* Conflict.make({ message: "Write Token is stale" });
               }
               if (mutation.kind === "replace") {
                 const values = yield* attempt(() =>
@@ -955,11 +943,9 @@ export const makeLayer = (
                 if (
                   references.relationships.some((reference) => reference.entryId === input.entryId)
                 ) {
-                  return yield* Effect.fail(
-                    new ReferenceBlockedDeletion({
-                      message: "Entry deletion is blocked by a live reference",
-                    }),
-                  );
+                  return yield* ReferenceBlockedDeletion.make({
+                    message: "Entry deletion is blocked by a live reference",
+                  });
                 }
               }
               if (!contentType.definition.history) {
@@ -1042,9 +1028,9 @@ export const makeLayer = (
               record.writeToken === undefined ||
               record.revisions.length === 0
             ) {
-              return yield* Effect.fail(
-                new NotFound({ message: `History-enabled Entry ${input.entryId} was not found` }),
-              );
+              return yield* NotFound.make({
+                message: `History-enabled Entry ${input.entryId} was not found`,
+              });
             }
             return {
               entry: structuredClone(record.entry),
@@ -1064,9 +1050,9 @@ export const makeLayer = (
               input.pageSize <= 0 ||
               input.pageSize > 100
             ) {
-              return yield* Effect.fail(
-                new InvalidInput({ message: "History pageSize must be between 1 and 100" }),
-              );
+              return yield* InvalidInput.make({
+                message: "History pageSize must be between 1 and 100",
+              });
             }
             const generation = yield* persistence.readGeneration,
               record = generation.records.get(input.entryId);
@@ -1075,9 +1061,9 @@ export const makeLayer = (
               record.entry.contentTypeId !== input.contentTypeId ||
               record.revisions.length === 0
             ) {
-              return yield* Effect.fail(
-                new NotFound({ message: `Entry History ${input.entryId} was not found` }),
-              );
+              return yield* NotFound.make({
+                message: `Entry History ${input.entryId} was not found`,
+              });
             }
             const offset = yield* attempt(() => decodeHistoryCursor(input.cursor, input.entryId)),
               newestFirst = [...record.revisions].reverse(),
@@ -1105,9 +1091,9 @@ export const makeLayer = (
               record.entry.contentTypeId !== input.contentTypeId ||
               revision === undefined
             ) {
-              return yield* Effect.fail(
-                new NotFound({ message: `Entry Revision ${input.revisionNumber} was not found` }),
-              );
+              return yield* NotFound.make({
+                message: `Entry Revision ${input.revisionNumber} was not found`,
+              });
             }
             return structuredClone(revision);
           }),
@@ -1126,19 +1112,17 @@ export const makeLayer = (
               current === undefined ||
               current.writeToken !== input.writeToken
             ) {
-              return yield* Effect.fail(
-                current === undefined
-                  ? new NotFound({ message: `Entry History ${input.entryId} was not found` })
-                  : new Conflict({ message: "Write Token is stale" }),
-              );
+              return yield* current === undefined
+                ? NotFound.make({ message: `Entry History ${input.entryId} was not found` })
+                : Conflict.make({ message: "Write Token is stale" });
             }
             const sourceRevision = current.revisions.find(
               (revision) => revision.revisionNumber === input.revisionNumber,
             );
             if (sourceRevision === undefined) {
-              return yield* Effect.fail(
-                new NotFound({ message: `Entry Revision ${input.revisionNumber} was not found` }),
-              );
+              return yield* NotFound.make({
+                message: `Entry Revision ${input.revisionNumber} was not found`,
+              });
             }
             let sourceValues = sourceRevision.values;
             if (sourceRevision.definitionSnapshotId !== snapshot.snapshotId) {
@@ -1160,12 +1144,10 @@ export const makeLayer = (
                       snapshotRecord.compiled.snapshotId === manifest.targetSnapshotId,
                   )?.compiled;
                 if (sourceSnapshot === undefined || targetSnapshot === undefined) {
-                  return yield* Effect.fail(
-                    new InvalidInput({
-                      message:
-                        "Entry Revision migration references an unavailable Definition Snapshot",
-                    }),
-                  );
+                  return yield* InvalidInput.make({
+                    message:
+                      "Entry Revision migration references an unavailable Definition Snapshot",
+                  });
                 }
                 const preparation = yield* attempt(() =>
                   prepare({
@@ -1184,15 +1166,12 @@ export const makeLayer = (
                   }),
                 );
                 if (preparation.report.status !== "ready" || preparation.entries[0] === undefined) {
-                  return yield* Effect.fail(
-                    new InvalidInput({
-                      message:
-                        "Entry Revision cannot be migrated to the active Definition Snapshot",
-                      ...(preparation.report.status === "failed"
-                        ? { issues: preparation.report.issues }
-                        : {}),
-                    }),
-                  );
+                  return yield* InvalidInput.make({
+                    message: "Entry Revision cannot be migrated to the active Definition Snapshot",
+                    ...(preparation.report.status === "failed"
+                      ? { issues: preparation.report.issues }
+                      : {}),
+                  });
                 }
                 sourceValues = preparation.entries[0].values;
                 sourceSnapshotId = manifest.targetSnapshotId;
@@ -1247,12 +1226,12 @@ export const makeLayer = (
               record.entry.contentTypeId !== input.contentTypeId ||
               record.deletionRecord === undefined
             ) {
-              return yield* Effect.fail(
-                new NotFound({ message: `Deleted Entry ${input.entryId} was not found` }),
-              );
+              return yield* NotFound.make({
+                message: `Deleted Entry ${input.entryId} was not found`,
+              });
             }
             if (record.writeToken !== input.writeToken) {
-              return yield* Effect.fail(new Conflict({ message: "Write Token is stale" }));
+              return yield* Conflict.make({ message: "Write Token is stale" });
             }
             const records = new Map(generation.records);
             records.delete(input.entryId);
@@ -1310,11 +1289,9 @@ export const makeLayer = (
                 contentType !== undefined &&
                 collectReferences(contentType, record.entry.values).assetIds.includes(assetId)
               ) {
-                return yield* Effect.fail(
-                  new AssetReferenced({
-                    message: "Asset deletion is blocked by a live Entry reference",
-                  }),
-                );
+                return yield* AssetReferenced.make({
+                  message: "Asset deletion is blocked by a live Entry reference",
+                });
               }
             }
             yield* assets.delete(assetId);
@@ -1372,17 +1349,13 @@ export const makeLayer = (
               kind: "definitionSpace",
             });
             if (state.version !== input.expectedCatalogVersion) {
-              return yield* Effect.fail(
-                new Conflict({ message: "Definition Catalog version is stale" }),
-              );
+              return yield* Conflict.make({ message: "Definition Catalog version is stale" });
             }
             const revision = input.definition.revision ?? 1;
             if (!Number.isSafeInteger(revision) || revision <= 0) {
-              return yield* Effect.fail(
-                new InvalidInput({
-                  message: "Definition revision must be a positive safe integer",
-                }),
-              );
+              return yield* InvalidInput.make({
+                message: "Definition revision must be a positive safe integer",
+              });
             }
             if (
               state.revisions.some(
@@ -1390,11 +1363,9 @@ export const makeLayer = (
                   record.definitionId === input.definition.id && record.revision === revision,
               )
             ) {
-              return yield* Effect.fail(
-                new Conflict({
-                  message: `Definition ${input.definition.id} revision ${revision} already exists`,
-                }),
-              );
+              return yield* Conflict.make({
+                message: `Definition ${input.definition.id} revision ${revision} already exists`,
+              });
             }
             const previousRevisions = state.revisions.filter(
                 (record) => record.definitionId === input.definition.id,
@@ -1404,18 +1375,14 @@ export const makeLayer = (
                 0,
               );
             if (previousRevision > 0 && input.definition.parentRevision !== previousRevision) {
-              return yield* Effect.fail(
-                new Conflict({
-                  message: `Definition ${input.definition.id} must name parent revision ${previousRevision}`,
-                }),
-              );
+              return yield* Conflict.make({
+                message: `Definition ${input.definition.id} must name parent revision ${previousRevision}`,
+              });
             }
             if (previousRevision === 0 && input.definition.parentRevision !== undefined) {
-              return yield* Effect.fail(
-                new InvalidInput({
-                  message: `The first revision of Definition ${input.definition.id} cannot name a parent`,
-                }),
-              );
+              return yield* InvalidInput.make({
+                message: `The first revision of Definition ${input.definition.id} cannot name a parent`,
+              });
             }
             const draftDefinitions = [
               ...state.active.input.definitions.filter(
@@ -1467,14 +1434,12 @@ export const makeLayer = (
               kind: "definitionSpace",
             });
             if (state.version !== input.expectedCatalogVersion) {
-              return yield* Effect.fail(
-                new Conflict({ message: "Definition Catalog version is stale" }),
-              );
+              return yield* Conflict.make({ message: "Definition Catalog version is stale" });
             }
             if (!state.revisions.some((record) => record.definitionId === input.definitionId)) {
-              return yield* Effect.fail(
-                new NotFound({ message: `Definition ${input.definitionId} was not found` }),
-              );
+              return yield* NotFound.make({
+                message: `Definition ${input.definitionId} was not found`,
+              });
             }
             const recordedAt = new Date(yield* Clock.currentTimeMillis).toISOString();
             return yield* catalog.replace(input.expectedCatalogVersion, {
@@ -1501,14 +1466,12 @@ export const makeLayer = (
               kind: "definitionSpace",
             });
             if (state.version !== input.expectedCatalogVersion) {
-              return yield* Effect.fail(
-                new Conflict({ message: "Definition Catalog version is stale" }),
-              );
+              return yield* Conflict.make({ message: "Definition Catalog version is stale" });
             }
             if (state.migrationManifests.some((manifest) => manifest.id === input.manifest.id)) {
-              return yield* Effect.fail(
-                new Conflict({ message: `Migration Manifest ${input.manifest.id} already exists` }),
-              );
+              return yield* Conflict.make({
+                message: `Migration Manifest ${input.manifest.id} already exists`,
+              });
             }
             yield* attempt(() => validateGraph([...state.migrationManifests, input.manifest]));
             return yield* catalog.replace(input.expectedCatalogVersion, {
@@ -1526,17 +1489,15 @@ export const makeLayer = (
               kind: "definitionSpace",
             });
             if (state.version !== input.expectedCatalogVersion) {
-              return yield* Effect.fail(
-                new Conflict({ message: "Definition Catalog version is stale" }),
-              );
+              return yield* Conflict.make({ message: "Definition Catalog version is stale" });
             }
             const manifest = state.migrationManifests.find(
               (candidate) => candidate.id === input.manifestId,
             );
             if (manifest === undefined) {
-              return yield* Effect.fail(
-                new NotFound({ message: `Migration Manifest ${input.manifestId} was not found` }),
-              );
+              return yield* NotFound.make({
+                message: `Migration Manifest ${input.manifestId} was not found`,
+              });
             }
             const target = yield* attempt(() => compile(input.snapshot, compileOptions)),
               generation = yield* persistence.readGeneration,
@@ -1571,16 +1532,12 @@ export const makeLayer = (
             });
             const state = yield* catalog.read;
             if (state.version !== input.expectedCatalogVersion) {
-              return yield* Effect.fail(
-                new Conflict({ message: "Definition Catalog version is stale" }),
-              );
+              return yield* Conflict.make({ message: "Definition Catalog version is stale" });
             }
             if (input.snapshot.definitionSpaceId !== state.active.compiled.definitionSpaceId) {
-              return yield* Effect.fail(
-                new InvalidInput({
-                  message: "A Definition Snapshot cannot cross Definition Spaces",
-                }),
-              );
+              return yield* InvalidInput.make({
+                message: "A Definition Snapshot cannot cross Definition Spaces",
+              });
             }
             if (
               state.snapshots.some(
@@ -1588,11 +1545,9 @@ export const makeLayer = (
                   snapshotRecord.compiled.snapshotId === input.snapshot.snapshotId,
               )
             ) {
-              return yield* Effect.fail(
-                new Conflict({
-                  message: `Definition Snapshot ${input.snapshot.snapshotId} already exists`,
-                }),
-              );
+              return yield* Conflict.make({
+                message: `Definition Snapshot ${input.snapshot.snapshotId} already exists`,
+              });
             }
             const target = yield* attempt(() => compile(input.snapshot, compileOptions));
             for (const definition of input.snapshot.definitions) {
@@ -1605,34 +1560,28 @@ export const makeLayer = (
                 canonicalJson(catalogRevision.definition as unknown as JsonValue) !==
                   canonicalJson(definition as unknown as JsonValue)
               ) {
-                return yield* Effect.fail(
-                  new InvalidInput({
-                    message: `Definition ${definition.id} revision ${revision} has not been appended to the Catalog`,
-                  }),
-                );
+                return yield* InvalidInput.make({
+                  message: `Definition ${definition.id} revision ${revision} has not been appended to the Catalog`,
+                });
               }
               if (state.retiredDefinitionIds.has(definition.id)) {
                 const activeDefinitionRevision =
                   state.active.input.definitions.find((candidate) => candidate.id === definition.id)
                     ?.revision ?? 0;
                 if (revision <= activeDefinitionRevision) {
-                  return yield* Effect.fail(
-                    new InvalidInput({
-                      message: `Retired Definition ${definition.id} requires a new revision before reactivation`,
-                    }),
-                  );
+                  return yield* InvalidInput.make({
+                    message: `Retired Definition ${definition.id} requires a new revision before reactivation`,
+                  });
                 }
               }
             }
             const source = state.active.compiled,
               compatibility = classifyCompatibility(source, target);
             if (compatibility === "migrationRequired" && input.migration === undefined) {
-              return yield* Effect.fail(
-                new InvalidInput({
-                  message:
-                    "This Definition change requires an explicit Migration Manifest and Handler",
-                }),
-              );
+              return yield* InvalidInput.make({
+                message:
+                  "This Definition change requires an explicit Migration Manifest and Handler",
+              });
             }
             const generation = yield* persistence.readGeneration,
               manifest: Manifest =
@@ -1665,33 +1614,27 @@ export const makeLayer = (
                   }),
                 ));
             if (input.migration?.preparationId !== undefined && storedPreparation === undefined) {
-              return yield* Effect.fail(
-                new NotFound({
-                  message: `Migration Preparation ${input.migration.preparationId} was not found`,
-                }),
-              );
+              return yield* NotFound.make({
+                message: `Migration Preparation ${input.migration.preparationId} was not found`,
+              });
             }
             if (
               preparation.sourceSnapshotId !== source.snapshotId ||
               preparation.targetSnapshotId !== target.snapshotId ||
               preparation.manifest.id !== manifest.id
             ) {
-              return yield* Effect.fail(
-                new InvalidInput({
-                  message: "Migration Preparation does not match this Definition Cutover",
-                }),
-              );
+              return yield* InvalidInput.make({
+                message: "Migration Preparation does not match this Definition Cutover",
+              });
             }
             yield* attempt(() => {
               assertFresh(preparation, generation.generation);
             });
             if (preparation.report.status !== "ready") {
-              return yield* Effect.fail(
-                new InvalidInput({
-                  issues: preparation.report.issues,
-                  message: "Definition Migration preparation failed",
-                }),
-              );
+              return yield* InvalidInput.make({
+                issues: preparation.report.issues,
+                message: "Definition Migration preparation failed",
+              });
             }
 
             const records = new Map(generation.records);
@@ -1699,11 +1642,9 @@ export const makeLayer = (
               for (const entry of preparation.entries) {
                 const current = records.get(entry.id);
                 if (current === undefined) {
-                  return yield* Effect.fail(
-                    new Conflict({
-                      message: "Migration Preparation no longer matches the Entry generation",
-                    }),
-                  );
+                  return yield* Conflict.make({
+                    message: "Migration Preparation no longer matches the Entry generation",
+                  });
                 }
                 const writeToken =
                   current.writeToken === undefined
@@ -1722,11 +1663,9 @@ export const makeLayer = (
               for (const record of liveRecords(preparedGeneration)) {
                 const contentType = target.contentTypes.get(record.entry.contentTypeId);
                 if (contentType === undefined) {
-                  return yield* Effect.fail(
-                    new InvalidInput({
-                      message: `Migration retained Entry ${record.entry.id} in a removed Content Type`,
-                    }),
-                  );
+                  return yield* InvalidInput.make({
+                    message: `Migration retained Entry ${record.entry.id} in a removed Content Type`,
+                  });
                 }
                 yield* attempt(() => {
                   ensureUniqueValues(

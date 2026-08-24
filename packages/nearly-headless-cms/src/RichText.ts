@@ -428,7 +428,7 @@ export const validate = (value: unknown, options: ValidationOptions = {}): Docum
     value["version"] !== formatVersion ||
     !Array.isArray(value["children"])
   ) {
-    throw new InvalidInput({ message: `Rich Text must use ${format} version ${formatVersion}` });
+    throw InvalidInput.make({ message: `Rich Text must use ${format} version ${formatVersion}` });
   }
   const extensions = new Map(
       (options.extensions ?? []).map((extension) => [
@@ -440,7 +440,7 @@ export const validate = (value: unknown, options: ValidationOptions = {}): Docum
       validateBlock(child, ["children", index], extensions),
     );
   if (issues.length > 0) {
-    throw new InvalidInput({ issues, message: issues[0]?.message ?? "Invalid Rich Text" });
+    throw InvalidInput.make({ issues, message: issues[0]?.message ?? "Invalid Rich Text" });
   }
   return structuredClone(value) as unknown as Document;
 };

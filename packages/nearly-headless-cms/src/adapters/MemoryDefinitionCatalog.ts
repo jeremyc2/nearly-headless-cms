@@ -61,7 +61,7 @@ export const layer = ({ snapshot }: Options): Layer.Layer<DefinitionCatalog> =>
         replace: (expectedVersion, replacement) =>
           SynchronizedRef.modifyEffect(state, (current) => {
             if (current.version !== expectedVersion) {
-              return Effect.fail(new Conflict({ message: "Definition Catalog version is stale" }));
+              return Effect.fail(Conflict.make({ message: "Definition Catalog version is stale" }));
             }
             const committed = { ...cloneState(replacement), version: expectedVersion + 1 };
             return Effect.succeed([cloneState(committed), committed] as const);
