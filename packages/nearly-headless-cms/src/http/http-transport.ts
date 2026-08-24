@@ -43,6 +43,28 @@ const requiredPathParameter = (
     throw new Error(`Missing path parameter: ${name}`);
   }
   return value;
+},
+
+ alternativeTextProperty = (
+  value: string | undefined,
+): { readonly defaultAlternativeText?: string } => {
+  if (value === undefined) {
+    return {};
+  }
+  return { defaultAlternativeText: value };
+},
+
+ dimensionProperty = (
+  key: "width" | "height",
+  value: string | undefined,
+): { readonly width?: number; readonly height?: number } => {
+  if (value === undefined) {
+    return {};
+  }
+  if (key === "width") {
+    return { width: Number(value) };
+  }
+  return { height: Number(value) };
 };
 
 /** Limits, CORS policy, and composed operation declarations for the HTTP Transport. */
@@ -291,9 +313,9 @@ const runOperationInterruptibly = async <Value>(
     return {
       filename,
       mediaType,
-      ...(defaultAlternativeText === undefined ? {} : { defaultAlternativeText }),
-      ...(width === undefined ? {} : { width: Number(width) }),
-      ...(height === undefined ? {} : { height: Number(height) }),
+      ...alternativeTextProperty(defaultAlternativeText),
+      ...dimensionProperty("width", width),
+      ...dimensionProperty("height", height),
     };
   },
   multipartFailure = (error: Multipart.MultipartError): RequestFailure | InvalidInput => {
@@ -309,9 +331,10 @@ const runOperationInterruptibly = async <Value>(
         413,
       );
     }
-    return Predicate.isTagged(error.reason, "InternalError")
-      ? new RequestFailure("InternalError", "Multipart request processing failed", 500)
-      : InvalidInput.make({ message: "Malformed multipart Asset upload" });
+    if (Predicate.isTagged(error.reason, "InternalError")) {
+      return new RequestFailure("InternalError", "Multipart request processing failed", 500);
+    }
+    return InvalidInput.make({ message: "Malformed multipart Asset upload" });
   },
   stagedContent = (path: string): Stream.Stream<Uint8Array, InfrastructureFailure> =>
     Stream.fromAsyncIterable(createReadStream(path), (cause) =>
@@ -321,9 +344,12 @@ const runOperationInterruptibly = async <Value>(
         retryable: false,
       }),
     ).pipe(
-      Stream.map((chunk) =>
-        typeof chunk === "string" ? new TextEncoder().encode(chunk) : new Uint8Array(chunk),
-      ),
+      Stream.map((chunk) => {
+        if (typeof chunk === "string") {
+          return new TextEncoder().encode(chunk);
+        }
+        return new Uint8Array(chunk);
+      }),
     ),
   stageFilePart = (
     part: Multipart.File,
@@ -362,9 +388,12 @@ const runOperationInterruptibly = async <Value>(
             },
           });
         }).pipe(
-          Effect.mapError((error) =>
-            error instanceof Multipart.MultipartError ? multipartFailure(error) : error,
-          ),
+          Effect.mapError((error) => {
+            if (error instanceof Multipart.MultipartError) {
+              return multipartFailure(error);
+            }
+            return error;
+          }),
         ),
       (handle) =>
         Effect.promise(async () => {
@@ -420,9 +449,12 @@ const runOperationInterruptibly = async <Value>(
             maxTotalSize: limits.body,
           }),
         ),
-        Effect.mapError((error) =>
-          error instanceof Multipart.MultipartError ? multipartFailure(error) : error,
-        ),
+        Effect.mapError((error) => {
+          if (error instanceof Multipart.MultipartError) {
+            return multipartFailure(error);
+          }
+          return error;
+        }),
       );
       await Effect.runPromise(parse, { signal });
       if (metadata === undefined || !contentSeen) {
@@ -491,15 +523,16 @@ const runOperationInterruptibly = async <Value>(
   ): Effect.Effect<unknown, CmsError> =>
     validateOperationRequest(operation, context.request, context.parameters).pipe(
       Effect.andThen(operation.execute(context)),
-      Effect.flatMap((value) =>
-        value instanceof Response || value === undefined
-          ? Effect.succeed(value)
-          : validateSchema(
-              operation.schemas.response,
-              value,
-              `Response body for ${operation.identifier} violated its declared schema`,
-            ).pipe(Effect.as(value)),
-      ),
+      Effect.flatMap((value) => {
+        if (value instanceof Response || value === undefined) {
+          return Effect.succeed(value);
+        }
+        return validateSchema(
+          operation.schemas.response,
+          value,
+          `Response body for ${operation.identifier} violated its declared schema`,
+        ).pipe(Effect.as(value));
+      }),
     ),
   compilePath = (
     path: string,
@@ -533,11 +566,12 @@ const runOperationInterruptibly = async <Value>(
     fingerprint: string,
   ): Effect.Effect<void, DefinitionSnapshotChanged> => {
     const expected = request.headers.get("cms-expected-definition-fingerprint");
-    return expected !== null && expected !== fingerprint
-      ? Effect.fail(
-          DefinitionSnapshotChanged.make({ message: "The active Definition Snapshot changed" }),
-        )
-      : Effect.void;
+    if (expected !== null && expected !== fingerprint) {
+      return Effect.fail(
+        DefinitionSnapshotChanged.make({ message: "The active Definition Snapshot changed" }),
+      );
+    }
+    return Effect.void;
   },
   respondWithOutcome = async <Value>({
     effect,
@@ -586,7 +620,11 @@ const runOperationInterruptibly = async <Value>(
       request.headers.get("if-range") !== null &&
       request.headers.get("if-range") !== etag
     ) {
-      return new Response(request.method === "HEAD" ? null : responseBody(storedAsset.bytes), {
+      let body: BodyInit | null = responseBody(storedAsset.bytes);
+      if (request.method === "HEAD") {
+        body = null;
+      }
+      return new Response(body, {
         headers: baseHeaders,
         status: 200,
       });
@@ -603,7 +641,11 @@ const runOperationInterruptibly = async <Value>(
         end = storedAsset.bytes.byteLength - 1;
       } else {
         start = Number(match[1]);
-        end = match[2] === "" ? storedAsset.bytes.byteLength - 1 : Number(match[2]);
+        if (match[2] === "") {
+          end = storedAsset.bytes.byteLength - 1;
+        } else {
+          end = Number(match[2]);
+        }
       }
       if (
         !Number.isSafeInteger(start) ||
@@ -622,13 +664,21 @@ const runOperationInterruptibly = async <Value>(
         `bytes ${start}-${boundedEnd}/${storedAsset.bytes.byteLength}`,
       );
       baseHeaders.set("content-length", String(bytes.byteLength));
-      return new Response(request.method === "HEAD" ? null : responseBody(bytes), {
+      let body: BodyInit | null = responseBody(bytes);
+      if (request.method === "HEAD") {
+        body = null;
+      }
+      return new Response(body, {
         headers: baseHeaders,
         status: 206,
       });
     }
     baseHeaders.set("content-length", String(storedAsset.bytes.byteLength));
-    return new Response(request.method === "HEAD" ? null : responseBody(storedAsset.bytes), {
+    let body: BodyInit | null = responseBody(storedAsset.bytes);
+    if (request.method === "HEAD") {
+      body = null;
+    }
+    return new Response(body, {
       headers: baseHeaders,
       status: 200,
     });
@@ -686,11 +736,11 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
             requestId,
           );
         }
-        const accept = request.headers.get("accept"),
-          assetRequest =
-            request.method === "GET" || request.method === "HEAD"
-              ? /\/assets\/[^/]+$/u.test(new URL(request.url).pathname)
-              : false;
+        const accept = request.headers.get("accept");
+        let assetRequest = false;
+        if (request.method === "GET" || request.method === "HEAD") {
+          assetRequest = /\/assets\/[^/]+$/u.test(new URL(request.url).pathname);
+        }
         if (
           !assetRequest &&
           accept !== null &&
@@ -830,15 +880,16 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
                   definition = state.active.input.definitions.find(
                     (candidate) => candidate.id === definitionId,
                   );
-                return definition === undefined
-                  ? Effect.fail(
-                      NotFound.make({ message: `Definition ${definitionId} was not found` }),
-                    )
-                  : Effect.succeed({
-                      catalogVersion: state.version,
-                      definition,
-                      retired: state.retiredDefinitionIds.has(definitionId),
-                    });
+                if (definition === undefined) {
+                  return Effect.fail(
+                    NotFound.make({ message: `Definition ${definitionId} was not found` }),
+                  );
+                }
+                return Effect.succeed({
+                  catalogVersion: state.version,
+                  definition,
+                  retired: state.retiredDefinitionIds.has(definitionId),
+                });
               }),
             ),
             requestId,
@@ -986,17 +1037,18 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
                     candidate.compiled.snapshotId ===
                     requiredPathParameter(definitionSnapshotMatch, "snapshotId"),
                 );
-                return snapshotRecord === undefined
-                  ? Effect.fail(
-                      NotFound.make({
-                        message: `Definition Snapshot ${requiredPathParameter(definitionSnapshotMatch, "snapshotId")} was not found`,
-                      }),
-                    )
-                  : Effect.succeed({
-                      ...snapshotRecord.input,
-                      activatedAt: snapshotRecord.activatedAt,
-                      fingerprint: snapshotRecord.compiled.fingerprint,
-                    });
+                if (snapshotRecord === undefined) {
+                  return Effect.fail(
+                    NotFound.make({
+                      message: `Definition Snapshot ${requiredPathParameter(definitionSnapshotMatch, "snapshotId")} was not found`,
+                    }),
+                  );
+                }
+                return Effect.succeed({
+                  ...snapshotRecord.input,
+                  activatedAt: snapshotRecord.activatedAt,
+                  fingerprint: snapshotRecord.compiled.fingerprint,
+                });
               }),
             ),
             requestId,
@@ -1036,21 +1088,22 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
                       const preparation = state.migrationPreparations.find(
                         (candidate) => candidate.id === migrationPreparationId,
                       );
-                      return preparation === undefined
-                        ? Effect.fail(
-                            NotFound.make({
-                              message: `Migration Preparation ${migrationPreparationId} was not found`,
-                            }),
-                          )
-                        : cms.activateDefinitionSnapshot({
-                            expectedCatalogVersion: expectedCatalogVersion as number,
-                            migration: {
-                              manifest: preparation.manifest,
-                              preparationId: preparation.id,
-                            },
-                            snapshot: targetSnapshot as never,
-                            source: "management-http",
-                          });
+                      if (preparation === undefined) {
+                        return Effect.fail(
+                          NotFound.make({
+                            message: `Migration Preparation ${migrationPreparationId} was not found`,
+                          }),
+                        );
+                      }
+                      return cms.activateDefinitionSnapshot({
+                        expectedCatalogVersion: expectedCatalogVersion as number,
+                        migration: {
+                          manifest: preparation.manifest,
+                          preparationId: preparation.id,
+                        },
+                        snapshot: targetSnapshot as never,
+                        source: "management-http",
+                      });
                     }),
                   )
                 : cms.activateDefinitionSnapshot({
@@ -1155,9 +1208,10 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
                     candidate.id ===
                     requiredPathParameter(migrationManifestMatch, "migrationManifestId"),
                 );
-                return manifest === undefined
-                  ? Effect.fail(NotFound.make({ message: "Migration Manifest was not found" }))
-                  : Effect.succeed(manifest);
+                if (manifest === undefined) {
+                  return Effect.fail(NotFound.make({ message: "Migration Manifest was not found" }));
+                }
+                return Effect.succeed(manifest);
               }),
             ),
             requestId,
@@ -1183,9 +1237,12 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
                     candidate.id ===
                     requiredPathParameter(migrationPreparationMatch, "migrationPreparationId"),
                 );
-                return preparation === undefined
-                  ? Effect.fail(NotFound.make({ message: "Migration Preparation was not found" }))
-                  : Effect.succeed(preparation);
+                if (preparation === undefined) {
+                  return Effect.fail(
+                    NotFound.make({ message: "Migration Preparation was not found" }),
+                  );
+                }
+                return Effect.succeed(preparation);
               }),
             ),
             requestId,
@@ -1399,15 +1456,17 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
                 writeToken: request.headers.get("cms-write-token") ?? undefined,
               }),
               requestId,
-              (deletionRecord) =>
-                deletionRecord === undefined
-                  ? bodylessResponse(204, requestId, snapshot.fingerprint)
-                  : jsonResponse({
-                      fingerprint: snapshot.fingerprint,
-                      requestId,
-                      status: 200,
-                      value: deletionRecord,
-                    }),
+              (deletionRecord) => {
+                if (deletionRecord === undefined) {
+                  return bodylessResponse(204, requestId, snapshot.fingerprint);
+                }
+                return jsonResponse({
+                  fingerprint: snapshot.fingerprint,
+                  requestId,
+                  status: 200,
+                  value: deletionRecord,
+                });
+              },
             );
           }
           return jsonResponse({

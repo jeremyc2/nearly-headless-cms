@@ -182,20 +182,22 @@ const encodeCursor = (cursor: CursorPayload): string =>
       expectedValue = predicate.value;
     switch (predicate.operator) {
       case "equals": {
-        return (
-          expectedValue !== undefined &&
-          (Array.isArray(fieldValue)
-            ? fieldValue.some((item) => canonicalJson(item) === canonicalJson(expectedValue))
-            : canonicalJson(fieldValue ?? null) === canonicalJson(expectedValue))
-        );
+        if (expectedValue === undefined) {
+          return false;
+        }
+        if (Array.isArray(fieldValue)) {
+          return fieldValue.some((item) => canonicalJson(item) === canonicalJson(expectedValue));
+        }
+        return canonicalJson(fieldValue ?? null) === canonicalJson(expectedValue);
       }
       case "notEquals": {
-        return (
-          expectedValue !== undefined &&
-          (Array.isArray(fieldValue)
-            ? fieldValue.every((item) => canonicalJson(item) !== canonicalJson(expectedValue))
-            : canonicalJson(fieldValue ?? null) !== canonicalJson(expectedValue))
-        );
+        if (expectedValue === undefined) {
+          return false;
+        }
+        if (Array.isArray(fieldValue)) {
+          return fieldValue.every((item) => canonicalJson(item) !== canonicalJson(expectedValue));
+        }
+        return canonicalJson(fieldValue ?? null) !== canonicalJson(expectedValue);
       }
       case "in":
       case "notIn": {
@@ -204,7 +206,10 @@ const encodeCursor = (cursor: CursorPayload): string =>
           expectedValue.some(
             (candidate) => canonicalJson(candidate) === canonicalJson(fieldValue ?? null),
           );
-        return predicate.operator === "in" ? found : !found;
+        if (predicate.operator === "in") {
+          return found;
+        }
+        return !found;
       }
       case "lessThan": {
         return (
@@ -254,7 +259,10 @@ const encodeCursor = (cursor: CursorPayload): string =>
       }
       case "isNull": {
         const isNullOrMissing = fieldValue === null || fieldValue === undefined;
-        return expectedValue === false ? !isNullOrMissing : isNullOrMissing;
+        if (expectedValue === false) {
+          return !isNullOrMissing;
+        }
+        return isNullOrMissing;
       }
     }
     return predicate.operator;
@@ -280,7 +288,11 @@ const encodeCursor = (cursor: CursorPayload): string =>
       if (field === undefined) {
         return undefined;
       }
-      currentFields = field.kind.kind === "list" ? [] : (field.nestedFields ?? []);
+      if (field.kind.kind === "list") {
+        currentFields = [];
+      } else {
+        currentFields = field.nestedFields ?? [];
+      }
     }
     return field;
   },
@@ -313,14 +325,16 @@ const encodeCursor = (cursor: CursorPayload): string =>
     }
   },
   queryWithoutCursor = (query: Query): JsonValue => {
-    const value: unknown = {
+    const value: Record<string, unknown> = {
       contentTypeId: query.contentTypeId,
-      ...(query.where === undefined ? {} : { where: query.where }),
-      sort: query.sort ?? [],
-      projection: query.projection ?? [],
       expansion: query.expansion ?? [],
       pageSize: query.pageSize,
+      projection: query.projection ?? [],
+      sort: query.sort ?? [],
     };
+    if (query.where !== undefined) {
+      value["where"] = query.where;
+    }
     if (!isJsonValue(value)) {
       throw InvalidInput.make({ message: "Query is not JSON-compatible" });
     }
@@ -340,8 +354,11 @@ const encodeCursor = (cursor: CursorPayload): string =>
           if (index === segments.length - ONE) {
             current[segment] = cloneJson(value);
           } else {
-            const existing = current[segment],
-              nested: Record<string, JsonValue> = isJsonObject(existing) ? { ...existing } : {};
+            const existing = current[segment];
+            let nested: Record<string, JsonValue> = {};
+            if (isJsonObject(existing)) {
+              nested = { ...existing };
+            }
             current[segment] = nested;
             current = nested;
           }
@@ -424,12 +441,18 @@ export const evaluate = ({ entries, options, query, snapshot }: EvaluationInput)
         leftMissing = leftValue === undefined || leftValue === null,
         rightMissing = rightValue === undefined || rightValue === null;
       if (leftMissing !== rightMissing) {
-        return leftMissing ? ONE : NEGATIVE_ONE;
+        if (leftMissing) {
+          return ONE;
+        }
+        return NEGATIVE_ONE;
       }
       if (!leftMissing && !rightMissing) {
         const comparison = compareScalar(leftValue, rightValue);
         if (comparison !== ZERO) {
-          return sort.direction === "ascending" ? comparison : -comparison;
+          if (sort.direction === "ascending") {
+            return comparison;
+          }
+          return -comparison;
         }
       }
     }
@@ -441,14 +464,15 @@ export const evaluate = ({ entries, options, query, snapshot }: EvaluationInput)
       .slice(offset, offset + query.pageSize)
       .map((entry) => project(entry, query.projection)),
     nextOffset = offset + items.length;
-  return nextOffset < matchingEntries.length
-    ? {
-        items,
-        nextCursor: encodeCursor({
-          generation: options.generation,
-          offset: nextOffset,
-          queryFingerprint,
-        }),
-      }
-    : { items };
+  if (nextOffset < matchingEntries.length) {
+    return {
+      items,
+      nextCursor: encodeCursor({
+        generation: options.generation,
+        offset: nextOffset,
+        queryFingerprint,
+      }),
+    };
+  }
+  return { items };
 };

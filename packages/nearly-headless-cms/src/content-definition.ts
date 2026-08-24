@@ -407,21 +407,26 @@ const validateCalendarDate = (value: string): boolean => {
         return issues;
       }
       case "boolean": {
-        return typeof value === "boolean"
-          ? []
-          : [issue(path, "expectedBoolean", "Expected boolean")];
+        if (typeof value === "boolean") {
+          return [];
+        }
+        return [issue(path, "expectedBoolean", "Expected boolean")];
       }
       case "date": {
-        return typeof value === "string" && validateCalendarDate(value)
-          ? []
-          : [issue(path, "expectedDate", "Expected an ISO-8601 calendar date")];
+        if (typeof value === "string" && validateCalendarDate(value)) {
+          return [];
+        }
+        return [issue(path, "expectedDate", "Expected an ISO-8601 calendar date")];
       }
       case "datetime": {
-        return typeof value === "string" &&
+        if (
+          typeof value === "string" &&
           utcDatetimePattern.test(value) &&
           !Number.isNaN(Date.parse(value))
-          ? []
-          : [issue(path, "expectedDatetime", "Expected a normalized UTC ISO-8601 instant")];
+        ) {
+          return [];
+        }
+        return [issue(path, "expectedDatetime", "Expected a normalized UTC ISO-8601 instant")];
       }
       case "url": {
         if (typeof value !== "string") {
@@ -429,45 +434,54 @@ const validateCalendarDate = (value: string): boolean => {
         }
         try {
           const parsedUrl = new URL(value);
-          return parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:"
-            ? []
-            : [issue(path, "unsupportedUrlProtocol", "URL must use HTTP or HTTPS")];
+          if (parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:") {
+            return [];
+          }
+          return [issue(path, "unsupportedUrlProtocol", "URL must use HTTP or HTTPS")];
         } catch {
           return [issue(path, "expectedUrl", "Expected a valid URL")];
         }
       }
       case "email": {
-        return typeof value === "string" && emailPattern.test(value)
-          ? []
-          : [issue(path, "expectedEmail", "Expected a valid email address")];
+        if (typeof value === "string" && emailPattern.test(value)) {
+          return [];
+        }
+        return [issue(path, "expectedEmail", "Expected a valid email address")];
       }
       case "enum": {
-        return typeof value === "string" && fieldKind.values.includes(value)
-          ? []
-          : [issue(path, "expectedEnumValue", `Expected one of: ${fieldKind.values.join(", ")}`)];
+        if (typeof value === "string" && fieldKind.values.includes(value)) {
+          return [];
+        }
+        return [issue(path, "expectedEnumValue", `Expected one of: ${fieldKind.values.join(", ")}`)];
       }
       case "json": {
-        return isJsonValue(value)
-          ? []
-          : [issue(path, "expectedJsonValue", "Expected a JSON-compatible value")];
+        if (isJsonValue(value)) {
+          return [];
+        }
+        return [issue(path, "expectedJsonValue", "Expected a JSON-compatible value")];
       }
       case "asset": {
-        return typeof value === "string" && value.length > emptyLength
-          ? []
-          : [issue(path, "expectedAssetId", "Expected an Asset ID")];
+        if (typeof value === "string" && value.length > emptyLength) {
+          return [];
+        }
+        return [issue(path, "expectedAssetId", "Expected an Asset ID")];
       }
       case "relationship": {
-        return typeof value === "string" && value.length > emptyLength
-          ? []
-          : [issue(path, "expectedEntryId", "Expected an Entry ID")];
+        if (typeof value === "string" && value.length > emptyLength) {
+          return [];
+        }
+        return [issue(path, "expectedEntryId", "Expected an Entry ID")];
       }
       case "rich-text": {
-        return isJsonValue(value) &&
+        if (
+          isJsonValue(value) &&
           value !== null &&
           !Array.isArray(value) &&
           typeof value === "object"
-          ? []
-          : [issue(path, "expectedRichText", "Expected a Rich Text document")];
+        ) {
+          return [];
+        }
+        return [issue(path, "expectedRichText", "Expected a Rich Text document")];
       }
       case "list": {
         if (!Array.isArray(value)) {
@@ -514,17 +528,18 @@ const validateCalendarDate = (value: string): boolean => {
         const registration = customRegistrations.get(
           `${fieldKind.identifier}@${fieldKind.formatVersion}`,
         );
-        return registration === undefined
-          ? [
-              issue(
-                path,
-                "unknownCustomFieldKind",
-                `Unknown Custom Field Kind ${fieldKind.identifier}@${fieldKind.formatVersion}`,
-              ),
-            ]
-          : registration
-              .validateValue(value, fieldKind.configuration)
-              .map((customIssue) => ({ ...customIssue, path: [...path, ...customIssue.path] }));
+        if (registration === undefined) {
+          return [
+            issue(
+              path,
+              "unknownCustomFieldKind",
+              `Unknown Custom Field Kind ${fieldKind.identifier}@${fieldKind.formatVersion}`,
+            ),
+          ];
+        }
+        return registration
+          .validateValue(value, fieldKind.configuration)
+          .map((customIssue) => ({ ...customIssue, path: [...path, ...customIssue.path] }));
       }
     }
     return fieldKind;
