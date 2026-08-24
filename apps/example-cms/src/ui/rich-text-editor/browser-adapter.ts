@@ -123,7 +123,7 @@ export class BrowserAdapter {
               text.dataset["listItemIndex"] = String(listItemIndex);
             }
           }
-          text.textContent = child.text.length === 0 ? "\u200B" : child.text;
+          text.textContent = child.text.length === EMPTY_TEXT_OFFSET ? "\u200B" : child.text;
           if (child.marks?.includes("bold")) {
             text.style.fontWeight = "700";
           }
@@ -181,11 +181,11 @@ export class BrowserAdapter {
     if (text === undefined || text === null || !this.#host.contains(text)) {
       return undefined;
     }
-    const boundedOffset = Math.min(
+    const blockIndex = Number(text.dataset["blockIndex"]),
+      boundedOffset = Math.min(
         offset,
         text.textContent === "\u200B" ? EMPTY_TEXT_OFFSET : (text.textContent?.length ?? EMPTY_TEXT_OFFSET),
       ),
-      blockIndex = Number(text.dataset["blockIndex"]),
       inlineIndex = Number(text.dataset["inlineIndex"]);
     return Number.isSafeInteger(blockIndex) && Number.isSafeInteger(inlineIndex)
       ? {
@@ -201,7 +201,7 @@ export class BrowserAdapter {
 
   #synchronizeSelection(): void {
     const nativeSelection = document.getSelection();
-    if (nativeSelection === null || nativeSelection.rangeCount === 0) {
+    if (nativeSelection === null || nativeSelection.rangeCount === EMPTY_TEXT_OFFSET) {
       return;
     }
     const anchor = this.#selectionPosition(
@@ -222,10 +222,10 @@ export class BrowserAdapter {
       anchorElement = this.#host.querySelector<HTMLElement>(
         `[data-block-index="${anchor.blockIndex}"][data-inline-index="${anchor.inlineIndex}"]${anchor.listItemIndex === undefined ? "" : `[data-list-item-index="${anchor.listItemIndex}"]`}`,
       ),
+      anchorNode = anchorElement?.firstChild,
       focusElement = this.#host.querySelector<HTMLElement>(
         `[data-block-index="${focus.blockIndex}"][data-inline-index="${focus.inlineIndex}"]${focus.listItemIndex === undefined ? "" : `[data-list-item-index="${focus.listItemIndex}"]`}`,
       ),
-      anchorNode = anchorElement?.firstChild,
       focusNode = focusElement?.firstChild;
     if (
       anchorNode === undefined ||
@@ -301,7 +301,7 @@ export class BrowserAdapter {
   };
   readonly #handleCompositionEnd = (event: CompositionEvent): void => {
     this.dispatch({ active: false, type: "composition" });
-    if (event.data.length > 0) {
+    if (event.data.length > EMPTY_TEXT_OFFSET) {
       this.dispatch({ text: event.data, type: "insertText" });
     }
   };
