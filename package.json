@@ -19,7 +19,7 @@
     "test:contract": "bun test packages/nearly-headless-cms/test/contract",
     "test:integration": "bun test packages/nearly-headless-cms/test/integration apps/example-cms/test/integration apps/public-blog/test/integration",
     "test:filesystem": "bun test packages/nearly-headless-cms/test/filesystem",
-    "test:webview": "bun test acceptance/webview",
+    "test:webview": "bun test acceptance/webview/qualification.test.ts && bun test acceptance/webview/journey.test.ts",
     "test:visual": "bun test acceptance/visual",
     "check:generated": "bun run scripts/check-generated.ts",
     "check:architecture": "bun run scripts/check-architecture.ts",
