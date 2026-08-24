@@ -64,6 +64,8 @@ try {
 }
 
 await run(["bun", "run", "--cwd", "packages/nearly-headless-cms", "package:inspect"]);
+await run(["bun", "run", "--cwd", "packages/nearly-headless-cms", "build:determinism"]);
+await run(["bun", "run", "--cwd", "packages/nearly-headless-cms", "readme:verify"]);
 await run(["bun", "run", "--cwd", "packages/nearly-headless-cms", "package:smoke"], {
   PACKAGE_ARCHIVE: join(repository, ".artifacts/npm/nearly-headless-cms-0.1.0.tgz"),
 });

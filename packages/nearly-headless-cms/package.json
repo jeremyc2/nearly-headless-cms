@@ -66,6 +66,7 @@
   "scripts": {
     "clean": "bun run scripts/clean.ts",
     "build": "bun run scripts/build.ts",
+    "build:determinism": "bun run scripts/check-deterministic-build.ts",
     "lint": "oxlint . --type-aware",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "bun test",
@@ -74,6 +75,7 @@
     "package:inspect": "bun run scripts/package-inspect.ts",
     "package:smoke": "bun run scripts/package-smoke.ts",
     "publish:dry-run": "bun run scripts/publish-dry-run.ts",
+    "readme:verify": "bun run scripts/verify-readme-examples.ts",
     "release:npm": "bun run scripts/release-npm.ts",
     "prepack": "bun run clean && bun run build",
     "prepublishOnly": "bun run verify && bun run package:smoke"
