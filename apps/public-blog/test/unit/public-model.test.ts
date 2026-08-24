@@ -1,25 +1,28 @@
+import type { PublicBlogExport, PublicPost } from "../../src/generated/headless-client.ts";
 import { describe, expect, test } from "bun:test";
 import { paginate, publishedPosts } from "../../src/domain/public-model.ts";
-import type { PublicBlogExport, PublicPost } from "../../src/generated/headless-client.ts";
 
-const post = (identifier: string, status: "published", publishedAt: string): PublicPost => ({
-  author: "author",
-  body: { children: [], format: "nearly-headless-cms/rich-text", version: 1 },
-  categories: [],
-  excerpt: identifier,
-  featuredAlternativeText: null,
-  featuredAsset: null,
-  id: identifier,
-  publishedAt,
-  slug: identifier,
-  status,
-  tags: [],
-  title: identifier,
-});
+const expectedFirstPageLength = 2,
+  expectedSecondPageLength = 1,
+  pageSize = 2,
+  post = (identifier: string, status: "published", publishedAt: string): PublicPost => ({
+    author: "author",
+    body: { children: [], format: "nearly-headless-cms/rich-text", version: 1 },
+    categories: [],
+    excerpt: identifier,
+    featuredAlternativeText: null,
+    featuredAsset: null,
+    id: identifier,
+    publishedAt,
+    slug: identifier,
+    status,
+    tags: [],
+    title: identifier,
+  });
 
 describe("Public Blog render model", () => {
   test("orders published Posts stably and paginates without offsets in public URLs", () => {
-    const snapshot: PublicBlogExport = {
+    const inputSnapshot: PublicBlogExport = {
         assets: [],
         authors: [],
         categories: [],
@@ -33,8 +36,15 @@ describe("Public Blog render model", () => {
         ],
         tags: [],
       },
-      ordered = publishedPosts(snapshot);
-    expect(ordered.map((candidate) => candidate.id)).toEqual(["later-a", "later-b", "earlier"]);
-    expect(paginate(ordered, 2).map((page) => page.items.length)).toEqual([2, 1]);
+      orderedPosts = publishedPosts(inputSnapshot);
+    expect(orderedPosts.map((candidate) => candidate.id)).toEqual([
+      "later-a",
+      "later-b",
+      "earlier",
+    ]);
+    expect(paginate({ items: orderedPosts, pageSize }).map((page) => page.items.length)).toEqual([
+      expectedFirstPageLength,
+      expectedSecondPageLength,
+    ]);
   });
 });

@@ -16,7 +16,7 @@ import {
   useParams,
 } from "@tanstack/react-router";
 import { Effect } from "effect";
-import { StrictMode, type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type MouseEvent, StrictMode, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { RichText } from "nearly-headless-cms";
 import {
@@ -38,19 +38,17 @@ const managementClient = makeManagementClient(),
     { identifier: "category", label: "Categories", symbol: "C" },
     { identifier: "tag", label: "Tags", symbol: "T" },
     { identifier: "comment", label: "Comments", symbol: "M" },
-  ] as const;
-
-const preserveSelection = (event: MouseEvent<HTMLButtonElement>) => {
-  event.preventDefault();
-};
-
-const richTextDocumentFrom = (value: unknown): RichText.Document | undefined => {
-  try {
-    return RichText.validate(value);
-  } catch {
-    return undefined;
-  }
-};
+  ] as const,
+  preserveSelection = (event: MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+  },
+  richTextDocumentFrom = (value: unknown): RichText.Document | undefined => {
+    try {
+      return RichText.validate(value);
+    } catch {
+      return undefined;
+    }
+  };
 
 function Workbench() {
   const pendingComments = useQuery({
@@ -385,16 +383,21 @@ const editorialIssues = (error: unknown): readonly EditorialIssue[] => {
   },
   deletionConsequence = (contentTypeId: string): string => {
     switch (contentTypeId) {
-      case "post":
+      case "post": {
         return "This also deletes every Comment associated with the Post.";
-      case "author":
+      }
+      case "author": {
         return "This also deletes the Author’s Posts and every Comment associated with them.";
-      case "category":
+      }
+      case "category": {
         return "This detaches the Category from every Post before deleting it.";
-      case "tag":
+      }
+      case "tag": {
         return "This detaches the Tag from every Post before deleting it.";
-      default:
+      }
+      default: {
         return "This removes the Entry from live content.";
+      }
     }
   };
 
@@ -408,7 +411,7 @@ function ContentList() {
     [cursor, setCursor] = useState<string>(),
     [priorCursors, setPriorCursors] = useState<readonly (string | undefined)[]>([]),
     filterPath =
-      contentTypeId === "post" ? "title" : contentTypeId === "comment" ? "display-name" : "name",
+      contentTypeId === "post" ? "title" : (contentTypeId === "comment" ? "display-name" : "name"),
     predicates = [
       ...(filterText.trim().length === 0
         ? []
@@ -420,9 +423,9 @@ function ContentList() {
     sortPath =
       contentTypeId === "comment"
         ? "created-at"
-        : contentTypeId === "post"
+        : (contentTypeId === "post"
           ? "published-at"
-          : "name",
+          : "name"),
     entries = useQuery({
       queryFn: async () =>
         Effect.runPromise(
@@ -670,7 +673,7 @@ function EntryEditor() {
       queryFn: async () => Effect.runPromise(managementClient.listAssets()),
       queryKey: ["assets"],
     }),
-    loadedEntryIdentifier = useRef<string | undefined>(undefined),
+    loadedEntryIdentifier = useRef<string | null>(null),
     [values, setValues] = useState<Record<string, unknown>>({}),
     [confirmDeletion, setConfirmDeletion] = useState(false),
     [confirmPurge, setConfirmPurge] = useState(false),
@@ -708,7 +711,12 @@ function EntryEditor() {
         readonly writeToken?: string;
       }) =>
         Effect.runPromise(
-          managementClient.replaceEntry(contentTypeId, entryId, replacementValues, writeToken),
+          managementClient.replaceEntry({
+            contentTypeId,
+            entryId,
+            values: replacementValues,
+            writeToken,
+          }),
         ),
       onError: async (error) => {
         if (error instanceof ManagementClientFailure && error.status === 409) {
@@ -733,12 +741,12 @@ function EntryEditor() {
           throw new Error("Current Entry state is unavailable");
         }
         return Effect.runPromise(
-          managementClient.runEditorialCommand(
+          managementClient.runEditorialCommand({
             contentTypeId,
             entryId,
             status,
-            state.data.writeToken,
-          ),
+            writeToken: state.data.writeToken,
+          }),
         );
       },
       onSuccess: async (result) => {
@@ -794,8 +802,8 @@ function EntryEditor() {
         await navigate({ params: { contentTypeId }, to: "/content/$contentTypeId" });
       },
     }),
-    titleField = "title" in values ? "title" : "name" in values ? "name" : "display-name";
-  const title = stringValue(values[titleField], ""),
+    titleField = "title" in values ? "title" : ("name" in values ? "name" : "display-name"),
+   title = stringValue(values[titleField], ""),
     bodyDocument = richTextDocumentFrom(values["body"]),
     profileDocument = richTextDocumentFrom(values["profile"]),
     updateField = (key: string, value: unknown) => {
@@ -829,7 +837,7 @@ function EntryEditor() {
           <h1>{title || "Entry"}</h1>
           <p>
             <span className="saved-dot" />{" "}
-            {save.isPending ? "Saving…" : save.isSuccess ? "Saved in CMS" : "Saved in CMS"} ·
+            {save.isPending ? "Saving…" : (save.isSuccess ? "Saved in CMS" : "Saved in CMS")} ·
             Revision {state.data?.revisionNumber ?? "—"}
           </p>
         </div>
@@ -1012,10 +1020,10 @@ function EntryEditor() {
                       typeof values["featured-asset"] === "string" ? values["featured-asset"] : ""
                     }
                     onChange={(event) => {
-                      const assetIdentifier = event.target.value;
-                      const selectedAsset = assets.data?.find(
-                        (candidate) => candidate.id === assetIdentifier,
-                      );
+                      const assetIdentifier = event.target.value,
+                        selectedAsset = assets.data?.find(
+                          (candidate) => candidate.id === assetIdentifier,
+                        );
                       updateField("featured-asset", assetIdentifier || null);
                       if (
                         selectedAsset?.metadata.defaultAlternativeText !== undefined &&
@@ -1354,7 +1362,7 @@ function EntryEditor() {
                   </button>
                 </div>
               </>
-            ) : confirmPurge ? (
+            ) : (confirmPurge ? (
               <>
                 <p className="eyebrow">Irreversible action</p>
                 <h2 id="entry-deletion-title">Permanently purge retained history?</h2>
@@ -1414,7 +1422,7 @@ function EntryEditor() {
                   </button>
                 </div>
               </>
-            )}
+            ))}
           </div>
         </div>
       )}
@@ -1463,9 +1471,9 @@ function RichTextField({
         label:
           typeof entry.values["title"] === "string"
             ? entry.values["title"]
-            : typeof entry.values["name"] === "string"
+            : (typeof entry.values["name"] === "string"
               ? entry.values["name"]
-              : entry.id,
+              : entry.id),
         type: contentType.label,
       })),
     ),
@@ -1478,7 +1486,7 @@ function RichTextField({
   }, [onChange]);
   useEffect(() => {
     if (host.current === null) {
-      return undefined;
+      return;
     }
     const browserAdapter = new BrowserAdapter({
       host: host.current,
@@ -1513,7 +1521,7 @@ function RichTextField({
                 adapter.current?.dispatch({
                   blockType: "heading",
                   headingLevel:
-                    Number(blockType.at(-1)) === 2 ? 2 : Number(blockType.at(-1)) === 3 ? 3 : 4,
+                    Number(blockType.at(-1)) === 2 ? 2 : (Number(blockType.at(-1)) === 3 ? 3 : 4),
                   type: "setBlockKind",
                 });
               } else if (
@@ -1588,28 +1596,32 @@ function RichTextField({
         <button
           type="button"
           onMouseDown={preserveSelection}
-          onClick={() => setDialog({ label: "", type: "link", url: "" })}
+          onClick={() => {
+            setDialog({ label: "", type: "link", url: "" });
+          }}
         >
           Link
         </button>
         <button
           type="button"
           onMouseDown={preserveSelection}
-          onClick={() => setDialog({ entryId: "", label: "", type: "entry" })}
+          onClick={() => {
+            setDialog({ entryId: "", label: "", type: "entry" });
+          }}
         >
           Entry reference
         </button>
         <button
           type="button"
           onMouseDown={preserveSelection}
-          onClick={() =>
+          onClick={() => {
             setDialog({
               alternativeText: "",
               assetId: "",
               caption: "",
               type: "asset",
-            })
-          }
+            });
+          }}
         >
           Asset
         </button>
@@ -1633,7 +1645,9 @@ function RichTextField({
         <div
           className="rich-dialog-backdrop"
           onKeyDown={(event) => {
-            if (event.key === "Escape") closeDialog();
+            if (event.key === "Escape") {
+              closeDialog();
+            }
           }}
         >
           <div
@@ -1651,14 +1665,18 @@ function RichTextField({
                     autoFocus
                     type="url"
                     value={dialog.url}
-                    onChange={(event) => setDialog({ ...dialog, url: event.target.value })}
+                    onChange={(event) => {
+                      setDialog({ ...dialog, url: event.target.value });
+                    }}
                   />
                 </label>
                 <label>
                   <span>Label for a collapsed selection</span>
                   <input
                     value={dialog.label}
-                    onChange={(event) => setDialog({ ...dialog, label: event.target.value })}
+                    onChange={(event) => {
+                      setDialog({ ...dialog, label: event.target.value });
+                    }}
                   />
                 </label>
               </>
@@ -1670,7 +1688,9 @@ function RichTextField({
                   <select
                     autoFocus
                     value={dialog.entryId}
-                    onChange={(event) => setDialog({ ...dialog, entryId: event.target.value })}
+                    onChange={(event) => {
+                      setDialog({ ...dialog, entryId: event.target.value });
+                    }}
                   >
                     <option value="">Select an Entry</option>
                     {entryOptions.map((entry) => (
@@ -1684,7 +1704,9 @@ function RichTextField({
                   <span>Label for a collapsed selection</span>
                   <input
                     value={dialog.label}
-                    onChange={(event) => setDialog({ ...dialog, label: event.target.value })}
+                    onChange={(event) => {
+                      setDialog({ ...dialog, label: event.target.value });
+                    }}
                   />
                 </label>
               </>
@@ -1696,7 +1718,9 @@ function RichTextField({
                   <select
                     autoFocus
                     value={dialog.assetId}
-                    onChange={(event) => setDialog({ ...dialog, assetId: event.target.value })}
+                    onChange={(event) => {
+                      setDialog({ ...dialog, assetId: event.target.value });
+                    }}
                   >
                     <option value="">Select an Asset</option>
                     {assets.data?.map((asset) => (
@@ -1710,16 +1734,18 @@ function RichTextField({
                   <span>Alternative text</span>
                   <input
                     value={dialog.alternativeText}
-                    onChange={(event) =>
-                      setDialog({ ...dialog, alternativeText: event.target.value })
-                    }
+                    onChange={(event) => {
+                      setDialog({ ...dialog, alternativeText: event.target.value });
+                    }}
                   />
                 </label>
                 <label>
                   <span>Caption (optional)</span>
                   <input
                     value={dialog.caption}
-                    onChange={(event) => setDialog({ ...dialog, caption: event.target.value })}
+                    onChange={(event) => {
+                      setDialog({ ...dialog, caption: event.target.value });
+                    }}
                   />
                 </label>
               </>
@@ -1737,25 +1763,26 @@ function RichTextField({
                   (dialog.type === "asset" && dialog.assetId.length === 0)
                 }
                 onClick={() => {
-                  if (dialog.type === "link")
+                  if (dialog.type === "link") {
                     adapter.current?.dispatch({
                       label: dialog.label,
                       type: "wrapLink",
                       url: dialog.url,
                     });
-                  else if (dialog.type === "entry")
+                  } else if (dialog.type === "entry") {
                     adapter.current?.dispatch({
                       entryId: dialog.entryId,
                       label: dialog.label,
                       type: "insertEntryReference",
                     });
-                  else
+                  } else {
                     adapter.current?.dispatch({
                       alternativeText: dialog.alternativeText,
                       assetId: dialog.assetId,
                       ...(dialog.caption.length === 0 ? {} : { caption: dialog.caption }),
                       type: "insertAssetReference",
                     });
+                  }
                   closeDialog();
                 }}
               >
@@ -1798,7 +1825,12 @@ function HistoryPanel({
           throw new Error("Current Write Token is unavailable");
         }
         return Effect.runPromise(
-          managementClient.restoreRevision(contentTypeId, entryId, revisionNumber, writeToken),
+          managementClient.restoreRevision({
+            contentTypeId,
+            entryId,
+            revisionNumber,
+            writeToken,
+          }),
         );
       },
       onSuccess: async () => {
@@ -1913,10 +1945,10 @@ function AssetsPage() {
         await queryClient.invalidateQueries({ queryKey: ["entry-state"] });
         await queryClient.invalidateQueries({ queryKey: ["entries"] });
       },
-    });
-  const chooseFile = () => {
-    input.current?.click();
-  };
+    }),
+    chooseFile = () => {
+      input.current?.click();
+    };
   return (
     <div className="page">
       <header className="page-header">

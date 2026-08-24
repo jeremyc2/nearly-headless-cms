@@ -189,9 +189,9 @@ const coreNodeTypes = new Set([
           issues.push(makeIssue([...path, "url"], "expectedUrl", "Link requires a URL"));
         }
         if (Array.isArray(node["children"])) {
-          node["children"].forEach((child, index) =>
-            issues.push(...validateTextChild(child, [...path, "children", index])),
-          );
+          for (const [index, child] of node["children"].entries()) {
+            issues.push(...validateTextChild(child, [...path, "children", index]));
+          }
         } else {
           issues.push(
             makeIssue([...path, "children"], "expectedChildren", "Link requires text children"),
@@ -219,9 +219,9 @@ const coreNodeTypes = new Set([
             ),
           );
         } else {
-          node["children"].forEach((child, index) =>
-            issues.push(...validateTextChild(child, [...path, "children", index])),
-          );
+          for (const [index, child] of node["children"].entries()) {
+            issues.push(...validateTextChild(child, [...path, "children", index]));
+          }
         }
         return issues;
       }
@@ -267,9 +267,9 @@ const coreNodeTypes = new Set([
           );
         }
         if (Array.isArray(node["children"])) {
-          node["children"].forEach((child, index) =>
-            issues.push(...validateInline(child, [...path, "children", index])),
-          );
+          for (const [index, child] of node["children"].entries()) {
+            issues.push(...validateInline(child, [...path, "children", index]));
+          }
         } else {
           issues.push(
             makeIssue([...path, "children"], "expectedChildren", "Block requires inline children"),
@@ -287,7 +287,7 @@ const coreNodeTypes = new Set([
             ),
           ];
         }
-        node["children"].forEach((child, index) => {
+        for (const [index, child] of node["children"].entries()) {
           if (!isObject(child) || child["type"] !== "paragraph") {
             issues.push(
               makeIssue(
@@ -299,7 +299,7 @@ const coreNodeTypes = new Set([
           } else {
             issues.push(...validateBlock(child, [...path, "children", index], extensions));
           }
-        });
+        }
         return issues;
       }
       case "code-block": {
@@ -308,9 +308,9 @@ const coreNodeTypes = new Set([
             makeIssue([...path, "children"], "expectedTextLeaf", "Code block requires text leaves"),
           ];
         }
-        node["children"].forEach((child, index) =>
-          issues.push(...validateTextChild(child, [...path, "children", index])),
-        );
+        for (const [index, child] of node["children"].entries()) {
+          issues.push(...validateTextChild(child, [...path, "children", index]));
+        }
         return issues;
       }
       case "ordered-list":
@@ -318,7 +318,7 @@ const coreNodeTypes = new Set([
         if (!Array.isArray(node["children"]) || node["children"].length === 0) {
           return [makeIssue([...path, "children"], "expectedListItem", "List requires List items")];
         }
-        node["children"].forEach((child, index) => {
+        for (const [index, child] of node["children"].entries()) {
           const childPath = [...path, "children", index];
           if (
             !isObject(child) ||
@@ -329,17 +329,17 @@ const coreNodeTypes = new Set([
               makeIssue(childPath, "expectedListItem", "List children must be List items"),
             );
           } else {
-            child["children"].forEach((listChild, listChildIndex) =>
+            for (const [listChildIndex, listChild] of child["children"].entries()) {
               issues.push(
                 ...validateBlock(listChild, [...childPath, "children", listChildIndex], extensions),
-              ),
-            );
+              );
+            }
           }
-        });
+        }
         return issues;
       }
       case "asset-reference": {
-        if (typeof node["assetId"] !== "string" || node["assetId"].length === 0)
+        if (typeof node["assetId"] !== "string" || node["assetId"].length === 0) {
           issues.push(
             makeIssue(
               [...path, "assetId"],
@@ -347,7 +347,8 @@ const coreNodeTypes = new Set([
               "Asset reference requires an Asset ID",
             ),
           );
-        if (typeof node["alternativeText"] !== "string")
+        }
+        if (typeof node["alternativeText"] !== "string") {
           issues.push(
             makeIssue(
               [...path, "alternativeText"],
@@ -355,9 +356,11 @@ const coreNodeTypes = new Set([
               "Asset reference requires authored alternative text",
             ),
           );
-        if (node["caption"] !== undefined && typeof node["caption"] !== "string")
+        }
+        if (node["caption"] !== undefined && typeof node["caption"] !== "string") {
           issues.push(makeIssue([...path, "caption"], "expectedCaption", "Caption must be text"));
-        if (!Array.isArray(node["children"]) || node["children"].length !== 0)
+        }
+        if (!Array.isArray(node["children"]) || node["children"].length > 0) {
           issues.push(
             makeIssue(
               [...path, "children"],
@@ -365,6 +368,7 @@ const coreNodeTypes = new Set([
               "Asset reference cannot contain children",
             ),
           );
+        }
         return issues;
       }
       default: {
@@ -373,8 +377,8 @@ const coreNodeTypes = new Set([
             makeIssue(path, "invalidBlockNode", `Node ${node["type"]} is not allowed as a block`),
           ];
         }
-        const { version } = node;
-        const extension =
+        const { version } = node,
+         extension =
           typeof version === "number" ? extensions.get(`${node["type"]}@${version}`) : undefined;
         if (extension === undefined) {
           return [
@@ -418,13 +422,13 @@ const coreNodeTypes = new Set([
             ),
           );
         } else if (extension.allowedChildren === "inline") {
-          node["children"].forEach((child, index) =>
-            issues.push(...validateInline(child, [...path, "children", index])),
-          );
+          for (const [index, child] of node["children"].entries()) {
+            issues.push(...validateInline(child, [...path, "children", index]));
+          }
         } else if (extension.allowedChildren === "block") {
-          node["children"].forEach((child, index) =>
-            issues.push(...validateBlock(child, [...path, "children", index], extensions)),
-          );
+          for (const [index, child] of node["children"].entries()) {
+            issues.push(...validateBlock(child, [...path, "children", index], extensions));
+          }
         }
         if (isJsonValue(node) && !Array.isArray(node)) {
           issues.push(
@@ -487,7 +491,9 @@ export const references = (document: Document): References => {
         assetIds.push(node.assetId);
       }
       if ("children" in node) {
-        for (const child of node.children) visit(child);
+        for (const child of node.children) {
+          visit(child);
+        }
       }
     };
   for (const child of document.children) {

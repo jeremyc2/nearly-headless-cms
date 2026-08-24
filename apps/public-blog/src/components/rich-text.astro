@@ -1,6 +1,6 @@
 ---
-import { assetById } from "../data/public-export.ts"
 import type { RichTextNode } from "../generated/headless-client.ts"
+import { assetById } from "../data/public-export.ts"
 interface Props { readonly nodes: readonly RichTextNode[] }
 const { nodes } = Astro.props
 ---
@@ -24,4 +24,3 @@ const { nodes } = Astro.props
   }
   return <aside class="unsupported-rich-text" role="note">Unsupported Rich Text node: {node.type}</aside>
 })}
-

@@ -218,23 +218,29 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
         await synchronize(parentDirectory);
       }
     } catch (error) {
-      await rm(stagePath, { force: true }).catch(() => undefined);
+      await rm(stagePath, { force: true }).catch(() => {});
       throw error;
     }
   },
   filesystemErrorCode = (error: unknown): string | undefined => {
-    if (typeof error !== "object" || error === null || !("code" in error)) return undefined;
+    if (typeof error !== "object" || error === null || !("code" in error)) {
+      return undefined;
+    }
     return typeof error.code === "string" ? error.code : undefined;
   },
   readWriterLock = async (lockPath: string): Promise<WriterLock> => {
     const parsed: unknown = JSON.parse(await Bun.file(lockPath).text());
-    if (typeof parsed !== "object" || parsed === null) throw new Error("Writer lock is corrupt");
+    if (typeof parsed !== "object" || parsed === null) {
+      throw new Error("Writer lock is corrupt");
+    }
     const processId = Reflect.get(parsed, "processId"),
       token = Reflect.get(parsed, "token");
-    if (!Number.isInteger(processId) || typeof processId !== "number" || processId <= 0)
+    if (!Number.isInteger(processId) || typeof processId !== "number" || processId <= 0) {
       throw new Error("Writer lock is corrupt");
-    if (token !== undefined && (typeof token !== "string" || token.length === 0))
+    }
+    if (token !== undefined && (typeof token !== "string" || token.length === 0)) {
       throw new Error("Writer lock is corrupt");
+    }
     return { processId, ...(token === undefined ? {} : { token }) };
   },
   processIsActive = (processId: number): boolean => {
@@ -265,8 +271,8 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
       }
       await handle.close();
     } catch (error) {
-      await handle.close().catch(() => undefined);
-      await rm(lockPath, { force: true }).catch(() => undefined);
+      await handle.close().catch(() => {});
+      await rm(lockPath, { force: true }).catch(() => {});
       throw error;
     }
   },
@@ -276,33 +282,38 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
       createGuard = async (): Promise<void> => {
         const handle = await open(guardPath, "wx");
         try {
-          await handle.writeFile(
-            JSON.stringify({ processId: process.pid, token: guardToken }),
-          );
+          await handle.writeFile(JSON.stringify({ processId: process.pid, token: guardToken }));
           await handle.close();
         } catch (error) {
-          await handle.close().catch(() => undefined);
-          await rm(guardPath, { force: true }).catch(() => undefined);
+          await handle.close().catch(() => {});
+          await rm(guardPath, { force: true }).catch(() => {});
           throw error;
         }
       };
     try {
       await createGuard();
     } catch (error) {
-      if (filesystemErrorCode(error) !== "EEXIST") throw error;
+      if (filesystemErrorCode(error) !== "EEXIST") {
+        throw error;
+      }
       let guardIsActive = false;
       try {
-        guardIsActive = processIsActive((await readWriterLock(guardPath)).processId);
+        const writerLock = await readWriterLock(guardPath);
+        guardIsActive = processIsActive(writerLock.processId);
       } catch {
         guardIsActive = false;
       }
-      if (guardIsActive) throw new Error("Filesystem writer recovery is already in progress");
+      if (guardIsActive) {
+        throw new Error("Filesystem writer recovery is already in progress", { cause: error });
+      }
       await rm(guardPath, { force: true });
       await createGuard();
     }
     return async () => {
-      const guard = await readWriterLock(guardPath).catch(() => undefined);
-      if (guard?.token === guardToken) await rm(guardPath, { force: true });
+      const guard = await readWriterLock(guardPath).catch(() => {});
+      if (guard?.token === guardToken) {
+        await rm(guardPath, { force: true });
+      }
     };
   },
   acquireWriterLock = async (
@@ -314,7 +325,9 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
       await createWriterLock(configuration, lockPath, lockToken);
       return { lockPath, lockToken };
     } catch (error) {
-      if (filesystemErrorCode(error) !== "EEXIST") throw error;
+      if (filesystemErrorCode(error) !== "EEXIST") {
+        throw error;
+      }
     }
     const releaseRecoveryGuard = await acquireRecoveryGuard(configuration);
     try {
@@ -322,17 +335,21 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
         await createWriterLock(configuration, lockPath, lockToken);
         return { lockPath, lockToken };
       } catch (error) {
-        if (filesystemErrorCode(error) !== "EEXIST") throw error;
+        if (filesystemErrorCode(error) !== "EEXIST") {
+          throw error;
+        }
       }
       const existingLock = await readWriterLock(lockPath);
-      if (processIsActive(existingLock.processId))
+      if (processIsActive(existingLock.processId)) {
         throw new Error("Filesystem Persistence root already has an initialized writer");
+      }
       await rm(lockPath, { force: true });
       try {
         await createWriterLock(configuration, lockPath, lockToken);
       } catch (error) {
-        if (filesystemErrorCode(error) === "EEXIST")
-          throw new Error("Filesystem Persistence root already has an initialized writer");
+        if (filesystemErrorCode(error) === "EEXIST") {
+          throw new Error("Filesystem Persistence root already has an initialized writer", { cause: error });
+        }
         throw error;
       }
       return { lockPath, lockToken };
@@ -341,8 +358,10 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
     }
   },
   removeOwnedWriterLock = async (lockPath: string, lockToken: string): Promise<void> => {
-    const lock = await readWriterLock(lockPath).catch(() => undefined);
-    if (lock?.token === lockToken) await rm(lockPath, { force: true });
+    const lock = await readWriterLock(lockPath).catch(() => {});
+    if (lock?.token === lockToken) {
+      await rm(lockPath, { force: true });
+    }
   },
   commitAssetBlob = (
     configuration: Configuration,
@@ -371,10 +390,11 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
             contentStream,
             (chunk): Effect.Effect<void, InfrastructureFailure | InvalidInput> => {
               const nextByteLength = byteLength + chunk.byteLength;
-              if (nextByteLength > maximumByteLength)
+              if (nextByteLength > maximumByteLength) {
                 return Effect.fail(
                   InvalidInput.make({ message: "Asset bytes exceed the configured limit" }),
                 );
+              }
               return fromPromise(async () => {
                 hasher.update(chunk);
                 stage.writer.write(chunk);
@@ -386,7 +406,9 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
           yield* fromPromise(async () => {
             await stage.writer.end();
             stage.ended = true;
-            if (configuration.acknowledgement === "durable") await synchronize(stagePath);
+            if (configuration.acknowledgement === "durable") {
+              await synchronize(stagePath);
+            }
           }, "Filesystem Asset staging finalization failed");
           const assetDigest = hasher.digest("hex"),
             blobPath = join(blobsDirectory, assetDigest),
@@ -402,15 +424,19 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
           } else {
             yield* fromPromise(async () => {
               await rename(stagePath, blobPath);
-              if (configuration.acknowledgement === "durable") await synchronize(blobsDirectory);
+              if (configuration.acknowledgement === "durable") {
+                await synchronize(blobsDirectory);
+              }
             }, "Filesystem Asset Blob commit failed");
           }
           return { byteLength, digest: assetDigest };
         }),
       (stage) =>
         fromPromise(async () => {
-          if (!stage.ended) await Promise.resolve(stage.writer.end()).catch(() => undefined);
-          await rm(stagePath, { force: true }).catch(() => undefined);
+          if (!stage.ended) {
+            await Promise.resolve(stage.writer.end()).catch(() => {});
+          }
+          await rm(stagePath, { force: true }).catch(() => {});
         }, "Filesystem Asset staging cleanup failed").pipe(Effect.ignore),
     );
   },
@@ -472,7 +498,8 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
       manifestPath = join(configuration.root, "manifest.json"),
       formatFile = Bun.file(formatPath);
     if (!(await formatFile.exists())) {
-      const unexpected = (await readdir(configuration.root)).filter(
+      const rootEntries = await readdir(configuration.root),
+        unexpected = rootEntries.filter(
         (name) => !["generations", "blobs", "writer.lock"].includes(name),
       );
       if (unexpected.length > 0) {
@@ -565,27 +592,29 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
             SynchronizedRef.modifyEffect(
               state,
               (current): Effect.Effect<readonly [EntryGeneration, State], CmsError> => {
-                if (current.entryGeneration !== expectedGeneration)
+                if (current.entryGeneration !== expectedGeneration) {
                   return Effect.fail(
                     Conflict.make({ message: "Filesystem Entry generation is stale" }),
                   );
+                }
                 const next: State = {
                   assets: current.assets,
                   entryGeneration: current.entryGeneration + 1,
                   generation: current.generation + 1,
                   records: new Map(records),
                   ...(current.catalog === undefined ? {} : { catalog: current.catalog }),
-                };
-                const entryEncodingByteLength = encode([...records]).byteLength;
+                },
+                 entryEncodingByteLength = encode([...records]).byteLength;
                 if (
                   entryEncodingByteLength >
                   (configuration.maximumEntryEncodingByteLength ?? 50_000_000)
-                )
+                ) {
                   return Effect.fail(
                     InvalidInput.make({
                       message: "Entry generation exceeds the configured encoding limit",
                     }),
                   );
+                }
                 return fromPromise(
                   async () => persistState(configuration, next),
                   "Filesystem Entry commit failed",
@@ -614,8 +643,9 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
               (
                 current,
               ): Effect.Effect<readonly [undefined, State], NotFound | InfrastructureFailure> => {
-                if (!current.assets.has(assetId))
+                if (!current.assets.has(assetId)) {
                   return Effect.fail(NotFound.make({ message: `Asset ${assetId} was not found` }));
+                }
                 const assets = new Map(current.assets);
                 assets.delete(assetId);
                 const next: State = {
@@ -641,11 +671,12 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
               }),
             ),
           ingest: (input) =>
-            Effect.gen(function* () {
-              if (input.filename.trim().length === 0 || !input.mediaType.includes("/"))
+            Effect.gen(function*  ingest() {
+              if (input.filename.trim().length === 0 || !input.mediaType.includes("/")) {
                 return yield* InvalidInput.make({
                   message: "Asset filename and media type are required",
                 });
+              }
               const metadataByteLength = encode({
                 defaultAlternativeText: input.defaultAlternativeText,
                 filename: input.filename,
@@ -653,13 +684,14 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
                 mediaType: input.mediaType,
                 width: input.width,
               }).byteLength;
-              if (metadataByteLength > (configuration.maximumMetadataByteLength ?? 16_384))
+              if (metadataByteLength > (configuration.maximumMetadataByteLength ?? 16_384)) {
                 return yield* InvalidInput.make({
                   message: "Asset metadata exceeds the configured limit",
                 });
-              const committedBlob = yield* commitAssetBlob(configuration, input.content);
-              const assetId = yield* identifiers.generate("asset");
-              const metadata: Metadata = {
+              }
+              const committedBlob = yield* commitAssetBlob(configuration, input.content),
+               assetId = yield* identifiers.generate("asset"),
+               metadata: Metadata = {
                 byteLength: committedBlob.byteLength,
                 digest: committedBlob.digest,
                 filename: input.filename,
@@ -669,8 +701,8 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
                 ...(input.defaultAlternativeText === undefined
                   ? {}
                   : { defaultAlternativeText: input.defaultAlternativeText }),
-              };
-              const diskAsset: DiskAsset = { id: assetId, metadata };
+              },
+               diskAsset: DiskAsset = { id: assetId, metadata };
               yield* SynchronizedRef.modifyEffect(state, (current) => {
                 const next: State = {
                   assets: new Map(current.assets).set(assetId, diskAsset),
@@ -692,11 +724,12 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
             ),
           ),
           read: (assetId) =>
-            Effect.gen(function* () {
-              const current = yield* SynchronizedRef.get(state);
-              const asset = current.assets.get(assetId);
-              if (asset === undefined)
+            Effect.gen(function*  read() {
+              const current = yield* SynchronizedRef.get(state),
+               asset = current.assets.get(assetId);
+              if (asset === undefined) {
                 return yield* NotFound.make({ message: `Asset ${assetId} was not found` });
+              }
               const bytes = yield* fromPromise(
                 async () =>
                   new Uint8Array(
@@ -709,18 +742,24 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
               if (
                 bytes.byteLength !== asset.metadata.byteLength ||
                 digest(bytes) !== asset.metadata.digest
-              )
+              ) {
                 return yield* failure(
                   "Filesystem Asset Blob is corrupt",
                   new Error("digest mismatch"),
                 );
+              }
               return { bytes, id: asset.id, metadata: asset.metadata };
             }),
         }),
         missingCatalog = (): InfrastructureFailure =>
           failure("Filesystem Definition Catalog is not configured", new Error("missing catalog")),
         catalogService = DefinitionCatalog.of({
-          commitCutover: (expectedVersion, replacement, expectedEntryGeneration, records) =>
+          commitCutover: ({
+            catalogState,
+            entryRecords,
+            expectedCatalogVersion,
+            expectedEntryGeneration,
+          }) =>
             SynchronizedRef.modifyEffect(
               state,
               (
@@ -738,7 +777,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
                 if (current.catalog === undefined) {
                   return Effect.fail(missingCatalog());
                 }
-                if (current.catalog.version !== expectedVersion) {
+                if (current.catalog.version !== expectedCatalogVersion) {
                   return Effect.fail(
                     Conflict.make({ message: "Definition Catalog version is stale" }),
                   );
@@ -748,13 +787,16 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
                     Conflict.make({ message: "Filesystem Entry generation is stale" }),
                   );
                 }
-                const catalog = { ...cloneCatalog(replacement), version: expectedVersion + 1 },
+                const catalog = {
+                    ...cloneCatalog(catalogState),
+                    version: expectedCatalogVersion + 1,
+                  },
                   next: State = {
                     assets: current.assets,
                     catalog,
                     entryGeneration: current.entryGeneration + 1,
                     generation: current.generation + 1,
-                    records: new Map(records),
+                    records: new Map(entryRecords),
                   };
                 return fromPromise(
                   async () => persistState(configuration, next),

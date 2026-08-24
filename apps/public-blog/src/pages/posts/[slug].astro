@@ -1,21 +1,27 @@
 ---
-import CommentForm from "../../components/comment-form.astro"
-import RichText from "../../components/rich-text.astro"
 import { assetById, authorById, categoryById, publicExport, tagById } from "../../data/public-export.ts"
+import CommentForm from "../../components/comment-form.astro"
+import type { GetStaticPaths } from "astro"
+import RichText from "../../components/rich-text.astro"
 import SiteLayout from "../../layouts/site-layout.astro"
-export function getStaticPaths() { return publicExport.posts.map((post) => ({ params: { slug: post.slug }, props: { post } })) }
-const { post } = Astro.props,
- author = authorById.get(post.author),
- asset = post.featuredAsset === null ? undefined : assetById.get(post.featuredAsset),
- comments = publicExport.comments.filter((comment) => comment.post === post.id)
+const getStaticPaths: GetStaticPaths = () => publicExport.posts.map((generatedPost) => ({ params: { slug: generatedPost.slug }, props: { post: generatedPost } })),
+ { post } = Astro.props,
+ postAsset = assetById.get(post.featuredAsset ?? ""),
+ postAuthor = authorById.get(post.author),
+ postComments = publicExport.comments.filter((comment) => comment.post === post.id),
+ singleCommentCount = 1
+let commentNoun = "comments"
+if (postComments.length === singleCommentCount) {
+  commentNoun = "comment"
+}
+export { getStaticPaths }
 ---
 <SiteLayout title={post.title} description={post.excerpt}>
-  <article><header class="article-header shell narrow"><p class="post-meta"><time datetime={post.publishedAt}>{new Date(post.publishedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</time>{author && <> · By <a href={`/authors/${author.slug}/`}>{author.name}</a></>}</p><h1>{post.title}</h1><p class="article-deck">{post.excerpt}</p><div class="taxonomy-links">{post.categories.map((identifier) => { const category = categoryById.get(identifier); return category && <a href={`/categories/${category.slug}/`}>{category.name}</a> })}{post.tags.map((identifier) => { const tag = tagById.get(identifier); return tag && <a href={`/tags/${tag.slug}/`}>#{tag.name}</a> })}</div></header>
-    {asset?.localPath && <figure class="hero-image shell"><img src={asset.localPath} alt={post.featuredAlternativeText ?? ""} width={asset.metadata.width} height={asset.metadata.height} /></figure>}
+  <article><header class="article-header shell narrow"><p class="post-meta"><time datetime={post.publishedAt}>{new Date(post.publishedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</time>{postAuthor && <> · By <a href={`/authors/${postAuthor.slug}/`}>{postAuthor.name}</a></>}</p><h1>{post.title}</h1><p class="article-deck">{post.excerpt}</p><div class="taxonomy-links">{post.categories.map((identifier) => { const category = categoryById.get(identifier); return category && <a href={`/categories/${category.slug}/`}>{category.name}</a> })}{post.tags.map((identifier) => { const tag = tagById.get(identifier); return tag && <a href={`/tags/${tag.slug}/`}>#{tag.name}</a> })}</div></header>
+    {postAsset?.localPath && <figure class="hero-image shell"><img src={postAsset.localPath} alt={post.featuredAlternativeText ?? ""} width={postAsset.metadata.width} height={postAsset.metadata.height} /></figure>}
     <div class="article-body shell narrow"><RichText nodes={post.body.children} /></div>
-    {author && <aside class="author-card shell narrow"><div class="author-avatar">{author.name.slice(0, 1)}</div><div><p class="eyebrow">Written by</p><h2><a href={`/authors/${author.slug}/`}>{author.name}</a></h2><p>{author.biography}</p></div></aside>}
+    {postAuthor && <aside class="author-card shell narrow"><div class="author-avatar">{postAuthor.name.slice(0, 1)}</div><div><p class="eyebrow">Written by</p><h2><a href={`/authors/${postAuthor.slug}/`}>{postAuthor.name}</a></h2><p>{postAuthor.biography}</p></div></aside>}
   </article>
-  <section class="comments shell narrow" aria-labelledby="comments-heading"><div class="section-heading"><p class="eyebrow">Conversation</p><h2 id="comments-heading">{comments.length} {comments.length === 1 ? "comment" : "comments"}</h2></div>{comments.map((comment) => <article class="comment"><header><strong>{comment.displayName}</strong><time datetime={comment.createdAt}>{new Date(comment.createdAt).toLocaleDateString()}</time></header><p>{comment.body}</p></article>)}</section>
+  <section class="comments shell narrow" aria-labelledby="comments-heading"><div class="section-heading"><p class="eyebrow">Conversation</p><h2 id="comments-heading">{postComments.length} {commentNoun}</h2></div>{postComments.map((comment) => <article class="comment"><header><strong>{comment.displayName}</strong><time datetime={comment.createdAt}>{new Date(comment.createdAt).toLocaleDateString()}</time></header><p>{comment.body}</p></article>)}</section>
   <div class="shell narrow"><CommentForm postId={post.id} /></div>
 </SiteLayout>
-

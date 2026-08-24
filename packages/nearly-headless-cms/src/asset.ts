@@ -1,11 +1,10 @@
-import type { Effect, Stream } from "effect";
-import { Context } from "effect";
 import type {
   AssetReferenced,
   InfrastructureFailure,
   InvalidInput,
   NotFound,
 } from "./cms-error.ts";
+import { Context, type Effect, type Stream } from "effect";
 
 /** Immutable metadata recorded for an Asset Blob. */
 export interface Metadata {
@@ -55,4 +54,4 @@ export class Management extends Context.Service<
     ) => Effect.Effect<void, NotFound | AssetReferenced | InfrastructureFailure>;
     readonly list: Effect.Effect<readonly Asset[], InfrastructureFailure>;
   }
->()("nearly-headless-cms/Asset/Management") {}
+>()("nearly-headless-cms/asset/Management") {}

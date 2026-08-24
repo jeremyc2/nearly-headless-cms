@@ -1,11 +1,10 @@
 import tailwind from "bun-plugin-tailwind";
-import { join } from "node:path";
 
-const workspace = join(import.meta.dir, ".."),
-  result = await Bun.build({
-    entrypoints: [join(workspace, "src", "index.html"), join(workspace, "src", "server.ts")],
+const workspace = `${import.meta.dir}/..`,
+  workspaceBuildResult = await Bun.build({
+    entrypoints: [`${workspace}/src/index.html`, `${workspace}/src/server.ts`],
     minify: true,
-    outdir: join(workspace, "dist"),
+    outdir: `${workspace}/dist`,
     plugins: [tailwind],
     publicPath: "/",
     sourcemap: "linked",
@@ -13,9 +12,10 @@ const workspace = join(import.meta.dir, ".."),
     target: "bun",
   });
 
-if (!result.success) {
-  for (const log of result.logs) {
-    console.error(log);
-  }
+if (!workspaceBuildResult.success) {
+  await Bun.write(
+    Bun.stderr,
+    `${workspaceBuildResult.logs.map((log) => log.message).join("\n")}\n`,
+  );
   process.exitCode = 1;
 }

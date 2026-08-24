@@ -13,45 +13,86 @@ const { postId } = Astro.props
 <script>
   import { Effect } from "effect"
   import { makeHeadlessClient } from "../generated/headless-client.ts"
-  const headlessClient = makeHeadlessClient(window.location.origin.replace(/:\d+$/u, ":3000"))
-  for (const form of document.querySelectorAll<HTMLFormElement>("[data-comment-form]")) {
-    let idempotencyKey = crypto.randomUUID()
-    form.addEventListener("submit", async (event) => {
+
+  interface FormIssue { readonly field: string; readonly message: string }
+  interface ErrorPresentation { readonly summary: HTMLElement; readonly summaryList: HTMLUListElement }
+  interface FormSubmission {
+    readonly body: string
+    readonly displayName: string
+    readonly issues: readonly FormIssue[]
+    readonly websiteUrl: string | null
+  }
+
+  const emptyLength = 0,
+   headlessClient = makeHeadlessClient(globalThis.location.origin.replace(/:\d+$/u, ":3000")),
+   submissionAddIssue = (issues: FormIssue[], condition: boolean, issue: FormIssue): void => {
+    if (condition) { issues.push(issue) }
+   },
+   submissionElement = <ElementType extends Element>(root: ParentNode, selector: string): ElementType => {
+    const element = root.querySelector<ElementType>(selector)
+    if (element === null) { throw new Error(`Comment form element is missing: ${selector}`) }
+    return element
+   },
+   submissionErrorClear = (form: HTMLFormElement): ErrorPresentation => {
+    const errorElements = form.querySelectorAll<HTMLElement>("[data-error-for]"),
+     summary = submissionElement<HTMLElement>(form, "[data-error-summary]"),
+     summaryList = submissionElement<HTMLUListElement>(summary, "ul")
+    for (const element of errorElements) { element.textContent = "" }
+    summaryList.replaceChildren()
+    return { summary, summaryList }
+   },
+   submissionRead = (form: HTMLFormElement): FormSubmission => {
+    const formData = new FormData(form),
+     submissionBody = String(formData.get("body") ?? "").trim(),
+     submissionDisplayName = String(formData.get("displayName") ?? "").trim(),
+     submissionIssues: FormIssue[] = [],
+     submissionWebsiteUrl = String(formData.get("websiteUrl") ?? "").trim()
+    submissionAddIssue(submissionIssues, submissionDisplayName.length === emptyLength, { field: "displayName", message: "Enter your display name." })
+    submissionAddIssue(submissionIssues, submissionWebsiteUrl.length > emptyLength && !URL.canParse(submissionWebsiteUrl), { field: "websiteUrl", message: "Enter a complete website URL." })
+    submissionAddIssue(submissionIssues, submissionBody.length === emptyLength, { field: "body", message: "Enter a comment." })
+    let optionalWebsiteUrl: string | null = submissionWebsiteUrl
+    if (submissionWebsiteUrl.length === emptyLength) { optionalWebsiteUrl = null }
+    return { body: submissionBody, displayName: submissionDisplayName, issues: submissionIssues, websiteUrl: optionalWebsiteUrl }
+   },
+   submissionRenderIssue = (form: HTMLFormElement, issue: FormIssue, summaryList: HTMLUListElement): void => {
+    const fieldError = submissionElement<HTMLElement>(form, `[data-error-for="${issue.field}"]`),
+     item = globalThis.document.createElement("li")
+    fieldError.textContent = issue.message
+    item.textContent = issue.message
+    summaryList.append(item)
+   },
+   submissionRenderIssues = (form: HTMLFormElement, issues: readonly FormIssue[]): boolean => {
+    const { summary, summaryList } = submissionErrorClear(form)
+    if (issues.length === emptyLength) { summary.hidden = true; return false }
+    for (const issue of issues) { submissionRenderIssue(form, issue, summaryList) }
+    summary.hidden = false
+    summary.focus()
+    return true
+   },
+   submissionStart = (form: HTMLFormElement): ((event: SubmitEvent) => void) => {
+    let idempotencyKey = globalThis.crypto.randomUUID()
+    return (event): void => {
       event.preventDefault()
-      const formData = new FormData(form),
-       displayName = String(formData.get("displayName") ?? "").trim(),
-       websiteUrl = String(formData.get("websiteUrl") ?? "").trim(),
-       body = String(formData.get("body") ?? "").trim(),
-       issues = [
-        ...(displayName.length === 0 ? [{ field: "displayName", message: "Enter your display name." }] : []),
-        ...(websiteUrl.length > 0 && !URL.canParse(websiteUrl) ? [{ field: "websiteUrl", message: "Enter a complete website URL." }] : []),
-        ...(body.length === 0 ? [{ field: "body", message: "Enter a comment." }] : [])
-      ]
-      for (const element of form.querySelectorAll<HTMLElement>("[data-error-for]")) {element.textContent = ""}
-      const summary = form.querySelector<HTMLElement>("[data-error-summary]")!
-      if (issues.length > 0) {
-        summary.hidden = false
-        summary.querySelector("ul")!.innerHTML = issues.map((issue) => `<li>${issue.message}</li>`).join("")
-        for (const issue of issues) {form.querySelector<HTMLElement>(`[data-error-for="${issue.field}"]`)!.textContent = issue.message}
-        summary.focus()
-        return
-      }
-      summary.hidden = true
-      const button = form.querySelector<HTMLButtonElement>("button[type=submit]")!,
-       status = form.querySelector<HTMLElement>("[data-comment-status]")!
-      button.disabled = true
-      status.textContent = "Submitting…"
-      try {
-        const receipt = await Effect.runPromise(headlessClient.submitComment(form.dataset.postId!, { body, displayName, websiteUrl: websiteUrl || null }, idempotencyKey))
-        status.textContent = `Comment ${receipt.submissionId} is pending moderation.`
+      const formSubmission = submissionRead(form),
+       { postId } = form.dataset,
+       submitButton = submissionElement<HTMLButtonElement>(form, "button[type=submit]"),
+       submitStatus = submissionElement<HTMLElement>(form, "[data-comment-status]")
+      if (submissionRenderIssues(form, formSubmission.issues)) { return }
+      if (postId === undefined) { throw new Error("Comment form post identifier is missing") }
+      submitButton.disabled = true
+      submitStatus.textContent = "Submitting…"
+      Effect.runPromise(headlessClient.submitComment(postId, formSubmission, idempotencyKey)).then(
+       (receipt) => {
+        submitStatus.textContent = `Comment ${receipt.submissionId} is pending moderation.`
         form.reset()
-        idempotencyKey = crypto.randomUUID()
-      } catch {
-        status.textContent = "Your comment could not be submitted. Your text is still here; please try again."
-      } finally {
-        button.disabled = false
-      }
-    })
+        idempotencyKey = globalThis.crypto.randomUUID()
+       },
+       () => { submitStatus.textContent = "Your comment could not be submitted. Your text is still here; please try again." },
+      ).finally(() => { submitButton.disabled = false })
+    }
+   }
+
+  for (const form of globalThis.document.querySelectorAll<HTMLFormElement>("[data-comment-form]")) {
+    form.addEventListener("submit", submissionStart(form))
   }
 </script>
-

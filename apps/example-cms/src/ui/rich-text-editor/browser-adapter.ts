@@ -121,7 +121,7 @@ export class BrowserAdapter {
               text.dataset["listItemIndex"] = String(listItemIndex);
             }
           }
-          text.textContent = child.text.length === 0 ? "\u200b" : child.text;
+          text.textContent = child.text.length === 0 ? "\u200B" : child.text;
           if (child.marks?.includes("bold")) {
             text.style.fontWeight = "700";
           }
@@ -140,12 +140,14 @@ export class BrowserAdapter {
           child.type === "ordered-list" ||
           child.type === "unordered-list" ||
           child.type === "asset-reference"
-        )
+        ) {
           element.append(this.#renderBlock(child, blockIndex, listItemIndex));
-        else if (child.type === "link" || child.type === "entry-reference") {
+        } else if (child.type === "link" || child.type === "entry-reference") {
           const inline = document.createElement(child.type === "link" ? "a" : "span");
           inline.dataset["nodeType"] = child.type;
-          if (child.type === "link") inline.setAttribute("href", child.url);
+          if (child.type === "link") {
+            inline.setAttribute("href", child.url);
+          }
           for (const grandchild of child.children) {
             inline.append(document.createTextNode(grandchild.text));
           }
@@ -181,7 +183,7 @@ export class BrowserAdapter {
       inlineIndex = Number(text.dataset["inlineIndex"]),
       boundedOffset = Math.min(
         offset,
-        text.textContent === "\u200b" ? 0 : (text.textContent?.length ?? 0),
+        text.textContent === "\u200B" ? 0 : (text.textContent?.length ?? 0),
       );
     return Number.isSafeInteger(blockIndex) && Number.isSafeInteger(inlineIndex)
       ? {
@@ -239,12 +241,12 @@ export class BrowserAdapter {
       anchorNode,
       Math.min(
         anchor.offset,
-        anchorNode.textContent === "\u200b" ? 0 : (anchorNode.textContent?.length ?? 0),
+        anchorNode.textContent === "\u200B" ? 0 : (anchorNode.textContent?.length ?? 0),
       ),
       focusNode,
       Math.min(
         focus.offset,
-        focusNode.textContent === "\u200b" ? 0 : (focusNode.textContent?.length ?? 0),
+        focusNode.textContent === "\u200B" ? 0 : (focusNode.textContent?.length ?? 0),
       ),
     );
   }

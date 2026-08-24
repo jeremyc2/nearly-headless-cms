@@ -1,5 +1,5 @@
-import type { Representation } from "./entry.ts";
 import type { JsonObject } from "./internal/json.ts";
+import type { Representation } from "./entry.ts";
 
 /** Metadata that identifies an immutable Entry Revision. */
 export interface RevisionMetadata {

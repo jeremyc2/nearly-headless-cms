@@ -1,17 +1,9 @@
-import type { ServiceShape as CmsService } from "../cms.ts";
+import type { Effect, Schema } from "effect";
 import type { CmsError } from "../cms-error.ts";
+import type { ServiceShape as CmsService } from "../cms.ts";
 import type { CompiledSnapshot } from "../content-definition.ts";
-import type { JsonValue } from "../internal/json.ts";
-import type { Effect } from "effect";
-import type { Schema } from "effect";
 import type { DefinitionRequirement } from "../operation.ts";
-
-/** Stable major-version URL prefix for the complete Management API. */
-export const managementPrefix = "/api/v1/management";
-/** Stable major-version URL prefix for Builder-selected Headless operations. */
-export const headlessPrefix = "/api/v1/headless";
-/** Current major API Contract Version, independent of Definition versions. */
-export const apiContractVersion = 1;
+import type { JsonValue } from "../internal/json.ts";
 
 /** Safe tagged JSON failure representation returned by HTTP endpoints. */
 export interface ErrorDocument {
@@ -56,7 +48,7 @@ export interface DeliveryOperation {
   readonly requiresIdempotencyKey?: boolean;
   readonly cacheControl?: string;
   readonly schemas: OperationSchemas;
-  readonly successStatus?: 200 | 201;
+  readonly successStatus?: typeof successfulResponseStatus | typeof createdResponseStatus;
   readonly execute: (context: OperationContext) => Effect.Effect<unknown, CmsError>;
 }
 
@@ -88,52 +80,74 @@ export interface DiscoveryDocument {
     readonly identifier: string;
     readonly method: string;
     readonly path: string;
-    readonly reachableContentTypeIds: ReadonlyArray<string>;
+    readonly reachableContentTypeIds: readonly string[];
     readonly requiresIdempotencyKey: boolean;
   }[];
   readonly assetDeliveryUrlTemplate?: string;
   readonly openApiUrl: string;
 }
 
-/** Derives public discovery without executable schemas or unreachable definitions. */
-export const discovery = (
-  snapshot: CompiledSnapshot,
-  operations: readonly DeliveryOperation[],
-): DiscoveryDocument => ({
-  apiContractVersion,
-  definitionSnapshotId: snapshot.snapshotId,
-  definitionFingerprint: snapshot.fingerprint,
-  definitionFormatVersion: 1,
-  compilerFormatVersion: snapshot.compilerFormatVersion,
-  definitions: snapshot.input.definitions.filter((definition) =>
-    operations.some((operation) => operation.reachableContentTypeIds.includes(definition.id)),
-  ),
-  fieldKinds: [
-    "text",
-    "integer",
-    "number",
-    "boolean",
-    "date",
-    "datetime",
-    "url",
-    "email",
-    "enum",
-    "json",
-    "asset",
-    "relationship",
-    "rich-text",
-    "list",
-  ].map((identifier) => ({ identifier, version: 1 })),
-  richText: { extensions: [], format: "nearly-headless-cms/rich-text", version: 1 },
-  operations: operations.map((operation) => ({
-    identifier: operation.identifier,
-    method: operation.method,
-    path: operation.path,
-    reachableContentTypeIds: operation.reachableContentTypeIds,
-    requiresIdempotencyKey: operation.requiresIdempotencyKey ?? false,
-  })),
-  ...(operations.some((operation) => operation.path === "/assets/{assetId}")
-    ? { assetDeliveryUrlTemplate: `${headlessPrefix}/assets/{assetId}` }
-    : {}),
-  openApiUrl: `${headlessPrefix}/openapi.json`,
-});
+export interface DiscoveryInput {
+  readonly operations: readonly DeliveryOperation[];
+  readonly snapshot: CompiledSnapshot;
+}
+
+const apiContractVersion = 1,
+  createdResponseStatus = 201,
+  definitionFormatVersion = 1,
+  fieldKindVersion = 1,
+  headlessPrefix = "/api/v1/headless",
+  managementPrefix = "/api/v1/management",
+  richTextFormatVersion = 1,
+  successfulResponseStatus = 200,
+  zDiscovery = ({ operations, snapshot }: DiscoveryInput): DiscoveryDocument => {
+    const document: DiscoveryDocument = {
+      apiContractVersion,
+      compilerFormatVersion: snapshot.compilerFormatVersion,
+      definitionFingerprint: snapshot.fingerprint,
+      definitionFormatVersion,
+      definitionSnapshotId: snapshot.snapshotId,
+      definitions: snapshot.input.definitions.filter((definition) =>
+        operations.some((operation) => operation.reachableContentTypeIds.includes(definition.id)),
+      ),
+      fieldKinds: [
+        "text",
+        "integer",
+        "number",
+        "boolean",
+        "date",
+        "datetime",
+        "url",
+        "email",
+        "enum",
+        "json",
+        "asset",
+        "relationship",
+        "rich-text",
+        "list",
+      ].map((identifier) => ({ identifier, version: fieldKindVersion })),
+      openApiUrl: `${headlessPrefix}/openapi.json`,
+      operations: operations.map((operation) => ({
+        identifier: operation.identifier,
+        method: operation.method,
+        path: operation.path,
+        reachableContentTypeIds: operation.reachableContentTypeIds,
+        requiresIdempotencyKey: operation.requiresIdempotencyKey ?? false,
+      })),
+      richText: {
+        extensions: [],
+        format: "nearly-headless-cms/rich-text",
+        version: richTextFormatVersion,
+      },
+    };
+    if (operations.some((operation) => operation.path === "/assets/{assetId}")) {
+      return {
+        assetDeliveryUrlTemplate: `${headlessPrefix}/assets/{assetId}`,
+        ...document,
+      };
+    }
+    return document;
+  };
+
+/** Stable HTTP contract constants and public discovery derivation. */
+export { apiContractVersion, headlessPrefix, managementPrefix, zDiscovery as discovery };

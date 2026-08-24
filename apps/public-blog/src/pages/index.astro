@@ -1,7 +1,7 @@
 ---
 import PostCard from "../components/post-card.astro"
-import { publicExport } from "../data/public-export.ts"
 import SiteLayout from "../layouts/site-layout.astro"
+import { publicExport } from "../data/public-export.ts"
 const [featuredPost, ...recentPosts] = publicExport.posts
 ---
 <SiteLayout>
@@ -11,4 +11,3 @@ const [featuredPost, ...recentPosts] = publicExport.posts
     <aside class="newsletter"><div><p class="eyebrow">The occasional dispatch</p><h2>A slower kind of inbox.</h2><p>New field notes are available through a clean, portable RSS feed.</p></div><a class="button light" href="/feed.xml">Follow via RSS</a></aside>
   </div>
 </SiteLayout>
-

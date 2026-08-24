@@ -7,11 +7,11 @@ describe("RichText", () => {
       children: [
         {
           children: [
-            { type: "text", text: "Read ", marks: ["bold"] },
+            { marks: ["bold"], text: "Read ", type: "text" },
             {
-              type: "entry-reference",
+              children: [{ text: "more", type: "text" }],
               entryId: "entry-1",
-              children: [{ type: "text", text: "more" }],
+              type: "entry-reference",
             },
           ],
           type: "paragraph",

@@ -7,35 +7,139 @@ import { HttpTransport, OpenApi } from "../../src/http/index.ts";
 import { DevelopmentCms } from "../../src/testing/index.ts";
 
 const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
-  value !== null && typeof value === "object" && !Array.isArray(value);
-
-const snapshot = ContentDefinition.compile({
-  definitionSpaceId: "example-blog",
-  definitions: [
-    {
-      fields: [{ key: "title", label: "Title", required: true, kind: { kind: "text" } }],
-      id: "post",
-      kind: "contentType",
-      name: "Post",
-    },
-  ],
-  snapshotId: "initial",
-});
+    value !== null && typeof value === "object" && !Array.isArray(value),
+  acceptedStatus = 201,
+  badRequestStatus = 400,
+  contentTooLargeStatus = 413,
+  createdStatus = 201,
+  headerTooLargeStatus = 431,
+  methodNotAllowedStatus = 405,
+  noContentStatus = 204,
+  notAcceptableStatus = 406,
+  notFoundStatus = 404,
+  payloadByteOne = 1,
+  payloadByteSix = 6,
+  payloadByteThree = 3,
+  payloadByteTwo = 2,
+  payloadByteFour = 4,
+  payloadByteFive = 5,
+  requestTimeoutStatus = 408,
+  requestTimeoutMilliseconds = 5,
+  successStatus = 200,
+  unsupportedMediaTypeStatus = 415,
+  uriTooLongStatus = 414,
+  urlLengthLimit = 150,
+  headerLengthLimit = 120,
+  maximumHeaderByteLength = 100,
+  maximumJsonBodyByteLength = 24,
+  snapshot = ContentDefinition.compile({
+    definitionSpaceId: "example-blog",
+    definitions: [
+      {
+        fields: [{ key: "title", kind: { kind: "text" }, label: "Title", required: true }],
+        id: "post",
+        kind: "contentType",
+        name: "Post",
+      },
+    ],
+    snapshotId: "initial",
+  });
 
 describe("HTTP contract", () => {
+  test("streams bounded multipart Asset uploads and rejects unexpected metadata", async () => {
+    const handler = await Effect.runPromise(
+        HttpTransport.makeHandler({
+          maximumMultipartFileByteLength: payloadByteFive,
+          maximumMultipartMetadataByteLength: 256,
+        }).pipe(Effect.provide(DevelopmentCms.layer({ snapshot }))),
+      ),
+      assetUrl = "http://cms.test/api/v1/management/definition-spaces/example-blog/assets",
+      metadata = JSON.stringify({ filename: "pixel.bin", mediaType: "application/octet-stream" }),
+      oversizedForm = new FormData();
+    oversizedForm.set("metadata", metadata);
+    oversizedForm.set(
+      "content",
+      new File(
+        [
+          new Uint8Array([
+            payloadByteOne,
+            payloadByteTwo,
+            payloadByteThree,
+            payloadByteFour,
+            payloadByteFive,
+            payloadByteSix,
+          ]),
+        ],
+        "pixel.bin",
+        {
+          type: "application/octet-stream",
+        },
+      ),
+    );
+    const oversized = await handler(new Request(assetUrl, { body: oversizedForm, method: "POST" }));
+    expect(oversized.status).toBe(contentTooLargeStatus);
+    expect(((await oversized.json()) as { code: string }).code).toBe("PayloadTooLarge");
+
+    const unexpectedMetadataForm = new FormData();
+    unexpectedMetadataForm.set(
+      "metadata",
+      JSON.stringify({ digest: "client-owned", ...JSON.parse(metadata) }),
+    );
+    unexpectedMetadataForm.set(
+      "content",
+      new File([new Uint8Array([payloadByteOne, payloadByteTwo, payloadByteThree])], "pixel.bin", {
+        type: "application/octet-stream",
+      }),
+    );
+    const unexpectedMetadata = await handler(
+      new Request(assetUrl, { body: unexpectedMetadataForm, method: "POST" }),
+    );
+    expect(unexpectedMetadata.status).toBe(badRequestStatus);
+
+    const acceptedForm = new FormData();
+    acceptedForm.set("metadata", metadata);
+    acceptedForm.set(
+      "content",
+      new File(
+        [
+          new Uint8Array([
+            payloadByteOne,
+            payloadByteTwo,
+            payloadByteThree,
+            payloadByteFour,
+            payloadByteFive,
+          ]),
+        ],
+        "pixel.bin",
+        {
+          type: "application/octet-stream",
+        },
+      ),
+    );
+    const accepted = await handler(new Request(assetUrl, { body: acceptedForm, method: "POST" }));
+    expect(accepted.status).toBe(acceptedStatus);
+    expect(await accepted.json()).toMatchObject({
+      metadata: {
+        byteLength: payloadByteFive,
+        filename: "pixel.bin",
+        mediaType: "application/octet-stream",
+      },
+    });
+  });
+
   test("returns a deletion receipt only for history-enabled Entries", async () => {
     const deletionSnapshot = ContentDefinition.compile({
         definitionSpaceId: "delete-contract",
         definitions: [
           {
-            fields: [{ key: "title", label: "Title", required: true, kind: { kind: "text" } }],
+            fields: [{ key: "title", kind: { kind: "text" }, label: "Title", required: true }],
             history: true,
             id: "historical-note",
             kind: "contentType",
             name: "Historical Note",
           },
           {
-            fields: [{ key: "title", label: "Title", required: true, kind: { kind: "text" } }],
+            fields: [{ key: "title", kind: { kind: "text" }, label: "Title", required: true }],
             id: "temporary-note",
             kind: "contentType",
             name: "Temporary Note",
@@ -50,16 +154,16 @@ describe("HTTP contract", () => {
       ),
       createEntry = async (contentTypeId: string): Promise<Readonly<Record<string, unknown>>> => {
         const response = await handler(
-          new Request(
-            `http://cms.test/api/v1/management/definition-spaces/delete-contract/content-types/${contentTypeId}/entries`,
-            {
-              body: JSON.stringify({ values: { title: "Delete me" } }),
-              headers: { "content-type": "application/json" },
-              method: "POST",
-            },
+            new Request(
+              `http://cms.test/api/v1/management/definition-spaces/delete-contract/content-types/${contentTypeId}/entries`,
+              {
+                body: JSON.stringify({ values: { title: "Delete me" } }),
+                headers: { "content-type": "application/json" },
+                method: "POST",
+              },
+            ),
           ),
-        );
-        const body: unknown = await response.json();
+          body: unknown = await response.json();
         if (!isRecord(body)) {
           throw new Error("Expected an Entry creation object");
         }
@@ -82,17 +186,17 @@ describe("HTTP contract", () => {
         ),
       ),
       historicalDeletionBody: unknown = await historicalDeletion.json();
-    expect(historicalDeletion.status).toBe(200);
+    expect(historicalDeletion.status).toBe(successStatus);
     expect(historicalDeletionBody).toMatchObject({
       contentTypeId: "historical-note",
       entryId: historicalEntry["id"],
-      latestRevisionNumber: 1,
+      latestRevisionNumber: payloadByteOne,
     });
 
     const temporaryCreation = await createEntry("temporary-note"),
       temporaryEntryId = temporaryCreation["id"];
     if (typeof temporaryEntryId !== "string") {
-      throw new Error("Expected ordinary Entry from creation");
+      throw new TypeError("Expected ordinary Entry from creation");
     }
     const temporaryDeletion = await handler(
       new Request(
@@ -100,7 +204,7 @@ describe("HTTP contract", () => {
         { method: "DELETE" },
       ),
     );
-    expect(temporaryDeletion.status).toBe(204);
+    expect(temporaryDeletion.status).toBe(noContentStatus);
     expect(await temporaryDeletion.text()).toBe("");
   });
 
@@ -118,14 +222,14 @@ describe("HTTP contract", () => {
           },
         ),
       );
-    expect(created.status).toBe(201);
+    expect(created.status).toBe(createdStatus);
     expect(created.headers.get("cms-definition-fingerprint")).toBe(snapshot.fingerprint);
     expect(((await created.json()) as { values: { title: string } }).values.title).toBe("Hello");
 
     const unrestrictedHeadless = await handler(
       new Request("http://cms.test/api/v1/headless/content-types/post/entries"),
     );
-    expect(unrestrictedHeadless.status).toBe(404);
+    expect(unrestrictedHeadless.status).toBe(notFoundStatus);
     expect(OpenApi.management().openapi).toBe("3.1.0");
     expect(OpenApi.headless([]).paths).not.toHaveProperty("/content-types/{contentTypeId}/entries");
   });
@@ -155,7 +259,7 @@ describe("HTTP contract", () => {
       const response = await webHandler.handler(
         new Request("http://cms.test/api/v1/headless/availability"),
       );
-      expect(response.status).toBe(200);
+      expect(response.status).toBe(successStatus);
       expect(await response.json()).toEqual({ available: true });
     } finally {
       await webHandler.dispose();
@@ -164,38 +268,37 @@ describe("HTTP contract", () => {
 
   test("maps transport limits, media, and methods to their stable HTTP failures", async () => {
     const handler = await Effect.runPromise(
-      HttpTransport.makeHandler({
-        deliveryOperations: [
-          {
-            definitionRequirements: [],
-            execute: () => Effect.succeed({ accepted: true }),
-            identifier: "submit",
-            method: "POST",
-            path: "/submissions",
-            reachableContentTypeIds: ["post"],
-            schemas: {
-              request: Schema.Struct({}),
-              response: Schema.Struct({ accepted: Schema.Boolean }),
+        HttpTransport.makeHandler({
+          deliveryOperations: [
+            {
+              definitionRequirements: [],
+              execute: () => Effect.succeed({ accepted: true }),
+              identifier: "submit",
+              method: "POST",
+              path: "/submissions",
+              reachableContentTypeIds: ["post"],
+              schemas: {
+                request: Schema.Struct({}),
+                response: Schema.Struct({ accepted: Schema.Boolean }),
+              },
             },
-          },
-        ],
-        maximumHeaderByteLength: 100,
-        maximumJsonBodyByteLength: 24,
-        maximumUrlLength: 120,
-      }).pipe(Effect.provide(DevelopmentCms.layer({ snapshot }))),
-    );
-
-    const oversizedBody = await handler(
-      new Request(
-        "http://cms.test/api/v1/management/definition-spaces/example-blog/content-types/post/entries",
-        {
-          body: JSON.stringify({ values: { title: "This body is deliberately too large" } }),
-          headers: { "content-type": "application/json" },
-          method: "POST",
-        },
+          ],
+          maximumHeaderByteLength,
+          maximumJsonBodyByteLength,
+          maximumUrlLength: headerLengthLimit,
+        }).pipe(Effect.provide(DevelopmentCms.layer({ snapshot }))),
       ),
-    );
-    expect(oversizedBody.status).toBe(413);
+      oversizedBody = await handler(
+        new Request(
+          "http://cms.test/api/v1/management/definition-spaces/example-blog/content-types/post/entries",
+          {
+            body: JSON.stringify({ values: { title: "This body is deliberately too large" } }),
+            headers: { "content-type": "application/json" },
+            method: "POST",
+          },
+        ),
+      );
+    expect(oversizedBody.status).toBe(contentTooLargeStatus);
     expect(((await oversizedBody.json()) as { code: string }).code).toBe("PayloadTooLarge");
 
     const unsupportedMedia = await handler(
@@ -205,27 +308,27 @@ describe("HTTP contract", () => {
         method: "POST",
       }),
     );
-    expect(unsupportedMedia.status).toBe(415);
+    expect(unsupportedMedia.status).toBe(unsupportedMediaTypeStatus);
 
     const wrongMethod = await handler(new Request("http://cms.test/api/v1/headless/submissions"));
-    expect(wrongMethod.status).toBe(405);
+    expect(wrongMethod.status).toBe(methodNotAllowedStatus);
     const longUrl = await handler(
-      new Request(`http://cms.test/api/v1/headless/${"x".repeat(150)}`),
+      new Request(`http://cms.test/api/v1/headless/${"x".repeat(urlLengthLimit)}`),
     );
-    expect(longUrl.status).toBe(414);
+    expect(longUrl.status).toBe(uriTooLongStatus);
     const largeHeaders = await handler(
       new Request("http://cms.test/api/v1/headless/schema", {
-        headers: { "x-large": "x".repeat(120) },
+        headers: { "x-large": "x".repeat(headerLengthLimit) },
       }),
     );
-    expect(largeHeaders.status).toBe(431);
+    expect(largeHeaders.status).toBe(headerTooLargeStatus);
 
     const unacceptable = await handler(
       new Request("http://cms.test/api/v1/headless/schema", {
         headers: { accept: "text/csv" },
       }),
     );
-    expect(unacceptable.status).toBe(406);
+    expect(unacceptable.status).toBe(notAcceptableStatus);
     expect(((await unacceptable.json()) as { code: string }).code).toBe("NotAcceptable");
 
     const timeoutHandler = await Effect.runPromise(
@@ -241,11 +344,11 @@ describe("HTTP contract", () => {
               schemas: { request: Schema.Struct({}), response: Schema.Struct({}) },
             },
           ],
-          requestTimeoutMilliseconds: 5,
+          requestTimeoutMilliseconds,
         }).pipe(Effect.provide(DevelopmentCms.layer({ snapshot }))),
       ),
       timedOut = await timeoutHandler(new Request("http://cms.test/api/v1/headless/wait-forever"));
-    expect(timedOut.status).toBe(408);
+    expect(timedOut.status).toBe(requestTimeoutStatus);
     expect(((await timedOut.json()) as { code: string }).code).toBe("RequestTimeout");
   });
 
@@ -264,7 +367,7 @@ describe("HTTP contract", () => {
             requestBody: Schema.Struct({ body: Schema.String }),
             response: Schema.Struct({ status: Schema.Literal("pending") }),
           },
-          successStatus: 201,
+          successStatus: acceptedStatus,
         },
       ] as const,
       document = OpenApi.headless(operations),

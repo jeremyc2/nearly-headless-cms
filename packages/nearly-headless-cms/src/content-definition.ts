@@ -11,11 +11,11 @@ import {
 /** JSON-compatible object and value types used by serializable definitions. */
 export type { JsonObject, JsonValue } from "./internal/json.ts";
 
-const calendarDatePattern = /^\d{4}-\d{2}-\d{2}$/,
-  customIdentifierPattern = /^(?:[a-z][a-z0-9-]*\.)+[a-z][a-z0-9-]*$/,
-  emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-  identifierPattern = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/,
-  utcDatetimePattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/;
+const calendarDatePattern = /^\d{4}-\d{2}-\d{2}$/u,
+  customIdentifierPattern = /^(?:[a-z][a-z0-9-]*\.)+[a-z][a-z0-9-]*$/u,
+  emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u,
+  identifierPattern = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/u,
+  utcDatetimePattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/u;
 
 /** Exact generic Query behaviors supported by a Field Kind. */
 export interface QueryCapabilities {
@@ -234,7 +234,7 @@ const issue = (
     message: string,
   ): ValidationIssue => ({ message, path, reason }),
   fail = (message: string, issues: readonly ValidationIssue[]): never => {
-    const firstIssue = issues[0],
+    const [firstIssue] = issues,
       issueLocation = firstIssue === undefined ? "" : ` at ${firstIssue.path.join(".")}`;
     throw InvalidInput.make({ issues: [...issues], message: `${message}${issueLocation}` });
   },
@@ -326,12 +326,17 @@ const validateCalendarDate = (value: string): boolean => {
       date.getUTCDate() === day
     );
   },
-  validateValue = (
-    fieldKind: FieldKind,
-    value: unknown,
-    path: readonly (string | number)[],
-    customRegistrations: ReadonlyMap<string, CustomFieldRegistration>,
-  ): readonly ValidationIssue[] => {
+  validateValue = ({
+    customRegistrations,
+    fieldKind,
+    path,
+    value,
+  }: {
+    readonly customRegistrations: ReadonlyMap<string, CustomFieldRegistration>;
+    readonly fieldKind: FieldKind;
+    readonly path: readonly (string | number)[];
+    readonly value: unknown;
+  }): readonly ValidationIssue[] => {
     switch (fieldKind.kind) {
       case "text": {
         if (typeof value !== "string") {
@@ -462,10 +467,17 @@ const validateCalendarDate = (value: string): boolean => {
           issues.push(issue(path, "duplicateListItem", "List items must be distinct"));
         }
         if (fieldKind.element.kind !== "fieldGroup") {
-          const element = fieldKind.element;
-          value.forEach((child, index) =>
-            issues.push(...validateValue(element, child, [...path, index], customRegistrations)),
-          );
+          const { element } = fieldKind;
+          for (const [index, child] of value.entries()) {
+            issues.push(
+              ...validateValue({
+                customRegistrations,
+                fieldKind: element,
+                path: [...path, index],
+                value: child,
+              }),
+            );
+          }
         }
         return issues;
       }
@@ -579,22 +591,27 @@ const validateCalendarDate = (value: string): boolean => {
     }
     if (field.defaultValue !== undefined) {
       issues.push(
-        ...validateValue(
-          field.kind,
-          field.defaultValue,
-          [...path, "defaultValue"],
+        ...validateValue({
           customRegistrations,
-        ),
+          fieldKind: field.kind,
+          path: [...path, "defaultValue"],
+          value: field.defaultValue,
+        }),
       );
     }
     return issues;
   },
-  resolveFields = (
-    definition: ContentTypeDefinition | FieldGroupDefinition,
-    definitions: ReadonlyMap<string, Definition>,
-    resolving: readonly string[],
-    customRegistrations: ReadonlyMap<string, CustomFieldRegistration>,
-  ): readonly ResolvedField[] => {
+  resolveFields = ({
+    customRegistrations,
+    definition,
+    definitions,
+    resolving,
+  }: {
+    readonly customRegistrations: ReadonlyMap<string, CustomFieldRegistration>;
+    readonly definition: ContentTypeDefinition | FieldGroupDefinition;
+    readonly definitions: ReadonlyMap<string, Definition>;
+    readonly resolving: readonly string[];
+  }): readonly ResolvedField[] => {
     if (resolving.includes(definition.id)) {
       fail("Field Group inclusion cycle", [
         issue(
@@ -636,12 +653,12 @@ const validateCalendarDate = (value: string): boolean => {
         }
         fields[fieldIndex] = {
           ...field,
-          nestedFields: resolveFields(
-            target,
-            definitions,
-            [...resolving, definition.id],
+          nestedFields: resolveFields({
             customRegistrations,
-          ),
+            definition: target,
+            definitions,
+            resolving: [...resolving, definition.id],
+          }),
         };
       }
     }
@@ -656,12 +673,12 @@ const validateCalendarDate = (value: string): boolean => {
           ),
         ]);
       }
-      const composedFields = resolveFields(
-        target,
-        definitions,
-        [...resolving, definition.id],
+      const composedFields = resolveFields({
         customRegistrations,
-      );
+        definition: target,
+        definitions,
+        resolving: [...resolving, definition.id],
+      });
       if (composition.mode === "inline") {
         fields.push(...composedFields);
       } else {
@@ -724,10 +741,15 @@ export const compile = (input: SnapshotInput, options: CompileOptions = {}): Com
     if (definition.kind === "contentType") {
       contentTypes.set(definition.id, {
         definition,
-        fields: resolveFields(definition, definitions, [], customRegistrations),
+        fields: resolveFields({
+          customRegistrations,
+          definition,
+          definitions,
+          resolving: [],
+        }),
       });
     } else {
-      resolveFields(definition, definitions, [], customRegistrations);
+      resolveFields({ customRegistrations, definition, definitions, resolving: [] });
     }
   }
   for (const [contentTypeId, compiledContentType] of contentTypes) {
@@ -740,9 +762,9 @@ export const compile = (input: SnapshotInput, options: CompileOptions = {}): Com
           relationshipKind =
             field.kind.kind === "relationship"
               ? field.kind
-              : field.kind.kind === "list" && field.kind.element.kind === "relationship"
+              : (field.kind.kind === "list" && field.kind.element.kind === "relationship"
                 ? field.kind.element
-                : undefined;
+                : undefined);
         for (const targetContentTypeId of relationshipKind?.targetContentTypeIds ?? []) {
           if (!contentTypes.has(targetContentTypeId)) {
             fail("Invalid Relationship target", [
@@ -767,17 +789,22 @@ export const compile = (input: SnapshotInput, options: CompileOptions = {}): Com
   }
   const compilerFormatVersion = input.compilerFormatVersion ?? 1,
     snapshotFingerprint = fingerprint(input),
-    validateFields = (
-      fields: readonly ResolvedField[],
-      values: JsonObject,
-      validateOptions: ValidateEntryOptions,
-      parentPath: readonly (string | number)[],
-    ): { readonly result: JsonObject; readonly issues: readonly ValidationIssue[] } => {
+    validateFields = ({
+      fields,
+      parentPath,
+      validateOptions,
+      values,
+    }: {
+      readonly fields: readonly ResolvedField[];
+      readonly parentPath: readonly (string | number)[];
+      readonly validateOptions: ValidateEntryOptions;
+      readonly values: JsonObject;
+    }): { readonly result: JsonObject; readonly issues: readonly ValidationIssue[] } => {
       const result: Record<string, JsonValue> = {},
         entryIssues: ValidationIssue[] = [],
         knownKeys = new Set(fields.map((field) => field.key));
       for (const key of Object.keys(values)) {
-        if (!knownKeys.has(key))
+        if (!knownKeys.has(key)) {
           entryIssues.push(
             issue(
               [...parentPath, key],
@@ -785,6 +812,7 @@ export const compile = (input: SnapshotInput, options: CompileOptions = {}): Com
               `Unknown Field ${[...parentPath, key].join(".")}`,
             ),
           );
+        }
       }
       for (const field of fields) {
         const fieldPath = [...parentPath, field.key],
@@ -852,10 +880,12 @@ export const compile = (input: SnapshotInput, options: CompileOptions = {}): Com
               );
               continue;
             }
-            const nested = validateFields(field.nestedFields, item, validateOptions, [
-              ...fieldPath,
-              itemIndex,
-            ]);
+            const nested = validateFields({
+              fields: field.nestedFields,
+              parentPath: [...fieldPath, itemIndex],
+              validateOptions,
+              values: item,
+            });
             entryIssues.push(...nested.issues);
             listResult.push(nested.result);
           }
@@ -869,12 +899,24 @@ export const compile = (input: SnapshotInput, options: CompileOptions = {}): Com
             );
             continue;
           }
-          const nested = validateFields(field.nestedFields, fieldValue, validateOptions, fieldPath);
+          const nested = validateFields({
+            fields: field.nestedFields,
+            parentPath: fieldPath,
+            validateOptions,
+            values: fieldValue,
+          });
           entryIssues.push(...nested.issues);
           result[field.key] = nested.result;
           continue;
         }
-        entryIssues.push(...validateValue(field.kind, fieldValue, fieldPath, customRegistrations));
+        entryIssues.push(
+          ...validateValue({
+            customRegistrations,
+            fieldKind: field.kind,
+            path: fieldPath,
+            value: fieldValue,
+          }),
+        );
         result[field.key] = cloneJson(fieldValue);
       }
       return { issues: entryIssues, result };
@@ -899,7 +941,12 @@ export const compile = (input: SnapshotInput, options: CompileOptions = {}): Com
           issue(["values"], "expectedObject", "Entry values must be a JSON-compatible object"),
         ]);
       }
-      const validated = validateFields(compiledContentType.fields, values, validateOptions, []);
+      const validated = validateFields({
+        fields: compiledContentType.fields,
+        parentPath: [],
+        validateOptions,
+        values,
+      });
       if (validated.issues.length > 0) {
         fail("Entry validation failed", validated.issues);
       }
@@ -953,8 +1000,9 @@ export const classifyCompatibility = (
       if (
         !sourceContentType.fields.some((field) => field.key === targetField.key) &&
         targetField.required
-      )
+      ) {
         return "migrationRequired";
+      }
     }
   }
   return "compatible";

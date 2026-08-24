@@ -1,232 +1,244 @@
 import { ContentDefinition } from "nearly-headless-cms";
 
-const text = (
+const relationship = (
+    targetContentTypeIds: readonly string[],
+  ): ContentDefinition.RelationshipFieldKind => ({ kind: "relationship", targetContentTypeIds }),
+  text = (
     options: Omit<ContentDefinition.TextFieldKind, "kind"> = {},
   ): ContentDefinition.TextFieldKind => ({ kind: "text", ...options }),
-  relationship = (
-    targetContentTypeIds: readonly string[],
-  ): ContentDefinition.RelationshipFieldKind => ({ kind: "relationship", targetContentTypeIds });
-
-export const definitionSnapshot = ContentDefinition.compile({
-  definitionSpaceId: "example-blog",
-  definitions: [
-    {
-      fields: [
-        {
-          key: "label",
-          label: "Label",
-          required: true,
-          kind: text({ minLength: 1, maxLength: 80 }),
-        },
-        { key: "url", label: "URL", required: true, kind: { kind: "url" } },
-      ],
-      id: "external-link",
-      kind: "fieldGroup",
-      name: "External Link",
-    },
-    {
-      fields: [
-        {
-          key: "name",
-          label: "Name",
-          required: true,
-          unique: true,
-          kind: text({ minLength: 1, maxLength: 120 }),
-        },
-        {
-          key: "slug",
-          label: "Slug",
-          required: true,
-          unique: true,
-          kind: text({ minLength: 1, maxLength: 100, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }),
-        },
-        {
-          key: "biography",
-          label: "Short biography",
-          required: true,
-          kind: text({ minLength: 1, maxLength: 500, multiline: true }),
-        },
-        {
-          key: "profile",
-          label: "Profile",
-          nullable: true,
-          kind: { kind: "rich-text", formatVersion: 1 },
-        },
-        { key: "portrait", label: "Portrait", nullable: true, kind: { kind: "asset" } },
-        {
-          key: "portrait-alternative-text",
-          label: "Portrait alternative text",
-          nullable: true,
-          kind: text({ maxLength: 240 }),
-        },
-        {
-          key: "external-links",
-          label: "External links",
-          kind: { kind: "list", element: { kind: "json" }, maximumLength: 10 },
-        },
-      ],
-      history: true,
-      id: "author",
-      kind: "contentType",
-      name: "Author",
-    },
-    {
-      fields: [
-        {
-          key: "name",
-          label: "Name",
-          required: true,
-          unique: true,
-          kind: text({ minLength: 1, maxLength: 80 }),
-        },
-        {
-          key: "slug",
-          label: "Slug",
-          required: true,
-          unique: true,
-          kind: text({ minLength: 1, maxLength: 80, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }),
-        },
-        {
-          key: "description",
-          label: "Description",
-          nullable: true,
-          kind: text({ maxLength: 300, multiline: true }),
-        },
-      ],
-      history: true,
-      id: "category",
-      kind: "contentType",
-      name: "Category",
-    },
-    {
-      fields: [
-        {
-          key: "name",
-          label: "Name",
-          required: true,
-          unique: true,
-          kind: text({ minLength: 1, maxLength: 80 }),
-        },
-        {
-          key: "slug",
-          label: "Slug",
-          required: true,
-          unique: true,
-          kind: text({ minLength: 1, maxLength: 80, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }),
-        },
-        {
-          key: "description",
-          label: "Description",
-          nullable: true,
-          kind: text({ maxLength: 300, multiline: true }),
-        },
-      ],
-      history: true,
-      id: "tag",
-      kind: "contentType",
-      name: "Tag",
-    },
-    {
-      fields: [
-        {
-          key: "title",
-          label: "Title",
-          required: true,
-          kind: text({ minLength: 1, maxLength: 180 }),
-        },
-        {
-          key: "slug",
-          label: "Slug",
-          required: true,
-          unique: true,
-          kind: text({ minLength: 1, maxLength: 140, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }),
-        },
-        {
-          key: "excerpt",
-          label: "Excerpt",
-          required: true,
-          kind: text({ minLength: 1, maxLength: 400, multiline: true }),
-        },
-        {
-          key: "body",
-          label: "Body",
-          required: true,
-          kind: { kind: "rich-text", formatVersion: 1 },
-        },
-        { key: "featured-asset", label: "Featured image", nullable: true, kind: { kind: "asset" } },
-        {
-          key: "featured-alternative-text",
-          label: "Featured image alternative text",
-          nullable: true,
-          kind: text({ maxLength: 240 }),
-        },
-        { key: "author", label: "Author", required: true, kind: relationship(["author"]) },
-        {
-          key: "categories",
-          label: "Categories",
-          kind: {
-            kind: "list",
-            element: relationship(["category"]),
-            distinct: true,
-            maximumLength: 20,
+  zDefinitionSnapshot = ContentDefinition.compile({
+    definitionSpaceId: "example-blog",
+    definitions: [
+      {
+        fields: [
+          {
+            key: "label",
+            kind: text({ maxLength: 80, minLength: 1 }),
+            label: "Label",
+            required: true,
           },
-        },
-        {
-          key: "tags",
-          label: "Tags",
-          kind: { kind: "list", element: relationship(["tag"]), distinct: true, maximumLength: 40 },
-        },
-        {
-          key: "status",
-          label: "Post status",
-          required: true,
-          defaultValue: "draft",
-          kind: { kind: "enum", values: ["draft", "published"] },
-        },
-        {
-          key: "published-at",
-          label: "Publication time",
-          nullable: true,
-          kind: { kind: "datetime" },
-        },
-      ],
-      history: true,
-      id: "post",
-      kind: "contentType",
-      name: "Post",
-      revisionRetention: { maximumRevisionCount: 100 },
-    },
-    {
-      fields: [
-        { key: "post", label: "Post", required: true, kind: relationship(["post"]) },
-        {
-          key: "display-name",
-          label: "Display name",
-          required: true,
-          kind: text({ minLength: 1, maxLength: 80 }),
-        },
-        { key: "website-url", label: "Website URL", nullable: true, kind: { kind: "url" } },
-        {
-          key: "body",
-          label: "Comment",
-          required: true,
-          kind: text({ minLength: 1, maxLength: 2_000, multiline: true }),
-        },
-        { key: "created-at", label: "Creation time", required: true, kind: { kind: "datetime" } },
-        {
-          key: "status",
-          label: "Comment status",
-          required: true,
-          defaultValue: "pending",
-          kind: { kind: "enum", values: ["pending", "approved", "rejected"] },
-        },
-      ],
-      history: true,
-      id: "comment",
-      kind: "contentType",
-      name: "Comment",
-      revisionRetention: { maximumRevisionCount: 25 },
-    },
-  ],
-  snapshotId: "example-blog-v1",
-});
+          { key: "url", kind: { kind: "url" }, label: "URL", required: true },
+        ],
+        id: "external-link",
+        kind: "fieldGroup",
+        name: "External Link",
+      },
+      {
+        fields: [
+          {
+            key: "name",
+            kind: text({ maxLength: 120, minLength: 1 }),
+            label: "Name",
+            required: true,
+            unique: true,
+          },
+          {
+            key: "slug",
+            kind: text({ maxLength: 100, minLength: 1, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }),
+            label: "Slug",
+            required: true,
+            unique: true,
+          },
+          {
+            key: "biography",
+            kind: text({ maxLength: 500, minLength: 1, multiline: true }),
+            label: "Short biography",
+            required: true,
+          },
+          {
+            key: "profile",
+            kind: { formatVersion: 1, kind: "rich-text" },
+            label: "Profile",
+            nullable: true,
+          },
+          { key: "portrait", kind: { kind: "asset" }, label: "Portrait", nullable: true },
+          {
+            key: "portrait-alternative-text",
+            kind: text({ maxLength: 240 }),
+            label: "Portrait alternative text",
+            nullable: true,
+          },
+          {
+            key: "external-links",
+            kind: { element: { kind: "json" }, kind: "list", maximumLength: 10 },
+            label: "External links",
+          },
+        ],
+        history: true,
+        id: "author",
+        kind: "contentType",
+        name: "Author",
+      },
+      {
+        fields: [
+          {
+            key: "name",
+            kind: text({ maxLength: 80, minLength: 1 }),
+            label: "Name",
+            required: true,
+            unique: true,
+          },
+          {
+            key: "slug",
+            kind: text({ maxLength: 80, minLength: 1, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }),
+            label: "Slug",
+            required: true,
+            unique: true,
+          },
+          {
+            key: "description",
+            kind: text({ maxLength: 300, multiline: true }),
+            label: "Description",
+            nullable: true,
+          },
+        ],
+        history: true,
+        id: "category",
+        kind: "contentType",
+        name: "Category",
+      },
+      {
+        fields: [
+          {
+            key: "name",
+            kind: text({ maxLength: 80, minLength: 1 }),
+            label: "Name",
+            required: true,
+            unique: true,
+          },
+          {
+            key: "slug",
+            kind: text({ maxLength: 80, minLength: 1, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }),
+            label: "Slug",
+            required: true,
+            unique: true,
+          },
+          {
+            key: "description",
+            kind: text({ maxLength: 300, multiline: true }),
+            label: "Description",
+            nullable: true,
+          },
+        ],
+        history: true,
+        id: "tag",
+        kind: "contentType",
+        name: "Tag",
+      },
+      {
+        fields: [
+          {
+            key: "title",
+            kind: text({ maxLength: 180, minLength: 1 }),
+            label: "Title",
+            required: true,
+          },
+          {
+            key: "slug",
+            kind: text({ maxLength: 140, minLength: 1, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }),
+            label: "Slug",
+            required: true,
+            unique: true,
+          },
+          {
+            key: "excerpt",
+            kind: text({ maxLength: 400, minLength: 1, multiline: true }),
+            label: "Excerpt",
+            required: true,
+          },
+          {
+            key: "body",
+            kind: { formatVersion: 1, kind: "rich-text" },
+            label: "Body",
+            required: true,
+          },
+          {
+            key: "featured-asset",
+            kind: { kind: "asset" },
+            label: "Featured image",
+            nullable: true,
+          },
+          {
+            key: "featured-alternative-text",
+            kind: text({ maxLength: 240 }),
+            label: "Featured image alternative text",
+            nullable: true,
+          },
+          { key: "author", kind: relationship(["author"]), label: "Author", required: true },
+          {
+            key: "categories",
+            kind: {
+              distinct: true,
+              element: relationship(["category"]),
+              kind: "list",
+              maximumLength: 20,
+            },
+            label: "Categories",
+          },
+          {
+            key: "tags",
+            kind: {
+              distinct: true,
+              element: relationship(["tag"]),
+              kind: "list",
+              maximumLength: 40,
+            },
+            label: "Tags",
+          },
+          {
+            defaultValue: "draft",
+            key: "status",
+            kind: { kind: "enum", values: ["draft", "published"] },
+            label: "Post status",
+            required: true,
+          },
+          {
+            key: "published-at",
+            kind: { kind: "datetime" },
+            label: "Publication time",
+            nullable: true,
+          },
+        ],
+        history: true,
+        id: "post",
+        kind: "contentType",
+        name: "Post",
+        revisionRetention: { maximumRevisionCount: 100 },
+      },
+      {
+        fields: [
+          { key: "post", kind: relationship(["post"]), label: "Post", required: true },
+          {
+            key: "display-name",
+            kind: text({ maxLength: 80, minLength: 1 }),
+            label: "Display name",
+            required: true,
+          },
+          { key: "website-url", kind: { kind: "url" }, label: "Website URL", nullable: true },
+          {
+            key: "body",
+            kind: text({ maxLength: 2000, minLength: 1, multiline: true }),
+            label: "Comment",
+            required: true,
+          },
+          { key: "created-at", kind: { kind: "datetime" }, label: "Creation time", required: true },
+          {
+            defaultValue: "pending",
+            key: "status",
+            kind: { kind: "enum", values: ["pending", "approved", "rejected"] },
+            label: "Comment status",
+            required: true,
+          },
+        ],
+        history: true,
+        id: "comment",
+        kind: "contentType",
+        name: "Comment",
+        revisionRetention: { maximumRevisionCount: 25 },
+      },
+    ],
+    snapshotId: "example-blog-v1",
+  });
+
+/** Compiled Example Blog definition snapshot. */
+export { zDefinitionSnapshot as definitionSnapshot };

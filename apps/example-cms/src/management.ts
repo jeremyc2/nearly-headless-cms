@@ -1,5 +1,10 @@
-import type { Cms, ContentDefinition, Entry, EntryQuery } from "nearly-headless-cms";
-import { CmsError } from "nearly-headless-cms";
+import {
+  type Cms,
+  CmsError,
+  type ContentDefinition,
+  type Entry,
+  type EntryQuery,
+} from "nearly-headless-cms";
 import type { HttpContract } from "nearly-headless-cms/http";
 import { Effect, Schema } from "effect";
 import { type CommandReceiptStore, memoryCommandReceiptStore } from "./command-receipt-store.ts";
@@ -27,16 +32,35 @@ interface RichTextPublicationReference {
   readonly path: readonly (string | number)[];
 }
 
-const collectRichTextPublicationRules = (
-    value: unknown,
-    path: readonly (string | number)[],
-    issues: CmsError.ValidationIssue[],
-    references: RichTextPublicationReference[],
-  ): void => {
+interface CollectRichTextPublicationRulesInput {
+  readonly issues: CmsError.ValidationIssue[];
+  readonly path: readonly (string | number)[];
+  readonly references: RichTextPublicationReference[];
+  readonly value: unknown;
+}
+
+interface UsesAssetInput {
+  readonly assetId: string;
+  readonly directField: string;
+  readonly richTextField: string;
+  readonly values: ContentDefinition.JsonObject;
+}
+
+const collectRichTextPublicationRules = ({
+    issues,
+    path,
+    references,
+    value,
+  }: CollectRichTextPublicationRulesInput): void => {
     if (Array.isArray(value)) {
-      value.forEach((child, index) =>
-        collectRichTextPublicationRules(child, [...path, index], issues, references),
-      );
+      for (const [index, child] of value.entries()) {
+        collectRichTextPublicationRules({
+          issues,
+          path: [...path, index],
+          references,
+          value: child,
+        });
+      }
       return;
     }
     if (value === null || typeof value !== "object") {
@@ -59,7 +83,12 @@ const collectRichTextPublicationRules = (
       references.push({ entryIdentifier, path: [...path, "entryId"] });
     }
     for (const [key, child] of Object.entries(value)) {
-      collectRichTextPublicationRules(child, [...path, key], issues, references);
+      collectRichTextPublicationRules({
+        issues,
+        path: [...path, key],
+        references,
+        value: child,
+      });
     }
   },
   validatePostPublication = (
@@ -80,25 +109,28 @@ const collectRichTextPublicationRules = (
           reason: "missingAlternativeText",
         });
       }
-      collectRichTextPublicationRules(values["body"], ["body"], issues, references);
+      collectRichTextPublicationRules({
+        issues,
+        path: ["body"],
+        references,
+        value: values["body"],
+      });
       for (const reference of references) {
-        let target:
-          | Awaited<
-              ReturnType<Cms.ServiceShape["getEntry"]> extends Effect.Effect<infer Value, unknown>
-                ? Value
-                : never
-            >
-          | undefined;
+        let target: Awaited<
+          ReturnType<Cms.ServiceShape["getEntry"]> extends Effect.Effect<infer Value, unknown>
+            ? Value
+            : never
+        > | null = null;
         for (const contentTypeIdentifier of ["post", "author", "category", "tag"]) {
           target = yield* cms
             .getEntry({ contentTypeId: contentTypeIdentifier, entryId: reference.entryIdentifier })
-            .pipe(Effect.catchTag("NotFound", () => Effect.succeed(undefined)));
-          if (target !== undefined) {
+            .pipe(Effect.catchTag("NotFound", () => Effect.succeed(null)));
+          if (target !== null) {
             break;
           }
         }
         if (
-          target === undefined ||
+          target === null ||
           (target.contentTypeId === "post" && target.values["status"] !== "published")
         ) {
           issues.push({
@@ -114,7 +146,7 @@ const collectRichTextPublicationRules = (
           message: "Post is not ready for publication",
         });
       }
-      return undefined;
+      return;
     }),
   transition =
     (
@@ -211,7 +243,7 @@ const collectRichTextPublicationRules = (
       });
       const results = yield* cms.mutateEntriesAtomically(mutations),
         deletionRecord = yield* requireDeletionRecord(results.at(-1));
-      return { deletionRecord, deletedCommentCount: commentStates.length, deletedPostId: postId };
+      return { deletedCommentCount: commentStates.length, deletedPostId: postId, deletionRecord };
     }),
   deleteAuthorWithPostsAndComments: HttpContract.ManagementOperation["execute"] = ({
     cms,
@@ -265,14 +297,14 @@ const collectRichTextPublicationRules = (
             input: { contentTypeId: "author", entryId: authorId, writeToken: authorWriteToken },
             kind: "delete",
           },
-        ];
-      const results = yield* cms.mutateEntriesAtomically(mutations),
+        ],
+        results = yield* cms.mutateEntriesAtomically(mutations),
         deletionRecord = yield* requireDeletionRecord(results.at(-1));
       return {
-        deletionRecord,
         deletedAuthorId: authorId,
         deletedCommentCount: commentStates.length,
         deletedPostCount: postStates.length,
+        deletionRecord,
       };
     }),
   detachTaxonomy =
@@ -342,7 +374,7 @@ const collectRichTextPublicationRules = (
           height = Reflect.get(metadata, "height"),
           width = Reflect.get(metadata, "width");
         if (typeof filename !== "string" || typeof mediaType !== "string") {
-          throw new Error("invalid replacement metadata");
+          throw new TypeError("invalid replacement metadata");
         }
         return {
           content: new Uint8Array(await contentValue.arrayBuffer()),
@@ -374,12 +406,7 @@ const collectRichTextPublicationRules = (
       ]),
     );
   },
-  usesAsset = (
-    values: ContentDefinition.JsonObject,
-    directField: string,
-    richTextField: string,
-    assetId: string,
-  ): boolean => {
+  usesAsset = ({ assetId, directField, richTextField, values }: UsesAssetInput): boolean => {
     if (values[directField] === assetId) {
       return true;
     }
@@ -407,15 +434,15 @@ export const makeManagementOperations = (
           return yield* CmsError.InvalidInput.make({ message: "Idempotency-Key is required" });
         }
         const receiptScope = `image-deletion:${assetId}`,
-          prior = yield* Effect.tryPromise({
-            catch: (cause) =>
+          prior = yield* commandReceiptStore.read(receiptScope, commandKey).pipe(
+            Effect.mapError((cause) =>
               CmsError.InfrastructureFailure.make({
                 cause,
                 message: "Image deletion receipt lookup failed",
                 retryable: true,
               }),
-            try: () => commandReceiptStore.read(receiptScope, commandKey),
-          });
+            ),
+          );
         if (prior !== undefined) {
           return prior;
         }
@@ -472,15 +499,15 @@ export const makeManagementOperations = (
           deletedAssetId: assetId,
           deletionCompleted: true,
         };
-        yield* Effect.tryPromise({
-          catch: (cause) =>
+        yield* commandReceiptStore.write(receiptScope, commandKey, receipt).pipe(
+          Effect.mapError((cause) =>
             CmsError.InfrastructureFailure.make({
               cause,
               message: "Image deletion receipt persistence failed",
               retryable: true,
             }),
-          try: () => commandReceiptStore.write(receiptScope, commandKey, receipt),
-        });
+          ),
+        );
         return receipt;
       }),
     replaceImage: HttpContract.ManagementOperation["execute"] = ({ cms, parameters, request }) =>
@@ -491,15 +518,15 @@ export const makeManagementOperations = (
           return yield* CmsError.InvalidInput.make({ message: "Idempotency-Key is required" });
         }
         const receiptScope = `image-replacement:${oldAssetId}`,
-          prior = yield* Effect.tryPromise({
-            catch: (cause) =>
+          prior = yield* commandReceiptStore.read(receiptScope, commandKey).pipe(
+            Effect.mapError((cause) =>
               CmsError.InfrastructureFailure.make({
                 cause,
                 message: "Image replacement receipt lookup failed",
                 retryable: true,
               }),
-            try: () => commandReceiptStore.read(receiptScope, commandKey),
-          });
+            ),
+          );
         if (prior !== undefined) {
           return prior;
         }
@@ -509,13 +536,23 @@ export const makeManagementOperations = (
           authors = yield* cms.queryEntries({ contentTypeId: "author", pageSize: 100 }),
           postStates = yield* Effect.forEach(
             posts.items.filter((post) =>
-              usesAsset(post.values, "featured-asset", "body", oldAssetId),
+              usesAsset({
+                assetId: oldAssetId,
+                directField: "featured-asset",
+                richTextField: "body",
+                values: post.values,
+              }),
             ),
             (post) => cms.getCurrentEntryState({ contentTypeId: "post", entryId: post.id }),
           ),
           authorStates = yield* Effect.forEach(
             authors.items.filter((author) =>
-              usesAsset(author.values, "portrait", "profile", oldAssetId),
+              usesAsset({
+                assetId: oldAssetId,
+                directField: "portrait",
+                richTextField: "profile",
+                values: author.values,
+              }),
             ),
             (author) => cms.getCurrentEntryState({ contentTypeId: "author", entryId: author.id }),
           ),
@@ -567,26 +604,26 @@ export const makeManagementOperations = (
           yield* cms.mutateEntriesAtomically(mutations);
         }
         const oldAssetDeleted = yield* cms.deleteAsset(oldAssetId).pipe(
-          Effect.as(true),
-          Effect.catchTag("AssetReferenced", () => Effect.succeed(false)),
-        );
-        const receipt = {
-          ingestionCompleted: true,
-          newAssetId: newAsset.id,
-          oldAssetDeleted,
-          oldAssetId,
-          reassignedEntryCount: mutations.length,
-          reassignmentCompleted: true,
-        };
-        yield* Effect.tryPromise({
-          catch: (cause) =>
+            Effect.as(true),
+            Effect.catchTag("AssetReferenced", () => Effect.succeed(false)),
+          ),
+          receipt = {
+            ingestionCompleted: true,
+            newAssetId: newAsset.id,
+            oldAssetDeleted,
+            oldAssetId,
+            reassignedEntryCount: mutations.length,
+            reassignmentCompleted: true,
+          };
+        yield* commandReceiptStore.write(receiptScope, commandKey, receipt).pipe(
+          Effect.mapError((cause) =>
             CmsError.InfrastructureFailure.make({
               cause,
               message: "Image replacement receipt persistence failed",
               retryable: true,
             }),
-          try: () => commandReceiptStore.write(receiptScope, commandKey, receipt),
-        });
+          ),
+        );
         return receipt;
       });
 

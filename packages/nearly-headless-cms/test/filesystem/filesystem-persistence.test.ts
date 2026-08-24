@@ -74,16 +74,16 @@ describe("BunFilesystemPersistence", () => {
             input: targetSnapshot.input,
           };
         expect(catalog.commitCutover).toBeDefined();
-        yield* catalog.commitCutover(
-          catalogState.version,
-          {
+        yield* catalog.commitCutover({
+          catalogState: {
             ...catalogState,
             active: snapshotRecord,
             snapshots: [...catalogState.snapshots, snapshotRecord],
           },
-          generationWithEntry.generation,
-          generationWithEntry.records,
-        );
+          entryRecords: generationWithEntry.records,
+          expectedCatalogVersion: catalogState.version,
+          expectedEntryGeneration: generationWithEntry.generation,
+        });
       }).pipe(Effect.provide(makeLayer())),
     );
 
@@ -192,9 +192,9 @@ describe("BunFilesystemPersistence", () => {
       observed = await Effect.runPromise(
         Effect.gen(function* observeStreamingStage() {
           const assets = yield* Asset.Management,
-            firstChunkPulled = yield* Deferred.make<void>(),
+            firstChunkPulled = yield* Deferred.make<boolean>(),
             content = Stream.make(new Uint8Array([1, 2, 3])).pipe(
-              Stream.tap(() => Deferred.succeed(firstChunkPulled, undefined)),
+              Stream.tap(() => Deferred.succeed(firstChunkPulled, true)),
               Stream.concat(Stream.never),
             ),
             ingestion = yield* assets
@@ -207,12 +207,10 @@ describe("BunFilesystemPersistence", () => {
           yield* Deferred.await(firstChunkPulled);
           const stageExistedWhilePending = yield* Effect.promise(async () => {
             for (let attempt = 0; attempt < 50; attempt += 1) {
-              if (
-                (await readdir(join(root, "blobs"))).some((name) =>
-                  name.startsWith(".nhcms-stage-"),
-                )
-              )
+              const blobNames = await readdir(join(root, "blobs"));
+              if (blobNames.some((name) => name.startsWith(".nhcms-stage-"))) {
                 return true;
+              }
               await Bun.sleep(10);
             }
             return false;
@@ -220,15 +218,15 @@ describe("BunFilesystemPersistence", () => {
           yield* Fiber.interrupt(ingestion);
           const stagingAfterCancellation = yield* Effect.promise(async () => {
             for (let attempt = 0; attempt < 50; attempt += 1) {
-              const staging = (await readdir(join(root, "blobs"))).filter((name) =>
-                name.startsWith(".nhcms-stage-"),
-              );
-              if (staging.length === 0) return staging;
+              const blobNames = await readdir(join(root, "blobs")),
+                staging = blobNames.filter((name) => name.startsWith(".nhcms-stage-"));
+              if (staging.length === 0) {
+                return staging;
+              }
               await Bun.sleep(10);
             }
-            return (await readdir(join(root, "blobs"))).filter((name) =>
-              name.startsWith(".nhcms-stage-"),
-            );
+            const blobNames = await readdir(join(root, "blobs"));
+            return blobNames.filter((name) => name.startsWith(".nhcms-stage-"));
           });
           return { stageExistedWhilePending, stagingAfterCancellation };
         }).pipe(Effect.provide(filesystemLayer)),
@@ -287,8 +285,9 @@ describe("BunFilesystemPersistence", () => {
     const root = await mkdtemp(join(tmpdir(), "nearly-headless-cms-writer-crash-")),
       packageSourceUrl = pathToFileURL(join(import.meta.dir, "../../src/index.ts")).href,
       adaptersSourceUrl = pathToFileURL(join(import.meta.dir, "../../src/adapters/index.ts")).href,
-      filesystemSourceUrl = pathToFileURL(join(import.meta.dir, "../../src/bun/filesystem/index.ts"))
-        .href,
+      filesystemSourceUrl = pathToFileURL(
+        join(import.meta.dir, "../../src/bun/filesystem/index.ts"),
+      ).href,
       childScript = `
         import { Effect, Layer } from "effect";
         import { Persistence } from ${JSON.stringify(packageSourceUrl)};

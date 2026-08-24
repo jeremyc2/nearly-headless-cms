@@ -1,14 +1,12 @@
-import { Effect, Schema } from "effect";
 import {
-  DeclaredFailure,
+  type DeclaredFailure,
   ProtocolFailure,
-  TransportFailure,
+  type TransportFailure,
   makeGeneratedClient,
 } from "./headless-openapi-client.ts";
+import { Effect, Schema } from "effect";
 
-export { DeclaredFailure, ProtocolFailure, TransportFailure };
-
-export const generatorFormatVersion = 1;
+export { DeclaredFailure, ProtocolFailure, TransportFailure } from "./headless-openapi-client.ts";
 
 export interface PublicPost {
   readonly id: string;
@@ -35,12 +33,14 @@ export interface PublicAuthor {
   readonly portraitAlternativeText: string | null;
   readonly externalLinks: readonly Readonly<Record<string, unknown>>[];
 }
+
 export interface PublicTaxonomy {
   readonly id: string;
   readonly name: string;
   readonly slug: string;
   readonly description: string | null;
 }
+
 export interface PublicComment {
   readonly id: string;
   readonly post: string;
@@ -50,6 +50,7 @@ export interface PublicComment {
   readonly createdAt: string;
   readonly status: "approved";
 }
+
 export interface PublicAsset {
   readonly id: string;
   readonly metadata: {
@@ -63,11 +64,13 @@ export interface PublicAsset {
   };
   readonly localPath?: string;
 }
+
 export interface RichTextDocument {
   readonly format: "nearly-headless-cms/rich-text";
-  readonly version: 1;
+  readonly version: typeof richTextFormatVersion;
   readonly children: readonly RichTextNode[];
 }
+
 export interface RichTextNode {
   readonly type: string;
   readonly text?: string;
@@ -92,32 +95,113 @@ export interface PublicBlogExport {
   readonly assets: readonly PublicAsset[];
 }
 
-export class UnsupportedDefinition extends Schema.TaggedError<UnsupportedDefinition>()(
-  "UnsupportedDefinition",
-  { message: Schema.String },
-) {}
-const RichTextNodeSchema: Schema.Codec<RichTextNode> = Schema.Struct({
-    alternativeText: Schema.optionalKey(Schema.String),
-    assetId: Schema.optionalKey(Schema.String),
-    caption: Schema.optionalKey(Schema.String),
-    children: Schema.optionalKey(
-      Schema.Array(Schema.suspend((): Schema.Codec<RichTextNode> => RichTextNodeSchema)),
+export interface SubmitCommentInput {
+  readonly body: string;
+  readonly displayName: string;
+  readonly websiteUrl: string | null;
+}
+
+export interface HeadlessClient {
+  readonly discover: Effect.Effect<
+    typeof schemaDiscovery.Type,
+    TransportFailure | ProtocolFailure | DeclaredFailure
+  >;
+  readonly exportPublicBlog: (
+    expectedFingerprint: string,
+  ) => Effect.Effect<PublicBlogExport, TransportFailure | ProtocolFailure | DeclaredFailure>;
+  readonly submitComment: (
+    postId: string,
+    input: SubmitCommentInput,
+    idempotencyKey: string,
+  ) => Effect.Effect<
+    { readonly submissionId: string; readonly status: "pending" },
+    TransportFailure | ProtocolFailure | DeclaredFailure
+  >;
+}
+
+const apiContractVersion = 1,
+  apiSuccessfulResponseStatus = 200,
+  decodeResponse = <Value>(
+    schema: Schema.Codec<Value>,
+    value: unknown,
+    status = apiSuccessfulResponseStatus,
+  ): Effect.Effect<Value, ProtocolFailure> =>
+    Schema.decodeUnknownEffect(schema)(value).pipe(
+      Effect.mapError((issue) => ProtocolFailure.make({ message: String(issue), status })),
     ),
-    entryId: Schema.optionalKey(Schema.String),
-    level: Schema.optionalKey(Schema.Number),
-    marks: Schema.optionalKey(Schema.Array(Schema.String)),
-    text: Schema.optionalKey(Schema.String),
-    type: Schema.String,
-    url: Schema.optionalKey(Schema.String),
-  }),
-  RichTextDocumentSchema: Schema.Codec<RichTextDocument> = Schema.Struct({
-    children: Schema.Array(RichTextNodeSchema),
+  generatorFormatVersion = 1,
+  makeBaseTaggedErrorClass = Schema.TaggedError,
+  makeRichTextNodeSchema = (): Schema.Codec<RichTextNode> => {
+    const richTextNodeSchema: Schema.Codec<RichTextNode> = Schema.suspend(
+      (): Schema.Codec<RichTextNode> => {
+        const childSchema = Schema.Array(richTextNodeSchema);
+        return Schema.Struct({
+          alternativeText: Schema.optionalKey(Schema.String),
+          assetId: Schema.optionalKey(Schema.String),
+          caption: Schema.optionalKey(Schema.String),
+          children: Schema.optionalKey(childSchema),
+          entryId: Schema.optionalKey(Schema.String),
+          level: Schema.optionalKey(Schema.Finite),
+          marks: Schema.optionalKey(Schema.Array(Schema.String)),
+          text: Schema.optionalKey(Schema.String),
+          type: Schema.String,
+          url: Schema.optionalKey(Schema.String),
+        });
+      },
+    );
+    return richTextNodeSchema;
+  },
+  richTextFormatVersion = 1,
+  schemaCommonRichTextNode = makeRichTextNodeSchema(),
+  schemaCommonRichTextNodeDocument: Schema.Codec<RichTextDocument> = Schema.Struct({
+    children: Schema.Array(schemaCommonRichTextNode),
     format: Schema.Literal("nearly-headless-cms/rich-text"),
-    version: Schema.Literal(1),
+    version: Schema.Literal(richTextFormatVersion),
   }),
-  PublicPostSchema: Schema.Codec<PublicPost> = Schema.Struct({
+  schemaDiscovery = Schema.Struct({
+    apiContractVersion: Schema.Literal(apiContractVersion),
+    definitionFingerprint: Schema.String,
+    richText: Schema.Struct({
+      extensions: Schema.Array(Schema.String),
+      format: Schema.String,
+      version: Schema.Literal(richTextFormatVersion),
+    }),
+  }),
+  schemaPublicBlogAsset: Schema.Codec<PublicAsset> = Schema.Struct({
+    id: Schema.String,
+    localPath: Schema.optionalKey(Schema.String),
+    metadata: Schema.Struct({
+      byteLength: Schema.Finite,
+      defaultAlternativeText: Schema.optionalKey(Schema.String),
+      digest: Schema.String,
+      filename: Schema.String,
+      height: Schema.optionalKey(Schema.Finite),
+      mediaType: Schema.String,
+      width: Schema.optionalKey(Schema.Finite),
+    }),
+  }),
+  schemaPublicBlogAuthor: Schema.Codec<PublicAuthor> = Schema.Struct({
+    biography: Schema.String,
+    externalLinks: Schema.Array(Schema.JsonObject),
+    id: Schema.String,
+    name: Schema.String,
+    portrait: Schema.NullOr(Schema.String),
+    portraitAlternativeText: Schema.NullOr(Schema.String),
+    profile: Schema.NullOr(schemaCommonRichTextNodeDocument),
+    slug: Schema.String,
+  }),
+  schemaPublicBlogComment: Schema.Codec<PublicComment> = Schema.Struct({
+    body: Schema.String,
+    createdAt: Schema.String,
+    displayName: Schema.String,
+    id: Schema.String,
+    post: Schema.String,
+    status: Schema.Literal("approved"),
+    websiteUrl: Schema.NullOr(Schema.String),
+  }),
+  schemaPublicBlogPost: Schema.Codec<PublicPost> = Schema.Struct({
     author: Schema.String,
-    body: RichTextDocumentSchema,
+    body: schemaCommonRichTextNodeDocument,
     categories: Schema.Array(Schema.String),
     excerpt: Schema.String,
     featuredAlternativeText: Schema.NullOr(Schema.String),
@@ -129,104 +213,50 @@ const RichTextNodeSchema: Schema.Codec<RichTextNode> = Schema.Struct({
     tags: Schema.Array(Schema.String),
     title: Schema.String,
   }),
-  PublicAuthorSchema: Schema.Codec<PublicAuthor> = Schema.Struct({
-    biography: Schema.String,
-    externalLinks: Schema.Array(Schema.JsonObject),
-    id: Schema.String,
-    name: Schema.String,
-    portrait: Schema.NullOr(Schema.String),
-    portraitAlternativeText: Schema.NullOr(Schema.String),
-    profile: Schema.NullOr(RichTextDocumentSchema),
-    slug: Schema.String,
-  }),
-  PublicTaxonomySchema: Schema.Codec<PublicTaxonomy> = Schema.Struct({
+  schemaPublicBlogTaxonomy: Schema.Codec<PublicTaxonomy> = Schema.Struct({
     description: Schema.NullOr(Schema.String),
     id: Schema.String,
     name: Schema.String,
     slug: Schema.String,
   }),
-  PublicCommentSchema: Schema.Codec<PublicComment> = Schema.Struct({
-    body: Schema.String,
-    createdAt: Schema.String,
-    displayName: Schema.String,
-    id: Schema.String,
-    post: Schema.String,
-    status: Schema.Literal("approved"),
-    websiteUrl: Schema.NullOr(Schema.String),
-  }),
-  PublicAssetSchema: Schema.Codec<PublicAsset> = Schema.Struct({
-    id: Schema.String,
-    localPath: Schema.optionalKey(Schema.String),
-    metadata: Schema.Struct({
-      byteLength: Schema.Number,
-      defaultAlternativeText: Schema.optionalKey(Schema.String),
-      digest: Schema.String,
-      filename: Schema.String,
-      height: Schema.optionalKey(Schema.Number),
-      mediaType: Schema.String,
-      width: Schema.optionalKey(Schema.Number),
-    }),
-  }),
-  PublicBlogExportSchema: Schema.Codec<PublicBlogExport> = Schema.Struct({
-    assets: Schema.Array(PublicAssetSchema),
-    authors: Schema.Array(PublicAuthorSchema),
-    categories: Schema.Array(PublicTaxonomySchema),
-    comments: Schema.Array(PublicCommentSchema),
+  schemaPublicBlogZExport: Schema.Codec<PublicBlogExport> = Schema.Struct({
+    assets: Schema.Array(schemaPublicBlogAsset),
+    authors: Schema.Array(schemaPublicBlogAuthor),
+    categories: Schema.Array(schemaPublicBlogTaxonomy),
+    comments: Schema.Array(schemaPublicBlogComment),
     definitionFingerprint: Schema.String,
     generatedAt: Schema.String,
-    posts: Schema.Array(PublicPostSchema),
-    tags: Schema.Array(PublicTaxonomySchema),
+    posts: Schema.Array(schemaPublicBlogPost),
+    tags: Schema.Array(schemaPublicBlogTaxonomy),
   }),
-  DiscoverySchema = Schema.Struct({
-    apiContractVersion: Schema.Literal(1),
-    definitionFingerprint: Schema.String,
-    richText: Schema.Struct({
-      extensions: Schema.Array(Schema.String),
-      format: Schema.String,
-      version: Schema.Literal(1),
-    }),
-  }),
-  decodeResponse = <Value>(schema: Schema.Codec<Value>, value: unknown, status = 200) =>
-    Schema.decodeUnknownEffect(schema)(value).pipe(
-      Effect.mapError((issue) => ProtocolFailure.make({ message: String(issue), status })),
-    );
-
-export { PublicBlogExportSchema };
-
-export const makeHeadlessClient = (baseAddress: string) => {
-  const generatedClient = makeGeneratedClient(baseAddress);
-  return {
-    discover: (): Effect.Effect<
-      Schema.Schema.Type<typeof DiscoverySchema>,
-      TransportFailure | ProtocolFailure | DeclaredFailure
-    > =>
-      generatedClient
+  zMakeHeadlessClient = (baseAddress: string): HeadlessClient => {
+    const generatedClient = makeGeneratedClient(baseAddress);
+    return {
+      discover: generatedClient
         .discoverPublicDefinitionSnapshot({})
-        .pipe(Effect.flatMap((value) => decodeResponse(DiscoverySchema, value))),
-    exportPublicBlog: (
-      expectedFingerprint: string,
-    ): Effect.Effect<PublicBlogExport, TransportFailure | ProtocolFailure | DeclaredFailure> =>
-      generatedClient
-        .exportPublicBlog({
-          headers: { "CMS-Expected-Definition-Fingerprint": expectedFingerprint },
-        })
-        .pipe(Effect.flatMap((value) => decodeResponse(PublicBlogExportSchema, value))),
-    submitComment: (
-      postId: string,
-      input: {
-        readonly displayName: string;
-        readonly websiteUrl: string | null;
-        readonly body: string;
-      },
-      idempotencyKey: string,
-    ): Effect.Effect<
-      { readonly submissionId: string; readonly status: "pending" },
-      TransportFailure | ProtocolFailure | DeclaredFailure
-    > =>
-      generatedClient.submitComment({
-        body: input,
-        headers: { "idempotency-key": idempotencyKey },
-        path: { postId },
-      }),
+        .pipe(Effect.flatMap((value) => decodeResponse(schemaDiscovery, value))),
+      exportPublicBlog: (expectedFingerprint) =>
+        generatedClient
+          .exportPublicBlog({
+            headers: { "CMS-Expected-Definition-Fingerprint": expectedFingerprint },
+          })
+          .pipe(Effect.flatMap((value) => decodeResponse(schemaPublicBlogZExport, value))),
+      submitComment: (postId, input, idempotencyKey) =>
+        generatedClient.submitComment({
+          body: input,
+          headers: { "idempotency-key": idempotencyKey },
+          path: { postId },
+        }),
+    };
   };
+
+export class UnsupportedDefinition extends makeBaseTaggedErrorClass<UnsupportedDefinition>()(
+  "UnsupportedDefinition",
+  { message: Schema.String },
+) {}
+
+export {
+  generatorFormatVersion,
+  schemaPublicBlogZExport as PublicBlogExportSchema,
+  zMakeHeadlessClient as makeHeadlessClient,
 };

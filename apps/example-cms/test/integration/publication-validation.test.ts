@@ -1,15 +1,16 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
-import { join } from "node:path";
-import type { ExampleSystem } from "../../src/system.ts";
-import { createExampleSystem } from "../../src/system.ts";
+import path from "node:path";
+import { createExampleSystem, type ExampleSystem } from "../../src/system.ts";
+
+const badRequestStatus = 400,
+  firstItemIndex = 0;
 
 describe("Example CMS Post publication", () => {
-  let system: ExampleSystem;
-  let storageRoot: string;
+  let system: ExampleSystem, storageRoot: string;
 
   beforeAll(async () => {
-    storageRoot = await mkdtemp(join(import.meta.dir, ".publication-validation-"));
+    storageRoot = await mkdtemp(path.join(import.meta.dir, ".publication-validation-"));
     system = await createExampleSystem({ seed: true, storageRoot });
   });
 
@@ -36,7 +37,7 @@ describe("Example CMS Post publication", () => {
             values: {
               ...initialState.entry.values,
               "featured-alternative-text": "   ",
-              "featured-asset": publicExport.assets[0]!.id,
+              "featured-asset": publicExport.assets[firstItemIndex]?.id,
             },
           }),
           headers: {
@@ -56,7 +57,7 @@ describe("Example CMS Post publication", () => {
       imageFailure = (await imagePublication.json()) as {
         details: { issues: readonly { path: readonly (string | number)[]; reason: string }[] };
       };
-    expect(imagePublication.status).toBe(400);
+    expect(imagePublication.status).toBe(badRequestStatus);
     expect(imageFailure.details.issues).toContainEqual({
       path: ["featured-alternative-text"],
       reason: "missingAlternativeText",
@@ -101,7 +102,7 @@ describe("Example CMS Post publication", () => {
                 version: 1,
               },
               "featured-alternative-text": "Meaningful alternative text",
-              "featured-asset": publicExport.assets[0]!.id,
+              "featured-asset": publicExport.assets[firstItemIndex]?.id,
             },
           }),
           headers: {
@@ -121,9 +122,9 @@ describe("Example CMS Post publication", () => {
       referenceFailure = (await referencePublication.json()) as {
         details: { issues: readonly { path: readonly (string | number)[]; reason: string }[] };
       };
-    expect(referencePublication.status).toBe(400);
+    expect(referencePublication.status).toBe(badRequestStatus);
     expect(referenceFailure.details.issues).toContainEqual({
-      path: ["body", "children", 0, "children", 0, "entryId"],
+      path: ["body", "children", firstItemIndex, "children", firstItemIndex, "entryId"],
       reason: "referenceNotPublic",
     });
   });

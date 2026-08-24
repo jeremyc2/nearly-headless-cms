@@ -1,8 +1,7 @@
-import type { Effect } from "effect";
-import { Context } from "effect";
-import type { InfrastructureFailure } from "./cms-error.ts";
-import type { Identity } from "./identity.ts";
 import type { Action, Resource } from "./operation.ts";
+import { Context, type Effect } from "effect";
+import type { Identity } from "./identity.ts";
+import type { InfrastructureFailure } from "./cms-error.ts";
 
 /** Builder policy that authorizes one closed CMS Action and Resource pair. */
 export class Service extends Context.Service<
@@ -14,4 +13,4 @@ export class Service extends Context.Service<
       resource: Resource,
     ) => Effect.Effect<boolean, InfrastructureFailure>;
   }
->()("nearly-headless-cms/Authorization/Service") {}
+>()("nearly-headless-cms/authorization/Service") {}

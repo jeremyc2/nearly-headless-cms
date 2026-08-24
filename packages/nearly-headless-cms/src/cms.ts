@@ -73,56 +73,38 @@ import {
   isJsonObject,
 } from "./internal/json.ts";
 
-/** Entry mutation result, including concurrency state when History is enabled. */
 export type MutationResult = Representation | CurrentState;
-/** Entry deletion result, including retained state when History is enabled. */
 export type DeleteResult = void | DeletionRecord;
-
-/** One atomically read Definition, Entry, and Asset state for coherent exports. */
 export interface ConsistentReadSnapshot {
   readonly assets: readonly StoredAsset[];
   readonly definitionSnapshot: CompiledSnapshot;
   readonly entries: readonly Representation[];
   readonly generation: number;
 }
-
-/** Input for deleting a live Entry with optional Write Token. */
 export interface DeleteEntryInput {
   readonly contentTypeId: string;
   readonly entryId: string;
   readonly writeToken?: string;
 }
-
-/** Input for permanently removing a retained deleted Entry. */
 export interface PurgeEntryInput {
   readonly contentTypeId: string;
   readonly entryId: string;
   readonly writeToken: string;
 }
-
-/** One create, complete replacement, or delete in an atomic Entry batch. */
 export type EntryBatchMutation =
   | { readonly kind: "replace"; readonly input: UpdateInput }
   | { readonly kind: "delete"; readonly input: DeleteEntryInput };
-
-/** Result corresponding positionally to one atomic Entry batch mutation. */
 export type EntryBatchMutationResult = MutationResult | DeleteResult;
-
-/** Input for inspecting one immutable Entry Revision. */
 export interface ReadRevisionInput {
   readonly contentTypeId: string;
   readonly entryId: string;
   readonly revisionNumber: number;
 }
-
-/** Input for appending one Definition revision under catalog concurrency. */
 export interface AppendDefinitionRevisionInput {
   readonly expectedCatalogVersion: number;
   readonly definition: Definition;
   readonly source?: string;
 }
-
-/** Input for atomic compatible activation or prepared migration cutover. */
 export interface ActivateDefinitionSnapshotInput {
   readonly expectedCatalogVersion: number;
   readonly snapshot: SnapshotInput;
@@ -133,41 +115,29 @@ export interface ActivateDefinitionSnapshotInput {
   };
   readonly source?: string;
 }
-
-/** Catalog and migration counts committed by Definition activation. */
 export interface ActivateDefinitionSnapshotResult {
   readonly snapshot: CompiledSnapshot;
   readonly catalogVersion: number;
   readonly migratedEntryCount: number;
 }
-
-/** Input for retiring one Definition revision lineage. */
 export interface RetireDefinitionInput {
   readonly expectedCatalogVersion: number;
   readonly definitionId: string;
   readonly source?: string;
 }
-
-/** Input for appending one Migration Manifest under catalog concurrency. */
 export interface AppendMigrationManifestInput {
   readonly expectedCatalogVersion: number;
   readonly manifest: Manifest;
 }
-
-/** Input for staging a complete Definition migration. */
 export interface PrepareDefinitionMigrationInput {
   readonly expectedCatalogVersion: number;
   readonly manifestId: string;
   readonly snapshot: SnapshotInput;
 }
-
-/** Builder registrations and composed contracts used to construct the CMS Layer. */
 export interface CmsLayerOptions extends CompileOptions {
   readonly migrationHandlers?: readonly Handler[];
   readonly operationContracts?: readonly DefinitionContract[];
 }
-
-/** The complete presentation-neutral public CMS operation surface. */
 export interface ServiceShape {
   readonly readDefinitionCatalog: Effect.Effect<CatalogState, CmsError>;
   readonly appendDefinitionRevision: (
@@ -230,7 +200,7 @@ const attempt = <Value>(operation: () => Value): Effect.Effect<Value, InvalidInp
 interface References {
   readonly relationships: readonly {
     readonly entryId: string;
-    readonly targetContentTypeIds: ReadonlyArray<string>;
+    readonly targetContentTypeIds: readonly string[];
   }[];
   readonly assetIds: readonly string[];
 }
@@ -245,7 +215,7 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
     return undefined;
   },
   collectReferences = (contentType: CompiledContentType, values: JsonObject): References => {
-    const relationships: { entryId: string; targetContentTypeIds: ReadonlyArray<string> }[] = [],
+    const relationships: { entryId: string; targetContentTypeIds: readonly string[] }[] = [],
       assetIds: string[] = [],
       visit = (fields: readonly ResolvedField[], object: JsonObject): void => {
         for (const field of fields) {
@@ -259,7 +229,9 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
             Array.isArray(value)
           ) {
             for (const item of value) {
-              if (isJsonObject(item)) visit(field.nestedFields, item);
+              if (isJsonObject(item)) {
+                visit(field.nestedFields, item);
+              }
             }
             continue;
           }
@@ -271,11 +243,12 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
           if (relationship !== undefined) {
             const entryIds = Array.isArray(value) ? value : [value];
             for (const entryId of entryIds) {
-              if (typeof entryId === "string")
+              if (typeof entryId === "string") {
                 relationships.push({
                   entryId,
                   targetContentTypeIds: relationship.targetContentTypeIds,
                 });
+              }
             }
           }
           const isAssetField =
@@ -284,7 +257,9 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
           if (isAssetField) {
             const fieldAssetIds = Array.isArray(value) ? value : [value];
             for (const assetId of fieldAssetIds) {
-              if (typeof assetId === "string") assetIds.push(assetId);
+              if (typeof assetId === "string") {
+                assetIds.push(assetId);
+              }
             }
           }
           if (field.kind.kind === "rich-text") {
@@ -313,7 +288,7 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
   fieldsAtPaths = (
     fields: readonly ResolvedField[],
     parentPath: readonly string[] = [],
-  ): readonly { readonly field: ResolvedField; readonly path: ReadonlyArray<string> }[] =>
+  ): readonly { readonly field: ResolvedField; readonly path: readonly string[] }[] =>
     fields.flatMap((field) => {
       const path = [...parentPath, field.key];
       return [
@@ -321,12 +296,12 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
         ...(field.nestedFields === undefined ? [] : fieldsAtPaths(field.nestedFields, path)),
       ];
     }),
-  ensureUniqueValues = (
-    contentType: CompiledContentType,
-    values: JsonObject,
-    records: Iterable<EntryRecord>,
-    ignoredEntryId?: string,
-  ): void => {
+  ensureUniqueValues = ({
+    contentType,
+    ignoredEntryId,
+    records,
+    values,
+  }: EnsureUniqueValuesInput): void => {
     for (const { path } of fieldsAtPaths(contentType.fields).filter(
       (candidate) => candidate.field.unique,
     )) {
@@ -374,7 +349,7 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
       for (const assetId of references.assetIds) {
         yield* assets.get(assetId);
       }
-      return undefined;
+      return;
     }),
   project = (entry: Representation, projection: readonly string[] | undefined): Representation => {
     if (projection === undefined) {
@@ -435,15 +410,15 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
     id: entry.id,
     values: cloneJson(entry.values),
   }),
-  expandObject = (
-    fields: readonly ResolvedField[],
-    object: JsonObject,
-    expansion: readonly string[],
-    snapshot: CompiledSnapshot,
-    generation: EntryGeneration,
-    ancestorEntryIds: ReadonlySet<string>,
+  expandObject = ({
+    ancestorEntryIds,
+    expansion,
+    fields,
+    generation,
+    object,
     parentPath = "",
-  ): JsonObject => {
+    snapshot,
+  }: ExpandObjectInput): JsonObject => {
     const values: Record<string, JsonValue> = Object.fromEntries(
       Object.entries(object).map(([key, value]) => [key, cloneJson(value)]),
     );
@@ -476,15 +451,15 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
                 message: `Field Group List ${fieldPath} contains an invalid item`,
               });
             }
-            return expandObject(
-              field.nestedFields!,
-              item,
-              nestedPaths,
-              snapshot,
-              generation,
+            return expandObject({
               ancestorEntryIds,
-              fieldPath,
-            );
+              expansion: nestedPaths,
+              fields: field.nestedFields!,
+              generation,
+              object: item,
+              parentPath: fieldPath,
+              snapshot,
+            });
           });
         } else {
           if (!isJsonObject(value)) {
@@ -492,15 +467,15 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
               message: `Field Group ${fieldPath} contains an invalid value`,
             });
           }
-          values[fieldKey] = expandObject(
-            field.nestedFields,
-            value,
-            nestedPaths,
-            snapshot,
-            generation,
+          values[fieldKey] = expandObject({
             ancestorEntryIds,
-            fieldPath,
-          );
+            expansion: nestedPaths,
+            fields: field.nestedFields,
+            generation,
+            object: value,
+            parentPath: fieldPath,
+            snapshot,
+          });
         }
         continue;
       }
@@ -537,26 +512,26 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
         const expandedTarget =
           nestedPaths.length === 0
             ? structuredClone(target.entry)
-            : expandRepresentation(
-                target.entry,
-                nestedPaths,
-                snapshot,
-                generation,
+            : expandRepresentation({
                 ancestorEntryIds,
-              );
+                entry: target.entry,
+                expansion: nestedPaths,
+                generation,
+                snapshot,
+              });
         return expandedEntryValue(expandedTarget);
       };
       values[fieldKey] = Array.isArray(value) ? value.map(expandEntryId) : expandEntryId(value);
     }
     return values;
   },
-  expandRepresentation = (
-    entry: Representation,
-    expansion: readonly string[] | undefined,
-    snapshot: CompiledSnapshot,
-    generation: EntryGeneration,
-    ancestorEntryIds: ReadonlySet<string> = new Set(),
-  ): Representation => {
+  expandRepresentation = ({
+    ancestorEntryIds = new Set(),
+    entry,
+    expansion,
+    generation,
+    snapshot,
+  }: ExpandRepresentationInput): Representation => {
     if (expansion === undefined || expansion.length === 0) {
       return structuredClone(entry);
     }
@@ -565,14 +540,14 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
       throw InvalidInput.make({ message: `Unknown Content Type ${entry.contentTypeId}` });
     }
     const nextAncestors = new Set(ancestorEntryIds).add(entry.id),
-      values = expandObject(
-        contentType.fields,
-        entry.values,
+      values = expandObject({
+        ancestorEntryIds: nextAncestors,
         expansion,
-        snapshot,
+        fields: contentType.fields,
         generation,
-        nextAncestors,
-      );
+        object: entry.values,
+        snapshot,
+      });
     return { contentTypeId: entry.contentTypeId, id: entry.id, values };
   },
   historyCursor = (offset: number, entryId: string): string =>
@@ -685,9 +660,12 @@ export const makeLayer = (
         operationContracts = options.operationContracts ?? [],
         currentDefinitionSnapshot = catalog.read.pipe(
           Effect.flatMap((state) =>
-            attempt(() =>
-              validateDefinitionContracts(state.active.compiled, operationContracts),
-            ).pipe(Effect.as(state.active.compiled)),
+            attempt(() => {
+              validateDefinitionContracts({
+                contracts: operationContracts,
+                snapshot: state.active.compiled,
+              });
+            }).pipe(Effect.as(state.active.compiled)),
           ),
         ),
         authorize = (action: Action, resource: Resource): Effect.Effect<void, CmsError> =>
@@ -697,7 +675,7 @@ export const makeLayer = (
             if (!allowed) {
               return yield* Forbidden.make({ message: "The operation is forbidden" });
             }
-            return undefined;
+            return;
           }),
         createEntry = (input: CreateInput): Effect.Effect<MutationResult, CmsError> =>
           Effect.gen(function* createEntryOperation() {
@@ -714,7 +692,7 @@ export const makeLayer = (
               ),
               generation = yield* persistence.readGeneration;
             yield* attempt(() => {
-              ensureUniqueValues(contentType, values, generation.records.values());
+              ensureUniqueValues({ contentType, records: generation.records.values(), values });
             });
             yield* ensureReferences(
               yield* attempt(() => collectReferences(contentType, values)),
@@ -765,7 +743,12 @@ export const makeLayer = (
             }
             return project(
               yield* attempt(() =>
-                expandRepresentation(record.entry, input.expansion, snapshot, generation),
+                expandRepresentation({
+                  entry: record.entry,
+                  expansion: input.expansion,
+                  generation,
+                  snapshot,
+                }),
               ),
               input.projection,
             );
@@ -799,7 +782,12 @@ export const makeLayer = (
               snapshot.validateEntry(input.contentTypeId, input.values, { applyDefaults: false }),
             );
             yield* attempt(() => {
-              ensureUniqueValues(contentType, values, generation.records.values(), input.entryId);
+              ensureUniqueValues({
+                contentType,
+                ignoredEntryId: input.entryId,
+                records: generation.records.values(),
+                values,
+              });
             });
             yield* ensureReferences(
               yield* attempt(() => collectReferences(contentType, values)),
@@ -875,7 +863,7 @@ export const makeLayer = (
             if (!contentType.definition.history) {
               records.delete(input.entryId);
               yield* persistence.commitGeneration(generation.generation, records);
-              return undefined;
+              return;
             }
             const writeToken = yield* identifiers.generate("write-token"),
               now = yield* Clock.currentTimeMillis,
@@ -910,7 +898,7 @@ export const makeLayer = (
               records = new Map(generation.records),
               results: EntryBatchMutationResult[] = [];
             for (const mutation of mutations) {
-              const input = mutation.input,
+              const { input } = mutation,
                 contentType = snapshot.contentTypes.get(input.contentTypeId),
                 current = records.get(input.entryId);
               yield* authorize(
@@ -935,7 +923,12 @@ export const makeLayer = (
                   }),
                 );
                 yield* attempt(() => {
-                  ensureUniqueValues(contentType, values, records.values(), input.entryId);
+                  ensureUniqueValues({
+                    contentType,
+                    ignoredEntryId: input.entryId,
+                    records: records.values(),
+                    values,
+                  });
                 });
                 yield* ensureReferences(
                   yield* attempt(() => collectReferences(contentType, values)),
@@ -1036,19 +1029,24 @@ export const makeLayer = (
             }
             const generation = yield* persistence.readGeneration,
               page = yield* attempt(() =>
-                evaluateQuery(
-                  liveRecords(generation).map((record) => record.entry),
+                evaluateQuery({
+                  entries: liveRecords(generation).map((record) => record.entry),
+                  options: { generation: generation.generation },
                   query,
                   snapshot,
-                  { generation: generation.generation },
-                ),
+                }),
               );
             if (query.expansion === undefined || query.expansion.length === 0) {
               return page;
             }
             const items = yield* attempt(() =>
               page.items.map((entry) =>
-                expandRepresentation(entry, query.expansion, snapshot, generation),
+                expandRepresentation({
+                  entry,
+                  expansion: query.expansion,
+                  generation,
+                  snapshot,
+                }),
               ),
             );
             return page.nextCursor === undefined
@@ -1226,7 +1224,12 @@ export const makeLayer = (
               snapshot.validateEntry(input.contentTypeId, sourceValues, { applyDefaults: false }),
             );
             yield* attempt(() => {
-              ensureUniqueValues(contentType, values, generation.records.values(), input.entryId);
+              ensureUniqueValues({
+                contentType,
+                ignoredEntryId: input.entryId,
+                records: generation.records.values(),
+                values,
+              });
             });
             yield* ensureReferences(
               yield* attempt(() => collectReferences(contentType, values)),
@@ -1281,7 +1284,7 @@ export const makeLayer = (
             const records = new Map(generation.records);
             records.delete(input.entryId);
             yield* persistence.commitGeneration(generation.generation, records);
-            return undefined;
+            return;
           }),
         ingestAsset = (input: IngestInput): Effect.Effect<AssetValue, CmsError> =>
           Effect.gen(function* ingestAssetOperation() {
@@ -1341,7 +1344,7 @@ export const makeLayer = (
               }
             }
             yield* assets.delete(assetId);
-            return undefined;
+            return;
           }),
         readConsistentSnapshot = Effect.gen(function* readConsistentSnapshot() {
           const catalogState = yield* catalog.read,
@@ -1520,7 +1523,9 @@ export const makeLayer = (
                 message: `Migration Manifest ${input.manifest.id} already exists`,
               });
             }
-            yield* attempt(() => validateGraph([...state.migrationManifests, input.manifest]));
+            yield* attempt(() => {
+              validateGraph([...state.migrationManifests, input.manifest]);
+            });
             return yield* catalog.replace(input.expectedCatalogVersion, {
               ...state,
               migrationManifests: [...state.migrationManifests, structuredClone(input.manifest)],
@@ -1597,7 +1602,9 @@ export const makeLayer = (
               });
             }
             const target = yield* attempt(() => compile(input.snapshot, compileOptions));
-            yield* attempt(() => validateDefinitionContracts(target, operationContracts));
+            yield* attempt(() => {
+              validateDefinitionContracts({ contracts: operationContracts, snapshot: target });
+            });
             for (const definition of input.snapshot.definitions) {
               const revision = definition.revision ?? 1,
                 catalogRevision = state.revisions.find(
@@ -1715,12 +1722,12 @@ export const makeLayer = (
                   });
                 }
                 yield* attempt(() => {
-                  ensureUniqueValues(
+                  ensureUniqueValues({
                     contentType,
-                    record.entry.values,
-                    records.values(),
-                    record.entry.id,
-                  );
+                    ignoredEntryId: record.entry.id,
+                    records: records.values(),
+                    values: record.entry.values,
+                  });
                 });
                 yield* ensureReferences(
                   yield* attempt(() => collectReferences(contentType, record.entry.values)),
@@ -1768,12 +1775,12 @@ export const makeLayer = (
               committedCatalog =
                 compatibility === "compatible"
                   ? yield* catalog.replace(input.expectedCatalogVersion, replacement)
-                  : (yield* catalog.commitCutover(
-                      input.expectedCatalogVersion,
-                      replacement,
-                      generation.generation,
-                      records,
-                    )).catalog;
+                  : (yield* catalog.commitCutover({
+                      catalogState: replacement,
+                      entryRecords: records,
+                      expectedCatalogVersion: input.expectedCatalogVersion,
+                      expectedEntryGeneration: generation.generation,
+                    })).catalog;
             for (const handler of input.migration?.handlers ?? []) {
               migrationHandlers.set(`${handler.identifier}@${handler.version}`, handler);
             }

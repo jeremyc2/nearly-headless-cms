@@ -1,4 +1,4 @@
-import { rm } from "node:fs/promises";
-import { join } from "node:path";
+import { $ } from "bun";
 
-await rm(join(import.meta.dir, "..", "dist"), { force: true, recursive: true });
+const distributionDirectory = `${import.meta.dir}/../dist`;
+await $`rm -rf ${distributionDirectory}`;

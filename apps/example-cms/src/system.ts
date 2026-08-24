@@ -1,22 +1,22 @@
-import { Layer, ManagedRuntime } from "effect";
-import { Cms } from "nearly-headless-cms";
 import {
   AllowAllAuthorization,
   AnonymousIdentity,
   CryptoIdentifierGenerator,
 } from "nearly-headless-cms/adapters";
+import { Cms, type CmsError } from "nearly-headless-cms";
+import { Effect, Layer, ManagedRuntime, Option } from "effect";
+import { type SeedResult, seed } from "./domain/seed.ts";
 import { BunFilesystemPersistence } from "nearly-headless-cms/bun/filesystem";
 import { HttpTransport } from "nearly-headless-cms/http";
+import { definitionSnapshot } from "./domain/definitions.ts";
+import { filesystemCommandReceiptStore } from "./command-receipt-store.ts";
 import { makeDeliveryOperations } from "./delivery.ts";
 import { makeManagementOperations } from "./management.ts";
-import { filesystemCommandReceiptStore } from "./command-receipt-store.ts";
-import { definitionSnapshot } from "./domain/definitions.ts";
-import { type SeedResult, seed } from "./domain/seed.ts";
 
 export interface ExampleSystem {
+  readonly dispose: () => Promise<void>;
   readonly handler: HttpTransport.Handler;
   readonly seed?: SeedResult;
-  readonly dispose: () => Promise<void>;
 }
 
 export interface ExampleSystemOptions {
@@ -24,49 +24,72 @@ export interface ExampleSystemOptions {
   readonly storageRoot?: string;
 }
 
-/** Builds the reusable CMS Layer and HTTP operation declarations for this application. */
-export const makeExampleComposition = (options: ExampleSystemOptions = {}) => {
-  const storageRoot = options.storageRoot ?? ".data/example-cms",
-    commandReceiptStore = filesystemCommandReceiptStore(`${storageRoot}/command-receipts`),
-    deliveryOperations = makeDeliveryOperations({ commandReceiptStore }),
-    managementOperations = makeManagementOperations({ commandReceiptStore }),
-    identifierLayer = CryptoIdentifierGenerator.layer,
-    filesystemLayer = BunFilesystemPersistence.cmsLayer({
-      acknowledgement: "durable",
-      definitionSnapshot,
-      root: `${storageRoot}/persistence`,
-    }).pipe(Layer.provide(identifierLayer)),
-    dependencies = Layer.mergeAll(
-      AllowAllAuthorization.layer,
-      AnonymousIdentity.layer,
-      identifierLayer,
-      filesystemLayer,
-    ),
-    cmsLayer = Cms.makeLayer({
-      operationContracts: [...deliveryOperations, ...managementOperations],
-    }).pipe(Layer.provide(dependencies)),
-    transportOptions: HttpTransport.Options = {
-      cors: {
-        headers: ["content-type", "idempotency-key"],
-        methods: ["GET", "POST", "HEAD", "OPTIONS"],
-        origins: ["http://localhost:4321"],
-      },
-      deliveryOperations,
-      managementOperations,
-    };
-  return { cmsLayer, transportOptions };
-};
+export interface ExampleComposition {
+  readonly cmsLayer: Layer.Layer<Cms.Service, CmsError.InfrastructureFailure>;
+  readonly transportOptions: HttpTransport.Options;
+}
 
-export const createExampleSystem = async (
-  options: ExampleSystemOptions = {},
-): Promise<ExampleSystem> => {
-  const composition = makeExampleComposition(options),
-    runtime = ManagedRuntime.make(composition.cmsLayer),
-    seedResult = options.seed ? await runtime.runPromise(seed) : undefined,
-    handler = await runtime.runPromise(HttpTransport.makeHandler(composition.transportOptions));
-  return {
-    handler,
-    ...(seedResult === undefined ? {} : { seed: seedResult }),
-    dispose: async () => runtime.dispose(),
+const makeExampleCompositionInternal = (options: ExampleSystemOptions = {}): ExampleComposition => {
+    const storageRoot = options.storageRoot ?? ".data/example-cms",
+      storageRootBaseIdentifierLayer = CryptoIdentifierGenerator.layer,
+      storageRootCommandReceiptStore = filesystemCommandReceiptStore(
+        `${storageRoot}/command-receipts`,
+      ),
+      storageRootDeliveryOperations = makeDeliveryOperations({
+        commandReceiptStore: storageRootCommandReceiptStore,
+      }),
+      storageRootFilesystemLayer = BunFilesystemPersistence.cmsLayer({
+        acknowledgement: "durable",
+        definitionSnapshot,
+        root: `${storageRoot}/persistence`,
+      }).pipe(Layer.provide(storageRootBaseIdentifierLayer)),
+      storageRootManagementOperations = makeManagementOperations({
+        commandReceiptStore: storageRootCommandReceiptStore,
+      }),
+      storageRootMergedDependencies = Layer.mergeAll(
+        AllowAllAuthorization.layer,
+        AnonymousIdentity.layer,
+        storageRootBaseIdentifierLayer,
+        storageRootFilesystemLayer,
+      ),
+      storageRootServiceLayer = Cms.makeLayer({
+        operationContracts: [...storageRootDeliveryOperations, ...storageRootManagementOperations],
+      }).pipe(Layer.provide(storageRootMergedDependencies)),
+      storageRootTransportOptions: HttpTransport.Options = {
+        cors: {
+          headers: ["content-type", "idempotency-key"],
+          methods: ["GET", "POST", "HEAD", "OPTIONS"],
+          origins: ["http://localhost:4321"],
+        },
+        deliveryOperations: storageRootDeliveryOperations,
+        managementOperations: storageRootManagementOperations,
+      };
+    return {
+      cmsLayer: storageRootServiceLayer,
+      transportOptions: storageRootTransportOptions,
+    };
+  },
+  zCreateExampleSystem = (options: ExampleSystemOptions = {}): Promise<ExampleSystem> => {
+    const composition = makeExampleCompositionInternal(options),
+      runtime = ManagedRuntime.make(composition.cmsLayer);
+    return runtime.runPromise(
+      Effect.gen(function* createExampleSystemEffect() {
+        const seedResult = yield* Effect.when(seed, Effect.succeed(options.seed === true)),
+          systemHandler = yield* HttpTransport.makeHandler(composition.transportOptions),
+          systemWithoutSeed: ExampleSystem = {
+            dispose: () => runtime.dispose(),
+            handler: systemHandler,
+          };
+        if (Option.isNone(seedResult)) {
+          return systemWithoutSeed;
+        }
+        return { ...systemWithoutSeed, seed: seedResult.value };
+      }),
+    );
   };
+
+/** Builds the reusable CMS Layer and HTTP operation declarations for this application. */
+export {
+  zCreateExampleSystem as createExampleSystem,
+  makeExampleCompositionInternal as makeExampleComposition,
 };

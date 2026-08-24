@@ -1,9 +1,8 @@
 ---
 import PaginatedPostList from "../../../../components/paginated-post-list.astro"
-import { authorArchivePaths } from "../../../../domain/archive-pages.ts"
 import SiteLayout from "../../../../layouts/site-layout.astro"
 
-export const getStaticPaths = authorArchivePaths
+export { authorArchivePaths as getStaticPaths } from "../../../../domain/archive-pages.ts"
 const { author, page } = Astro.props
 ---
 

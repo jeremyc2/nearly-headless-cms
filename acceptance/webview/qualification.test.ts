@@ -1,19 +1,27 @@
 import { afterAll, describe, expect, test } from "bun:test";
 
-const enabled = Bun.env["ACCEPTANCE_SERVERS_READY"] === "1",
+const ACCEPTANCE_RUN_COUNT = 10,
+  ACCEPTANCE_TIMEOUT_MILLISECONDS = 120_000,
+  INITIAL_RUN_NUMBER = 1,
+  NO_CONSOLE_ERRORS = 0,
+  ZERO = 0,
+  POLLING_INTERVAL_MILLISECONDS = 50,
+  RUN_NUMBER_INCREMENT = 1,
+  WAIT_TIMEOUT_MILLISECONDS = 15_000,
+  enabled = Bun.env["ACCEPTANCE_SERVERS_READY"] === "1",
   acceptanceTest = enabled ? test : test.skip,
   waitFor = async <Value>(
     view: Bun.WebView,
     expression: string,
     predicate: (value: Value) => boolean,
   ): Promise<Value> => {
-    const deadline = Date.now() + 15_000;
+    const deadline = Date.now() + WAIT_TIMEOUT_MILLISECONDS;
     while (Date.now() < deadline) {
       const value = await view.evaluate<Value>(expression);
       if (predicate(value)) {
         return value;
       }
-      await Bun.sleep(50);
+      await Bun.sleep(POLLING_INTERVAL_MILLISECONDS);
     }
     throw new Error(`WebView condition timed out: ${expression}`);
   };
@@ -26,11 +34,15 @@ describe("Bun WebView qualification", () => {
   acceptanceTest(
     "completes ten consecutive native WebKit lifecycle runs without a retry",
     async () => {
-      for (let runNumber = 1; runNumber <= 10; runNumber += 1) {
+      for (
+        let runNumber = INITIAL_RUN_NUMBER;
+        runNumber <= ACCEPTANCE_RUN_COUNT;
+        runNumber += RUN_NUMBER_INCREMENT
+      ) {
         const consoleErrors: unknown[] = [],
           view = new Bun.WebView({
             console: (method, ...values) => {
-              if (method === "error") consoleErrors.push(...values);
+              if (method === "error") {consoleErrors.push(...values);}
             },
             height: 600,
             width: 800,
@@ -46,13 +58,13 @@ describe("Bun WebView qualification", () => {
           expect(await view.evaluate("fetch('/health').then(response => response.text())")).toBe(
             "ok",
           );
-          expect(consoleErrors).toEqual([]);
+          expect(consoleErrors).toHaveLength(NO_CONSOLE_ERRORS);
         } finally {
           view.close();
         }
-        expect(runNumber).toBeGreaterThan(0);
+        expect(runNumber).toBeGreaterThan(ZERO);
       }
     },
-    120_000,
+    ACCEPTANCE_TIMEOUT_MILLISECONDS,
   );
 });

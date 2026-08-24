@@ -7573,10 +7573,10 @@
                     }
                   },
                   "required": [
-                    "deletionRecord",
                     "deletedAuthorId",
                     "deletedCommentCount",
-                    "deletedPostCount"
+                    "deletedPostCount",
+                    "deletionRecord"
                   ],
                   "type": "object"
                 }
@@ -8562,9 +8562,9 @@
                     }
                   },
                   "required": [
-                    "deletionRecord",
                     "deletedCommentCount",
-                    "deletedPostId"
+                    "deletedPostId",
+                    "deletionRecord"
                   ],
                   "type": "object"
                 }

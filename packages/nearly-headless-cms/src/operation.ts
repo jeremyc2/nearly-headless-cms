@@ -1,3 +1,10 @@
+import {
+  type CompiledSnapshot,
+  type ResolvedField,
+  capabilitiesFor,
+} from "./content-definition.ts";
+import { InvalidInput, type ValidationIssue } from "./cms-error.ts";
+
 /** The closed generic CMS operation vocabulary submitted to Authorization. */
 export type Action =
   | "definition.read"
@@ -35,198 +42,251 @@ export type Resource =
 
 /** Presentation-neutral contract for a Builder-selected public operation. */
 export interface DeliveryOperation<Request, Response> {
+  readonly handler: (request: Request) => Response;
   readonly identifier: string;
   readonly method: "GET" | "POST" | "PUT" | "DELETE" | "HEAD";
   readonly path: string;
   readonly reachableContentTypeIds: readonly string[];
   readonly requiresIdempotencyKey?: boolean;
-  readonly handler: (request: Request) => Response;
 }
 
-/** One Field shape that a composed operation promises on its public wire contract. */
 /** A Field path and capabilities required by an operation contract. */
 export interface FieldContract {
-  readonly path: string;
+  readonly formatVersion?: number;
   /** Built-in Field Kind or registered Custom Field Kind identifier. */
   readonly kind: string;
-  readonly formatVersion?: number;
-  readonly required?: boolean;
+  readonly path: string;
   readonly projectable?: boolean;
+  readonly required?: boolean;
   readonly richTextExtensionIdentifiers?: readonly string[];
 }
 
-/** Content Definition surface used by one composed Delivery or Management operation. */
 /** Content Type requirements preserved across Definition activation. */
 export interface DefinitionRequirement {
   readonly contentTypeId: string;
   readonly fields: readonly FieldContract[];
 }
 
-/** Definition-dependent portion of a stable composed operation contract. */
 /** A composed operation's complete Definition compatibility contract. */
 export interface DefinitionContract {
-  readonly identifier: string;
   readonly definitionRequirements: readonly DefinitionRequirement[];
+  readonly identifier: string;
 }
 
-const findField = (fields: readonly ResolvedField[], path: string): ResolvedField | undefined => {
-    const segments = path.split(".");
-    let candidates = fields,
-      field: ResolvedField | undefined;
-    for (const segment of segments) {
-      field = candidates.find((candidate) => candidate.key === segment);
-      if (field === undefined) {
-        return undefined;
-      }
-      candidates = field.nestedFields ?? [];
+export interface ValidateDefinitionContractsInput {
+  readonly contracts: readonly DefinitionContract[];
+  readonly snapshot: CompiledSnapshot;
+}
+
+interface ContractIssueInput {
+  readonly contentTypeIdentifier: string;
+  readonly fieldPath: string | undefined;
+  readonly message: string;
+  readonly operationIdentifier: string;
+  readonly reason: string;
+}
+
+interface FieldCompatibilityInput {
+  readonly contract: DefinitionContract;
+  readonly field: ResolvedField;
+  readonly fieldContract: FieldContract;
+  readonly requirement: DefinitionRequirement;
+}
+
+const contractIssue = ({
+    contentTypeIdentifier,
+    fieldPath,
+    message,
+    operationIdentifier,
+    reason,
+  }: ContractIssueInput): ValidationIssue => {
+    const path = ["operations", operationIdentifier, "contentTypes", contentTypeIdentifier];
+    if (fieldPath !== undefined) {
+      path.push("fields", fieldPath);
     }
-    return field;
+    return { message, path, reason };
   },
-  fieldKindIdentifier = (field: ResolvedField): string =>
-    field.kind.kind === "custom" ? field.kind.identifier : field.kind.kind,
+  defaultFormatVersion = 1,
+  emptyIssueCount = 0,
   fieldFormatVersion = (field: ResolvedField): number => {
     if (field.kind.kind === "custom") {
       return field.kind.formatVersion;
     }
-    return field.kind.kind === "rich-text" ? (field.kind.formatVersion ?? 1) : 1;
+    if (field.kind.kind === "rich-text") {
+      return field.kind.formatVersion ?? defaultFormatVersion;
+    }
+    return defaultFormatVersion;
   },
-  contractIssue = (
-    operationIdentifier: string,
-    contentTypeIdentifier: string,
-    fieldPath: string | undefined,
-    reason: string,
-    message: string,
-  ): ValidationIssue => ({
-    message,
-    path: [
-      "operations",
-      operationIdentifier,
-      "contentTypes",
-      contentTypeIdentifier,
-      ...(fieldPath === undefined ? [] : ["fields", fieldPath]),
-    ],
-    reason,
-  });
-
-/**
- * Revalidates every Definition-dependent operation promise against a candidate
- * immutable Definition Snapshot. It throws `InvalidInput` before activation can
- * mutate either the Catalog or Entry generation.
- */
-/** Validates every operation contract against a compiled Definition Snapshot. */
-export const validateDefinitionContracts = (
-  snapshot: CompiledSnapshot,
-  contracts: readonly DefinitionContract[],
-): void => {
-  const issues: ValidationIssue[] = [];
-  for (const contract of contracts) {
-    for (const requirement of contract.definitionRequirements) {
-      const contentType = snapshot.contentTypes.get(requirement.contentTypeId);
-      if (contentType === undefined) {
+  fieldKindIdentifier = (field: ResolvedField): string => {
+    if (field.kind.kind === "custom") {
+      return field.kind.identifier;
+    }
+    return field.kind.kind;
+  },
+  findField = (fields: readonly ResolvedField[], path: string): ResolvedField | undefined => {
+    const fieldPathSegments = path.split("."),
+      [segment, ...remainingSegments] = fieldPathSegments,
+      segmentField = fields.find((candidate) => candidate.key === segment);
+    if (segment === undefined) {
+      return undefined;
+    }
+    if (segmentField === undefined || remainingSegments.length === emptyIssueCount) {
+      return segmentField;
+    }
+    return findField(segmentField.nestedFields ?? [], remainingSegments.join("."));
+  },
+  projectableFieldIssues = ({
+    contract,
+    field,
+    fieldContract,
+    requirement,
+  }: FieldCompatibilityInput): readonly ValidationIssue[] => {
+    if (fieldContract.projectable !== true || capabilitiesFor(field.kind).projectable === true) {
+      return [];
+    }
+    return [
+      contractIssue({
+        contentTypeIdentifier: requirement.contentTypeId,
+        fieldPath: fieldContract.path,
+        message: `Operation ${contract.identifier} requires ${fieldContract.path} to remain projectable`,
+        operationIdentifier: contract.identifier,
+        reason: "fieldNotProjectable",
+      }),
+    ];
+  },
+  requiredFieldIssues = ({
+    contract,
+    field,
+    fieldContract,
+    requirement,
+  }: FieldCompatibilityInput): readonly ValidationIssue[] => {
+    if (fieldContract.required !== true || field.required === true) {
+      return [];
+    }
+    return [
+      contractIssue({
+        contentTypeIdentifier: requirement.contentTypeId,
+        fieldPath: fieldContract.path,
+        message: `Operation ${contract.identifier} requires ${fieldContract.path} to remain required`,
+        operationIdentifier: contract.identifier,
+        reason: "fieldBecameOptional",
+      }),
+    ];
+  },
+  richTextExtensionIssues = ({
+    contract,
+    field,
+    fieldContract,
+    requirement,
+  }: FieldCompatibilityInput): readonly ValidationIssue[] => {
+    if (
+      fieldContract.richTextExtensionIdentifiers === undefined ||
+      field.kind.kind !== "rich-text"
+    ) {
+      return [];
+    }
+    const availableExtensions = new Set(field.kind.extensionIdentifiers),
+      issues: ValidationIssue[] = [];
+    for (const extensionIdentifier of fieldContract.richTextExtensionIdentifiers) {
+      if (!availableExtensions.has(extensionIdentifier)) {
         issues.push(
-          contractIssue(
-            contract.identifier,
-            requirement.contentTypeId,
-            undefined,
-            "missingContentType",
-            `Operation ${contract.identifier} requires Content Type ${requirement.contentTypeId}`,
-          ),
+          contractIssue({
+            contentTypeIdentifier: requirement.contentTypeId,
+            fieldPath: fieldContract.path,
+            message: `Operation ${contract.identifier} requires Rich Text extension ${extensionIdentifier}`,
+            operationIdentifier: contract.identifier,
+            reason: "missingRichTextExtension",
+          }),
         );
-        continue;
-      }
-      for (const fieldContract of requirement.fields) {
-        const field = findField(contentType.fields, fieldContract.path);
-        if (field === undefined) {
-          issues.push(
-            contractIssue(
-              contract.identifier,
-              requirement.contentTypeId,
-              fieldContract.path,
-              "missingField",
-              `Operation ${contract.identifier} requires Field ${fieldContract.path}`,
-            ),
-          );
-          continue;
-        }
-        if (fieldKindIdentifier(field) !== fieldContract.kind) {
-          issues.push(
-            contractIssue(
-              contract.identifier,
-              requirement.contentTypeId,
-              fieldContract.path,
-              "incompatibleFieldKind",
-              `Operation ${contract.identifier} requires ${fieldContract.kind}, received ${fieldKindIdentifier(field)}`,
-            ),
-          );
-        }
-        if (
-          fieldContract.formatVersion !== undefined &&
-          fieldFormatVersion(field) !== fieldContract.formatVersion
-        ) {
-          issues.push(
-            contractIssue(
-              contract.identifier,
-              requirement.contentTypeId,
-              fieldContract.path,
-              "incompatibleFieldKindVersion",
-              `Operation ${contract.identifier} requires Field Kind version ${fieldContract.formatVersion}`,
-            ),
-          );
-        }
-        if (fieldContract.required === true && field.required !== true) {
-          issues.push(
-            contractIssue(
-              contract.identifier,
-              requirement.contentTypeId,
-              fieldContract.path,
-              "fieldBecameOptional",
-              `Operation ${contract.identifier} requires ${fieldContract.path} to remain required`,
-            ),
-          );
-        }
-        if (fieldContract.projectable === true && !capabilitiesFor(field.kind).projectable) {
-          issues.push(
-            contractIssue(
-              contract.identifier,
-              requirement.contentTypeId,
-              fieldContract.path,
-              "fieldNotProjectable",
-              `Operation ${contract.identifier} requires ${fieldContract.path} to remain projectable`,
-            ),
-          );
-        }
-        if (
-          fieldContract.richTextExtensionIdentifiers !== undefined &&
-          field.kind.kind === "rich-text"
-        ) {
-          const availableExtensions = new Set(field.kind.extensionIdentifiers ?? []);
-          for (const extensionIdentifier of fieldContract.richTextExtensionIdentifiers) {
-            if (!availableExtensions.has(extensionIdentifier)) {
-              issues.push(
-                contractIssue(
-                  contract.identifier,
-                  requirement.contentTypeId,
-                  fieldContract.path,
-                  "missingRichTextExtension",
-                  `Operation ${contract.identifier} requires Rich Text extension ${extensionIdentifier}`,
-                ),
-              );
-            }
-          }
-        }
       }
     }
-  }
-  if (issues.length > 0) {
-    throw InvalidInput.make({
-      issues,
-      message: "Content Definition Snapshot breaks a composed operation contract",
+    return issues;
+  },
+  validatedFieldIssues = (input: FieldCompatibilityInput): readonly ValidationIssue[] => {
+    const { contract, field, fieldContract, requirement } = input,
+      issues: ValidationIssue[] = [
+        ...projectableFieldIssues(input),
+        ...requiredFieldIssues(input),
+        ...richTextExtensionIssues(input),
+      ];
+    if (fieldKindIdentifier(field) !== fieldContract.kind) {
+      issues.push(
+        contractIssue({
+          contentTypeIdentifier: requirement.contentTypeId,
+          fieldPath: fieldContract.path,
+          message: `Operation ${contract.identifier} requires ${fieldContract.kind}, received ${fieldKindIdentifier(field)}`,
+          operationIdentifier: contract.identifier,
+          reason: "incompatibleFieldKind",
+        }),
+      );
+    }
+    if (
+      fieldContract.formatVersion !== undefined &&
+      fieldFormatVersion(field) !== fieldContract.formatVersion
+    ) {
+      issues.push(
+        contractIssue({
+          contentTypeIdentifier: requirement.contentTypeId,
+          fieldPath: fieldContract.path,
+          message: `Operation ${contract.identifier} requires Field Kind version ${fieldContract.formatVersion}`,
+          operationIdentifier: contract.identifier,
+          reason: "incompatibleFieldKindVersion",
+        }),
+      );
+    }
+    return issues;
+  },
+  validatedRequirementIssues = (
+    snapshot: CompiledSnapshot,
+    contract: DefinitionContract,
+    requirement: DefinitionRequirement,
+  ): readonly ValidationIssue[] => {
+    const contentType = snapshot.contentTypes.get(requirement.contentTypeId);
+    if (contentType === undefined) {
+      return [
+        contractIssue({
+          contentTypeIdentifier: requirement.contentTypeId,
+          fieldPath: undefined,
+          message: `Operation ${contract.identifier} requires Content Type ${requirement.contentTypeId}`,
+          operationIdentifier: contract.identifier,
+          reason: "missingContentType",
+        }),
+      ];
+    }
+    return requirement.fields.flatMap((fieldContract) => {
+      const field = findField(contentType.fields, fieldContract.path);
+      if (field === undefined) {
+        return [
+          contractIssue({
+            contentTypeIdentifier: requirement.contentTypeId,
+            fieldPath: fieldContract.path,
+            message: `Operation ${contract.identifier} requires Field ${fieldContract.path}`,
+            operationIdentifier: contract.identifier,
+            reason: "missingField",
+          }),
+        ];
+      }
+      return validatedFieldIssues({ contract, field, fieldContract, requirement });
     });
-  }
-};
-import {
-  capabilitiesFor,
-  type CompiledSnapshot,
-  type ResolvedField,
-} from "./content-definition.ts";
-import { InvalidInput, type ValidationIssue } from "./cms-error.ts";
+  },
+  validatedSnapshotIssues = ({
+    contracts,
+    snapshot,
+  }: ValidateDefinitionContractsInput): readonly ValidationIssue[] =>
+    contracts.flatMap((contract) =>
+      contract.definitionRequirements.flatMap((requirement) =>
+        validatedRequirementIssues(snapshot, contract, requirement),
+      ),
+    ),
+  zValidateDefinitionContracts = (input: ValidateDefinitionContractsInput): void => {
+    const issues = validatedSnapshotIssues(input);
+    if (issues.length > emptyIssueCount) {
+      throw InvalidInput.make({
+        issues,
+        message: "Content Definition Snapshot breaks a composed operation contract",
+      });
+    }
+  };
+
+/** Validates every operation contract against a compiled Definition Snapshot. */
+export { zValidateDefinitionContracts as validateDefinitionContracts };

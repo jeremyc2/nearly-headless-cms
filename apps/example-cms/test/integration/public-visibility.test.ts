@@ -1,15 +1,22 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
-import type { ExampleSystem } from "../../src/system.ts";
-import { createExampleSystem } from "../../src/system.ts";
+import { type ExampleSystem, createExampleSystem } from "../../src/system.ts";
 
-const managementEntriesUrl = (contentTypeIdentifier: string): string =>
-  `http://cms.test/api/v1/management/definition-spaces/example-blog/content-types/${contentTypeIdentifier}/entries`;
+const authorIndex = 0,
+  createdEntryStatus = 201,
+  exportTimeoutMilliseconds = 30_000,
+  hourTextWidth = 2,
+  hoursPerDay = 24,
+  loopIncrement = 1,
+  notFoundStatus = 404,
+  postsToCreate = 101,
+  richTextVersion = 1,
+  managementEntriesUrl = (contentTypeIdentifier: string): string =>
+    `http://cms.test/api/v1/management/definition-spaces/example-blog/content-types/${contentTypeIdentifier}/entries`;
 
 describe("Example CMS public visibility", () => {
-  let system: ExampleSystem;
-  let storageRoot: string;
+  let storageRoot: string, system: ExampleSystem;
 
   beforeAll(async () => {
     storageRoot = await mkdtemp(join(import.meta.dir, ".public-visibility-"));
@@ -22,11 +29,15 @@ describe("Example CMS public visibility", () => {
   });
 
   test("exports every public Entry across internal query pages", async () => {
-    const initialExport = (await (
-        await system.handler(new Request("http://cms.test/api/v1/headless/export"))
-      ).json()) as { authors: readonly { id: string }[]; posts: readonly { id: string }[] },
-      authorIdentifier = initialExport.authors[0]!.id;
-    for (let postNumber = 0; postNumber < 101; postNumber += 1) {
+    const initialExportResponse = await system.handler(
+        new Request("http://cms.test/api/v1/headless/export"),
+      ),
+      initialExport = (await initialExportResponse.json()) as {
+        authors: readonly { id: string }[];
+        posts: readonly { id: string }[];
+      },
+      authorIdentifier = initialExport.authors[authorIndex]!.id;
+    for (let postNumber = 0; postNumber < postsToCreate; postNumber += loopIncrement) {
       const response = await system.handler(
         new Request(managementEntriesUrl("post"), {
           body: JSON.stringify({
@@ -40,13 +51,13 @@ describe("Example CMS public visibility", () => {
                   },
                 ],
                 format: "nearly-headless-cms/rich-text",
-                version: 1,
+                version: richTextVersion,
               },
               categories: [],
               excerpt: `Complete export fixture ${postNumber}`,
               "featured-alternative-text": null,
               "featured-asset": null,
-              "published-at": `2026-08-22T${String(postNumber % 24).padStart(2, "0")}:00:00.000Z`,
+              "published-at": `2026-08-22T${String(postNumber % hoursPerDay).padStart(hourTextWidth, "0")}:00:00.000Z`,
               slug: `complete-export-${postNumber}`,
               status: "published",
               tags: [],
@@ -57,14 +68,15 @@ describe("Example CMS public visibility", () => {
           method: "POST",
         }),
       );
-      expect(response.status).toBe(201);
+      expect(response.status).toBe(createdEntryStatus);
     }
 
-    const completeExport = (await (
-      await system.handler(new Request("http://cms.test/api/v1/headless/export"))
-    ).json()) as { posts: readonly { id: string }[] };
-    expect(completeExport.posts).toHaveLength(initialExport.posts.length + 101);
-  }, 30_000);
+    const completeExportResponse = await system.handler(
+        new Request("http://cms.test/api/v1/headless/export"),
+      ),
+      completeExport = (await completeExportResponse.json()) as { posts: readonly { id: string }[] };
+    expect(completeExport.posts).toHaveLength(initialExport.posts.length + postsToCreate);
+  }, exportTimeoutMilliseconds);
 
   test("hides Comments, taxonomies, and Entry references outside published reachability", async () => {
     const categoryResponse = await system.handler(
@@ -85,7 +97,7 @@ describe("Example CMS public visibility", () => {
         id?: string;
       },
       categoryIdentifier = category.entry?.id ?? category.id!;
-    expect(categoryResponse.status).toBe(201);
+    expect(categoryResponse.status).toBe(createdEntryStatus);
 
     const commentResponse = await system.handler(
       new Request(managementEntriesUrl("comment"), {
@@ -103,7 +115,7 @@ describe("Example CMS public visibility", () => {
         method: "POST",
       }),
     );
-    expect(commentResponse.status).toBe(201);
+    expect(commentResponse.status).toBe(createdEntryStatus);
 
     const draftComments = await system.handler(
         new Request(`http://cms.test/api/v1/headless/posts/${system.seed!.draftPostId}/comments`),
@@ -114,16 +126,17 @@ describe("Example CMS public visibility", () => {
       privateReference = await system.handler(
         new Request(`http://cms.test/api/v1/headless/references/entries/${categoryIdentifier}`),
       );
-    expect(draftComments.status).toBe(404);
-    expect(privateTaxonomy.status).toBe(404);
-    expect(privateReference.status).toBe(404);
+    expect(draftComments.status).toBe(notFoundStatus);
+    expect(privateTaxonomy.status).toBe(notFoundStatus);
+    expect(privateReference.status).toBe(notFoundStatus);
 
-    const publicExport = (await (
-      await system.handler(new Request("http://cms.test/api/v1/headless/export"))
-    ).json()) as {
-      categories: readonly { id: string }[];
-      comments: readonly { post: string }[];
-    };
+    const publicExportResponse = await system.handler(
+        new Request("http://cms.test/api/v1/headless/export"),
+      ),
+      publicExport = (await publicExportResponse.json()) as {
+        categories: readonly { id: string }[];
+        comments: readonly { post: string }[];
+      };
     expect(
       publicExport.categories.some((candidate) => candidate.id === categoryIdentifier),
     ).toBeFalse();

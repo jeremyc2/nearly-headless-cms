@@ -20,7 +20,8 @@ const repository = join(import.meta.dir, ".."),
     const deadline = Date.now() + 20_000;
     while (Date.now() < deadline) {
       try {
-        if ((await fetch(requestUrl)).ok) {
+        const response = await fetch(requestUrl);
+        if (response.ok) {
           return;
         }
       } catch {}

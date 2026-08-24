@@ -11,9 +11,9 @@ export * as ContentDefinition from "./content-definition.ts";
 /** Definition migration graphs, handlers, and preparation. */
 export * as DefinitionMigration from "./definition-migration.ts";
 /** Generic Entry inputs and representations. */
-export * as Entry from "./entry.ts";
+export type * as Entry from "./entry.ts";
 /** Entry Revision, Write Token, restoration, and deletion state. */
-export * as EntryHistory from "./entry-history.ts";
+export type * as EntryHistory from "./entry-history.ts";
 /** Portable bounded Entry Query algebra and evaluation. */
 export * as EntryQuery from "./entry-query.ts";
 /** Opaque identifier vocabulary and generation service. */

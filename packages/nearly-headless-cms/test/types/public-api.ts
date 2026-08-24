@@ -1,19 +1,3 @@
-import type { Layer } from "effect";
-import type { Entry, EntryHistory, Operation } from "nearly-headless-cms";
-import {
-  Asset,
-  Authorization,
-  Cms,
-  CmsError,
-  ContentDefinition,
-  DefinitionMigration,
-  EntryQuery,
-  Identifier,
-  Identity,
-  Persistence,
-  RichText,
-  Transport,
-} from "nearly-headless-cms";
 import {
   AllowAllAuthorization,
   AnonymousIdentity,
@@ -22,48 +6,69 @@ import {
   MemoryDefinitionCatalog,
   MemoryEntryPersistence,
 } from "nearly-headless-cms/adapters";
-import { BunFilesystemPersistence } from "nearly-headless-cms/bun/filesystem";
+import {
+  Asset,
+  Authorization,
+  Cms,
+  CmsError,
+  ContentDefinition,
+  DefinitionMigration,
+  type Entry,
+  type EntryHistory,
+  EntryQuery,
+  Identifier,
+  Identity,
+  type Operation,
+  Persistence,
+  RichText,
+  Transport,
+} from "nearly-headless-cms";
 import { HttpContract, HttpTransport, OpenApi } from "nearly-headless-cms/http";
+import { BunFilesystemPersistence } from "nearly-headless-cms/bun/filesystem";
+// @ts-expect-error Arbitrary private subpaths are not public package exports.
+import { Service as DeepService } from "nearly-headless-cms/private";
 import { DevelopmentCms } from "nearly-headless-cms/testing";
-import packageManifest from "nearly-headless-cms/package.json" with { type: "json" };
+import type { Layer } from "effect";
+import { default as packageManifest } from "nearly-headless-cms/package.json" with { type: "json" };
 
-void Asset;
-void Authorization;
-void Cms;
-void CmsError;
-void ContentDefinition;
-void DefinitionMigration;
-void EntryQuery;
-void Identifier;
-void Identity;
-void Persistence;
-void RichText;
-void Transport;
-void AllowAllAuthorization;
-void AnonymousIdentity;
-void CryptoIdentifierGenerator;
-void MemoryAssetManagement;
-void MemoryDefinitionCatalog;
-void MemoryEntryPersistence;
-void BunFilesystemPersistence;
-void HttpContract;
-void HttpTransport;
-void OpenApi;
-void DevelopmentCms;
-void packageManifest;
+export const publicApiValues = [
+  AllowAllAuthorization,
+  AnonymousIdentity,
+  Asset,
+  Authorization,
+  BunFilesystemPersistence,
+  Cms,
+  CmsError,
+  ContentDefinition,
+  CryptoIdentifierGenerator,
+  DefinitionMigration,
+  DevelopmentCms,
+  EntryQuery,
+  HttpContract,
+  HttpTransport,
+  Identifier,
+  Identity,
+  MemoryAssetManagement,
+  MemoryDefinitionCatalog,
+  MemoryEntryPersistence,
+  OpenApi,
+  packageManifest,
+  Persistence,
+  RichText,
+  Transport,
+];
 
 type PublicEntry = Entry.Representation;
 type PublicRevision = EntryHistory.Revision;
 type PublicAction = Operation.Action;
-const publicTypeFixture: readonly [PublicEntry?, PublicRevision?, PublicAction?] = [];
-void publicTypeFixture;
+export const publicTypeFixture: readonly [PublicEntry?, PublicRevision?, PublicAction?] = [];
 
-const serviceLayer: Layer.Layer<Cms.Service> = DevelopmentCms.layer({
+export const serviceLayer: Layer.Layer<Cms.Service> = DevelopmentCms.layer({
   snapshot: ContentDefinition.compile({
     definitionSpaceId: "type-fixture",
     definitions: [
       {
-        fields: [{ key: "title", label: "Title", kind: { kind: "text" }, required: true }],
+        fields: [{ key: "title", kind: { kind: "text" }, label: "Title", required: true }],
         id: "note",
         kind: "contentType",
         name: "Note",
@@ -72,8 +77,4 @@ const serviceLayer: Layer.Layer<Cms.Service> = DevelopmentCms.layer({
     snapshotId: "first",
   }),
 });
-void serviceLayer;
-
-// @ts-expect-error Arbitrary private subpaths are not public package exports.
-import { Service as DeepService } from "nearly-headless-cms/private";
-void DeepService;
+export const deepService = DeepService;

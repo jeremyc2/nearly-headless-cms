@@ -91,12 +91,25 @@ export interface EvaluationOptions {
   readonly limits?: Partial<QueryLimits>;
 }
 
+/** Complete inputs for one deterministic Query evaluation. */
+export interface EvaluationInput {
+  readonly entries: readonly Representation[];
+  readonly options: EvaluationOptions;
+  readonly query: Query;
+  readonly snapshot: CompiledSnapshot;
+}
+
 const defaultLimits: QueryLimits = {
   maximumExpansionPaths: 20,
   maximumPageSize: 100,
   maximumProjectionPaths: 100,
   maximumScanEntries: 10_000,
 };
+
+const BASE64_QUARTET_LENGTH = 4;
+const NEGATIVE_ONE = -1;
+const ZERO = 0;
+const ONE = 1;
 
 interface CursorPayload {
   readonly generation: number;
@@ -109,14 +122,17 @@ const encodeCursor = (cursor: CursorPayload): string =>
   decodeCursor = (cursor: string): CursorPayload => {
     try {
       const base64 = cursor.replaceAll("-", "+").replaceAll("_", "/"),
-        padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "="),
+        padded = base64.padEnd(
+          Math.ceil(base64.length / BASE64_QUARTET_LENGTH) * BASE64_QUARTET_LENGTH,
+          "=",
+        ),
         decoded = JSON.parse(atob(padded)) as unknown;
       if (decoded === null || typeof decoded !== "object") {
         throw new Error("not an object");
       }
       const generation = Reflect.get(decoded, "generation"),
-        queryFingerprint = Reflect.get(decoded, "queryFingerprint"),
-        offset = Reflect.get(decoded, "offset");
+        offset = Reflect.get(decoded, "offset"),
+        queryFingerprint = Reflect.get(decoded, "queryFingerprint");
       if (
         typeof generation !== "number" ||
         !Number.isSafeInteger(generation) ||
@@ -124,7 +140,7 @@ const encodeCursor = (cursor: CursorPayload): string =>
         typeof offset !== "number" ||
         !Number.isSafeInteger(offset)
       ) {
-        throw new Error("invalid fields");
+        throw new TypeError("invalid fields");
       }
       return { generation, offset, queryFingerprint };
     } catch {
@@ -153,7 +169,7 @@ const encodeCursor = (cursor: CursorPayload): string =>
       return left - right;
     }
     if (typeof left === "string" && typeof right === "string") {
-      return left < right ? -1 : left > right ? 1 : 0;
+      return left < right ? NEGATIVE_ONE : (left > right ? ONE : ZERO);
     }
     if (typeof left === "boolean" && typeof right === "boolean") {
       return Number(left) - Number(right);
@@ -194,7 +210,7 @@ const encodeCursor = (cursor: CursorPayload): string =>
           fieldValue !== undefined &&
           fieldValue !== null &&
           expectedValue !== undefined &&
-          compareScalar(fieldValue, expectedValue) < 0
+          compareScalar(fieldValue, expectedValue) < ZERO
         );
       }
       case "lessThanOrEqual": {
@@ -202,7 +218,7 @@ const encodeCursor = (cursor: CursorPayload): string =>
           fieldValue !== undefined &&
           fieldValue !== null &&
           expectedValue !== undefined &&
-          compareScalar(fieldValue, expectedValue) <= 0
+          compareScalar(fieldValue, expectedValue) <= ZERO
         );
       }
       case "greaterThan": {
@@ -210,7 +226,7 @@ const encodeCursor = (cursor: CursorPayload): string =>
           fieldValue !== undefined &&
           fieldValue !== null &&
           expectedValue !== undefined &&
-          compareScalar(fieldValue, expectedValue) > 0
+          compareScalar(fieldValue, expectedValue) > ZERO
         );
       }
       case "greaterThanOrEqual": {
@@ -218,7 +234,7 @@ const encodeCursor = (cursor: CursorPayload): string =>
           fieldValue !== undefined &&
           fieldValue !== null &&
           expectedValue !== undefined &&
-          compareScalar(fieldValue, expectedValue) >= 0
+          compareScalar(fieldValue, expectedValue) >= ZERO
         );
       }
       case "startsWith": {
@@ -256,8 +272,8 @@ const encodeCursor = (cursor: CursorPayload): string =>
   },
   findField = (fields: readonly ResolvedField[], path: string): ResolvedField | undefined => {
     const segments = path.split(".");
-    let field: ResolvedField | undefined,
-      currentFields = fields;
+    let currentFields = fields,
+      field: ResolvedField | undefined;
     for (const segment of segments) {
       field = currentFields.find((candidate) => candidate.key === segment);
       if (field === undefined) {
@@ -286,15 +302,15 @@ const encodeCursor = (cursor: CursorPayload): string =>
     }
     const children = isAllPredicate(predicate)
       ? predicate.all
-      : isAnyPredicate(predicate)
+      : (isAnyPredicate(predicate)
         ? predicate.any
-        : [predicate.not];
-    if (children.length === 0) {
+        : [predicate.not]);
+    if (children.length === ZERO) {
       throw InvalidInput.make({ message: "Boolean Query groups cannot be empty" });
     }
-    children.forEach((child) => {
+    for (const child of children) {
       validatePredicate(child, fields);
-    });
+    }
   },
   queryWithoutCursor = (query: Query): JsonValue => {
     const value: unknown = {
@@ -323,7 +339,7 @@ const encodeCursor = (cursor: CursorPayload): string =>
       const segments = path.split(".");
       let current = projected;
       for (const [index, segment] of segments.entries()) {
-        if (index === segments.length - 1) {
+        if (index === segments.length - ONE) {
           current[segment] = cloneJson(value);
         } else {
           const existing = current[segment],
@@ -337,26 +353,21 @@ const encodeCursor = (cursor: CursorPayload): string =>
   };
 
 /** Evaluates a Query exactly and returns a cursor bound to its shape and snapshot. */
-export const evaluate = (
-  entries: readonly Representation[],
-  query: Query,
-  snapshot: CompiledSnapshot,
-  options: EvaluationOptions,
-): QueryPage => {
+export const evaluate = ({ entries, options, query, snapshot }: EvaluationInput): QueryPage => {
   const limits = { ...defaultLimits, ...options.limits };
   if (
     !Number.isSafeInteger(query.pageSize) ||
-    query.pageSize <= 0 ||
+    query.pageSize <= ZERO ||
     query.pageSize > limits.maximumPageSize
   ) {
     throw InvalidInput.make({
       message: `pageSize must be between 1 and ${limits.maximumPageSize}`,
     });
   }
-  if ((query.projection?.length ?? 0) > limits.maximumProjectionPaths) {
+  if ((query.projection?.length ?? ZERO) > limits.maximumProjectionPaths) {
     throw InvalidInput.make({ message: "Projection exceeds the configured Query Limit" });
   }
-  if ((query.expansion?.length ?? 0) > limits.maximumExpansionPaths) {
+  if ((query.expansion?.length ?? ZERO) > limits.maximumExpansionPaths) {
     throw InvalidInput.make({
       message: "Relationship Expansion exceeds the configured Query Limit",
     });
@@ -383,8 +394,9 @@ export const evaluate = (
     }
   }
   for (const projectionPath of query.projection ?? []) {
-    if (findField(contentType.fields, projectionPath) === undefined)
+    if (findField(contentType.fields, projectionPath) === undefined) {
       throw InvalidInput.make({ message: `Unknown Projection Field Path ${projectionPath}` });
+    }
   }
   const queryFingerprint = fingerprint(queryWithoutCursor(query));
   let offset = 0;
@@ -398,7 +410,7 @@ export const evaluate = (
     if (cursor.queryFingerprint !== queryFingerprint) {
       throw Conflict.make({ message: "Query cursor belongs to a different Query" });
     }
-    offset = cursor.offset;
+    ({ offset } = cursor);
   }
   const matchingEntries = entries.filter(
       (entry) =>
@@ -413,16 +425,18 @@ export const evaluate = (
         leftMissing = leftValue === undefined || leftValue === null,
         rightMissing = rightValue === undefined || rightValue === null;
       if (leftMissing !== rightMissing) {
-        return leftMissing ? 1 : -1;
+        return leftMissing ? ONE : NEGATIVE_ONE;
       }
       if (!leftMissing && !rightMissing) {
         const comparison = compareScalar(leftValue, rightValue);
-        if (comparison !== 0) {
+        if (comparison !== ZERO) {
           return sort.direction === "ascending" ? comparison : -comparison;
         }
       }
     }
-    return leftEntry.id < rightEntry.id ? -1 : leftEntry.id > rightEntry.id ? 1 : 0;
+    return leftEntry.id < rightEntry.id
+      ? NEGATIVE_ONE
+      : (leftEntry.id > rightEntry.id ? ONE : ZERO);
   });
   const items = matchingEntries
       .slice(offset, offset + query.pageSize)

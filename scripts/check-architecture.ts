@@ -3,11 +3,16 @@ import { join } from "node:path";
 const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
     value !== null && typeof value === "object" && !Array.isArray(value),
   dependencyAt = (manifest: Readonly<Record<string, unknown>>, name: string): unknown => {
-    const dependencies = manifest["dependencies"];
-    return isRecord(dependencies) ? dependencies[name] : undefined;
+    const { dependencies } = manifest;
+    if (isRecord(dependencies)) return dependencies[name];
+    return undefined;
   },
   repository = join(import.meta.dir, ".."),
   rootManifest: unknown = await Bun.file(join(repository, "package.json")).json();
+const expectedWorkspaceCount = 3,
+  firstIndex = 0,
+  oneItem = 1,
+  twoSpaceIndent = 2;
 if (
   !isRecord(rootManifest) ||
   rootManifest["private"] !== true ||
@@ -16,15 +21,16 @@ if (
   throw new Error("Root must be a private coordinator with the settled workspace topology");
 }
 
-const workspaceManifestPaths: string[] = [];
-for (const pattern of ["packages/*/package.json", "apps/*/package.json"]) {
-  for await (const path of new Bun.Glob(pattern).scan({ cwd: repository })) {
-    workspaceManifestPaths.push(path);
-  }
-}
-if (workspaceManifestPaths.length !== 3) {
+const workspaceManifestPaths = (
+  await Promise.all(
+    ["packages/*/package.json", "apps/*/package.json"].map((pattern) =>
+      Array.fromAsync(new Bun.Glob(pattern).scan({ cwd: repository })),
+    ),
+  )
+).flat();
+if (workspaceManifestPaths.length !== expectedWorkspaceCount) {
   throw new Error(
-    `Expected exactly three workspace manifests, found ${workspaceManifestPaths.length}`,
+    `Expected exactly ${expectedWorkspaceCount} workspace manifests, found ${workspaceManifestPaths.length}`,
   );
 }
 
@@ -38,7 +44,7 @@ if (!workspaceManifestValues.every(isRecord)) {
 }
 const workspaceManifests = workspaceManifestValues;
 if (
-  workspaceManifests.length !== 3 ||
+  workspaceManifests.length !== expectedWorkspaceCount ||
   workspaceManifests
     .filter((manifest) => manifest["private"] !== true)
     .map((manifest) => manifest["name"])
@@ -86,15 +92,17 @@ for (const forbidden of [
 }
 
 const sourceGlob = new Bun.Glob("apps/public-blog/src/**/*.{ts,astro}");
-for await (const relativePath of sourceGlob.scan({ cwd: repository })) {
-  const source = await Bun.file(join(repository, relativePath)).text();
-  if (
-    /from\s+["']nearly-headless-cms(?:\/|["'])/u.test(source) ||
-    /from\s+["'][^"']*example-cms/u.test(source)
-  ) {
-    throw new Error(`Public Blog imports a forbidden runtime at ${relativePath}`);
-  }
-}
+const sourcePaths = await Array.fromAsync(sourceGlob.scan({ cwd: repository }));
+await Promise.all(
+  sourcePaths.map(async (relativePath) => {
+    const source = await Bun.file(join(repository, relativePath)).text();
+    if (
+      /from\s+["']nearly-headless-cms(?:\/|["'])/u.test(source) ||
+      /from\s+["'][^"']*example-cms/u.test(source)
+    )
+      throw new Error(`Public Blog imports a forbidden runtime at ${relativePath}`);
+  }),
+);
 const libraryExports = workspaceManifests[0]["exports"],
   expectedExports = [
     ".",
@@ -111,15 +119,18 @@ if (
   throw new Error("Library exports map is not the complete settled public seam");
 }
 const portableDistributionGlob = new Bun.Glob("packages/nearly-headless-cms/dist/**/*.{js,d.ts}");
-for await (const relativePath of portableDistributionGlob.scan({ cwd: repository })) {
-  if (relativePath.includes("/bun/filesystem/")) {
-    continue;
-  }
-  const source = await Bun.file(join(repository, relativePath)).text();
-  if (/\bBun\.|["']bun:/u.test(source)) {
-    throw new Error(`Portable package entry point leaks a Bun-only runtime at ${relativePath}`);
-  }
-}
+const portableDistributionPaths = await Array.fromAsync(
+  portableDistributionGlob.scan({ cwd: repository }),
+);
+await Promise.all(
+  portableDistributionPaths
+    .filter((relativePath) => !relativePath.includes("/bun/filesystem/"))
+    .map(async (relativePath) => {
+      const source = await Bun.file(join(repository, relativePath)).text();
+      if (/\bBun\.|["']bun:/u.test(source))
+        throw new Error(`Portable package entry point leaks a Bun-only runtime at ${relativePath}`);
+    }),
+);
 
 const publicApiSourcePaths = [
     "src/index.ts",
@@ -158,24 +169,24 @@ const publicApiSourcePaths = [
 let documentedPublicDeclarationCount = 0;
 for (const sourcePath of publicApiSourcePaths) {
   const packageRelativePath = `packages/nearly-headless-cms/${sourcePath}`,
-    lines = (await Bun.file(join(repository, packageRelativePath)).text()).split("\n");
+    sourceText = await Bun.file(join(repository, packageRelativePath)).text(),
+    lines = sourceText.split("\n");
   for (const [lineIndex, line] of lines.entries()) {
-    if (!/^export (?:class|const|function|interface|type|\*|\{)/u.test(line)) {
-      continue;
+    if (/^export (?:class|const|function|interface|type|\*|\{)/u.test(line)) {
+      let commentLineIndex = lineIndex - oneItem;
+      if (!lines[commentLineIndex]?.trimEnd().endsWith("*/")) {
+        undocumentedDeclarations.push(`${packageRelativePath}:${lineIndex + oneItem}`);
+      } else {
+        while (
+          commentLineIndex >= firstIndex &&
+          !lines[commentLineIndex]?.trimStart().startsWith("/**")
+        )
+          commentLineIndex -= oneItem;
+        if (commentLineIndex < firstIndex)
+          undocumentedDeclarations.push(`${packageRelativePath}:${lineIndex + oneItem}`);
+        else documentedPublicDeclarationCount += oneItem;
+      }
     }
-    let commentLineIndex = lineIndex - 1;
-    if (!lines[commentLineIndex]?.trimEnd().endsWith("*/")) {
-      undocumentedDeclarations.push(`${packageRelativePath}:${lineIndex + 1}`);
-      continue;
-    }
-    while (commentLineIndex >= 0 && !lines[commentLineIndex]?.trimStart().startsWith("/**")) {
-      commentLineIndex -= 1;
-    }
-    if (commentLineIndex < 0) {
-      undocumentedDeclarations.push(`${packageRelativePath}:${lineIndex + 1}`);
-      continue;
-    }
-    documentedPublicDeclarationCount += 1;
   }
 }
 if (undocumentedDeclarations.length > 0) {
@@ -190,6 +201,6 @@ console.log(
       workspaces: workspaceManifests.map((manifest) => manifest.name),
     },
     null,
-    2,
+    twoSpaceIndent,
   ),
 );

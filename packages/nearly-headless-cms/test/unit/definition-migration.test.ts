@@ -1,11 +1,12 @@
-import { describe, expect, test } from "bun:test";
 import { ContentDefinition, DefinitionMigration } from "../../src/index.ts";
+import { describe, expect, test } from "bun:test";
 
-const source = ContentDefinition.compile({
+const firstEntryIndex = 0,
+  source = ContentDefinition.compile({
     definitionSpaceId: "example-blog",
     definitions: [
       {
-        fields: [{ key: "title", label: "Title", required: true, kind: { kind: "text" } }],
+        fields: [{ key: "title", kind: { kind: "text" }, label: "Title", required: true }],
         id: "post",
         kind: "contentType",
         name: "Post",
@@ -13,11 +14,12 @@ const source = ContentDefinition.compile({
     ],
     snapshotId: "source",
   }),
+  staleSourceGeneration = 4,
   target = ContentDefinition.compile({
     definitionSpaceId: "example-blog",
     definitions: [
       {
-        fields: [{ key: "headline", label: "Headline", required: true, kind: { kind: "text" } }],
+        fields: [{ key: "headline", kind: { kind: "text" }, label: "Headline", required: true }],
         id: "post",
         kind: "contentType",
         name: "Post",
@@ -26,7 +28,7 @@ const source = ContentDefinition.compile({
     snapshotId: "target",
   });
 
-describe("DefinitionMigration", () => {
+describe("DefinitionMigration preparation", () => {
   test("prepares deterministic one-to-one replacements and detects stale cutover", () => {
     const manifest = {
         handlerIdentifier: "com.example.rename-title",
@@ -40,7 +42,9 @@ describe("DefinitionMigration", () => {
         handlers: [
           {
             identifier: "com.example.rename-title",
-            transform: ({ values }) => ({ headline: values["title"] ?? "" }),
+            transform: ({ values }): ContentDefinition.JsonObject => ({
+              headline: values["title"] ?? "",
+            }),
             version: 1,
           },
         ],
@@ -51,12 +55,14 @@ describe("DefinitionMigration", () => {
       });
 
     expect(preparation.report).toEqual({ status: "ready", transformedEntryCount: 1 });
-    expect(preparation.entries[0]?.values).toEqual({ headline: "Hello" });
+    expect(preparation.entries[firstEntryIndex]?.values).toEqual({ headline: "Hello" });
     expect(() => {
-      DefinitionMigration.assertFresh(preparation, 4);
+      DefinitionMigration.assertFresh(preparation, staleSourceGeneration);
     }).toThrow("stale");
   });
+});
 
+describe("DefinitionMigration graph validation", () => {
   test("rejects migration edges that create more than one directed path", () => {
     expect(() => {
       DefinitionMigration.validateGraph([

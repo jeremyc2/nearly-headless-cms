@@ -1,5 +1,4 @@
-import type { Effect } from "effect";
-import { Context } from "effect";
+import { Context, type Effect } from "effect";
 
 /** Explicit identity state for a request without an Actor. */
 export interface Anonymous {
@@ -24,4 +23,4 @@ export class CurrentIdentity extends Context.Service<
   {
     readonly current: Effect.Effect<Identity>;
   }
->()("nearly-headless-cms/Identity/CurrentIdentity") {}
+>()("nearly-headless-cms/identity/CurrentIdentity") {}

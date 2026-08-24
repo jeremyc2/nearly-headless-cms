@@ -1,25 +1,31 @@
 import { $ } from "bun";
-import { join } from "node:path";
 
-const tag = process.argv[2],
-  manifest: unknown = await Bun.file(
-    join(import.meta.dir, "..", "packages/nearly-headless-cms/package.json"),
-  ).json();
+const argumentIndex = 2,
+  emptyLength = 0,
+  manifestRepository = `${import.meta.dir}/..`,
+  manifestValue: unknown = await Bun.file(
+    `${manifestRepository}/packages/nearly-headless-cms/package.json`,
+  ).json(),
+  releaseTag = process.argv.at(argumentIndex);
 if (
-  manifest === null ||
-  typeof manifest !== "object" ||
-  Array.isArray(manifest) ||
-  typeof Reflect.get(manifest, "version") !== "string"
+  manifestValue === null ||
+  typeof manifestValue !== "object" ||
+  Array.isArray(manifestValue) ||
+  !("version" in manifestValue) ||
+  typeof manifestValue.version !== "string"
 ) {
   throw new Error("Package manifest must declare a string version");
 }
-const version = Reflect.get(manifest, "version");
-if (tag !== `v${version}`) {
-  throw new Error(`Tag ${String(tag)} does not match package version ${version}`);
+if (releaseTag !== `v${manifestValue.version}`) {
+  throw new Error(
+    `Tag ${String(releaseTag)} does not match package version ${manifestValue.version}`,
+  );
 }
-await $`git merge-base --is-ancestor HEAD origin/main`.cwd(join(import.meta.dir, "..")).quiet();
-const status = await $`git status --porcelain`.cwd(join(import.meta.dir, "..")).text();
-if (status.trim().length > 0) {
-  throw new Error("Release worktree must be clean");
+await $`git merge-base --is-ancestor HEAD origin/main`.cwd(manifestRepository).quiet();
+{
+  const worktreeStatus = await $`git status --porcelain`.cwd(manifestRepository).text();
+  if (worktreeStatus.trim().length > emptyLength) {
+    throw new Error("Release worktree must be clean");
+  }
 }
-console.log(`Release state is valid for ${tag}`);
+await Bun.write(Bun.stdout, `Release state is valid for ${releaseTag}\n`);

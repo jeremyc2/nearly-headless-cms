@@ -1,20 +1,25 @@
 import { describe, expect, test } from "bun:test";
-import { join } from "node:path";
+import { Effect } from "effect";
 
 describe("Public Blog static output", () => {
-  test("contains public routes and excludes the seeded draft route", async () => {
-    const workspace = join(import.meta.dir, "..", "..");
-    expect(await Bun.file(join(workspace, "dist", "index.html")).exists()).toBeTrue();
-    expect(
-      await Bun.file(
-        join(workspace, "dist", "posts", "a-lighthouse-for-content", "index.html"),
-      ).exists(),
-    ).toBeTrue();
-    expect(
-      await Bun.file(join(workspace, "dist", "posts", "the-unfinished-map", "index.html")).exists(),
-    ).toBeFalse();
-    expect(await Bun.file(join(workspace, "dist", "feed.xml")).text()).not.toContain(
-      "The Unfinished Map",
-    );
-  });
+  test("contains public routes and excludes the seeded draft route", (): Promise<void> =>
+    Effect.runPromise(
+      Effect.gen(function* verifyStaticOutput() {
+        const workspace = `${import.meta.dir}/../..`,
+          workspaceDraftPostExists = yield* Effect.promise(() =>
+            Bun.file(`${workspace}/dist/posts/the-unfinished-map/index.html`).exists(),
+          ),
+          workspaceFeed = yield* Effect.promise(() => Bun.file(`${workspace}/dist/feed.xml`).text()),
+          workspaceIndexExists = yield* Effect.promise(() =>
+            Bun.file(`${workspace}/dist/index.html`).exists(),
+          ),
+          workspacePublishedPostExists = yield* Effect.promise(() =>
+            Bun.file(`${workspace}/dist/posts/a-lighthouse-for-content/index.html`).exists(),
+          );
+        expect(workspaceIndexExists).toBeTrue();
+        expect(workspacePublishedPostExists).toBeTrue();
+        expect(workspaceDraftPostExists).toBeFalse();
+        expect(workspaceFeed).not.toContain("The Unfinished Map");
+      }),
+    ));
 });

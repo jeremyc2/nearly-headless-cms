@@ -1,14 +1,17 @@
-import { Layer } from "effect";
-import type { Management } from "../asset.ts";
-import type { Service as AuthorizationService } from "../authorization.ts";
-import type { Service as CmsService } from "../cms.ts";
-import { makeLayer as makeCmsLayer } from "../cms.ts";
+import {
+  type CmsLayerOptions,
+  type Service as CmsService,
+  makeLayer as makeCmsLayer,
+} from "../cms.ts";
 import type { CompileOptions, CompiledSnapshot } from "../content-definition.ts";
-import type { Handler } from "../definition-migration.ts";
-import type { Generator } from "../identifier.ts";
+import type { DefinitionCatalog, EntryPersistence } from "../persistence.ts";
+import type { Service as AuthorizationService } from "../authorization.ts";
 import type { CurrentIdentity } from "../identity.ts";
 import type { DefinitionContract } from "../operation.ts";
-import type { DefinitionCatalog, EntryPersistence } from "../persistence.ts";
+import type { Generator } from "../identifier.ts";
+import type { Handler } from "../definition-migration.ts";
+import { Layer } from "effect";
+import type { Management } from "../asset.ts";
 import { layer as allowAllAuthorizationLayer } from "../adapters/allow-all-authorization.ts";
 import { layer as anonymousIdentityLayer } from "../adapters/anonymous-identity.ts";
 import { layer as identifierLayer } from "../adapters/crypto-identifier-generator.ts";
@@ -48,9 +51,12 @@ export const layer = ({
       memoryEntryLayer,
       assetLayer,
     );
-  return makeCmsLayer({
-    ...compileOptions,
-    ...(migrationHandlers === undefined ? {} : { migrationHandlers }),
-    ...(operationContracts === undefined ? {} : { operationContracts }),
-  }).pipe(Layer.provide(dependencies));
+  let cmsLayerOptions: CmsLayerOptions = { ...compileOptions };
+  if (migrationHandlers !== undefined) {
+    cmsLayerOptions = { ...cmsLayerOptions, migrationHandlers };
+  }
+  if (operationContracts !== undefined) {
+    cmsLayerOptions = { ...cmsLayerOptions, operationContracts };
+  }
+  return makeCmsLayer(cmsLayerOptions).pipe(Layer.provide(dependencies));
 };

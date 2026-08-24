@@ -1,35 +1,37 @@
-import { publicExport } from "../data/public-export.ts";
+import type { GetStaticPaths } from "astro";
 import { paginate } from "./public-model.ts";
+import { publicExport } from "../data/public-export.ts";
 
-const archivePageSize = 6;
-
-export const authorArchivePaths = () =>
+const archivePageSize = 6,
+  authorArchivePaths: GetStaticPaths = () =>
     publicExport.authors.flatMap((author) =>
-      paginate(
-        publicExport.posts.filter((post) => post.author === author.id),
-        archivePageSize,
-      ).map((page) => ({
+      paginate({
+        items: publicExport.posts.filter((post) => post.author === author.id),
+        pageSize: archivePageSize,
+      }).map((page) => ({
         params: { page: String(page.pageNumber), slug: author.slug },
         props: { author, page },
       })),
     ),
-  categoryArchivePaths = () =>
+  categoryArchivePaths: GetStaticPaths = () =>
     publicExport.categories.flatMap((category) =>
-      paginate(
-        publicExport.posts.filter((post) => post.categories.includes(category.id)),
-        archivePageSize,
-      ).map((page) => ({
+      paginate({
+        items: publicExport.posts.filter((post) => post.categories.includes(category.id)),
+        pageSize: archivePageSize,
+      }).map((page) => ({
         params: { page: String(page.pageNumber), slug: category.slug },
         props: { category, page },
       })),
     ),
-  tagArchivePaths = () =>
+  tagArchivePaths: GetStaticPaths = () =>
     publicExport.tags.flatMap((tag) =>
-      paginate(
-        publicExport.posts.filter((post) => post.tags.includes(tag.id)),
-        archivePageSize,
-      ).map((page) => ({
+      paginate({
+        items: publicExport.posts.filter((post) => post.tags.includes(tag.id)),
+        pageSize: archivePageSize,
+      }).map((page) => ({
         params: { page: String(page.pageNumber), slug: tag.slug },
         props: { page, tag },
       })),
     );
+
+export { authorArchivePaths, categoryArchivePaths, tagArchivePaths };

@@ -1,5 +1,18 @@
 import { RichText } from "nearly-headless-cms";
 
+const emptyIndex = 0,
+  firstIndex = 1,
+  fourthHeadingLevel = 4,
+  historyLimit = 100,
+  negativeOne = -1,
+  secondHeadingLevel = 2,
+  thirdHeadingLevel = 3;
+
+type HeadingLevel =
+  | typeof secondHeadingLevel
+  | typeof thirdHeadingLevel
+  | typeof fourthHeadingLevel;
+
 export interface Position {
   readonly blockIndex: number;
   readonly inlineIndex: number;
@@ -31,7 +44,7 @@ export type Command =
   | {
       readonly type: "setBlockKind";
       readonly blockType: "paragraph" | "heading" | "quote" | "code-block";
-      readonly headingLevel?: 2 | 3 | 4;
+      readonly headingLevel?: HeadingLevel;
     }
   | { readonly type: "toggleMark"; readonly mark: RichText.Mark }
   | { readonly type: "wrapLink"; readonly url: string; readonly label?: string }
@@ -68,31 +81,35 @@ const emptyParagraph = (): RichText.ParagraphNode => ({
   ): readonly RichText.InlineNode[] => {
     const normalized: RichText.InlineNode[] = [];
     for (const node of nodes) {
-      if (node.type === "text" && node.text.length === 0 && nodes.length > 1) {
+      if (node.type === "text" && node.text.length === emptyIndex && nodes.length > firstIndex) {
         continue;
       }
-      const previous = normalized.at(-1);
+      const previous = normalized.at(negativeOne);
       if (
         node.type === "text" &&
         previous?.type === "text" &&
         marksEqual(previous.marks, node.marks)
       ) {
-        normalized[normalized.length - 1] = {
+        normalized[normalized.length - firstIndex] = {
           text: `${previous.text}${node.text}`,
           type: "text",
-          ...((node.marks?.length ?? 0) === 0 ? {} : { marks: canonicalMarks(node.marks!) }),
+          ...((node.marks?.length ?? emptyIndex) === emptyIndex
+            ? {}
+            : { marks: canonicalMarks(node.marks!) }),
         };
       } else if (node.type === "text") {
         normalized.push({
           text: node.text,
           type: "text",
-          ...((node.marks?.length ?? 0) === 0 ? {} : { marks: canonicalMarks(node.marks!) }),
+          ...((node.marks?.length ?? emptyIndex) === emptyIndex
+            ? {}
+            : { marks: canonicalMarks(node.marks!) }),
         });
       } else {
         normalized.push(structuredClone(node));
       }
     }
-    return normalized.length === 0 ? [{ text: "", type: "text" }] : normalized;
+    return normalized.length === emptyIndex ? [{ text: "", type: "text" }] : normalized;
   };
 
 export const normalize = (document: RichText.Document): RichText.Document => {
@@ -104,13 +121,15 @@ export const normalize = (document: RichText.Document): RichText.Document => {
       return {
         ...block,
         children: normalizeInlineNodes(block.children),
-        level: [2, 3, 4].includes(block.level) ? block.level : 2,
+        level: [secondHeadingLevel, thirdHeadingLevel, fourthHeadingLevel].includes(block.level)
+          ? block.level
+          : secondHeadingLevel,
       };
     }
     return structuredClone(block);
   });
   return {
-    children: children.length === 0 ? [emptyParagraph()] : children,
+    children: children.length === emptyIndex ? [emptyParagraph()] : children,
     format: RichText.format,
     version: RichText.formatVersion,
   };
@@ -144,7 +163,7 @@ const selectedText = (
       block = rootBlock;
       replace = (replacement) => replacement;
     } else if (rootBlock.type === "quote") {
-      const paragraph = rootBlock.children[0];
+      const [paragraph] = rootBlock.children;
       if (paragraph === undefined) {
         return undefined;
       }
@@ -155,13 +174,13 @@ const selectedText = (
           replacement.type === "paragraph"
             ? replacement
             : { children: replacement.children, type: "paragraph" },
-          ...rootBlock.children.slice(1),
+          ...rootBlock.children.slice(firstIndex),
         ],
       });
     } else if (rootBlock.type === "ordered-list" || rootBlock.type === "unordered-list") {
-      const listItemIndex = anchor.listItemIndex ?? 0,
+      const listItemIndex = anchor.listItemIndex ?? emptyIndex,
         listItem = rootBlock.children[listItemIndex],
-        paragraph = listItem?.children[0];
+        paragraph = listItem?.children[emptyIndex];
       if (paragraph?.type !== "paragraph") {
         return undefined;
       }
@@ -176,7 +195,7 @@ const selectedText = (
                   replacement.type === "paragraph"
                     ? replacement
                     : { children: replacement.children, type: "paragraph" },
-                  ...candidate.children.slice(1),
+                  ...candidate.children.slice(firstIndex),
                 ],
               }
             : candidate,
@@ -192,10 +211,10 @@ const selectedText = (
     return {
       block,
       end: Math.max(anchor.offset, focus.offset),
-      start: Math.min(anchor.offset, focus.offset),
-      text: node,
       replace,
       rootBlock,
+      start: Math.min(anchor.offset, focus.offset),
+      text: node,
     };
   },
   replaceBlock = (
@@ -213,13 +232,13 @@ const selectedText = (
     if (signature(normalized) === signature(state.document)) {
       return { ...state, selection };
     }
-    const retainedHistory = state.history.slice(0, state.historyIndex + 1),
-      nextHistory = [...retainedHistory, normalized].slice(-100);
+    const retainedHistory = state.history.slice(emptyIndex, state.historyIndex + firstIndex),
+      nextHistory = [...retainedHistory, normalized].slice(-historyLimit);
     return {
       ...state,
       document: normalized,
       history: nextHistory,
-      historyIndex: nextHistory.length - 1,
+      historyIndex: nextHistory.length - firstIndex,
       selection,
     };
   };
@@ -231,11 +250,11 @@ export const create = (document: RichText.Document = emptyDocument()): State => 
     composing: false,
     document: normalized,
     history: [normalized],
-    historyIndex: 0,
+    historyIndex: emptyIndex,
     pendingMarks: [],
     selection: {
-      anchor: { blockIndex: 0, inlineIndex: 0, offset: 0 },
-      focus: { blockIndex: 0, inlineIndex: 0, offset: 0 },
+      anchor: { blockIndex: emptyIndex, inlineIndex: emptyIndex, offset: emptyIndex },
+      focus: { blockIndex: emptyIndex, inlineIndex: emptyIndex, offset: emptyIndex },
     },
   };
 };
@@ -257,11 +276,11 @@ const insertText = (state: State, text: string): State => {
     }
     const position = state.selection.anchor,
       replacement: RichText.TextNode = {
-        text: `${selected.text.text.slice(0, selected.start)}${text}${selected.text.text.slice(selected.end)}`,
+        text: `${selected.text.text.slice(emptyIndex, selected.start)}${text}${selected.text.text.slice(selected.end)}`,
         type: "text",
-        ...((selected.text.marks?.length ?? 0) > 0
+        ...((selected.text.marks?.length ?? emptyIndex) > emptyIndex
           ? { marks: selected.text.marks }
-          : state.pendingMarks.length > 0
+          : state.pendingMarks.length > emptyIndex
             ? { marks: state.pendingMarks }
             : {}),
       },
@@ -291,19 +310,19 @@ const insertText = (state: State, text: string): State => {
         ? activeMarks.filter((candidate) => candidate !== mark)
         : canonicalMarks([...activeMarks, mark]),
       replacement: RichText.TextNode[] = [
-        ...(selected.start === 0
+        ...(selected.start === emptyIndex
           ? []
           : [
               {
-                text: selected.text.text.slice(0, selected.start),
+                text: selected.text.text.slice(emptyIndex, selected.start),
                 type: "text" as const,
-                ...(activeMarks.length === 0 ? {} : { marks: activeMarks }),
+                ...(activeMarks.length === emptyIndex ? {} : { marks: activeMarks }),
               },
             ]),
         {
           text: selected.text.text.slice(selected.start, selected.end),
           type: "text",
-          ...(nextMarks.length === 0 ? {} : { marks: nextMarks }),
+          ...(nextMarks.length === emptyIndex ? {} : { marks: nextMarks }),
         },
         ...(selected.end === selected.text.text.length
           ? []
@@ -311,7 +330,7 @@ const insertText = (state: State, text: string): State => {
               {
                 text: selected.text.text.slice(selected.end),
                 type: "text" as const,
-                ...(activeMarks.length === 0 ? {} : { marks: activeMarks }),
+                ...(activeMarks.length === emptyIndex ? {} : { marks: activeMarks }),
               },
             ]),
       ],
@@ -335,16 +354,16 @@ const insertText = (state: State, text: string): State => {
     const position = state.selection.anchor,
       before: RichText.TextNode = {
         ...selected.text,
-        text: selected.text.text.slice(0, selected.start),
+        text: selected.text.text.slice(emptyIndex, selected.start),
       },
       after: RichText.TextNode = { ...selected.text, text: selected.text.text.slice(selected.end) },
       firstBlock = { ...selected.block, children: [before] } as
         | RichText.ParagraphNode
         | RichText.HeadingNode,
       secondBlock: RichText.ParagraphNode = { children: [after], type: "paragraph" },
-      rootBlock = selected.rootBlock;
+      { rootBlock } = selected;
     if (rootBlock.type === "ordered-list" || rootBlock.type === "unordered-list") {
-      const listItemIndex = position.listItemIndex ?? 0,
+      const listItemIndex = position.listItemIndex ?? emptyIndex,
         nextList: RichText.ListNode = {
           ...rootBlock,
           children: rootBlock.children.flatMap((listItem, index) =>
@@ -358,9 +377,9 @@ const insertText = (state: State, text: string): State => {
         },
         nextPosition = {
           blockIndex: position.blockIndex,
-          inlineIndex: 0,
-          listItemIndex: listItemIndex + 1,
-          offset: 0,
+          inlineIndex: emptyIndex,
+          listItemIndex: listItemIndex + firstIndex,
+          offset: emptyIndex,
         };
       return commit(state, replaceBlock(state.document, position.blockIndex, nextList), {
         anchor: nextPosition,
@@ -368,12 +387,16 @@ const insertText = (state: State, text: string): State => {
       });
     }
     const children = [
-        ...state.document.children.slice(0, position.blockIndex),
+        ...state.document.children.slice(emptyIndex, position.blockIndex),
         firstBlock,
         secondBlock,
-        ...state.document.children.slice(position.blockIndex + 1),
+        ...state.document.children.slice(position.blockIndex + firstIndex),
       ],
-      nextPosition = { blockIndex: position.blockIndex + 1, inlineIndex: 0, offset: 0 };
+      nextPosition = {
+        blockIndex: position.blockIndex + firstIndex,
+        inlineIndex: emptyIndex,
+        offset: emptyIndex,
+      };
     return commit(
       state,
       { ...state.document, children },
@@ -389,12 +412,12 @@ const insertText = (state: State, text: string): State => {
       return state;
     }
     const position = state.selection.anchor,
-      before = selected.text.text.slice(0, selected.start),
+      before = selected.text.text.slice(emptyIndex, selected.start),
       after = selected.text.text.slice(selected.end),
       replacement: RichText.InlineNode[] = [
-        ...(before.length === 0 ? [] : [{ ...selected.text, text: before }]),
+        ...(before.length === emptyIndex ? [] : [{ ...selected.text, text: before }]),
         reference,
-        ...(after.length === 0 ? [] : [{ ...selected.text, text: after }]),
+        ...(after.length === emptyIndex ? [] : [{ ...selected.text, text: after }]),
       ],
       children = selected.block.children.flatMap((node, index) =>
         index === position.inlineIndex ? replacement : [node],
@@ -423,11 +446,11 @@ export const transact = (state: State, command: Command): State => {
         return state;
       }
       if (
-        selected.start === 0 &&
-        selected.end === 0 &&
+        selected.start === emptyIndex &&
+        selected.end === emptyIndex &&
         (selected.rootBlock.type === "ordered-list" || selected.rootBlock.type === "unordered-list")
       ) {
-        const listItemIndex = state.selection.anchor.listItemIndex ?? 0,
+        const listItemIndex = state.selection.anchor.listItemIndex ?? emptyIndex,
           paragraph: RichText.ParagraphNode = {
             children: selected.block.children,
             type: "paragraph",
@@ -436,16 +459,17 @@ export const transact = (state: State, command: Command): State => {
             (_, index) => index !== listItemIndex,
           ),
           replacement = [
-            ...state.document.children.slice(0, state.selection.anchor.blockIndex),
-            ...(remainingItems.length === 0
+            ...state.document.children.slice(emptyIndex, state.selection.anchor.blockIndex),
+            ...(remainingItems.length === emptyIndex
               ? []
               : [{ ...selected.rootBlock, children: remainingItems }]),
             paragraph,
-            ...state.document.children.slice(state.selection.anchor.blockIndex + 1),
+            ...state.document.children.slice(state.selection.anchor.blockIndex + firstIndex),
           ],
           nextBlockIndex =
-            state.selection.anchor.blockIndex + (remainingItems.length === 0 ? 0 : 1),
-          position = { blockIndex: nextBlockIndex, inlineIndex: 0, offset: 0 };
+            state.selection.anchor.blockIndex +
+            (remainingItems.length === emptyIndex ? emptyIndex : firstIndex),
+          position = { blockIndex: nextBlockIndex, inlineIndex: emptyIndex, offset: emptyIndex };
         return commit(
           state,
           { ...state.document, children: replacement },
@@ -453,7 +477,9 @@ export const transact = (state: State, command: Command): State => {
         );
       }
       const start =
-          selected.start === selected.end ? Math.max(0, selected.start - 1) : selected.start,
+          selected.start === selected.end
+            ? Math.max(emptyIndex, selected.start - firstIndex)
+            : selected.start,
         selection = {
           anchor: { ...state.selection.anchor, offset: start },
           focus: { ...state.selection.focus, offset: selected.end },
@@ -479,19 +505,22 @@ export const transact = (state: State, command: Command): State => {
             }),
           );
         }
-        const listItemIndex = state.selection.anchor.listItemIndex ?? 0,
-          paragraph = rootBlock.children[listItemIndex]?.children[0];
+        const listItemIndex = state.selection.anchor.listItemIndex ?? emptyIndex,
+          paragraph = rootBlock.children[listItemIndex]?.children[emptyIndex];
         if (paragraph?.type !== "paragraph") {
           return state;
         }
         const remainingItems = rootBlock.children.filter((_, index) => index !== listItemIndex),
           children = [
-            ...state.document.children.slice(0, blockIndex),
-            ...(remainingItems.length === 0 ? [] : [{ ...rootBlock, children: remainingItems }]),
+            ...state.document.children.slice(emptyIndex, blockIndex),
+            ...(remainingItems.length === emptyIndex
+              ? []
+              : [{ ...rootBlock, children: remainingItems }]),
             paragraph,
-            ...state.document.children.slice(blockIndex + 1),
+            ...state.document.children.slice(blockIndex + firstIndex),
           ],
-          nextBlockIndex = blockIndex + (remainingItems.length === 0 ? 0 : 1),
+          nextBlockIndex =
+            blockIndex + (remainingItems.length === emptyIndex ? emptyIndex : firstIndex),
           position = {
             blockIndex: nextBlockIndex,
             inlineIndex: state.selection.anchor.inlineIndex,
@@ -517,11 +546,11 @@ export const transact = (state: State, command: Command): State => {
         },
         position = {
           ...state.selection.anchor,
-          listItemIndex: 0,
+          listItemIndex: emptyIndex,
         },
         focus = {
           ...state.selection.focus,
-          listItemIndex: 0,
+          listItemIndex: emptyIndex,
         };
       return commit(state, replaceBlock(state.document, blockIndex, list), {
         anchor: position,
@@ -529,14 +558,18 @@ export const transact = (state: State, command: Command): State => {
       });
     }
     case "setBlockKind": {
-      const { blockIndex } = state.selection.anchor;
-      const block = state.document.children[blockIndex];
+      const { blockIndex } = state.selection.anchor,
+        block = state.document.children[blockIndex];
       if (block?.type !== "paragraph" && block?.type !== "heading") {
         return state;
       }
       const replacement: RichText.BlockNode =
         command.blockType === "heading"
-          ? { children: block.children, level: command.headingLevel ?? 2, type: "heading" }
+          ? {
+              children: block.children,
+              level: command.headingLevel ?? secondHeadingLevel,
+              type: "heading",
+            }
           : command.blockType === "paragraph"
             ? { children: block.children, type: "paragraph" }
             : command.blockType === "code-block"
@@ -566,7 +599,7 @@ export const transact = (state: State, command: Command): State => {
         selected.start === selected.end
           ? (command.label ?? "")
           : selected.text.text.slice(selected.start, selected.end);
-      if (label.length === 0) {
+      if (label.length === emptyIndex) {
         return state;
       }
       return insertReference(state, {
@@ -590,7 +623,7 @@ export const transact = (state: State, command: Command): State => {
         selected.start === selected.end
           ? (command.label ?? "")
           : selected.text.text.slice(selected.start, selected.end);
-      if (label.length === 0) {
+      if (label.length === emptyIndex) {
         return state;
       }
       return insertReference(state, {
@@ -607,21 +640,28 @@ export const transact = (state: State, command: Command): State => {
           ...(command.caption === undefined ? {} : { caption: command.caption }),
           children: [],
         },
-        { blockIndex } = state.selection.focus;
-      const children = [
-          ...state.document.children.slice(0, blockIndex + 1),
+        { blockIndex } = state.selection.focus,
+        children = [
+          ...state.document.children.slice(emptyIndex, blockIndex + firstIndex),
           asset,
-          ...state.document.children.slice(blockIndex + 1),
+          ...state.document.children.slice(blockIndex + firstIndex),
         ],
-        position = { blockIndex: blockIndex + 1, inlineIndex: 0, offset: 0 };
+        position = {
+          blockIndex: blockIndex + firstIndex,
+          inlineIndex: emptyIndex,
+          offset: emptyIndex,
+        };
       return commit(state, { ...state.document, children }, { anchor: position, focus: position });
     }
     case "undo": {
-      const historyIndex = Math.max(0, state.historyIndex - 1);
+      const historyIndex = Math.max(emptyIndex, state.historyIndex - firstIndex);
       return { ...state, document: structuredClone(state.history[historyIndex]!), historyIndex };
     }
     case "redo": {
-      const historyIndex = Math.min(state.history.length - 1, state.historyIndex + 1);
+      const historyIndex = Math.min(
+        state.history.length - firstIndex,
+        state.historyIndex + firstIndex,
+      );
       return { ...state, document: structuredClone(state.history[historyIndex]!), historyIndex };
     }
     case "composition": {

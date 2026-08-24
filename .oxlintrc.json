@@ -22,9 +22,33 @@
     "suspicious": "error"
   },
   "env": {
-    "builtin": true
+    "browser": true,
+    "builtin": true,
+    "node": true
   },
+  "globals": {
+    "Bun": "readonly"
+  },
+  "overrides": [
+    {
+      "env": {
+        "astro": true
+      },
+      "files": [
+        "apps/public-blog/**/*.astro"
+      ]
+    }
+  ],
   "rules": {
+    "eslint/new-cap": "off",
+    "eslint/no-undefined": "off",
+    "oxc/no-async-await": "off",
+    "oxc/no-optional-chaining": "off",
+    "oxc/no-rest-spread-properties": "off",
+    "typescript/prefer-readonly-parameter-types": "off",
+    "typescript/promise-function-async": "off",
+    "unicorn/no-null": "off",
+
     "effecttsgo/abort-controller-in-effect": "error",
     "effecttsgo/any-unknown-in-error-context": "error",
     "effecttsgo/async-function": "error",

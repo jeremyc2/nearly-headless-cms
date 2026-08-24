@@ -1,13 +1,14 @@
 import { BunHttpServer, BunRuntime } from "@effect/platform-bun";
-import { Layer } from "effect";
 import { HttpRouter, HttpStaticServer } from "effect/unstable/http";
-import { join } from "node:path";
+import { Layer } from "effect";
 
 const port = Number(Bun.env.PUBLIC_BLOG_PORT ?? "4321"),
-  staticFiles = HttpStaticServer.layer({
+  serverStaticFilesLayer = HttpStaticServer.layer({
     index: "index.html",
-    root: join(import.meta.dir, "..", "dist"),
+    root: `${import.meta.dir}/../dist`,
     spa: false,
   }),
-  server = HttpRouter.serve(staticFiles).pipe(Layer.provide(BunHttpServer.layer({ port })));
-BunRuntime.runMain(Layer.launch(server));
+  serverWithStaticFilesLayer = HttpRouter.serve(serverStaticFilesLayer).pipe(
+    Layer.provide(BunHttpServer.layer({ port })),
+  );
+BunRuntime.runMain(Layer.launch(serverWithStaticFilesLayer));

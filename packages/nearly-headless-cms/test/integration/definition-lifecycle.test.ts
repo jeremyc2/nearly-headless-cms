@@ -1,13 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import { Effect, Exit } from "effect";
-import { Cms, ContentDefinition, Operation } from "../../src/index.ts";
+import { Cms, ContentDefinition, type Operation } from "../../src/index.ts";
 import { DevelopmentCms } from "../../src/testing/index.ts";
 
 const initialSnapshot = ContentDefinition.compile({
   definitionSpaceId: "definition-lifecycle",
   definitions: [
     {
-      fields: [{ key: "title", label: "Title", required: true, kind: { kind: "text" } }],
+      fields: [{ key: "title", kind: { kind: "text" }, label: "Title", required: true }],
       history: true,
       id: "note",
       kind: "contentType",
@@ -19,9 +19,9 @@ const initialSnapshot = ContentDefinition.compile({
 });
 
 describe("runtime Content Definition lifecycle", () => {
-  test("activates compatible revisions and atomically migrates incompatible Entries", async () => {
-    await Effect.runPromise(
-      Effect.gen(function* () {
+  test("activates compatible revisions and atomically migrates incompatible Entries", () =>
+    Effect.runPromise(
+      Effect.gen(function* activateCompatibleRevisions() {
         const cms = yield* Cms.Service,
           created = yield* cms.createEntry({
             contentTypeId: "note",
@@ -160,10 +160,9 @@ describe("runtime Content Definition lifecycle", () => {
           }),
         ),
       ),
-    );
-  });
+    ));
 
-  test("retains composition-time Custom Field registrations during activation", async () => {
+  test("retains composition-time Custom Field registrations during activation", () => {
     const ratingRegistration: ContentDefinition.CustomFieldRegistration = {
       capabilities: { filter: ["equals"], projectable: true, sortable: true },
       formatVersion: 1,
@@ -180,8 +179,8 @@ describe("runtime Content Definition lifecycle", () => {
               },
             ],
     };
-    await Effect.runPromise(
-      Effect.gen(function* () {
+    return Effect.runPromise(
+      Effect.gen(function* retainCustomFieldRegistrations() {
         const cms = yield* Cms.Service,
           ratedNote = {
             fields: [

@@ -8,7 +8,7 @@ const snapshot = ContentDefinition.compile({
     definitions: [
       {
         fields: [
-          { key: "name", label: "Name", required: true, unique: true, kind: { kind: "text" } },
+          { key: "name", kind: { kind: "text" }, label: "Name", required: true, unique: true },
         ],
         id: "author",
         kind: "contentType",
@@ -16,18 +16,18 @@ const snapshot = ContentDefinition.compile({
       },
       {
         fields: [
-          { key: "title", label: "Title", required: true, kind: { kind: "text" } },
+          { key: "title", kind: { kind: "text" }, label: "Title", required: true },
           {
-            key: "status",
-            label: "Status",
             defaultValue: "draft",
+            key: "status",
             kind: { kind: "enum", values: ["draft", "published"] },
+            label: "Status",
           },
           {
             key: "author",
+            kind: { kind: "relationship", targetContentTypeIds: ["author"] },
             label: "Author",
             required: true,
-            kind: { kind: "relationship", targetContentTypeIds: ["author"] },
           },
         ],
         history: true,
@@ -38,60 +38,53 @@ const snapshot = ContentDefinition.compile({
     ],
     snapshotId: "initial",
   }),
-  run = async <Value, Error>(effect: Effect.Effect<Value, Error, Cms.Service>) =>
-    Effect.runPromise(effect.pipe(Effect.provide(DevelopmentCms.layer({ snapshot }))));
+  run = <Value, Error>(effect: Effect.Effect<Value, Error, Cms.Service>): Promise<Value> =>
+    Effect.runPromise(effect.pipe(Effect.provide(DevelopmentCms.layer({ snapshot })))),
+  verifySuccessfulOperations = Effect.gen(function* verifySuccessfulOperations() {
+    const cms = yield* Cms.Service;
+    const author = yield* cms.createEntry({ contentTypeId: "author", values: { name: "Ada" } });
+    expect("writeToken" in author).toBeFalse();
+    if ("writeToken" in author) {
+      return;
+    }
+    const post = yield* cms.createEntry({
+      contentTypeId: "post",
+      values: { author: author.id, title: "First" },
+    });
+    expect("writeToken" in post).toBeTrue();
+    if (!("writeToken" in post)) {
+      return;
+    }
+    expect(post.entry.values["status"]).toBe("draft");
+    const updated = yield* cms.updateEntry({
+      contentTypeId: "post",
+      entryId: post.entry.id,
+      values: { author: author.id, status: "published", title: "Published" },
+      writeToken: post.writeToken,
+    });
+    if (!("writeToken" in updated)) {
+      return;
+    }
+    expect(updated.revisionNumber).toBe(2);
+    const revisions = yield* cms.listEntryRevisions({
+      contentTypeId: "post",
+      entryId: post.entry.id,
+      pageSize: 10,
+    });
+    expect(revisions.items.map((revision) => revision.revisionNumber)).toEqual([2, 1]);
+  }),
+  verifyFailedRelationship = Effect.gen(function* verifyFailedRelationship() {
+    const cms = yield* Cms.Service;
+    yield* cms.createEntry({
+      contentTypeId: "post",
+      values: { author: "missing", title: "Broken" },
+    });
+  });
 
 describe("Cms.Service", () => {
   test("enforces definitions, Relationships, unique values, and history-aware concurrency", async () => {
-    await run(
-      Effect.gen(function* () {
-        const cms = yield* Cms.Service,
-          author = yield* cms.createEntry({ contentTypeId: "author", values: { name: "Ada" } });
-        expect("writeToken" in author).toBeFalse();
-        if ("writeToken" in author) {
-          return;
-        }
+    await run(verifySuccessfulOperations);
 
-        const post = yield* cms.createEntry({
-          contentTypeId: "post",
-          values: { author: author.id, title: "First" },
-        });
-        expect("writeToken" in post).toBeTrue();
-        if (!("writeToken" in post)) {
-          return;
-        }
-        expect(post.entry.values["status"]).toBe("draft");
-
-        const updated = yield* cms.updateEntry({
-          contentTypeId: "post",
-          entryId: post.entry.id,
-          values: { author: author.id, status: "published", title: "Published" },
-          writeToken: post.writeToken,
-        });
-        if (!("writeToken" in updated)) {
-          return;
-        }
-        expect(updated.revisionNumber).toBe(2);
-
-        const revisions = yield* cms.listEntryRevisions({
-          contentTypeId: "post",
-          entryId: post.entry.id,
-          pageSize: 10,
-        });
-        expect(revisions.items.map((revision) => revision.revisionNumber)).toEqual([2, 1]);
-      }),
-    );
-
-    expect(
-      run(
-        Effect.gen(function* () {
-          const cms = yield* Cms.Service;
-          yield* cms.createEntry({
-            contentTypeId: "post",
-            values: { author: "missing", title: "Broken" },
-          });
-        }),
-      ),
-    ).rejects.toThrow("Relationship target");
+    expect(run(verifyFailedRelationship)).rejects.toThrow("Relationship target");
   });
 });

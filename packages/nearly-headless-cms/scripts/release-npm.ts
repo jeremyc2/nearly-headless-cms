@@ -1,20 +1,19 @@
-import { resolve } from "node:path";
-
+const archiveValue = Bun.env["PACKAGE_ARCHIVE"],
+  successfulExitCode = 0;
 if (Bun.env["CONFIRM_NPM_RELEASE"] !== "nearly-headless-cms@0.1.0") {
   throw new Error("Refusing publication without the exact protected release confirmation");
 }
-const archiveValue = Bun.env["PACKAGE_ARCHIVE"];
 if (archiveValue === undefined) {
   throw new Error("PACKAGE_ARCHIVE must identify the already inspected exact tarball");
 }
-const archivePath = resolve(archiveValue);
-if (!(await Bun.file(archivePath).exists())) {
-  throw new Error(`Package archive does not exist: ${archivePath}`);
+if (!(await Bun.file(archiveValue).exists())) {
+  throw new Error(`Package archive does not exist: ${archiveValue}`);
 }
-const publication = Bun.spawn(["npm", "publish", archivePath, "--provenance"], {
-  stderr: "inherit",
-  stdout: "inherit",
-});
-if ((await publication.exited) !== 0) {
+if (
+  (await Bun.spawn(["npm", "publish", archiveValue, "--provenance"], {
+    stderr: "inherit",
+    stdout: "inherit",
+  }).exited) !== successfulExitCode
+) {
   throw new Error("npm publication failed");
 }

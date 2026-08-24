@@ -328,7 +328,7 @@ const errorSchema = {
     method: string,
     operationDescriptor: OperationDescriptor,
   ): Readonly<Record<string, unknown>> => {
-    const operationIdentifier = operationDescriptor.operationIdentifier,
+    const {operationIdentifier} = operationDescriptor,
       successStatus =
         operationDescriptor.successStatus ?? successStatuses.get(operationIdentifier) ?? 200,
       bodyless = method === "head" || successStatus === 204,
@@ -355,9 +355,9 @@ const errorSchema = {
           ? (successSchemas.get(operationIdentifier) ?? {
               $ref: "#/components/schemas/JsonObject",
             })
-          : responseMediaType === "application/octet-stream"
+          : (responseMediaType === "application/octet-stream"
             ? { format: "binary", type: "string" }
-            : effectSchema(operationDescriptor.schemas.response);
+            : effectSchema(operationDescriptor.schemas.response));
     return {
       operationId: operationIdentifier,
       ...(parameters.length === 0 ? {} : { parameters }),

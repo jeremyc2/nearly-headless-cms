@@ -3,6 +3,9 @@ import type { CompiledSnapshot } from "./content-definition.ts";
 import type { Representation } from "./entry.ts";
 import type { JsonObject, JsonValue } from "./internal/json.ts";
 
+const NO_PATHS = 0;
+const SINGLE_PATH = 1;
+
 /** One directed, versioned Definition migration edge. */
 export interface Manifest {
   readonly id: string;
@@ -135,11 +138,11 @@ export const prepare = (input: PreparationInput): Preparation => {
     }
   }
   return {
-    entries: issues.length === 0 ? transformedEntries : [],
+    entries: issues.length === NO_PATHS ? transformedEntries : [],
     id: `${input.manifest.id}@${input.sourceGeneration}`,
     manifest: input.manifest,
     report:
-      issues.length === 0
+      issues.length === NO_PATHS
         ? { status: "ready", transformedEntryCount: transformedEntries.length }
         : { issues, status: "failed" },
     sourceGeneration: input.sourceGeneration,
@@ -160,25 +163,37 @@ export const assertFresh = (preparation: Preparation, currentGeneration: number)
   }
 };
 
-const pathCount = (
-  manifests: readonly Manifest[],
-  sourceSnapshotId: string,
-  targetSnapshotId: string,
-  visited: ReadonlySet<string>,
-): number => {
+interface PathCountInput {
+  readonly manifests: readonly Manifest[];
+  readonly sourceSnapshotId: string;
+  readonly targetSnapshotId: string;
+  readonly visited: ReadonlySet<string>;
+}
+
+const pathCount = ({
+  manifests,
+  sourceSnapshotId,
+  targetSnapshotId,
+  visited,
+}: PathCountInput): number => {
   if (sourceSnapshotId === targetSnapshotId) {
-    return 1;
+    return SINGLE_PATH;
   }
   if (visited.has(sourceSnapshotId)) {
-    return 0;
+    return NO_PATHS;
   }
-  let count = 0;
+  let count = NO_PATHS;
   const nextVisited = new Set(visited).add(sourceSnapshotId);
   for (const manifest of manifests.filter(
     (candidate) => candidate.sourceSnapshotId === sourceSnapshotId,
   )) {
-    count += pathCount(manifests, manifest.targetSnapshotId, targetSnapshotId, nextVisited);
-    if (count > 1) {
+    count += pathCount({
+      manifests,
+      sourceSnapshotId: manifest.targetSnapshotId,
+      targetSnapshotId,
+      visited: nextVisited,
+    });
+    if (count > SINGLE_PATH) {
       return count;
     }
   }
@@ -204,7 +219,8 @@ export const validateGraph = (manifests: readonly Manifest[]): void => {
     for (const targetSnapshotId of snapshots) {
       if (
         sourceSnapshotId !== targetSnapshotId &&
-        pathCount(manifests, sourceSnapshotId, targetSnapshotId, new Set()) > 1
+        pathCount({ manifests, sourceSnapshotId, targetSnapshotId, visited: new Set() }) >
+          SINGLE_PATH
       ) {
         throw InvalidInput.make({
           message: `Migration graph is ambiguous between ${sourceSnapshotId} and ${targetSnapshotId}`,

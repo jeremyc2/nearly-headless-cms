@@ -1,5 +1,4 @@
-import type { Effect } from "effect";
-import { Context } from "effect";
+import { Context, type Effect } from "effect";
 import type { InfrastructureFailure } from "./cms-error.ts";
 
 /** Address and scoped close action for a running Builder Transport. */
@@ -14,4 +13,4 @@ export class Service extends Context.Service<
   {
     readonly start: Effect.Effect<RunningTransport, InfrastructureFailure>;
   }
->()("nearly-headless-cms/Transport/Service") {}
+>()("nearly-headless-cms/transport/Service") {}

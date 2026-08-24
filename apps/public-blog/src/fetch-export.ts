@@ -1,78 +1,134 @@
-import { mkdir, rename, rm } from "node:fs/promises";
-import { join } from "node:path";
-import { Effect } from "effect";
+import { Effect, ManagedRuntime, Schema } from "effect";
+import { FetchHttpClient, HttpClient } from "effect/unstable/http";
 import {
+  type PublicAsset,
   type PublicBlogExport,
+  PublicBlogExportSchema,
   UnsupportedDefinition,
   makeHeadlessClient,
 } from "./generated/headless-client.ts";
+import { FetchExportFailure } from "./fetch-export-failure.ts";
 
-const workspace = join(import.meta.dir, ".."),
-  generatedDirectory = join(workspace, ".generated"),
-  assetsDirectory = join(workspace, "public", "generated-assets"),
+const assetExtension = (mediaType: string): string => {
+    if (mediaType === "image/svg+xml") {
+      return ".svg";
+    }
+    if (mediaType === "image/png") {
+      return ".png";
+    }
+    if (mediaType === "image/jpeg") {
+      return ".jpg";
+    }
+    return ".bin";
+  },
+  assetResponseLowerBound = 200,
+  assetResponseUpperBound = 300,
+  assetsDirectory = new URL("../public/generated-assets/", import.meta.url).pathname,
   cmsBaseUrl = Bun.env.EXAMPLE_CMS_URL ?? "http://localhost:3000",
-  client = makeHeadlessClient(cmsBaseUrl),
-  program = Effect.gen(function* program() {
-    const discovery = yield* client.discover(),
-      contractVersion = discovery.apiContractVersion,
-      fingerprint = discovery.definitionFingerprint,
-      richText = discovery.richText as Readonly<Record<string, unknown>> | undefined;
-    if (
-      contractVersion !== 1 ||
-      typeof fingerprint !== "string" ||
-      richText?.version !== 1 ||
-      (Array.isArray(richText?.extensions) && richText.extensions.length > 0)
-    ) {
+  cmsClient = makeHeadlessClient(cmsBaseUrl),
+  fetchAsset = (
+    asset: PublicAsset,
+  ): Effect.Effect<PublicAsset, FetchExportFailure, HttpClient.HttpClient> => {
+    const extension = assetExtension(asset.metadata.mediaType),
+      filename = `${asset.id}${extension}`,
+      finalPath = `${assetsDirectory}${filename}`,
+      stagePath = `${assetsDirectory}.stage-${filename}`,
+      url = `${cmsBaseUrl}/api/v1/headless/assets/${encodeURIComponent(asset.id)}`;
+    return HttpClient.get(url).pipe(
+      Effect.mapError((cause) =>
+        FetchExportFailure.make({ cause, message: `Asset ${asset.id} request failed` }),
+      ),
+      Effect.flatMap((response) => {
+        if (
+          response.status < assetResponseLowerBound ||
+          response.status >= assetResponseUpperBound
+        ) {
+          return FetchExportFailure.make({
+            message: `Asset ${asset.id} failed with ${response.status}`,
+          });
+        }
+        return response.arrayBuffer.pipe(
+          Effect.mapError((cause) =>
+            FetchExportFailure.make({ cause, message: `Asset ${asset.id} body failed` }),
+          ),
+        );
+      }),
+      Effect.flatMap((contents) =>
+        Effect.tryPromise({
+          catch: (cause) =>
+            FetchExportFailure.make({ cause, message: `Asset ${asset.id} write failed` }),
+          try: () =>
+            Bun.write(stagePath, contents).then(() => Bun.$`mv ${stagePath} ${finalPath}`.quiet()),
+        }),
+      ),
+      Effect.as({ ...asset, localPath: `/generated-assets/${filename}` }),
+      Effect.tapError(() =>
+        Effect.promise(() => Bun.$`rm -f ${stagePath}`.quiet()).pipe(Effect.ignore),
+      ),
+    );
+  },
+  generatedDirectory = new URL("../.generated/", import.meta.url).pathname,
+  generatedSnapshotPath = `${generatedDirectory}public-export.json`,
+  generatedStageSnapshotPath = `${generatedDirectory}.public-export.stage.json`,
+  noItemsCount = 0,
+  readPublicExport = Effect.gen(function* readPublicExportEffect() {
+    const discovery = yield* cmsClient.discover;
+    if (discovery.richText.extensions.length > noItemsCount) {
       return yield* UnsupportedDefinition.make({
         message: "Public Blog cannot support the advertised Definition Snapshot",
       });
     }
-    const exported = yield* client.exportPublicBlog(fingerprint);
-    if (
-      exported.definitionFingerprint !== fingerprint ||
-      exported.posts.some((post) => post.status !== "published") ||
-      exported.comments.some((comment) => comment.status !== "approved")
-    ) {
-      return yield* UnsupportedDefinition.make({
-        message: "Public export violates its advertised public contract",
-      });
+    {
+      const exported = yield* cmsClient.exportPublicBlog(discovery.definitionFingerprint);
+      if (exported.definitionFingerprint !== discovery.definitionFingerprint) {
+        return yield* UnsupportedDefinition.make({
+          message: "Public export violates its advertised public contract",
+        });
+      }
+      return exported;
     }
-    return exported;
   }),
-  exported = await Effect.runPromise(program);
-await mkdir(generatedDirectory, { recursive: true });
-await mkdir(assetsDirectory, { recursive: true });
-const assets: PublicBlogExport["assets"][number][] = [];
-for (const asset of exported.assets) {
-  const response = await fetch(
-    `${cmsBaseUrl}/api/v1/headless/assets/${encodeURIComponent(asset.id)}`,
-  );
-  if (!response.ok) {
-    throw new Error(`Asset ${asset.id} failed with ${response.status}`);
-  }
-  const extension =
-      asset.metadata.mediaType === "image/svg+xml"
-        ? ".svg"
-        : asset.metadata.mediaType === "image/png"
-          ? ".png"
-          : asset.metadata.mediaType === "image/jpeg"
-            ? ".jpg"
-            : ".bin",
-    filename = `${asset.id}${extension}`,
-    stagePath = join(assetsDirectory, `.stage-${filename}`),
-    finalPath = join(assetsDirectory, filename);
-  await Bun.write(stagePath, await response.arrayBuffer());
-  await rename(stagePath, finalPath);
-  assets.push({ ...asset, localPath: `/generated-assets/${filename}` });
-}
-const snapshot: PublicBlogExport = { ...exported, assets },
-  stageSnapshotPath = join(generatedDirectory, ".public-export.stage.json"),
-  snapshotPath = join(generatedDirectory, "public-export.json");
+  writePublicSnapshot = (snapshot: PublicBlogExport): Effect.Effect<void, FetchExportFailure> =>
+    Effect.gen(function* writePublicSnapshotEffect() {
+      const snapshotJson = yield* Schema.encodeEffect(
+        Schema.fromJsonString(PublicBlogExportSchema),
+      )(snapshot).pipe(
+        Effect.mapError((cause) =>
+          FetchExportFailure.make({ cause, message: "Public export snapshot encoding failed" }),
+        ),
+      );
+      yield* Effect.tryPromise({
+        catch: (cause) =>
+          FetchExportFailure.make({ cause, message: "Public export snapshot write failed" }),
+        try: () =>
+          Bun.write(generatedStageSnapshotPath, `${snapshotJson}\n`).then(() =>
+            Bun.$`mv ${generatedStageSnapshotPath} ${generatedSnapshotPath}`.quiet(),
+          ),
+      }).pipe(
+        Effect.tapError(() =>
+          Effect.promise(() => Bun.$`rm -f ${generatedStageSnapshotPath}`.quiet()).pipe(
+            Effect.ignore,
+          ),
+        ),
+        Effect.asVoid,
+      );
+    }),
+  zProgram = Effect.gen(function* fetchPublicExport() {
+    const exported = yield* readPublicExport;
+    yield* Effect.promise(() => Bun.$`mkdir -p ${generatedDirectory} ${assetsDirectory}`.quiet());
+    {
+      const assets = yield* Effect.forEach(exported.assets, fetchAsset, {
+          concurrency: "unbounded",
+        }),
+        snapshot: PublicBlogExport = { ...exported, assets };
+      yield* writePublicSnapshot(snapshot);
+      return yield* Effect.log(`Fetched coherent public export ${snapshot.definitionFingerprint}`);
+    }
+  }),
+  zRuntime = ManagedRuntime.make(FetchHttpClient.layer);
+
 try {
-  await Bun.write(stageSnapshotPath, `${JSON.stringify(snapshot, null, 2)}\n`);
-  await rename(stageSnapshotPath, snapshotPath);
-} catch (error) {
-  await rm(stageSnapshotPath, { force: true });
-  throw error;
+  await zRuntime.runPromise(zProgram);
+} finally {
+  await zRuntime.dispose();
 }
-console.log(`Fetched coherent public export ${snapshot.definitionFingerprint}`);

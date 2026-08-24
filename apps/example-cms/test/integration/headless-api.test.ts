@@ -1,12 +1,10 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
-import type { ExampleSystem } from "../../src/system.ts";
-import { createExampleSystem } from "../../src/system.ts";
+import { type ExampleSystem, createExampleSystem } from "../../src/system.ts";
 
 describe("Example CMS Headless API", () => {
-  let system: ExampleSystem;
-  let storageRoot: string;
+  let storageRoot: string, system: ExampleSystem;
 
   beforeAll(async () => {
     storageRoot = await mkdtemp(join(import.meta.dir, ".headless-api-"));
@@ -31,9 +29,10 @@ describe("Example CMS Headless API", () => {
   });
 
   test("deduplicates pending Comment submission by idempotency key", async () => {
-    const exported = (await (
-        await system.handler(new Request("http://cms.test/api/v1/headless/export"))
-      ).json()) as { posts: readonly { id: string }[] },
+    const exportResponse = await system.handler(
+        new Request("http://cms.test/api/v1/headless/export"),
+      ),
+      exported = (await exportResponse.json()) as { posts: readonly { id: string }[] },
       postId = exported.posts[0]!.id,
       request = () =>
         new Request(`http://cms.test/api/v1/headless/posts/${postId}/comments`, {
@@ -84,7 +83,8 @@ describe("Example CMS Headless API", () => {
       }),
     );
     expect(partial.status).toBe(206);
-    expect((await partial.arrayBuffer()).byteLength).toBe(10);
+    const partialBody = await partial.arrayBuffer();
+    expect(partialBody.byteLength).toBe(10);
 
     const draft = await system.handler(
       new Request("http://cms.test/api/v1/headless/posts/the-unfinished-map"),
@@ -95,7 +95,8 @@ describe("Example CMS Headless API", () => {
   test("exposes named editorial Management commands with Write Token concurrency", async () => {
     const postId = system.seed!.publishedPostId,
       statePath = `http://cms.test/api/v1/management/definition-spaces/example-blog/content-types/post/entries/${postId}/state`,
-      initial = (await (await system.handler(new Request(statePath))).json()) as {
+      initialResponse = await system.handler(new Request(statePath)),
+      initial = (await initialResponse.json()) as {
         writeToken: string;
       },
       returnedToDraft = await system.handler(
@@ -139,16 +140,18 @@ describe("Example CMS Headless API", () => {
   });
 
   test("runs detachment, image replacement, and cascade deletion commands through safe commit boundaries", async () => {
-    const exportBefore = (await (
-        await system.handler(new Request("http://cms.test/api/v1/headless/export"))
-      ).json()) as {
+    const exportBeforeResponse = await system.handler(
+        new Request("http://cms.test/api/v1/headless/export"),
+      ),
+      exportBefore = (await exportBeforeResponse.json()) as {
         assets: readonly { id: string }[];
         categories: readonly { id: string }[];
         posts: readonly { id: string; categories: readonly string[]; featuredAsset: string }[];
       },
       categoryId = exportBefore.categories[0]!.id,
       categoryStateUrl = `http://cms.test/api/v1/management/definition-spaces/example-blog/content-types/category/entries/${categoryId}/state`,
-      categoryState = (await (await system.handler(new Request(categoryStateUrl))).json()) as {
+      categoryStateResponse = await system.handler(new Request(categoryStateUrl)),
+      categoryState = (await categoryStateResponse.json()) as {
         writeToken: string;
       },
       detached = await system.handler(
@@ -197,7 +200,8 @@ describe("Example CMS Headless API", () => {
 
     const postId = system.seed!.publishedPostId,
       postStateUrl = `http://cms.test/api/v1/management/definition-spaces/example-blog/content-types/post/entries/${postId}/state`,
-      postState = (await (await system.handler(new Request(postStateUrl))).json()) as {
+      postStateResponse = await system.handler(new Request(postStateUrl)),
+      postState = (await postStateResponse.json()) as {
         writeToken: string;
       },
       cascaded = await system.handler(
@@ -208,18 +212,14 @@ describe("Example CMS Headless API", () => {
             method: "POST",
           },
         ),
-      );
+    );
     expect(cascaded.status).toBe(200);
-    expect(
-      ((await cascaded.json()) as { deletedCommentCount: number }).deletedCommentCount,
-    ).toBeGreaterThanOrEqual(2);
-    expect(
-      (
-        await system.handler(
-          new Request("http://cms.test/api/v1/headless/posts/a-lighthouse-for-content"),
-        )
-      ).status,
-    ).toBe(404);
+    const cascadeReceipt = (await cascaded.json()) as { deletedCommentCount: number },
+      deletedPostResponse = await system.handler(
+        new Request("http://cms.test/api/v1/headless/posts/a-lighthouse-for-content"),
+      );
+    expect(cascadeReceipt.deletedCommentCount).toBeGreaterThanOrEqual(2);
+    expect(deletedPostResponse.status).toBe(404);
   });
 
   test("replays durable Comment receipts and Definition state after restart", async () => {
@@ -235,12 +235,14 @@ describe("Example CMS Headless API", () => {
           },
           method: "POST",
         }),
-      firstReceipt = await (await firstSystem.handler(makeRequest())).json();
+      firstResponse = await firstSystem.handler(makeRequest()),
+      firstReceipt = await firstResponse.json();
     await firstSystem.dispose();
 
     const restartedSystem = await createExampleSystem({ storageRoot: restartRoot });
     try {
-      const replayedReceipt = await (await restartedSystem.handler(makeRequest())).json(),
+      const replayedResponse = await restartedSystem.handler(makeRequest()),
+        replayedReceipt = await replayedResponse.json(),
         schema = await restartedSystem.handler(
           new Request("http://cms.test/api/v1/headless/schema"),
         );

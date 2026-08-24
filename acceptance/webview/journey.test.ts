@@ -10,13 +10,17 @@ const enabled = Bun.env["ACCEPTANCE_SERVERS_READY"] === "1",
     const deadline = Date.now() + 15_000;
     while (Date.now() < deadline) {
       const value = await view.evaluate<Value>(expression);
-      if (predicate(value)) return value;
+      if (predicate(value)) {
+        return value;
+      }
       await Bun.sleep(50);
     }
     throw new Error(`WebView condition timed out: ${expression}`);
   };
 
-afterAll(() => Bun.WebView.closeAll());
+afterAll(() => {
+  Bun.WebView.closeAll();
+});
 
 describe("complete-system WebView journey", () => {
   acceptanceTest(
@@ -25,10 +29,12 @@ describe("complete-system WebView journey", () => {
       const consoleErrors: unknown[] = [];
       let view = new Bun.WebView({
         console: (method, ...values) => {
-          if (method === "error") consoleErrors.push(...values);
+          if (method === "error") {
+            consoleErrors.push(...values);
+          }
         },
-        height: 1_000,
-        width: 1_440,
+        height: 1000,
+        width: 1440,
       });
       try {
         await view.navigate("http://localhost:3000/");
@@ -38,7 +44,7 @@ describe("complete-system WebView journey", () => {
           (value: number) => value === 4,
         );
         expect(
-          await view.evaluate(
+          await view.evaluate<{ heading: number; main: number; navigation: number }>(
             "({ main: document.querySelectorAll('main').length, navigation: document.querySelectorAll('nav').length, heading: document.querySelectorAll('h1').length })",
           ),
         ).toEqual({ heading: 1, main: 1, navigation: 1 });
@@ -53,9 +59,11 @@ describe("complete-system WebView journey", () => {
         );
         await view.click('input[placeholder^="Filter"]');
         await view.type("lighthouse");
-        expect(await view.evaluate("window.__lastInputWasTrusted")).toBeTrue();
+        expect(await view.evaluate<boolean>("window.__lastInputWasTrusted")).toBeTrue();
         expect(
-          await view.evaluate("document.querySelector('input[placeholder^=\"Filter\"]')?.value"),
+          await view.evaluate<string | undefined>(
+            "document.querySelector('input[placeholder^=\"Filter\"]')?.value",
+          ),
         ).toBe("lighthouse");
         await view.click(".entry-row");
         await waitFor(view, "location.pathname", (value: string) => value.split("/").length > 3);
@@ -71,10 +79,12 @@ describe("complete-system WebView journey", () => {
         view.close();
         view = new Bun.WebView({
           console: (method, ...values) => {
-            if (method === "error") consoleErrors.push(...values);
+            if (method === "error") {
+              consoleErrors.push(...values);
+            }
           },
-          height: 1_000,
-          width: 1_440,
+          height: 1000,
+          width: 1440,
         });
         await view.navigate(`http://localhost:3000${editorPath}`);
         expect(
@@ -85,14 +95,16 @@ describe("complete-system WebView journey", () => {
           ),
         ).toBe("A Lighthouse for Content");
         await view.resize(390, 844);
-        expect(await view.evaluate("innerWidth")).toBe(390);
+        expect(await view.evaluate<number>("innerWidth")).toBe(390);
 
         // Bun WebView native interaction promises remain pending after a Back/Forward traversal.
         // A fresh view also reflects that the CMS and Public Blog are separately runnable apps.
         view.close();
         view = new Bun.WebView({
           console: (method, ...values) => {
-            if (method === "error") consoleErrors.push(...values);
+            if (method === "error") {
+              consoleErrors.push(...values);
+            }
           },
           height: 844,
           width: 390,
@@ -106,7 +118,12 @@ describe("complete-system WebView journey", () => {
           ),
         ).toBe("A Lighthouse for Content");
         expect(
-          await view.evaluate(
+          await view.evaluate<{
+            article: number;
+            labelledErrors: number;
+            liveRegions: number;
+            main: number;
+          }>(
             "({ main: document.querySelectorAll('main').length, article: document.querySelectorAll('article').length, liveRegions: document.querySelectorAll('[aria-live]').length, labelledErrors: document.querySelectorAll('[aria-describedby]').length })",
           ),
         ).toEqual({ article: 2, labelledErrors: 3, liveRegions: 1, main: 1 });
@@ -116,7 +133,7 @@ describe("complete-system WebView journey", () => {
         await view.scrollTo("input[name=displayName]", { block: "center" });
         await view.click("input[name=displayName]");
         await view.type("WebView Reader");
-        expect(await view.evaluate("window.__commentInputWasTrusted")).toBeTrue();
+        expect(await view.evaluate<boolean>("window.__commentInputWasTrusted")).toBeTrue();
         expect(consoleErrors).toEqual([]);
       } finally {
         view.close();

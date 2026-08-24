@@ -1,8 +1,13 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
-import type { ExampleSystem } from "../../src/system.ts";
-import { createExampleSystem } from "../../src/system.ts";
+import { type ExampleSystem, createExampleSystem } from "../../src/system.ts";
+
+const HTTP_NOT_FOUND = 404,
+  HTTP_OK = 200,
+  PAGE_SIZE = 100,
+  TWO = 2,
+  ZERO = 0;
 
 const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
     value !== null && typeof value === "object" && !Array.isArray(value),
@@ -15,8 +20,7 @@ const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
   };
 
 describe("Example CMS destructive workflows", () => {
-  let system: ExampleSystem;
-  let storageRoot: string;
+  let storageRoot: string, system: ExampleSystem;
 
   beforeEach(async () => {
     storageRoot = await mkdtemp(join(import.meta.dir, ".destructive-workflows-"));
@@ -32,15 +36,15 @@ describe("Example CMS destructive workflows", () => {
     const exported = await jsonRecord(
         await system.handler(new Request("http://cms.test/api/v1/headless/export")),
       ),
-      authors = exported["authors"],
-      posts = exported["posts"];
-    if (!Array.isArray(authors) || !isRecord(authors[0]) || typeof authors[0]["id"] !== "string") {
+      { authors } = exported,
+      { posts } = exported;
+    if (!Array.isArray(authors) || !isRecord(authors[ZERO]) || typeof authors[ZERO]["id"] !== "string") {
       throw new Error("Expected a seeded Author");
     }
-    if (!Array.isArray(posts) || !isRecord(posts[0]) || typeof posts[0]["id"] !== "string") {
+    if (!Array.isArray(posts) || !isRecord(posts[ZERO]) || typeof posts[ZERO]["id"] !== "string") {
       throw new Error("Expected a seeded Post");
     }
-    const authorId = authors[0]["id"],
+    const authorId = authors[ZERO]["id"],
       authorState = await jsonRecord(
         await system.handler(
           new Request(
@@ -48,9 +52,9 @@ describe("Example CMS destructive workflows", () => {
           ),
         ),
       ),
-      writeToken = authorState["writeToken"];
+      { writeToken } = authorState;
     if (typeof writeToken !== "string") {
-      throw new Error("Expected an Author Write Token");
+      throw new TypeError("Expected an Author Write Token");
     }
     const response = await system.handler(
         new Request(
@@ -59,16 +63,16 @@ describe("Example CMS destructive workflows", () => {
         ),
       ),
       receipt = await jsonRecord(response);
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(HTTP_OK);
     expect(receipt).toMatchObject({
+      deletedAuthorId: authorId,
+      deletedCommentCount: TWO,
+      deletedPostCount: TWO,
       deletionRecord: {
         contentTypeId: "author",
         entryId: authorId,
         writeToken: expect.any(String),
       },
-      deletedAuthorId: authorId,
-      deletedCommentCount: 2,
-      deletedPostCount: 2,
     });
 
     const authorLookup = await system.handler(
@@ -82,7 +86,7 @@ describe("Example CMS destructive workflows", () => {
           {
             body: JSON.stringify({
               contentTypeId: "post",
-              pageSize: 100,
+              pageSize: PAGE_SIZE,
               where: { operator: "equals", path: "author", value: authorId },
             }),
             headers: { "content-type": "application/json" },
@@ -91,7 +95,7 @@ describe("Example CMS destructive workflows", () => {
         ),
       ),
       postPage = await jsonRecord(postQuery);
-    expect(authorLookup.status).toBe(404);
+    expect(authorLookup.status).toBe(HTTP_NOT_FOUND);
     expect(postPage["items"]).toEqual([]);
   });
 
@@ -124,9 +128,12 @@ describe("Example CMS destructive workflows", () => {
       asset = await jsonRecord(ingestion),
       assetId = asset["id"];
     if (typeof assetId !== "string") {
-      throw new Error("Expected an ingested Asset identifier");
+      throw new TypeError("Expected an ingested Asset identifier");
     }
-    const draftPostId = system.seed!.draftPostId,
+    if (system.seed === undefined) {
+      throw new Error("Expected a seeded Example System");
+    }
+    const { draftPostId } = system.seed,
       draftStateUrl = `http://cms.test/api/v1/management/definition-spaces/example-blog/content-types/post/entries/${draftPostId}/state`,
       draftEntryUrl = `http://cms.test/api/v1/management/definition-spaces/example-blog/content-types/post/entries/${draftPostId}`,
       draftState = await jsonRecord(await system.handler(new Request(draftStateUrl))),
@@ -152,7 +159,7 @@ describe("Example CMS destructive workflows", () => {
         method: "PUT",
       }),
     );
-    expect(assigned.status).toBe(200);
+    expect(assigned.status).toBe(HTTP_OK);
 
     const deletion = await system.handler(
         new Request(
@@ -161,9 +168,9 @@ describe("Example CMS destructive workflows", () => {
         ),
       ),
       receipt = await jsonRecord(deletion);
-    expect(deletion.status).toBe(200);
+    expect(deletion.status).toBe(HTTP_OK);
     expect(receipt).toMatchObject({
-      clearedAuthorCount: 0,
+      clearedAuthorCount: ZERO,
       clearedPostCount: 1,
       deletedAssetId: assetId,
       deletionCompleted: true,
@@ -188,14 +195,14 @@ describe("Example CMS destructive workflows", () => {
         `http://cms.test/api/v1/management/definition-spaces/example-blog/assets/${assetId}`,
       ),
     );
-    expect(assetLookup.status).toBe(404);
+    expect(assetLookup.status).toBe(HTTP_NOT_FOUND);
   });
 
   test("declares image replacement as multipart for generated Management clients", async () => {
     const document = await jsonRecord(
         await system.handler(new Request("http://cms.test/api/v1/management/openapi.json")),
       ),
-      paths = document["paths"],
+      { paths } = document,
       replacementPath = isRecord(paths)
         ? paths[
             "/api/v1/management/definition-spaces/{definitionSpaceId}/operations/assets/{assetId}/replacements"

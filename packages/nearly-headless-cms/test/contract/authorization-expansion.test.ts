@@ -13,17 +13,18 @@ import { layer as memoryAssetLayer } from "../../src/adapters/memory-asset-manag
 import { layer as memoryCatalogLayer } from "../../src/adapters/memory-definition-catalog.ts";
 import { layer as memoryEntryLayer } from "../../src/adapters/memory-entry-persistence.ts";
 
-const snapshot = ContentDefinition.compile({
+const emptyCollectionLength = 0,
+  snapshot = ContentDefinition.compile({
     definitionSpaceId: "authorization-contract",
     definitions: [
       {
         fields: [
-          { key: "name", label: "Name", required: true, kind: { kind: "text" } },
+          { key: "name", kind: { kind: "text" }, label: "Name", required: true },
           {
             key: "friend",
+            kind: { kind: "relationship", targetContentTypeIds: ["person"] },
             label: "Friend",
             nullable: true,
-            kind: { kind: "relationship", targetContentTypeIds: ["person"] },
           },
         ],
         id: "person",
@@ -34,8 +35,8 @@ const snapshot = ContentDefinition.compile({
         fields: [
           {
             key: "editor",
-            label: "Editor",
             kind: { kind: "relationship", targetContentTypeIds: ["person"] },
+            label: "Editor",
           },
         ],
         id: "byline",
@@ -47,15 +48,15 @@ const snapshot = ContentDefinition.compile({
           { fieldGroupId: "byline", key: "metadata", label: "Metadata", mode: "nested" },
         ],
         fields: [
-          { key: "title", label: "Title", required: true, kind: { kind: "text" } },
+          { key: "title", kind: { kind: "text" }, label: "Title", required: true },
           {
             key: "authors",
-            label: "Authors",
             kind: {
-              kind: "list",
               distinct: true,
               element: { kind: "relationship", targetContentTypeIds: ["person"] },
+              kind: "list",
             },
+            label: "Authors",
           },
         ],
         id: "article",
@@ -66,7 +67,8 @@ const snapshot = ContentDefinition.compile({
     snapshotId: "initial",
   }),
   makeLayer = (actions: Action[], deniedAction: { current?: Action }) => {
-    const authorizationLayer = Layer.succeed(
+    const assetsLayer = memoryAssetLayer().pipe(Layer.provide(identifierLayer)),
+      authorizationLayer = Layer.succeed(
         AuthorizationService,
         AuthorizationService.of({
           authorize: (_identity, action) =>
@@ -80,7 +82,6 @@ const snapshot = ContentDefinition.compile({
         CurrentIdentity,
         CurrentIdentity.of({ current: Effect.succeed(anonymous) }),
       ),
-      assetsLayer = memoryAssetLayer().pipe(Layer.provide(identifierLayer)),
       catalogLayer = memoryCatalogLayer({ snapshot }).pipe(Layer.provide(memoryEntryLayer)),
       dependencies: Layer.Layer<
         | AuthorizationService
@@ -90,12 +91,12 @@ const snapshot = ContentDefinition.compile({
         | AssetManagement
         | Generator
       > = Layer.mergeAll(
-        authorizationLayer,
-        identityLayer,
-        identifierLayer,
-        catalogLayer,
-        memoryEntryLayer,
         assetsLayer,
+        authorizationLayer,
+        catalogLayer,
+        identifierLayer,
+        memoryEntryLayer,
+        identityLayer,
       );
     return cmsLayer.pipe(Layer.provide(dependencies));
   };
@@ -126,7 +127,7 @@ describe("Authorization and Relationship Expansion contract", () => {
           },
         });
 
-        actions.length = 0;
+        actions.length = emptyCollectionLength;
         const expandedPerson = yield* cms.getEntry({
           contentTypeId: "person",
           entryId: graceEntry.id,
@@ -139,13 +140,13 @@ describe("Authorization and Relationship Expansion contract", () => {
         });
         expect(actions).toEqual(["entry.read", "entry.expand"]);
 
-        actions.length = 0;
+        actions.length = emptyCollectionLength;
         const expandedArticle = yield* cms.queryEntries({
           contentTypeId: "article",
           expansion: ["authors.friend"],
           pageSize: 10,
         });
-        expect(expandedArticle.items[0]?.values["authors"]).toEqual([
+        expect(expandedArticle.items[emptyCollectionLength]?.values["authors"]).toEqual([
           { contentTypeId: "person", id: adaEntry.id, values: { friend: null, name: "Ada" } },
           {
             contentTypeId: "person",
@@ -162,13 +163,13 @@ describe("Authorization and Relationship Expansion contract", () => {
         ]);
         expect(actions).toEqual(["entry.query", "entry.expand"]);
 
-        actions.length = 0;
+        actions.length = emptyCollectionLength;
         const expandedNestedRelationship = yield* cms.queryEntries({
           contentTypeId: "article",
           expansion: ["metadata.editor.friend"],
           pageSize: 10,
         });
-        expect(expandedNestedRelationship.items[0]?.values["metadata"]).toEqual({
+        expect(expandedNestedRelationship.items[emptyCollectionLength]?.values["metadata"]).toEqual({
           editor: {
             contentTypeId: "person",
             id: graceEntry.id,
@@ -185,7 +186,7 @@ describe("Authorization and Relationship Expansion contract", () => {
         expect(actions).toEqual(["entry.query", "entry.expand"]);
 
         deniedAction.current = "entry.expand";
-        actions.length = 0;
+        actions.length = emptyCollectionLength;
         const denied = yield* Effect.exit(
           cms.getEntry({
             contentTypeId: "person",

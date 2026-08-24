@@ -1,17 +1,23 @@
-import rss from "@astrojs/rss";
+import type { APIRoute } from "astro";
+import { DateTime } from "effect";
 import { publicExport } from "../data/public-export.ts";
-import type { APIContext } from "astro";
+import rss from "@astrojs/rss";
 
-export async function GET(context: APIContext) {
+const GET: APIRoute = (context) => {
+  if (context.site === undefined) {
+    throw new Error("The Public Blog RSS route requires a configured site address");
+  }
   return rss({
     description: "Field notes for durable ideas",
     items: publicExport.posts.map((post) => ({
       description: post.excerpt,
       link: `/posts/${post.slug}/`,
-      pubDate: new Date(post.publishedAt),
+      pubDate: DateTime.toDate(DateTime.makeUnsafe(post.publishedAt)),
       title: post.title,
     })),
-    site: context.site!,
+    site: context.site,
     title: "The Lantern",
   });
-}
+};
+
+export { GET };

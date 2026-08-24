@@ -1,19 +1,58 @@
-import { describe, expect, test } from "bun:test";
+import { expect, test } from "bun:test";
 import { ContentDefinition } from "../../src/index.ts";
 
-describe("ContentDefinition.compile", () => {
-  test("compiles a complete snapshot and validates Entry values without coercion", () => {
+const fieldGroupSnapshot = ContentDefinition.compile({
+  definitionSpaceId: "field-groups",
+  definitions: [
+    {
+      fields: [
+        { key: "city", kind: { kind: "text" }, label: "City", required: true },
+        { defaultValue: "US", key: "country", kind: { kind: "text" }, label: "Country" },
+      ],
+      id: "address",
+      kind: "fieldGroup",
+      name: "Address",
+    },
+    {
+      fields: [
+        { key: "display-name", kind: { kind: "text" }, label: "Display name", required: true },
+      ],
+      id: "identity",
+      kind: "fieldGroup",
+      name: "Identity",
+    },
+    {
+      fieldGroups: [
+        { fieldGroupId: "identity", mode: "inline" },
+        {
+          fieldGroupId: "address",
+          key: "address",
+          label: "Address",
+          mode: "nested",
+          required: true,
+        },
+      ],
+      fields: [],
+      id: "person",
+      kind: "contentType",
+      name: "Person",
+    },
+  ],
+  snapshotId: "initial",
+});
+
+test("ContentDefinition.compile compiles and validates Entry values without coercion", () => {
     const snapshot = ContentDefinition.compile({
       definitionSpaceId: "example-blog",
       definitions: [
         {
           fields: [
-            { key: "title", label: "Title", required: true, kind: { kind: "text", minLength: 1 } },
+            { key: "title", kind: { kind: "text", minLength: 1 }, label: "Title", required: true },
             {
-              key: "status",
-              label: "Status",
               defaultValue: "draft",
+              key: "status",
               kind: { kind: "enum", values: ["draft", "published"] },
+              label: "Status",
             },
           ],
           id: "post",
@@ -24,7 +63,7 @@ describe("ContentDefinition.compile", () => {
       snapshotId: "initial",
     });
 
-    expect(snapshot.fingerprint).toMatch(/^[a-f\d]{64}$/);
+    expect(snapshot.fingerprint).toMatch(/^[a-f\d]{64}$/u);
     expect(snapshot.validateEntry("post", { title: "Hello" }, { applyDefaults: true })).toEqual({
       status: "draft",
       title: "Hello",
@@ -32,51 +71,11 @@ describe("ContentDefinition.compile", () => {
     expect(() => snapshot.validateEntry("post", { title: 1 }, { applyDefaults: false })).toThrow(
       "title",
     );
-  });
+});
 
-  test("validates nested and inline Field Groups as schemas rather than untyped JSON", () => {
-    const snapshot = ContentDefinition.compile({
-      definitionSpaceId: "field-groups",
-      definitions: [
-        {
-          fields: [
-            { key: "city", label: "City", required: true, kind: { kind: "text" } },
-            { key: "country", label: "Country", defaultValue: "US", kind: { kind: "text" } },
-          ],
-          id: "address",
-          kind: "fieldGroup",
-          name: "Address",
-        },
-        {
-          fields: [
-            { key: "display-name", label: "Display name", required: true, kind: { kind: "text" } },
-          ],
-          id: "identity",
-          kind: "fieldGroup",
-          name: "Identity",
-        },
-        {
-          fieldGroups: [
-            { mode: "inline", fieldGroupId: "identity" },
-            {
-              mode: "nested",
-              fieldGroupId: "address",
-              key: "address",
-              label: "Address",
-              required: true,
-            },
-          ],
-          fields: [],
-          id: "person",
-          kind: "contentType",
-          name: "Person",
-        },
-      ],
-      snapshotId: "initial",
-    });
-
+test("ContentDefinition.compile validates nested and inline Field Groups", () => {
     expect(
-      snapshot.validateEntry(
+      fieldGroupSnapshot.validateEntry(
         "person",
         { address: { city: "London" }, "display-name": "Ada" },
         { applyDefaults: true },
@@ -86,25 +85,28 @@ describe("ContentDefinition.compile", () => {
       "display-name": "Ada",
     });
     expect(() =>
-      snapshot.validateEntry(
+      fieldGroupSnapshot.validateEntry(
         "person",
         { address: { city: "London", mystery: true }, "display-name": "Ada" },
         { applyDefaults: false },
       ),
     ).toThrow("address.mystery");
+});
+
+test("ContentDefinition.compile rejects cyclic Field Group composition", () => {
     expect(() =>
       ContentDefinition.compile({
         definitionSpaceId: "field-groups",
         definitions: [
           {
-            fieldGroups: [{ mode: "inline", fieldGroupId: "second" }],
+            fieldGroups: [{ fieldGroupId: "second", mode: "inline" }],
             fields: [],
             id: "first",
             kind: "fieldGroup",
             name: "First",
           },
           {
-            fieldGroups: [{ mode: "inline", fieldGroupId: "first" }],
+            fieldGroups: [{ fieldGroupId: "first", mode: "inline" }],
             fields: [],
             id: "second",
             kind: "fieldGroup",
@@ -114,9 +116,9 @@ describe("ContentDefinition.compile", () => {
         snapshotId: "cycle",
       }),
     ).toThrow("cycle");
-  });
+});
 
-  test("validates ordered lists of reusable Field Groups", () => {
+test("ContentDefinition.compile validates ordered lists of reusable Field Groups", () => {
     const compiled = ContentDefinition.compile({
       definitionSpaceId: "test-space",
       definitions: [
@@ -158,5 +160,4 @@ describe("ContentDefinition.compile", () => {
     expect(() =>
       compiled.validateEntry("page", { links: [{ unknown: true }] }, { applyDefaults: true }),
     ).toThrow("Entry validation failed");
-  });
 });

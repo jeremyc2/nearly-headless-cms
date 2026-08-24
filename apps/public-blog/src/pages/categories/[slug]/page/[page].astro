@@ -1,9 +1,8 @@
 ---
 import PaginatedPostList from "../../../../components/paginated-post-list.astro"
-import { categoryArchivePaths } from "../../../../domain/archive-pages.ts"
 import SiteLayout from "../../../../layouts/site-layout.astro"
 
-export const getStaticPaths = categoryArchivePaths
+export { categoryArchivePaths as getStaticPaths } from "../../../../domain/archive-pages.ts"
 const { category, page } = Astro.props
 ---
 

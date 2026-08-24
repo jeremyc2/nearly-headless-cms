@@ -1,5 +1,4 @@
-import type { Cms, ContentDefinition } from "nearly-headless-cms";
-import { CmsError, EntryQuery } from "nearly-headless-cms";
+import { type Cms, CmsError, type ContentDefinition, EntryQuery } from "nearly-headless-cms";
 import type { HttpContract } from "nearly-headless-cms/http";
 import { Effect, Schema } from "effect";
 import { type CommandReceiptStore, memoryCommandReceiptStore } from "./command-receipt-store.ts";
@@ -20,6 +19,49 @@ import {
 } from "./wire-schemas.ts";
 
 type PublicValue = ContentDefinition.JsonObject;
+
+interface QueryEntriesInput {
+  readonly cms: Cms.ServiceShape;
+  readonly contentTypeId: string;
+  readonly sort?: readonly EntryQuery.Sort[];
+  readonly where?: EntryQuery.Predicate;
+}
+
+interface QueryPageInput extends QueryEntriesInput {
+  readonly request: Request;
+}
+
+interface FindBySlugInput {
+  readonly cms: Cms.ServiceShape;
+  readonly contentTypeId: string;
+  readonly publicOnly?: boolean;
+  readonly slug: string;
+}
+
+interface QuerySnapshotInput {
+  readonly consistentSnapshot: Cms.ConsistentReadSnapshot;
+  readonly contentTypeId: string;
+  readonly sort?: readonly EntryQuery.Sort[];
+  readonly where?: EntryQuery.Predicate;
+}
+
+interface PublicReachabilityInput {
+  readonly authors: readonly Cms.ConsistentReadSnapshot["entries"][number][];
+  readonly categories: readonly Cms.ConsistentReadSnapshot["entries"][number][];
+  readonly posts: readonly Cms.ConsistentReadSnapshot["entries"][number][];
+  readonly tags: readonly Cms.ConsistentReadSnapshot["entries"][number][];
+}
+
+interface PublicAssetResponseInput {
+  readonly asset: Awaited<
+    ReturnType<Cms.ServiceShape["readAsset"]> extends Effect.Effect<infer Value, unknown>
+      ? Value
+      : never
+  >;
+  readonly definitionFingerprint: string;
+  readonly request: Request;
+  readonly requestId: string;
+}
 
 export const postDefinitionRequirement = {
     contentTypeId: "post",
@@ -91,12 +133,15 @@ const lowerCamelCase = (key: string): string =>
       Object.entries(entry.values).map(([key, value]) => [lowerCamelCase(key), value]),
     ),
   }),
-  queryAll = (
-    cms: Cms.ServiceShape,
-    contentTypeId: string,
-    where?: EntryQuery.Predicate,
-    sort?: readonly EntryQuery.Sort[],
-  ): Effect.Effect<readonly Cms.ConsistentReadSnapshot["entries"][number][], CmsError.CmsError> =>
+  queryAll = ({
+    cms,
+    contentTypeId,
+    sort,
+    where,
+  }: QueryEntriesInput): Effect.Effect<
+    readonly Cms.ConsistentReadSnapshot["entries"][number][],
+    CmsError.CmsError
+  > =>
     Effect.gen(function* queryEveryPage() {
       const entries: Cms.ConsistentReadSnapshot["entries"][number][] = [];
       let cursor: string | undefined;
@@ -107,13 +152,7 @@ const lowerCamelCase = (key: string): string =>
       } while (cursor !== undefined);
       return entries;
     }),
-  queryPage = (
-    cms: Cms.ServiceShape,
-    request: Request,
-    contentTypeId: string,
-    where?: EntryQuery.Predicate,
-    sort?: readonly EntryQuery.Sort[],
-  ) => {
+  queryPage = ({ cms, contentTypeId, request, sort, where }: QueryPageInput) => {
     const requestUrl = new URL(request.url),
       pageSize = Number(requestUrl.searchParams.get("pageSize") ?? "20"),
       cursor = requestUrl.searchParams.get("cursor") ?? undefined;
@@ -133,21 +172,23 @@ const lowerCamelCase = (key: string): string =>
           ? cause
           : CmsError.InvalidInput.make({ message: "Malformed Comment submission" }),
       try: async () => {
-        if (!(request.headers.get("content-type") ?? "").startsWith("application/json"))
+        if (!(request.headers.get("content-type") ?? "").startsWith("application/json")) {
           throw CmsError.InvalidInput.make({
             message: "Comment submission requires application/json",
           });
+        }
         const value = (await request.json()) as unknown;
-        if (!Schema.is(Schema.JsonObject)(value))
+        if (!Schema.is(Schema.JsonObject)(value)) {
           throw CmsError.InvalidInput.make({ message: "Comment submission must be an object" });
+        }
         return value;
       },
     }),
-  findBySlug = (cms: Cms.ServiceShape, contentTypeId: string, slug: string, publicOnly = false) =>
-    queryAll(
+  findBySlug = ({ cms, contentTypeId, publicOnly = false, slug }: FindBySlugInput) =>
+    queryAll({
       cms,
       contentTypeId,
-      publicOnly
+      where: publicOnly
         ? {
             all: [
               { operator: "equals", path: "slug", value: slug },
@@ -155,7 +196,7 @@ const lowerCamelCase = (key: string): string =>
             ],
           }
         : { operator: "equals", path: "slug", value: slug },
-    ).pipe(
+    }).pipe(
       Effect.flatMap((entries) =>
         entries[0] === undefined
           ? Effect.fail(CmsError.NotFound.make({ message: `${contentTypeId} was not found` }))
@@ -217,27 +258,27 @@ const lowerCamelCase = (key: string): string =>
     }
     return assetIds;
   },
-  querySnapshot = (
-    consistentSnapshot: Cms.ConsistentReadSnapshot,
-    contentTypeId: string,
-    where?: EntryQuery.Predicate,
-    sort?: readonly EntryQuery.Sort[],
-  ): readonly Cms.ConsistentReadSnapshot["entries"][number][] => {
+  querySnapshot = ({
+    consistentSnapshot,
+    contentTypeId,
+    sort,
+    where,
+  }: QuerySnapshotInput): readonly Cms.ConsistentReadSnapshot["entries"][number][] => {
     const entries: Cms.ConsistentReadSnapshot["entries"][number][] = [];
     let cursor: string | undefined;
     do {
-      const page = EntryQuery.evaluate(
-        consistentSnapshot.entries,
-        {
+      const page = EntryQuery.evaluate({
+        entries: consistentSnapshot.entries,
+        options: { generation: consistentSnapshot.generation },
+        query: {
           contentTypeId,
           cursor,
           pageSize: 100,
           ...(sort === undefined ? {} : { sort }),
           ...(where === undefined ? {} : { where }),
         },
-        consistentSnapshot.definitionSnapshot,
-        { generation: consistentSnapshot.generation },
-      );
+        snapshot: consistentSnapshot.definitionSnapshot,
+      });
       entries.push(...page.items);
       cursor = page.nextCursor;
     } while (cursor !== undefined);
@@ -262,12 +303,7 @@ const lowerCamelCase = (key: string): string =>
     }
     return identifiers;
   },
-  publicReachability = (
-    posts: readonly Cms.ConsistentReadSnapshot["entries"][number][],
-    authors: readonly Cms.ConsistentReadSnapshot["entries"][number][],
-    categories: readonly Cms.ConsistentReadSnapshot["entries"][number][],
-    tags: readonly Cms.ConsistentReadSnapshot["entries"][number][],
-  ) => {
+  publicReachability = ({ authors, categories, posts, tags }: PublicReachabilityInput) => {
     const publishedPostIdentifiers = new Set(posts.map((post) => post.id)),
       publicAuthorIdentifiers = new Set(relationshipIdentifiers(posts, "author")),
       publicCategoryIdentifiers = new Set(relationshipIdentifiers(posts, "categories")),
@@ -308,30 +344,35 @@ const lowerCamelCase = (key: string): string =>
       }
     }
     return {
-      publishedPostIdentifiers,
       publicAuthorIdentifiers,
       publicCategoryIdentifiers,
       publicTagIdentifiers,
+      publishedPostIdentifiers,
       richTextReachableIdentifiers,
     };
   },
   publicContent = (consistentSnapshot: Cms.ConsistentReadSnapshot) => {
-    const posts = querySnapshot(
+    const posts = querySnapshot({
         consistentSnapshot,
-        "post",
-        { operator: "equals", path: "status", value: "published" },
-        [{ direction: "descending", path: "published-at" }],
-      ),
-      allAuthors = querySnapshot(consistentSnapshot, "author"),
-      allCategories = querySnapshot(consistentSnapshot, "category"),
-      allTags = querySnapshot(consistentSnapshot, "tag"),
-      reachability = publicReachability(posts, allAuthors, allCategories, allTags),
-      comments = querySnapshot(
+        contentTypeId: "post",
+        sort: [{ direction: "descending", path: "published-at" }],
+        where: { operator: "equals", path: "status", value: "published" },
+      }),
+      allAuthors = querySnapshot({ consistentSnapshot, contentTypeId: "author" }),
+      allCategories = querySnapshot({ consistentSnapshot, contentTypeId: "category" }),
+      allTags = querySnapshot({ consistentSnapshot, contentTypeId: "tag" }),
+      reachability = publicReachability({
+        authors: allAuthors,
+        categories: allCategories,
+        posts,
+        tags: allTags,
+      }),
+      comments = querySnapshot({
         consistentSnapshot,
-        "comment",
-        { operator: "equals", path: "status", value: "approved" },
-        [{ direction: "ascending", path: "created-at" }],
-      ).filter((comment) => {
+        contentTypeId: "comment",
+        sort: [{ direction: "ascending", path: "created-at" }],
+        where: { operator: "equals", path: "status", value: "approved" },
+      }).filter((comment) => {
         const postIdentifier = comment.values["post"];
         return (
           typeof postIdentifier === "string" &&
@@ -360,25 +401,21 @@ const lowerCamelCase = (key: string): string =>
           entries =
             contentTypeId === "author"
               ? content.authors
-              : contentTypeId === "category"
+              : (contentTypeId === "category"
                 ? content.categories
-                : content.tags,
+                : content.tags),
           entry = entries.find((candidate) => candidate.values["slug"] === slug);
         return entry === undefined
           ? Effect.fail(CmsError.NotFound.make({ message: `${contentTypeId} was not found` }))
           : Effect.succeed(publicValue(entry));
       }),
     ),
-  publicAssetResponse = (
-    asset: Awaited<
-      ReturnType<Cms.ServiceShape["readAsset"]> extends Effect.Effect<infer Value, unknown>
-        ? Value
-        : never
-    >,
-    request: Request,
-    requestId: string,
-    definitionFingerprint: string,
-  ): Response => {
+  publicAssetResponse = ({
+    asset,
+    definitionFingerprint,
+    request,
+    requestId,
+  }: PublicAssetResponseInput): Response => {
     const etag = `"sha256-${asset.metadata.digest}"`,
       headers = new Headers({
         "accept-ranges": "bytes",
@@ -399,7 +436,7 @@ const lowerCamelCase = (key: string): string =>
       request.headers.get("if-range") !== null &&
       request.headers.get("if-range") !== etag
     ) {
-      return new Response(request.method === "HEAD" ? null : asset.bytes.slice().buffer, {
+      return new Response(request.method === "HEAD" ? null : [...asset.bytes].buffer, {
         headers,
         status: 200,
       });
@@ -418,9 +455,9 @@ const lowerCamelCase = (key: string): string =>
         end =
           match[1] === ""
             ? asset.bytes.byteLength - 1
-            : match[2] === ""
+            : (match[2] === ""
               ? asset.bytes.byteLength - 1
-              : Number(match[2]);
+              : Number(match[2]));
       if (
         !Number.isSafeInteger(start) ||
         !Number.isSafeInteger(end) ||
@@ -441,7 +478,7 @@ const lowerCamelCase = (key: string): string =>
         status: 206,
       });
     }
-    return new Response(request.method === "HEAD" ? null : asset.bytes.slice().buffer, {
+    return new Response(request.method === "HEAD" ? null : [...asset.bytes].buffer, {
       headers,
       status: 200,
     });
@@ -464,13 +501,13 @@ export const makeDeliveryOperations = (
           taxonomyDefinitionRequirement("tag"),
         ],
         execute: ({ cms, request }) =>
-          queryPage(
+          queryPage({
             cms,
+            contentTypeId: "post",
             request,
-            "post",
-            { operator: "equals", path: "status", value: "published" },
-            [{ direction: "descending", path: "published-at" }],
-          ),
+            sort: [{ direction: "descending", path: "published-at" }],
+            where: { operator: "equals", path: "status", value: "published" },
+          }),
         identifier: "listPublishedPosts",
         method: "GET",
         path: "/posts",
@@ -484,7 +521,13 @@ export const makeDeliveryOperations = (
           taxonomyDefinitionRequirement("category"),
           taxonomyDefinitionRequirement("tag"),
         ],
-        execute: ({ cms, parameters }) => findBySlug(cms, "post", parameters["slug"]!, true),
+        execute: ({ cms, parameters }) =>
+          findBySlug({
+            cms,
+            contentTypeId: "post",
+            publicOnly: true,
+            slug: parameters["slug"]!,
+          }),
         identifier: "getPublishedPostBySlug",
         method: "GET",
         path: "/posts/{slug}",
@@ -518,9 +561,9 @@ export const makeDeliveryOperations = (
               postDefinitionRequirement,
             ],
             execute: ({ cms, parameters, request }) =>
-              Effect.gen(function* () {
-                const owner = yield* publicOwnerBySlug(cms, contentTypeId, parameters["slug"]!);
-                const ownerIdentifier = owner["id"];
+              Effect.gen(function* execute() {
+                const owner = yield* publicOwnerBySlug(cms, contentTypeId, parameters["slug"]!),
+                  ownerIdentifier = owner["id"];
                 if (typeof ownerIdentifier !== "string") {
                   return yield* CmsError.InvalidInput.make({
                     message: `Public ${contentTypeId} has an invalid identifier`,
@@ -529,21 +572,21 @@ export const makeDeliveryOperations = (
                 const relationshipPath =
                   contentTypeId === "author"
                     ? "author"
-                    : contentTypeId === "category"
+                    : (contentTypeId === "category"
                       ? "categories"
-                      : "tags";
-                return yield* queryPage(
+                      : "tags");
+                return yield* queryPage({
                   cms,
+                  contentTypeId: "post",
                   request,
-                  "post",
-                  {
+                  sort: [{ direction: "descending", path: "published-at" }],
+                  where: {
                     all: [
                       { operator: "equals", path: "status", value: "published" },
                       { operator: "equals", path: relationshipPath, value: ownerIdentifier },
                     ],
                   },
-                  [{ direction: "descending", path: "published-at" }],
-                );
+                });
               }),
             identifier: `list${contentTypeId[0]!.toUpperCase()}${contentTypeId.slice(1)}Posts`,
             method: "GET",
@@ -564,18 +607,18 @@ export const makeDeliveryOperations = (
             if (post.values["status"] !== "published") {
               return yield* CmsError.NotFound.make({ message: "Published Post was not found" });
             }
-            return yield* queryPage(
+            return yield* queryPage({
               cms,
+              contentTypeId: "comment",
               request,
-              "comment",
-              {
+              sort: [{ direction: "ascending", path: "created-at" }],
+              where: {
                 all: [
                   { operator: "equals", path: "post", value: post.id },
                   { operator: "equals", path: "status", value: "approved" },
                 ],
               },
-              [{ direction: "ascending", path: "created-at" }],
-            );
+            });
           }),
         identifier: "listApprovedComments",
         method: "GET",
@@ -586,31 +629,33 @@ export const makeDeliveryOperations = (
       {
         definitionRequirements: [postDefinitionRequirement, commentDefinitionRequirement],
         execute: ({ cms, parameters, request }) =>
-          Effect.gen(function* () {
-            const idempotencyKey = request.headers.get("idempotency-key")!;
-            const body = yield* parseBody(request);
-            const canonicalInput = JSON.stringify(body, (_propertyName, leftValue) => {
-              if (leftValue === null || typeof leftValue !== "object" || Array.isArray(leftValue)) {
-                return leftValue;
-              }
-              const entries = Object.entries(leftValue).sort(([leftKey], [rightKey]) =>
-                leftKey.localeCompare(rightKey),
-              );
-              return Object.fromEntries(entries);
-            });
-            const prior = yield* Effect.tryPromise({
-              catch: (cause) =>
-                CmsError.InfrastructureFailure.make({
-                  cause,
-                  message: "Comment receipt lookup failed",
-                  retryable: true,
-                }),
-              try: () =>
-                commandReceiptStore.read(
-                  `comment-submission:${parameters["postId"]!}`,
-                  idempotencyKey,
-                ),
-            });
+          Effect.gen(function* execute() {
+            const idempotencyKey = request.headers.get("idempotency-key")!,
+              body = yield* parseBody(request),
+              canonicalInput = JSON.stringify(body, (_propertyName, leftValue) => {
+                if (
+                  leftValue === null ||
+                  typeof leftValue !== "object" ||
+                  Array.isArray(leftValue)
+                ) {
+                  return leftValue;
+                }
+                const entries = Object.entries(leftValue).sort(([leftKey], [rightKey]) =>
+                  leftKey.localeCompare(rightKey),
+                );
+                return Object.fromEntries(entries);
+              }),
+              prior = yield* commandReceiptStore
+                .read(`comment-submission:${parameters["postId"]!}`, idempotencyKey)
+                .pipe(
+                  Effect.mapError((cause) =>
+                    CmsError.InfrastructureFailure.make({
+                      cause,
+                      message: "Comment receipt lookup failed",
+                      retryable: true,
+                    }),
+                  ),
+                );
             if (
               prior !== undefined &&
               prior !== null &&
@@ -621,10 +666,11 @@ export const makeDeliveryOperations = (
               prior.receipt !== null &&
               typeof prior.receipt === "object"
             ) {
-              if (prior.canonicalInput !== canonicalInput)
+              if (prior.canonicalInput !== canonicalInput) {
                 return yield* CmsError.IdempotencyConflict.make({
                   message: "Idempotency key was reused with different Comment input",
                 });
+              }
               if (!Schema.is(Schema.JsonObject)(prior.receipt)) {
                 return yield* CmsError.InfrastructureFailure.make({
                   message: "Stored Comment receipt is not JSON-compatible",
@@ -637,44 +683,46 @@ export const makeDeliveryOperations = (
               contentTypeId: "post",
               entryId: parameters["postId"]!,
             });
-            if (post.values["status"] !== "published")
+            if (post.values["status"] !== "published") {
               return yield* CmsError.NotFound.make({ message: "Published Post was not found" });
-            const displayName = body["displayName"];
-            const commentBody = body["body"];
-            const websiteUrl = body["websiteUrl"];
+            }
+            const { displayName } = body,
+             commentBody = body["body"],
+              { websiteUrl } = body;
             if (
               typeof displayName !== "string" ||
               typeof commentBody !== "string" ||
               (websiteUrl !== undefined && websiteUrl !== null && typeof websiteUrl !== "string")
-            )
+            ) {
               return yield* CmsError.InvalidInput.make({ message: "Comment fields are invalid" });
+            }
             const result = yield* cms.createEntry({
-              contentTypeId: "comment",
-              values: {
-                body: commentBody,
-                "created-at": new Date().toISOString(),
-                "display-name": displayName,
-                post: post.id,
-                status: "pending",
-                "website-url": websiteUrl ?? null,
-              },
-            });
-            const submissionId = "writeToken" in result ? result.entry.id : result.id;
-            const receipt = { status: "pending", submissionId };
-            yield* Effect.tryPromise({
-              catch: (cause) =>
-                CmsError.InfrastructureFailure.make({
-                  cause,
-                  message: "Comment receipt persistence failed",
-                  retryable: true,
-                }),
-              try: () =>
-                commandReceiptStore.write(
-                  `comment-submission:${parameters["postId"]!}`,
-                  idempotencyKey,
-                  { canonicalInput, receipt },
+                contentTypeId: "comment",
+                values: {
+                  body: commentBody,
+                  "created-at": new Date().toISOString(),
+                  "display-name": displayName,
+                  post: post.id,
+                  status: "pending",
+                  "website-url": websiteUrl ?? null,
+                },
+              }),
+              submissionId = "writeToken" in result ? result.entry.id : result.id,
+              receipt = { status: "pending", submissionId };
+            yield* commandReceiptStore
+              .write(`comment-submission:${parameters["postId"]!}`, idempotencyKey, {
+                canonicalInput,
+                receipt,
+              })
+              .pipe(
+                Effect.mapError((cause) =>
+                  CmsError.InfrastructureFailure.make({
+                    cause,
+                    message: "Comment receipt persistence failed",
+                    retryable: true,
+                  }),
                 ),
-            });
+              );
             return receipt;
           }),
         identifier: "submitComment",
@@ -699,7 +747,7 @@ export const makeDeliveryOperations = (
           taxonomyDefinitionRequirement("tag"),
         ],
         execute: ({ cms, parameters }) =>
-          Effect.gen(function* () {
+          Effect.gen(function* execute() {
             const consistentSnapshot = yield* cms.readConsistentSnapshot,
               content = publicContent(consistentSnapshot),
               entryIdentifier = parameters["entryId"]!;
@@ -729,14 +777,20 @@ export const makeDeliveryOperations = (
           cacheControl: "public, max-age=31536000, immutable",
           definitionRequirements: [postDefinitionRequirement, authorDefinitionRequirement],
           execute: ({ cms, parameters, request, requestId, snapshot }) =>
-            Effect.gen(function* () {
+            Effect.gen(function* execute() {
               const consistentSnapshot = yield* cms.readConsistentSnapshot,
                 content = publicContent(consistentSnapshot),
                 assetIdentifier = parameters["assetId"]!;
-              if (!publicAssetIds(content.posts, content.authors).has(assetIdentifier))
+              if (!publicAssetIds(content.posts, content.authors).has(assetIdentifier)) {
                 return yield* CmsError.NotFound.make({ message: "Public Asset was not found" });
+              }
               const asset = yield* cms.readAsset(assetIdentifier);
-              return publicAssetResponse(asset, request, requestId, snapshot.fingerprint);
+              return publicAssetResponse({
+                asset,
+                definitionFingerprint: snapshot.fingerprint,
+                request,
+                requestId,
+              });
             }),
           identifier: method === "GET" ? "deliverPublicAsset" : "inspectPublicAsset",
           method,
@@ -760,7 +814,7 @@ export const makeDeliveryOperations = (
           commentDefinitionRequirement,
         ],
         execute: ({ cms, request, requestId }) =>
-          Effect.gen(function* () {
+          Effect.gen(function* execute() {
             const consistentSnapshot = yield* cms.readConsistentSnapshot,
               snapshot = consistentSnapshot.definitionSnapshot,
               content = publicContent(consistentSnapshot),
@@ -779,10 +833,11 @@ export const makeDeliveryOperations = (
                 tags: content.tags.map(publicValue),
               },
               bytes = new TextEncoder().encode(JSON.stringify(artifact));
-            if (bytes.byteLength > 5_000_000)
+            if (bytes.byteLength > 5_000_000) {
               return yield* CmsError.ExportTooLarge.make({
                 message: "Public Content Export exceeds the configured 5000000-byte bound",
               });
+            }
             const digest = new Bun.CryptoHasher("sha256").update(bytes).digest("hex"),
               etag = `"sha256-${digest}"`,
               headers = new Headers({
