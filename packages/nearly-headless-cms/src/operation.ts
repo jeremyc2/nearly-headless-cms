@@ -63,10 +63,7 @@ export interface DefinitionContract {
   readonly definitionRequirements: readonly DefinitionRequirement[];
 }
 
-const findField = (
-    fields: readonly ResolvedField[],
-    path: string,
-  ): ResolvedField | undefined => {
+const findField = (fields: readonly ResolvedField[], path: string): ResolvedField | undefined => {
     const segments = path.split(".");
     let candidates = fields,
       field: ResolvedField | undefined;
@@ -180,7 +177,7 @@ export const validateDefinitionContracts = (
             ),
           );
         }
-        if (fieldContract.projectable === true && field.kind.capabilities?.projectable === false) {
+        if (fieldContract.projectable === true && !capabilitiesFor(field.kind).projectable) {
           issues.push(
             contractIssue(
               contract.identifier,
@@ -220,5 +217,9 @@ export const validateDefinitionContracts = (
     });
   }
 };
-import type { CompiledSnapshot, ResolvedField } from "./content-definition.ts";
+import {
+  capabilitiesFor,
+  type CompiledSnapshot,
+  type ResolvedField,
+} from "./content-definition.ts";
 import { InvalidInput, type ValidationIssue } from "./cms-error.ts";
