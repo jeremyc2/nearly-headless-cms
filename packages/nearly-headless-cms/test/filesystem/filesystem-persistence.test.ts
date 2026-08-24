@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtemp } from "node:fs/promises";
+import { mkdtemp, readdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Effect, Exit, Layer, Stream } from "effect";
+import { Deferred, Effect, Exit, Fiber, Layer, Stream } from "effect";
 import { Asset, ContentDefinition, Persistence } from "../../src/index.ts";
 import { CryptoIdentifierGenerator } from "../../src/adapters/index.ts";
 import { BunFilesystemPersistence } from "../../src/bun/filesystem/index.ts";
@@ -181,6 +181,60 @@ describe("BunFilesystemPersistence", () => {
       );
     expect(Exit.isFailure(result)).toBeTrue();
     expect(pulledChunks).toBe(2);
+  });
+
+  test("stages Asset chunks before the source completes and removes the stage on cancellation", async () => {
+    const root = await mkdtemp(join(tmpdir(), "nearly-headless-cms-stream-stage-")),
+      filesystemLayer = BunFilesystemPersistence.layer({ acknowledgement: "atomic", root }).pipe(
+        Layer.provide(CryptoIdentifierGenerator.layer),
+      ),
+      observed = await Effect.runPromise(
+        Effect.gen(function* observeStreamingStage() {
+          const assets = yield* Asset.Management,
+            firstChunkPulled = yield* Deferred.make<void>(),
+            content = Stream.make(new Uint8Array([1, 2, 3])).pipe(
+              Stream.tap(() => Deferred.succeed(firstChunkPulled, undefined)),
+              Stream.concat(Stream.never),
+            ),
+            ingestion = yield* assets
+              .ingest({
+                content,
+                filename: "cancelled.bin",
+                mediaType: "application/octet-stream",
+              })
+              .pipe(Effect.forkChild);
+          yield* Deferred.await(firstChunkPulled);
+          const stageExistedWhilePending = yield* Effect.promise(async () => {
+            for (let attempt = 0; attempt < 50; attempt += 1) {
+              if (
+                (await readdir(join(root, "blobs"))).some((name) =>
+                  name.startsWith(".nhcms-stage-"),
+                )
+              )
+                return true;
+              await Bun.sleep(10);
+            }
+            return false;
+          });
+          yield* Fiber.interrupt(ingestion);
+          const stagingAfterCancellation = yield* Effect.promise(async () => {
+            for (let attempt = 0; attempt < 50; attempt += 1) {
+              const staging = (await readdir(join(root, "blobs"))).filter((name) =>
+                name.startsWith(".nhcms-stage-"),
+              );
+              if (staging.length === 0) return staging;
+              await Bun.sleep(10);
+            }
+            return (await readdir(join(root, "blobs"))).filter((name) =>
+              name.startsWith(".nhcms-stage-"),
+            );
+          });
+          return { stageExistedWhilePending, stagingAfterCancellation };
+        }).pipe(Effect.provide(filesystemLayer)),
+      );
+
+    expect(observed.stageExistedWhilePending).toBeTrue();
+    expect(observed.stagingAfterCancellation).toEqual([]);
   });
 
   test("enforces one writer and only cleans the exact abandoned-staging convention", async () => {

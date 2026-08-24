@@ -99,36 +99,6 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
     }),
   digest = (bytes: Uint8Array): string => createHash("sha256").update(bytes).digest("hex"),
   encode = (value: unknown): Uint8Array => new TextEncoder().encode(`${JSON.stringify(value)}\n`),
-  collectBytes = (
-    input: IngestInput["content"],
-    maximumByteLength: number,
-  ): Effect.Effect<Uint8Array, InfrastructureFailure | InvalidInput> => {
-    if (input instanceof Uint8Array) {
-      return input.byteLength > maximumByteLength
-        ? Effect.fail(InvalidInput.make({ message: "Asset bytes exceed the configured limit" }))
-        : Effect.succeed(input.slice());
-    }
-    return Stream.runFoldEffect(
-      input,
-      () => ({ chunks: [] as Uint8Array[], totalByteLength: 0 }),
-      (state, chunk) => {
-        const totalByteLength = state.totalByteLength + chunk.byteLength;
-        return totalByteLength > maximumByteLength
-          ? Effect.fail(InvalidInput.make({ message: "Asset bytes exceed the configured limit" }))
-          : Effect.succeed({ chunks: [...state.chunks, chunk.slice()], totalByteLength });
-      },
-    ).pipe(
-      Effect.map(({ chunks, totalByteLength }) => {
-        const bytes = new Uint8Array(totalByteLength);
-        let offset = 0;
-        for (const chunk of chunks) {
-          bytes.set(chunk, offset);
-          offset += chunk.byteLength;
-        }
-        return bytes;
-      }),
-    );
-  },
   cloneCatalog = (catalog: CatalogState): CatalogState => ({
     ...catalog,
     active: { ...catalog.active, input: structuredClone(catalog.active.input) },
@@ -245,6 +215,76 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
       await rm(stagePath, { force: true }).catch(() => undefined);
       throw error;
     }
+  },
+  commitAssetBlob = (
+    configuration: Configuration,
+    content: IngestInput["content"],
+  ): Effect.Effect<
+    { readonly byteLength: number; readonly digest: string },
+    InfrastructureFailure | InvalidInput
+  > => {
+    const blobsDirectory = join(configuration.root, "blobs"),
+      stagePath = join(blobsDirectory, `${stagingPrefix}blob-${crypto.randomUUID()}`),
+      maximumByteLength = configuration.maximumAssetByteLength ?? 25_000_000,
+      contentStream = content instanceof Uint8Array ? Stream.make(content) : content;
+    return Effect.acquireUseRelease(
+      fromPromise(
+        async () => ({
+          ended: false,
+          writer: Bun.file(stagePath).writer({ highWaterMark: 65_536 }),
+        }),
+        "Filesystem Asset staging file creation failed",
+      ),
+      (stage) =>
+        Effect.gen(function* writeAssetBlob() {
+          const hasher = new Bun.CryptoHasher("sha256");
+          let byteLength = 0;
+          yield* Stream.runForEach(
+            contentStream,
+            (chunk): Effect.Effect<void, InfrastructureFailure | InvalidInput> => {
+              const nextByteLength = byteLength + chunk.byteLength;
+              if (nextByteLength > maximumByteLength)
+                return Effect.fail(
+                  InvalidInput.make({ message: "Asset bytes exceed the configured limit" }),
+                );
+              return fromPromise(async () => {
+                hasher.update(chunk);
+                stage.writer.write(chunk);
+                await stage.writer.flush();
+                byteLength = nextByteLength;
+              }, "Filesystem Asset staging write failed");
+            },
+          );
+          yield* fromPromise(async () => {
+            await stage.writer.end();
+            stage.ended = true;
+            if (configuration.acknowledgement === "durable") await synchronize(stagePath);
+          }, "Filesystem Asset staging finalization failed");
+          const assetDigest = hasher.digest("hex"),
+            blobPath = join(blobsDirectory, assetDigest),
+            blobExists = yield* fromPromise(
+              async () => Bun.file(blobPath).exists(),
+              "Filesystem Asset Blob lookup failed",
+            );
+          if (blobExists) {
+            yield* fromPromise(
+              async () => rm(stagePath, { force: true }),
+              "Filesystem duplicate Asset staging cleanup failed",
+            );
+          } else {
+            yield* fromPromise(async () => {
+              await rename(stagePath, blobPath);
+              if (configuration.acknowledgement === "durable") await synchronize(blobsDirectory);
+            }, "Filesystem Asset Blob commit failed");
+          }
+          return { byteLength, digest: assetDigest };
+        }),
+      (stage) =>
+        fromPromise(async () => {
+          if (!stage.ended) await Promise.resolve(stage.writer.end()).catch(() => undefined);
+          await rm(stagePath, { force: true }).catch(() => undefined);
+        }, "Filesystem Asset staging cleanup failed").pipe(Effect.ignore),
+    );
   },
   persistState = async (configuration: Configuration, state: State): Promise<void> => {
     const generationsDirectory = join(configuration.root, "generations"),
@@ -489,25 +529,11 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
                 return yield* InvalidInput.make({
                   message: "Asset metadata exceeds the configured limit",
                 });
-              const bytes = yield* collectBytes(
-                input.content,
-                configuration.maximumAssetByteLength ?? 25_000_000,
-              );
-              const assetDigest = digest(bytes);
-              const blobPath = join(configuration.root, "blobs", assetDigest);
-              const blobExists = yield* fromPromise(
-                async () => Bun.file(blobPath).exists(),
-                "Filesystem Asset Blob lookup failed",
-              );
-              if (!blobExists)
-                yield* fromPromise(
-                  async () => writeAtomic(blobPath, bytes, configuration.acknowledgement),
-                  "Filesystem Asset Blob commit failed",
-                );
+              const committedBlob = yield* commitAssetBlob(configuration, input.content);
               const assetId = yield* identifiers.generate("asset");
               const metadata: Metadata = {
-                byteLength: bytes.byteLength,
-                digest: assetDigest,
+                byteLength: committedBlob.byteLength,
+                digest: committedBlob.digest,
                 filename: input.filename,
                 mediaType: input.mediaType,
                 ...(input.width === undefined ? {} : { width: input.width }),
