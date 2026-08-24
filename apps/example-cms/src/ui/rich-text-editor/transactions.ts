@@ -280,9 +280,9 @@ const insertText = (state: State, text: string): State => {
         type: "text",
         ...((selected.text.marks?.length ?? emptyIndex) > emptyIndex
           ? { marks: selected.text.marks }
-          : state.pendingMarks.length > emptyIndex
+          : (state.pendingMarks.length > emptyIndex
             ? { marks: state.pendingMarks }
-            : {}),
+            : {})),
       },
       children = selected.block.children.map((node, index) =>
         index === position.inlineIndex ? replacement : node,
@@ -595,10 +595,10 @@ export const transact = (state: State, command: Command): State => {
       if (selected === undefined) {
         return state;
       }
-      const label =
-        selected.start === selected.end
-          ? (command.label ?? "")
-          : selected.text.text.slice(selected.start, selected.end);
+      let label = selected.text.text.slice(selected.start, selected.end);
+      if (selected.start === selected.end) {
+        label = command.label ?? "";
+      }
       if (label.length === emptyIndex) {
         return state;
       }
@@ -619,10 +619,10 @@ export const transact = (state: State, command: Command): State => {
       if (selected === undefined) {
         return state;
       }
-      const label =
-        selected.start === selected.end
-          ? (command.label ?? "")
-          : selected.text.text.slice(selected.start, selected.end);
+      let label = selected.text.text.slice(selected.start, selected.end);
+      if (selected.start === selected.end) {
+        label = command.label ?? "";
+      }
       if (label.length === emptyIndex) {
         return state;
       }
@@ -654,8 +654,8 @@ export const transact = (state: State, command: Command): State => {
       return commit(state, { ...state.document, children }, { anchor: position, focus: position });
     }
     case "undo": {
-      const historyIndex = Math.max(emptyIndex, state.historyIndex - firstIndex);
-      const document = state.history[historyIndex];
+      const historyIndex = Math.max(emptyIndex, state.historyIndex - firstIndex),
+       document = state.history[historyIndex];
       if (document === undefined) {
         throw new Error("Undo history entry is missing");
       }
@@ -665,8 +665,8 @@ export const transact = (state: State, command: Command): State => {
       const historyIndex = Math.min(
         state.history.length - firstIndex,
         state.historyIndex + firstIndex,
-      );
-      const document = state.history[historyIndex];
+      ),
+       document = state.history[historyIndex];
       if (document === undefined) {
         throw new Error("Redo history entry is missing");
       }

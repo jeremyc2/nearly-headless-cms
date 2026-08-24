@@ -423,9 +423,9 @@ const lowerCamelCase = (key: string): string =>
           entries =
             contentTypeId === "author"
               ? content.authors
-              : contentTypeId === "category"
+              : (contentTypeId === "category"
                 ? content.categories
-                : content.tags,
+                : content.tags),
           entry = entries.find((candidate) => candidate.values["slug"] === slug);
         return entry === undefined
           ? Effect.fail(CmsError.NotFound.make({ message: `${contentTypeId} was not found` }))
@@ -477,9 +477,9 @@ const lowerCamelCase = (key: string): string =>
         end =
           match[1] === ""
             ? asset.bytes.byteLength - ONE_ITEM
-            : match[2] === ""
+            : (match[2] === ""
               ? asset.bytes.byteLength - ONE_ITEM
-              : Number(match[2]);
+              : Number(match[2]));
       if (
         !Number.isSafeInteger(start) ||
         !Number.isSafeInteger(end) ||
@@ -598,9 +598,9 @@ export const makeDeliveryOperations = (
                 const relationshipPath =
                   contentTypeId === "author"
                     ? "author"
-                    : contentTypeId === "category"
+                    : (contentTypeId === "category"
                       ? "categories"
-                      : "tags";
+                      : "tags");
                 return yield* queryPage({
                   cms,
                   contentTypeId: "post",

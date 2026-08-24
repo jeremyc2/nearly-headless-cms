@@ -186,16 +186,27 @@ export class Service extends Context.Service<Service, ServiceShape>()(
 
 const attempt = <Value>(operation: () => Value): Effect.Effect<Value, InvalidInput> =>
     Effect.try({
-      catch: (cause) =>
-        cause instanceof InvalidInput
-          ? cause
-          : InvalidInput.make({
-              message: cause instanceof Error ? cause.message : "Invalid input",
-            }),
+      catch: (cause) => {
+        if (cause instanceof InvalidInput) {
+          return cause;
+        }
+        let message = "Invalid input";
+        if (cause instanceof Error) {
+          message = cause.message;
+        }
+        return InvalidInput.make({ message });
+      },
       try: operation,
     }),
   liveRecords = (generation: EntryGeneration): readonly EntryRecord[] =>
     [...generation.records.values()].filter((record) => record.deletionRecord === undefined);
+
+const oneOrMany = (value: JsonValue): readonly JsonValue[] => {
+  if (Array.isArray(value)) {
+    return value;
+  }
+  return [value];
+};
 
 interface References {
   readonly relationships: readonly {
@@ -266,7 +277,7 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
           }
           const relationship = relationshipKind(field);
           if (relationship !== undefined) {
-            const entryIds = Array.isArray(value) ? value : [value];
+            const entryIds = oneOrMany(value);
             for (const entryId of entryIds) {
               if (typeof entryId === "string") {
                 relationships.push({
@@ -280,7 +291,7 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
             field.kind.kind === "asset" ||
             (field.kind.kind === "list" && field.kind.element.kind === "asset");
           if (isAssetField) {
-            const fieldAssetIds = Array.isArray(value) ? value : [value];
+            const fieldAssetIds = oneOrMany(value);
             for (const assetId of fieldAssetIds) {
               if (typeof assetId === "string") {
                 assetIds.push(assetId);
@@ -316,10 +327,14 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
   ): readonly { readonly field: ResolvedField; readonly path: readonly string[] }[] =>
     fields.flatMap((field) => {
       const path = [...parentPath, field.key];
-      return [
-        { field, path },
-        ...(field.nestedFields === undefined ? [] : fieldsAtPaths(field.nestedFields, path)),
-      ];
+      let descendants: readonly {
+        readonly field: ResolvedField;
+        readonly path: readonly string[];
+      }[] = [];
+      if (field.nestedFields !== undefined) {
+        descendants = fieldsAtPaths(field.nestedFields, path);
+      }
+      return [{ field, path }, ...descendants];
     }),
   ensureUniqueValues = ({
     contentType,
@@ -392,8 +407,11 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
         if (index === segments.length - 1) {
           current[segment] = cloneJson(value);
         } else {
-          const existing = current[segment],
-            nested: Record<string, JsonValue> = isJsonObject(existing) ? { ...existing } : {};
+          const existing = current[segment];
+          let nested: Record<string, JsonValue> = {};
+          if (isJsonObject(existing)) {
+            nested = { ...existing };
+          }
           current[segment] = nested;
           current = nested;
         }
@@ -420,7 +438,7 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
           message: `Relationship Expansion cannot exceed ${maximumExpansionDepth} levels`,
         });
       }
-      const root = segments[0]!,
+      const root = segments[0] ?? "",
         remainder = segments.slice(1).join("."),
         nested = grouped.get(root) ?? [];
       if (remainder.length > 0) {
@@ -448,12 +466,15 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
       Object.entries(object).map(([key, value]) => [key, cloneJson(value)]),
     );
     for (const [fieldKey, nestedPaths] of groupExpansionPaths(expansion)) {
-      const fieldPath = parentPath.length === 0 ? fieldKey : `${parentPath}.${fieldKey}`,
-        field = fields.find((candidate) => candidate.key === fieldKey),
-        relationship = field === undefined ? undefined : relationshipKind(field);
+      let fieldPath = fieldKey;
+      if (parentPath.length !== 0) {
+        fieldPath = `${parentPath}.${fieldKey}`;
+      }
+      const field = fields.find((candidate) => candidate.key === fieldKey);
       if (field === undefined) {
         throw InvalidInput.make({ message: `Field ${fieldPath} is not expandable` });
       }
+      const relationship = relationshipKind(field);
       const value = values[fieldKey];
       if (value === undefined || value === null) {
         continue;
@@ -470,6 +491,12 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
               message: `Field Group List ${fieldPath} contains an invalid value`,
             });
           }
+          const { nestedFields } = field;
+          if (nestedFields === undefined) {
+            throw InvalidInput.make({
+              message: `Field Group List ${fieldPath} has no nested fields`,
+            });
+          }
           values[fieldKey] = value.map((item) => {
             if (!isJsonObject(item)) {
               throw InvalidInput.make({
@@ -479,7 +506,7 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
             return expandObject({
               ancestorEntryIds,
               expansion: nestedPaths,
-              fields: field.nestedFields!,
+              fields: nestedFields,
               generation,
               object: item,
               parentPath: fieldPath,
@@ -534,19 +561,25 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
             message: `Relationship target ${entryId} does not exist in an allowed Content Type`,
           });
         }
-        const expandedTarget =
-          nestedPaths.length === 0
-            ? structuredClone(target.entry)
-            : expandRepresentation({
-                ancestorEntryIds,
-                entry: target.entry,
-                expansion: nestedPaths,
-                generation,
-                snapshot,
-              });
+        let expandedTarget: Representation;
+        if (nestedPaths.length === 0) {
+          expandedTarget = structuredClone(target.entry);
+        } else {
+          expandedTarget = expandRepresentation({
+            ancestorEntryIds,
+            entry: target.entry,
+            expansion: nestedPaths,
+            generation,
+            snapshot,
+          });
+        }
         return expandedEntryValue(expandedTarget);
       };
-      values[fieldKey] = Array.isArray(value) ? value.map(expandEntryId) : expandEntryId(value);
+      if (Array.isArray(value)) {
+        values[fieldKey] = value.map(expandEntryId);
+      } else {
+        values[fieldKey] = expandEntryId(value);
+      }
     }
     return values;
   },
@@ -620,7 +653,8 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
       retained = retained.filter(
         (revision, index) =>
           index === retained.length - 1 ||
-          now - Date.parse(revision.recordedAt) <= policy.maximumAgeMilliseconds!,
+          (policy.maximumAgeMilliseconds !== undefined &&
+            now - Date.parse(revision.recordedAt) <= policy.maximumAgeMilliseconds),
       );
     }
     if (
@@ -635,12 +669,17 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
     snapshot: CompiledSnapshot,
     contentTypeId: string,
     entryId?: string,
-  ): Resource => ({
-    contentTypeId,
-    definitionSpaceId: snapshot.definitionSpaceId,
-    kind: "entry",
-    ...(entryId === undefined ? {} : { entryId }),
-  });
+  ): Resource => {
+    const base = {
+      contentTypeId,
+      definitionSpaceId: snapshot.definitionSpaceId,
+      kind: "entry",
+    } as const;
+    if (entryId === undefined) {
+      return base;
+    }
+    return { ...base, entryId };
+  };
 
 /**
  * Constructs the CMS service from required Builder Layers. Mutations are serialized
@@ -669,12 +708,8 @@ export const makeLayer = (
         identifiers = yield* Generator,
         operationGate = yield* Semaphore.make(1),
         compileOptions: CompileOptions = {
-          ...(options.customFieldKinds === undefined
-            ? {}
-            : { customFieldKinds: options.customFieldKinds }),
-          ...(options.richTextExtensions === undefined
-            ? {}
-            : { richTextExtensions: options.richTextExtensions }),
+          customFieldKinds: options.customFieldKinds,
+          richTextExtensions: options.richTextExtensions,
         },
         migrationHandlers = new Map(
           (options.migrationHandlers ?? []).map((handler) => [
@@ -926,8 +961,12 @@ export const makeLayer = (
               const { input } = mutation,
                 contentType = snapshot.contentTypes.get(input.contentTypeId),
                 current = records.get(input.entryId);
+              let authorizationAction: "entry.update" | "entry.delete" = "entry.delete";
+              if (mutation.kind === "replace") {
+                authorizationAction = "entry.update";
+              }
               yield* authorize(
-                mutation.kind === "replace" ? "entry.update" : "entry.delete",
+                authorizationAction,
                 entryResource(snapshot, input.contentTypeId, input.entryId),
               );
               if (
@@ -1074,9 +1113,10 @@ export const makeLayer = (
                 }),
               ),
             );
-            return page.nextCursor === undefined
-              ? { items }
-              : { items, nextCursor: page.nextCursor };
+            if (page.nextCursor === undefined) {
+              return { items };
+            }
+            return { items, nextCursor: page.nextCursor };
           }),
         getCurrentEntryState = (
           input: Pick<ReadInput, "contentTypeId" | "entryId">,
@@ -1100,9 +1140,15 @@ export const makeLayer = (
                 message: `History-enabled Entry ${input.entryId} was not found`,
               });
             }
+            const latestRevision = record.revisions.at(-1);
+            if (latestRevision === undefined) {
+              return yield* NotFound.make({
+                message: `History-enabled Entry ${input.entryId} has no revisions`,
+              });
+            }
             return {
               entry: structuredClone(record.entry),
-              revisionNumber: record.revisions.at(-1)!.revisionNumber,
+              revisionNumber: latestRevision.revisionNumber,
               writeToken: record.writeToken,
             };
           }),
@@ -1138,9 +1184,10 @@ export const makeLayer = (
               revisions = newestFirst.slice(offset, offset + input.pageSize),
               items = revisions.map(({ values: _values, ...metadata }) => metadata),
               nextOffset = offset + items.length;
-            return nextOffset < newestFirst.length
-              ? { items, nextCursor: historyCursor(nextOffset, input.entryId) }
-              : { items };
+            if (nextOffset < newestFirst.length) {
+              return { items, nextCursor: historyCursor(nextOffset, input.entryId) };
+            }
+            return { items };
           }),
         inspectEntryRevision = (input: ReadRevisionInput): Effect.Effect<Revision, CmsError> =>
           Effect.gen(function* inspectEntryRevisionOperation() {
@@ -1180,9 +1227,12 @@ export const makeLayer = (
               current === undefined ||
               current.writeToken !== input.writeToken
             ) {
-              return yield* current === undefined
-                ? NotFound.make({ message: `Entry History ${input.entryId} was not found` })
-                : Conflict.make({ message: "Write Token is stale" });
+              if (current === undefined) {
+                return yield* NotFound.make({
+                  message: `Entry History ${input.entryId} was not found`,
+                });
+              }
+              return yield* Conflict.make({ message: "Write Token is stale" });
             }
             const sourceRevision = current.revisions.find(
               (revision) => revision.revisionNumber === input.revisionNumber,
@@ -1234,11 +1284,15 @@ export const makeLayer = (
                   }),
                 );
                 if (preparation.report.status !== "ready" || preparation.entries[0] === undefined) {
+                  if (preparation.report.status === "failed") {
+                    return yield* InvalidInput.make({
+                      issues: preparation.report.issues,
+                      message:
+                        "Entry Revision cannot be migrated to the active Definition Snapshot",
+                    });
+                  }
                   return yield* InvalidInput.make({
                     message: "Entry Revision cannot be migrated to the active Definition Snapshot",
-                    ...(preparation.report.status === "failed"
-                      ? { issues: preparation.report.issues }
-                      : {}),
                   });
                 }
                 sourceValues = preparation.entries[0].values;
@@ -1662,6 +1716,12 @@ export const makeLayer = (
                   "This Definition change requires an explicit Migration Manifest and Handler",
               });
             }
+            const migrationManifest = input.migration?.manifest;
+            if (compatibility !== "compatible" && migrationManifest === undefined) {
+              return yield* InvalidInput.make({
+                message: "A migration manifest is required for this Definition change",
+              });
+            }
             const generation = yield* persistence.readGeneration,
               manifest: Manifest =
                 compatibility === "compatible"
@@ -1673,7 +1733,12 @@ export const makeLayer = (
                       sourceSnapshotId: source.snapshotId,
                       targetSnapshotId: target.snapshotId,
                     }
-                  : input.migration!.manifest,
+                  : (() => {
+                      if (migrationManifest === undefined) {
+                        throw new Error("Migration manifest is missing");
+                      }
+                      return migrationManifest;
+                    })(),
               storedPreparation =
                 input.migration?.preparationId === undefined
                   ? undefined

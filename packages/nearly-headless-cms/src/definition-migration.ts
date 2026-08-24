@@ -4,7 +4,7 @@ import type { Representation } from "./entry.ts";
 import type { JsonObject, JsonValue } from "./internal/json.ts";
 
 const NO_PATHS = 0,
- SINGLE_PATH = 1;
+  SINGLE_PATH = 1;
 
 /** One directed, versioned Definition migration edge. */
 export interface Manifest {
@@ -102,17 +102,21 @@ export const prepare = (input: PreparationInput): Preparation => {
     issues: ValidationIssue[] = [];
   for (const entry of input.entries) {
     try {
-      const transformedValues = input.manifest.compatible
-          ? entry.values
-          : handler!.transform({
-              contentTypeId: entry.contentTypeId,
-              entryId: entry.id,
-              manifest: input.manifest,
-              values: structuredClone(entry.values),
-            }),
-        validatedValues = input.target.validateEntry(entry.contentTypeId, transformedValues, {
-          applyDefaults: false,
+      let validatedValues = entry.values;
+      if (!input.manifest.compatible) {
+        if (handler === undefined) {
+          throw new Error("Migration handler is missing");
+        }
+        validatedValues = handler.transform({
+          contentTypeId: entry.contentTypeId,
+          entryId: entry.id,
+          manifest: input.manifest,
+          values: structuredClone(entry.values),
         });
+      }
+      validatedValues = input.target.validateEntry(entry.contentTypeId, validatedValues, {
+        applyDefaults: false,
+      });
       transformedEntries.push({
         contentTypeId: entry.contentTypeId,
         id: entry.id,

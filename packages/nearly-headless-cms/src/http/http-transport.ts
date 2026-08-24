@@ -34,6 +34,17 @@ import {
 } from "./http-contract.ts";
 import * as HttpApiContract from "./http-api.ts";
 
+const requiredPathParameter = (
+  parameters: Readonly<Record<string, string | undefined>>,
+  name: string,
+): string => {
+  const value = parameters[name];
+  if (value === undefined) {
+    throw new Error(`Missing path parameter: ${name}`);
+  }
+  return value;
+};
+
 /** Limits, CORS policy, and composed operation declarations for the HTTP Transport. */
 export interface Options {
   readonly deliveryOperations?: readonly DeliveryOperation[];
@@ -524,9 +535,13 @@ const runOperationInterruptibly = async <Value>(
     success,
   }: RespondWithOutcomeInput<Value>): Promise<Response> => {
     const outcome = await runOperationInterruptibly(effect, signal);
-    return outcome.success
-      ? success(outcome.value as Value)
-      : errorResponse(outcome.error!, requestId);
+    if (outcome.success) {
+      return success(outcome.value as Value);
+    }
+    if (outcome.error === undefined) {
+      throw new Error("Operation failed without an error");
+    }
+    return errorResponse(outcome.error, requestId);
   },
   responseBody = (bytes: Uint8Array): ArrayBuffer => {
     const copy = new Uint8Array(bytes.byteLength);
@@ -578,9 +593,9 @@ const runOperationInterruptibly = async <Value>(
         end =
           match[1] === ""
             ? storedAsset.bytes.byteLength - 1
-            : (match[2] === ""
+            : match[2] === ""
               ? storedAsset.bytes.byteLength - 1
-              : Number(match[2]));
+              : Number(match[2]);
       if (
         !Number.isSafeInteger(start) ||
         !Number.isSafeInteger(end) ||
@@ -697,15 +712,24 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
         const requestUrl = new URL(request.url),
           activeOutcome = await runOperationInterruptibly(cms.activeDefinitionSnapshot, signal);
         if (!activeOutcome.success) {
-          return errorResponse(activeOutcome.error!, requestId);
+          if (activeOutcome.error === undefined) {
+            throw new Error("Operation failed without an error");
+          }
+          return errorResponse(activeOutcome.error, requestId);
         }
-        const snapshot = activeOutcome.value!,
+        if (activeOutcome.value === undefined) {
+          throw new Error("Operation succeeded without a value");
+        }
+        const snapshot = activeOutcome.value,
           fingerprintOutcome = await runOperationInterruptibly(
             ensureFingerprint(request, snapshot.fingerprint),
             signal,
           );
         if (!fingerprintOutcome.success) {
-          return errorResponse(fingerprintOutcome.error!, requestId);
+          if (fingerprintOutcome.error === undefined) {
+            throw new Error("Fingerprint operation failed without an error");
+          }
+          return errorResponse(fingerprintOutcome.error, requestId);
         }
 
         if (request.method === "OPTIONS" && options.cors !== undefined) {
@@ -793,7 +817,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
           return withOutcome(
             cms.readDefinitionCatalog.pipe(
               Effect.flatMap((state) => {
-                const definitionId = definitionMatch["definitionId"]!,
+                const definitionId = requiredPathParameter(definitionMatch, "definitionId"),
                   definition = state.active.input.definitions.find(
                     (candidate) => candidate.id === definitionId,
                   );
@@ -824,7 +848,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
           requestUrl.pathname,
         );
         if (definitionRevisionsMatch !== undefined) {
-          const definitionId = definitionRevisionsMatch["definitionId"]!;
+          const definitionId = requiredPathParameter(definitionRevisionsMatch, "definitionId");
           if (request.method === "GET") {
             return withOutcome(cms.readDefinitionCatalog, requestId, (state) =>
               jsonResponse({
@@ -897,7 +921,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
             }
             return await withOutcome(
               cms.retireDefinition({
-                definitionId: retirementMatch["definitionId"]!,
+                definitionId: requiredPathParameter(retirementMatch, "definitionId"),
                 expectedCatalogVersion: expectedCatalogVersion as number,
                 source: "management-http",
               }),
@@ -950,12 +974,13 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
               Effect.flatMap((state) => {
                 const snapshotRecord = state.snapshots.find(
                   (candidate) =>
-                    candidate.compiled.snapshotId === definitionSnapshotMatch["snapshotId"]!,
+                    candidate.compiled.snapshotId ===
+                    requiredPathParameter(definitionSnapshotMatch, "snapshotId"),
                 );
                 return snapshotRecord === undefined
                   ? Effect.fail(
                       NotFound.make({
-                        message: `Definition Snapshot ${definitionSnapshotMatch["snapshotId"]!} was not found`,
+                        message: `Definition Snapshot ${requiredPathParameter(definitionSnapshotMatch, "snapshotId")} was not found`,
                       }),
                     )
                   : Effect.succeed({
@@ -1117,7 +1142,9 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
             cms.readDefinitionCatalog.pipe(
               Effect.flatMap((state) => {
                 const manifest = state.migrationManifests.find(
-                  (candidate) => candidate.id === migrationManifestMatch["migrationManifestId"]!,
+                  (candidate) =>
+                    candidate.id ===
+                    requiredPathParameter(migrationManifestMatch, "migrationManifestId"),
                 );
                 return manifest === undefined
                   ? Effect.fail(NotFound.make({ message: "Migration Manifest was not found" }))
@@ -1144,7 +1171,8 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
               Effect.flatMap((state) => {
                 const preparation = state.migrationPreparations.find(
                   (candidate) =>
-                    candidate.id === migrationPreparationMatch["migrationPreparationId"]!,
+                    candidate.id ===
+                      requiredPathParameter(migrationPreparationMatch, "migrationPreparationId"),
                 );
                 return preparation === undefined
                   ? Effect.fail(NotFound.make({ message: "Migration Preparation was not found" }))
@@ -1219,7 +1247,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
             }
             return await withOutcome(
               cms.createEntry({
-                contentTypeId: createMatch["contentTypeId"]!,
+                contentTypeId: requiredPathParameter(createMatch, "contentTypeId"),
                 values: values as JsonObject,
               }),
               requestId,
@@ -1244,7 +1272,10 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
           try {
             const body = await parseJson(request, maximumJsonBodyByteLength);
             return await withOutcome(
-              cms.queryEntries({ ...body, contentTypeId: queryMatch["contentTypeId"]! } as never),
+              cms.queryEntries({
+                ...body,
+                contentTypeId: requiredPathParameter(queryMatch, "contentTypeId"),
+              } as never),
               requestId,
               (result) =>
                 jsonResponse({
@@ -1284,8 +1315,8 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
             }
             return await withOutcome(
               cms.getEntry({
-                contentTypeId: readMatch["contentTypeId"]!,
-                entryId: readMatch["entryId"]!,
+                contentTypeId: requiredPathParameter(readMatch, "contentTypeId"),
+                entryId: requiredPathParameter(readMatch, "entryId"),
                 expansion,
                 projection,
               }),
@@ -1600,14 +1631,14 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
             (value) =>
               value instanceof Response
                 ? value
-                : (value === undefined
+                : value === undefined
                   ? bodylessResponse(204, requestId, snapshot.fingerprint)
                   : jsonResponse({
                       fingerprint: snapshot.fingerprint,
                       requestId,
                       status: 200,
                       value,
-                    })),
+                    }),
           );
         }
 
@@ -1652,7 +1683,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
             (value) =>
               value instanceof Response
                 ? value
-                : (value === undefined
+                : value === undefined
                   ? bodylessResponse(204, requestId, snapshot.fingerprint)
                   : jsonResponse({
                       cacheControl: matcher.operation.cacheControl ?? "no-cache",
@@ -1660,7 +1691,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
                       requestId,
                       status: matcher.operation.successStatus ?? 200,
                       value,
-                    })),
+                    }),
           );
         }
 

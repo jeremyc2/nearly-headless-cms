@@ -28,57 +28,64 @@ describe("Example CMS public visibility", () => {
     await rm(storageRoot, { force: true, recursive: true });
   });
 
-  test("exports every public Entry across internal query pages", async () => {
-    const initialExportResponse = await system.handler(
-        new Request("http://cms.test/api/v1/headless/export"),
-      ),
-      initialExport = (await initialExportResponse.json()) as {
-        authors: readonly { id: string }[];
-        posts: readonly { id: string }[];
-      },
-      authorIdentifier = initialExport.authors[authorIndex]!.id;
-    for (let postNumber = 0; postNumber < postsToCreate; postNumber += loopIncrement) {
-      const response = await system.handler(
-        new Request(managementEntriesUrl("post"), {
-          body: JSON.stringify({
-            values: {
-              author: authorIdentifier,
-              body: {
-                children: [
-                  {
-                    children: [{ text: `Complete export ${postNumber}`, type: "text" }],
-                    type: "paragraph",
-                  },
-                ],
-                format: "nearly-headless-cms/rich-text",
-                version: richTextVersion,
+  test(
+    "exports every public Entry across internal query pages",
+    async () => {
+      const initialExportResponse = await system.handler(
+          new Request("http://cms.test/api/v1/headless/export"),
+        ),
+        initialExport = (await initialExportResponse.json()) as {
+          authors: readonly { id: string }[];
+          posts: readonly { id: string }[];
+        },
+        authorIdentifier = initialExport.authors[authorIndex]?.id ?? "";
+      for (let postNumber = 0; postNumber < postsToCreate; postNumber += loopIncrement) {
+        const response = await system.handler(
+          new Request(managementEntriesUrl("post"), {
+            body: JSON.stringify({
+              values: {
+                author: authorIdentifier,
+                body: {
+                  children: [
+                    {
+                      children: [{ text: `Complete export ${postNumber}`, type: "text" }],
+                      type: "paragraph",
+                    },
+                  ],
+                  format: "nearly-headless-cms/rich-text",
+                  version: richTextVersion,
+                },
+                categories: [],
+                excerpt: `Complete export fixture ${postNumber}`,
+                "featured-alternative-text": null,
+                "featured-asset": null,
+                "published-at": `2026-08-22T${String(postNumber % hoursPerDay).padStart(hourTextWidth, "0")}:00:00.000Z`,
+                slug: `complete-export-${postNumber}`,
+                status: "published",
+                tags: [],
+                title: `Complete export ${postNumber}`,
               },
-              categories: [],
-              excerpt: `Complete export fixture ${postNumber}`,
-              "featured-alternative-text": null,
-              "featured-asset": null,
-              "published-at": `2026-08-22T${String(postNumber % hoursPerDay).padStart(hourTextWidth, "0")}:00:00.000Z`,
-              slug: `complete-export-${postNumber}`,
-              status: "published",
-              tags: [],
-              title: `Complete export ${postNumber}`,
-            },
+            }),
+            headers: { "content-type": "application/json" },
+            method: "POST",
           }),
-          headers: { "content-type": "application/json" },
-          method: "POST",
-        }),
-      );
-      expect(response.status).toBe(createdEntryStatus);
-    }
+        );
+        expect(response.status).toBe(createdEntryStatus);
+      }
 
-    const completeExportResponse = await system.handler(
-        new Request("http://cms.test/api/v1/headless/export"),
-      ),
-      completeExport = (await completeExportResponse.json()) as { posts: readonly { id: string }[] };
-    expect(completeExport.posts).toHaveLength(initialExport.posts.length + postsToCreate);
-  }, exportTimeoutMilliseconds);
+      const completeExportResponse = await system.handler(
+          new Request("http://cms.test/api/v1/headless/export"),
+        ),
+        completeExport = (await completeExportResponse.json()) as {
+          posts: readonly { id: string }[];
+        };
+      expect(completeExport.posts).toHaveLength(initialExport.posts.length + postsToCreate);
+    },
+    exportTimeoutMilliseconds,
+  );
 
   test("hides Comments, taxonomies, and Entry references outside published reachability", async () => {
+    const draftPostId = system.seed?.draftPostId ?? "";
     const categoryResponse = await system.handler(
         new Request(managementEntriesUrl("category"), {
           body: JSON.stringify({
@@ -96,7 +103,7 @@ describe("Example CMS public visibility", () => {
         entry?: { id: string };
         id?: string;
       },
-      categoryIdentifier = category.entry?.id ?? category.id!;
+      categoryIdentifier = category.entry?.id ?? category.id ?? "";
     expect(categoryResponse.status).toBe(createdEntryStatus);
 
     const commentResponse = await system.handler(
@@ -106,7 +113,7 @@ describe("Example CMS public visibility", () => {
             body: "Approved, but attached to a draft.",
             "created-at": "2026-08-23T15:30:00.000Z",
             "display-name": "Hidden reader",
-            post: system.seed!.draftPostId,
+            post: draftPostId,
             status: "approved",
             "website-url": null,
           },
@@ -118,7 +125,7 @@ describe("Example CMS public visibility", () => {
     expect(commentResponse.status).toBe(createdEntryStatus);
 
     const draftComments = await system.handler(
-        new Request(`http://cms.test/api/v1/headless/posts/${system.seed!.draftPostId}/comments`),
+        new Request(`http://cms.test/api/v1/headless/posts/${draftPostId}/comments`),
       ),
       privateTaxonomy = await system.handler(
         new Request("http://cms.test/api/v1/headless/categories/private-taxonomy"),
@@ -140,8 +147,6 @@ describe("Example CMS public visibility", () => {
     expect(
       publicExport.categories.some((candidate) => candidate.id === categoryIdentifier),
     ).toBeFalse();
-    expect(
-      publicExport.comments.some((candidate) => candidate.post === system.seed!.draftPostId),
-    ).toBeFalse();
+    expect(publicExport.comments.some((candidate) => candidate.post === draftPostId)).toBeFalse();
   });
 });

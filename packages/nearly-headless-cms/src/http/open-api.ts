@@ -23,10 +23,10 @@ interface OperationDescriptor {
 }
 
 const createdStatus = 201,
- noContentStatus = 204,
- okStatus = 200,
  firstIndex = 0,
  indentationSpaces = 2,
+ noContentStatus = 204,
+ okStatus = 200,
 
  errorSchema = {
     properties: {

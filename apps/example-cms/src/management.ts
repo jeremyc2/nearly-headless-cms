@@ -32,6 +32,17 @@ interface RichTextPublicationReference {
   readonly path: readonly (string | number)[];
 }
 
+const requiredParameter = (
+  parameters: Readonly<Record<string, string | undefined>>,
+  name: string,
+): string => {
+  const value = parameters[name];
+  if (value === undefined) {
+    throw new Error(`Missing required parameter: ${name}`);
+  }
+  return value;
+};
+
 interface CollectRichTextPublicationRulesInput {
   readonly issues: CmsError.ValidationIssue[];
   readonly path: readonly (string | number)[];
@@ -155,7 +166,7 @@ const collectRichTextPublicationRules = ({
     ): HttpContract.ManagementOperation["execute"] =>
     ({ cms, parameters, request }) =>
       Effect.gen(function* transitionEntry() {
-        const entryId = parameters["entryId"]!,
+        const entryId = requiredParameter(parameters, "entryId"),
           writeToken = request.headers.get("cms-write-token");
         if (writeToken === null || writeToken.length === 0) {
           return yield* CmsError.InvalidInput.make({ message: "CMS-Write-Token is required" });
@@ -219,7 +230,7 @@ const collectRichTextPublicationRules = ({
     request,
   }) =>
     Effect.gen(function* deletePostAndComments() {
-      const postId = parameters["entryId"]!,
+      const postId = requiredParameter(parameters, "entryId"),
         postWriteToken = yield* requiredWriteToken(request),
         comments = yield* cms.queryEntries({
           contentTypeId: "comment",
@@ -251,7 +262,7 @@ const collectRichTextPublicationRules = ({
     request,
   }) =>
     Effect.gen(function* deleteAuthorAndOwnedContent() {
-      const authorId = parameters["entryId"]!,
+      const authorId = requiredParameter(parameters, "entryId"),
         authorWriteToken = yield* requiredWriteToken(request),
         posts = yield* queryAllEntries(cms, {
           contentTypeId: "post",
@@ -314,7 +325,7 @@ const collectRichTextPublicationRules = ({
     ): HttpContract.ManagementOperation["execute"] =>
     ({ cms, parameters, request }) =>
       Effect.gen(function* detachTaxonomyEntry() {
-        const taxonomyEntryId = parameters["entryId"]!,
+        const taxonomyEntryId = requiredParameter(parameters, "entryId"),
           taxonomyWriteToken = yield* requiredWriteToken(request),
           posts = yield* cms.queryEntries({
             contentTypeId: "post",
@@ -428,7 +439,7 @@ export const makeManagementOperations = (
       request,
     }) =>
       Effect.gen(function* deleteImageAfterClearingAssignments() {
-        const assetId = parameters["assetId"]!,
+        const assetId = requiredParameter(parameters, "assetId"),
           commandKey = request.headers.get("idempotency-key");
         if (commandKey === null || commandKey.length === 0) {
           return yield* CmsError.InvalidInput.make({ message: "Idempotency-Key is required" });
@@ -512,7 +523,7 @@ export const makeManagementOperations = (
       }),
     replaceImage: HttpContract.ManagementOperation["execute"] = ({ cms, parameters, request }) =>
       Effect.gen(function* replaceImageAsset() {
-        const oldAssetId = parameters["assetId"]!,
+        const oldAssetId = requiredParameter(parameters, "assetId"),
           commandKey = request.headers.get("idempotency-key");
         if (commandKey === null || commandKey.length === 0) {
           return yield* CmsError.InvalidInput.make({ message: "Idempotency-Key is required" });
@@ -565,7 +576,7 @@ export const makeManagementOperations = (
                   values: {
                     ...state.entry.values,
                     body: replaceRichTextAsset(
-                      state.entry.values["body"]!,
+                      state.entry.values["body"] ?? null,
                       oldAssetId,
                       newAsset.id,
                     ),
@@ -586,7 +597,7 @@ export const makeManagementOperations = (
                   values: {
                     ...state.entry.values,
                     profile: replaceRichTextAsset(
-                      state.entry.values["profile"]!,
+                      state.entry.values["profile"] ?? null,
                       oldAssetId,
                       newAsset.id,
                     ),

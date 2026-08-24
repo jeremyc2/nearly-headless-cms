@@ -48,8 +48,9 @@ export const layer = (options: Options = {}): Layer.Layer<Management, never, Gen
       return Management.of({
         delete: (assetId) =>
           SynchronizedRef.modifyEffect(state, (assets) => {
-            if (!assets.has(assetId))
-              {return Effect.fail(NotFound.make({ message: `Asset ${assetId} was not found` }));}
+            if (!assets.has(assetId)) {
+              return Effect.fail(NotFound.make({ message: `Asset ${assetId} was not found` }));
+            }
             const updated = new Map(assets);
             updated.delete(assetId);
             return Effect.succeed([undefined, updated] as const);
@@ -64,43 +65,46 @@ export const layer = (options: Options = {}): Layer.Layer<Management, never, Gen
             }),
           ),
         ingest: (input) =>
-          Effect.gen(function*  ingest() {
+          Effect.gen(function* ingest() {
             if (
               input.filename.trim().length === EMPTY_BYTE_LENGTH ||
               !input.mediaType.includes("/")
-            )
-              {return yield* InvalidInput.make({
+            ) {
+              return yield* InvalidInput.make({
                 message: "Asset filename and media type are required",
-              });}
+              });
+            }
             if (
               new TextEncoder().encode(JSON.stringify({ ...input, content: undefined }))
                 .byteLength > maximumMetadataByteLength
-            )
-              {return yield* InvalidInput.make({
+            ) {
+              return yield* InvalidInput.make({
                 message: "Asset metadata exceeds the configured limit",
-              });}
+              });
+            }
             const bytes = yield* collectBytes(input.content);
-            if (bytes.byteLength > maximumByteLength)
-              {return yield* InvalidInput.make({
+            if (bytes.byteLength > maximumByteLength) {
+              return yield* InvalidInput.make({
                 message: "Asset bytes exceed the configured limit",
-              });}
+              });
+            }
             const assetIdentifier = yield* identifiers.generate("asset"),
               digest = createHash("sha256").update(bytes).digest("hex"),
               stored: StoredAsset = {
-              bytes,
-              id: assetIdentifier,
-              metadata: {
-                byteLength: bytes.byteLength,
-                digest,
-                filename: input.filename,
-                mediaType: input.mediaType,
-                ...(input.width === undefined ? {} : { width: input.width }),
-                ...(input.height === undefined ? {} : { height: input.height }),
-                ...(input.defaultAlternativeText === undefined
-                  ? {}
-                  : { defaultAlternativeText: input.defaultAlternativeText }),
-              },
-            };
+                bytes,
+                id: assetIdentifier,
+                metadata: {
+                  byteLength: bytes.byteLength,
+                  digest,
+                  filename: input.filename,
+                  mediaType: input.mediaType,
+                  ...(input.width === undefined ? {} : { width: input.width }),
+                  ...(input.height === undefined ? {} : { height: input.height }),
+                  ...(input.defaultAlternativeText === undefined
+                    ? {}
+                    : { defaultAlternativeText: input.defaultAlternativeText }),
+                },
+              };
             yield* SynchronizedRef.update(state, (assets) =>
               new Map(assets).set(assetIdentifier, stored),
             );

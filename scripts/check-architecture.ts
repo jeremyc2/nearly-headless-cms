@@ -1,15 +1,18 @@
-import { join } from "node:path";
+import path from "node:path";
 
 const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
     value !== null && typeof value === "object" && !Array.isArray(value),
   dependencyAt = (manifest: Readonly<Record<string, unknown>>, name: string): unknown => {
     const { dependencies } = manifest;
-    if (isRecord(dependencies)) {return dependencies[name];}
+    if (isRecord(dependencies)) {
+      return dependencies[name];
+    }
     return undefined;
   },
-  repository = join(import.meta.dir, ".."),
-  rootManifest: unknown = await Bun.file(join(repository, "package.json")).json(),
- expectedWorkspaceCount = 3,
+  repository = path.join(import.meta.dir, ".."),
+  rootManifestFile = Bun.file(path.join(repository, "package.json")),
+  rootManifest: unknown = await rootManifestFile.json(),
+  expectedWorkspaceCount = 3,
   firstIndex = 0,
   oneItem = 1,
   twoSpaceIndent = 2;
@@ -35,9 +38,9 @@ if (workspaceManifestPaths.length !== expectedWorkspaceCount) {
 }
 
 const workspaceManifestValues: readonly unknown[] = [
-  await Bun.file(join(repository, "packages/nearly-headless-cms/package.json")).json(),
-  await Bun.file(join(repository, "apps/example-cms/package.json")).json(),
-  await Bun.file(join(repository, "apps/public-blog/package.json")).json(),
+  await Bun.file(path.join(repository, "packages/nearly-headless-cms/package.json")).json(),
+  await Bun.file(path.join(repository, "apps/example-cms/package.json")).json(),
+  await Bun.file(path.join(repository, "apps/public-blog/package.json")).json(),
 ] as const;
 if (!workspaceManifestValues.every(isRecord)) {
   throw new Error("Every workspace manifest must contain a JSON object");
@@ -76,8 +79,9 @@ for (const forbidden of [
   "jsdom",
   "orval",
 ]) {
-  if (dependencyAt(publicBlog, forbidden) !== undefined)
-    {throw new Error(`Public Blog has forbidden direct dependency ${forbidden}`);}
+  if (dependencyAt(publicBlog, forbidden) !== undefined) {
+    throw new Error(`Public Blog has forbidden direct dependency ${forbidden}`);
+  }
 }
 for (const forbidden of [
   "vite",
@@ -87,20 +91,22 @@ for (const forbidden of [
   "tiptap",
   "concurrently",
 ]) {
-  if (dependencyAt(exampleCms, forbidden) !== undefined)
-    {throw new Error(`Example CMS has forbidden dependency ${forbidden}`);}
+  if (dependencyAt(exampleCms, forbidden) !== undefined) {
+    throw new Error(`Example CMS has forbidden dependency ${forbidden}`);
+  }
 }
 
 const sourceGlob = new Bun.Glob("apps/public-blog/src/**/*.{ts,astro}"),
- sourcePaths = await Array.fromAsync(sourceGlob.scan({ cwd: repository }));
+  sourcePaths = await Array.fromAsync(sourceGlob.scan({ cwd: repository }));
 await Promise.all(
   sourcePaths.map(async (relativePath) => {
-    const source = await Bun.file(join(repository, relativePath)).text();
+    const source = await Bun.file(path.join(repository, relativePath)).text();
     if (
       /from\s+["']nearly-headless-cms(?:\/|["'])/u.test(source) ||
       /from\s+["'][^"']*example-cms/u.test(source)
-    )
-      {throw new Error(`Public Blog imports a forbidden runtime at ${relativePath}`);}
+    ) {
+      throw new Error(`Public Blog imports a forbidden runtime at ${relativePath}`);
+    }
   }),
 );
 const libraryExports = workspaceManifests[0]["exports"],
@@ -119,16 +125,17 @@ if (
   throw new Error("Library exports map is not the complete settled public seam");
 }
 const portableDistributionGlob = new Bun.Glob("packages/nearly-headless-cms/dist/**/*.{js,d.ts}"),
- portableDistributionPaths = await Array.fromAsync(
-  portableDistributionGlob.scan({ cwd: repository }),
-);
+  portableDistributionPaths = await Array.fromAsync(
+    portableDistributionGlob.scan({ cwd: repository }),
+  );
 await Promise.all(
   portableDistributionPaths
     .filter((relativePath) => !relativePath.includes("/bun/filesystem/"))
     .map(async (relativePath) => {
-      const source = await Bun.file(join(repository, relativePath)).text();
-      if (/\bBun\.|["']bun:/u.test(source))
-        {throw new Error(`Portable package entry point leaks a Bun-only runtime at ${relativePath}`);}
+      const source = await Bun.file(path.join(repository, relativePath)).text();
+      if (/\bBun\.|["']bun:/u.test(source)) {
+        throw new Error(`Portable package entry point leaks a Bun-only runtime at ${relativePath}`);
+      }
     }),
 );
 
@@ -169,7 +176,7 @@ const publicApiSourcePaths = [
 let documentedPublicDeclarationCount = 0;
 for (const sourcePath of publicApiSourcePaths) {
   const packageRelativePath = `packages/nearly-headless-cms/${sourcePath}`,
-    sourceText = await Bun.file(join(repository, packageRelativePath)).text(),
+    sourceText = await Bun.file(path.join(repository, packageRelativePath)).text(),
     lines = sourceText.split("\n");
   for (const [lineIndex, line] of lines.entries()) {
     if (/^export (?:class|const|function|interface|type|\*|\{)/u.test(line)) {
@@ -178,11 +185,14 @@ for (const sourcePath of publicApiSourcePaths) {
         while (
           commentLineIndex >= firstIndex &&
           !lines[commentLineIndex]?.trimStart().startsWith("/**")
-        )
-          {commentLineIndex -= oneItem;}
-        if (commentLineIndex < firstIndex)
-          {undocumentedDeclarations.push(`${packageRelativePath}:${lineIndex + oneItem}`);}
-        else {documentedPublicDeclarationCount += oneItem;}
+        ) {
+          commentLineIndex -= oneItem;
+        }
+        if (commentLineIndex < firstIndex) {
+          undocumentedDeclarations.push(`${packageRelativePath}:${lineIndex + oneItem}`);
+        } else {
+          documentedPublicDeclarationCount += oneItem;
+        }
       } else {
         undocumentedDeclarations.push(`${packageRelativePath}:${lineIndex + oneItem}`);
       }

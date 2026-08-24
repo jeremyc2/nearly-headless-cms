@@ -20,7 +20,7 @@ describe("Example CMS Post publication", () => {
   });
 
   test("returns Field-path issues for public image and live-reference rules", async () => {
-    const draftIdentifier = system.seed!.draftPostId,
+    const draftIdentifier = system.seed?.draftPostId ?? "",
       stateUrl = `http://cms.test/api/v1/management/definition-spaces/example-blog/content-types/post/entries/${draftIdentifier}/state`,
       entryUrl = `http://cms.test/api/v1/management/definition-spaces/example-blog/content-types/post/entries/${draftIdentifier}`,
       publishUrl = `http://cms.test/api/v1/management/definition-spaces/example-blog/operations/posts/${draftIdentifier}/publications`,

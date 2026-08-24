@@ -108,8 +108,8 @@ const defaultLimits: QueryLimits = {
 
  BASE64_QUARTET_LENGTH = 4,
  NEGATIVE_ONE = -1,
- ZERO = 0,
- ONE = 1;
+ ONE = 1,
+ ZERO = 0;
 
 interface CursorPayload {
   readonly generation: number;
