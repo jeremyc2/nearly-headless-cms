@@ -22,10 +22,17 @@ const lowerCamelCase = (key: string): string =>
     contentTypeId: string,
     where?: EntryQuery.Predicate,
     sort?: readonly EntryQuery.Sort[],
-  ) =>
-    cms
-      .queryEntries({ contentTypeId, pageSize: 100, sort, where })
-      .pipe(Effect.map((page) => page.items)),
+  ): Effect.Effect<readonly Cms.ConsistentReadSnapshot["entries"][number][], CmsError.CmsError> =>
+    Effect.gen(function* queryAll() {
+      const entries: Cms.ConsistentReadSnapshot["entries"][number][] = [];
+      let cursor: string | undefined;
+      do {
+        const page = yield* cms.queryEntries({ contentTypeId, cursor, pageSize: 100, sort, where });
+        entries.push(...page.items);
+        cursor = page.nextCursor;
+      } while (cursor !== undefined);
+      return entries;
+    }),
   queryPage = (
     cms: Cms.ServiceShape,
     request: Request,
@@ -33,9 +40,9 @@ const lowerCamelCase = (key: string): string =>
     where?: EntryQuery.Predicate,
     sort?: readonly EntryQuery.Sort[],
   ) => {
-    const url = new URL(request.url),
-      pageSize = Number(url.searchParams.get("pageSize") ?? "20"),
-      cursor = url.searchParams.get("cursor") ?? undefined;
+    const requestUrl = new URL(request.url),
+      pageSize = Number(requestUrl.searchParams.get("pageSize") ?? "20"),
+      cursor = requestUrl.searchParams.get("cursor") ?? undefined;
     return cms.queryEntries({ contentTypeId, cursor, pageSize, sort, where }).pipe(
       Effect.map((page) => ({
         items: page.items.map(publicValue),
@@ -99,6 +106,24 @@ const lowerCamelCase = (key: string): string =>
       collectRichTextAssetIds(child, assetIds);
     }
   },
+  collectRichTextEntryIds = (value: unknown, entryIds: Set<string>): void => {
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        collectRichTextEntryIds(item, entryIds);
+      }
+      return;
+    }
+    if (value === null || typeof value !== "object") {
+      return;
+    }
+    const record = value as Readonly<Record<string, unknown>>;
+    if (record["type"] === "entry-reference" && typeof record["entryId"] === "string") {
+      entryIds.add(record["entryId"]);
+    }
+    for (const child of Object.values(record)) {
+      collectRichTextEntryIds(child, entryIds);
+    }
+  },
   publicAssetIds = (
     posts: readonly { readonly values: ContentDefinition.JsonObject }[],
     authors: readonly { readonly values: ContentDefinition.JsonObject }[],
@@ -125,18 +150,151 @@ const lowerCamelCase = (key: string): string =>
     contentTypeId: string,
     where?: EntryQuery.Predicate,
     sort?: readonly EntryQuery.Sort[],
-  ): readonly Cms.ConsistentReadSnapshot["entries"][number][] =>
-    EntryQuery.evaluate(
-      consistentSnapshot.entries,
-      {
-        contentTypeId,
-        pageSize: 100,
-        ...(sort === undefined ? {} : { sort }),
-        ...(where === undefined ? {} : { where }),
-      },
-      consistentSnapshot.definitionSnapshot,
-      { generation: consistentSnapshot.generation },
-    ).items,
+  ): readonly Cms.ConsistentReadSnapshot["entries"][number][] => {
+    const entries: Cms.ConsistentReadSnapshot["entries"][number][] = [];
+    let cursor: string | undefined;
+    do {
+      const page = EntryQuery.evaluate(
+        consistentSnapshot.entries,
+        {
+          contentTypeId,
+          cursor,
+          pageSize: 100,
+          ...(sort === undefined ? {} : { sort }),
+          ...(where === undefined ? {} : { where }),
+        },
+        consistentSnapshot.definitionSnapshot,
+        { generation: consistentSnapshot.generation },
+      );
+      entries.push(...page.items);
+      cursor = page.nextCursor;
+    } while (cursor !== undefined);
+    return entries;
+  },
+  relationshipIdentifiers = (
+    posts: readonly Cms.ConsistentReadSnapshot["entries"][number][],
+    relationshipField: "author" | "categories" | "tags",
+  ): ReadonlySet<string> => {
+    const identifiers = new Set<string>();
+    for (const post of posts) {
+      const value = post.values[relationshipField];
+      if (typeof value === "string") {
+        identifiers.add(value);
+      } else if (Array.isArray(value)) {
+        for (const item of value) {
+          if (typeof item === "string") {
+            identifiers.add(item);
+          }
+        }
+      }
+    }
+    return identifiers;
+  },
+  publicReachability = (
+    posts: readonly Cms.ConsistentReadSnapshot["entries"][number][],
+    authors: readonly Cms.ConsistentReadSnapshot["entries"][number][],
+    categories: readonly Cms.ConsistentReadSnapshot["entries"][number][],
+    tags: readonly Cms.ConsistentReadSnapshot["entries"][number][],
+  ) => {
+    const publishedPostIdentifiers = new Set(posts.map((post) => post.id)),
+      publicAuthorIdentifiers = new Set(relationshipIdentifiers(posts, "author")),
+      publicCategoryIdentifiers = new Set(relationshipIdentifiers(posts, "categories")),
+      publicTagIdentifiers = new Set(relationshipIdentifiers(posts, "tags")),
+      entriesByIdentifier = new Map(
+        [...posts, ...authors, ...categories, ...tags].map((entry) => [entry.id, entry]),
+      ),
+      richTextReachableIdentifiers = new Set<string>(),
+      documents: unknown[] = [
+        ...posts.map((post) => post.values["body"]),
+        ...authors
+          .filter((author) => publicAuthorIdentifiers.has(author.id))
+          .map((author) => author.values["profile"]),
+      ];
+    while (documents.length > 0) {
+      const discoveredIdentifiers = new Set<string>();
+      collectRichTextEntryIds(documents.pop(), discoveredIdentifiers);
+      for (const entryIdentifier of discoveredIdentifiers) {
+        if (richTextReachableIdentifiers.has(entryIdentifier)) {
+          continue;
+        }
+        const entry = entriesByIdentifier.get(entryIdentifier);
+        if (
+          entry === undefined ||
+          (entry.contentTypeId === "post" && entry.values["status"] !== "published")
+        ) {
+          continue;
+        }
+        richTextReachableIdentifiers.add(entryIdentifier);
+        if (entry.contentTypeId === "author") {
+          publicAuthorIdentifiers.add(entryIdentifier);
+          documents.push(entry.values["profile"]);
+        } else if (entry.contentTypeId === "category") {
+          publicCategoryIdentifiers.add(entryIdentifier);
+        } else if (entry.contentTypeId === "tag") {
+          publicTagIdentifiers.add(entryIdentifier);
+        }
+      }
+    }
+    return {
+      publishedPostIdentifiers,
+      publicAuthorIdentifiers,
+      publicCategoryIdentifiers,
+      publicTagIdentifiers,
+      richTextReachableIdentifiers,
+    };
+  },
+  publicContent = (consistentSnapshot: Cms.ConsistentReadSnapshot) => {
+    const posts = querySnapshot(
+        consistentSnapshot,
+        "post",
+        { operator: "equals", path: "status", value: "published" },
+        [{ direction: "descending", path: "published-at" }],
+      ),
+      allAuthors = querySnapshot(consistentSnapshot, "author"),
+      allCategories = querySnapshot(consistentSnapshot, "category"),
+      allTags = querySnapshot(consistentSnapshot, "tag"),
+      reachability = publicReachability(posts, allAuthors, allCategories, allTags),
+      comments = querySnapshot(
+        consistentSnapshot,
+        "comment",
+        { operator: "equals", path: "status", value: "approved" },
+        [{ direction: "ascending", path: "created-at" }],
+      ).filter((comment) =>
+        reachability.publishedPostIdentifiers.has(String(comment.values["post"])),
+      );
+    return {
+      authors: allAuthors.filter((author) =>
+        reachability.publicAuthorIdentifiers.has(author.id),
+      ),
+      categories: allCategories.filter((category) =>
+        reachability.publicCategoryIdentifiers.has(category.id),
+      ),
+      comments,
+      posts,
+      reachability,
+      tags: allTags.filter((tag) => reachability.publicTagIdentifiers.has(tag.id)),
+    };
+  },
+  publicOwnerBySlug = (
+    cms: Cms.ServiceShape,
+    contentTypeId: "author" | "category" | "tag",
+    slug: string,
+  ) =>
+    cms.readConsistentSnapshot.pipe(
+      Effect.flatMap((consistentSnapshot) => {
+        const content = publicContent(consistentSnapshot),
+          entries =
+            contentTypeId === "author"
+              ? content.authors
+              : contentTypeId === "category"
+                ? content.categories
+                : content.tags,
+          entry = entries.find((candidate) => candidate.values["slug"] === slug);
+        return entry === undefined
+          ? Effect.fail(CmsError.NotFound.make({ message: `${contentTypeId} was not found` }))
+          : Effect.succeed(publicValue(entry));
+      }),
+    ),
   publicAssetResponse = (
     asset: Awaited<
       ReturnType<Cms.ServiceShape["readAsset"]> extends Effect.Effect<infer Value, unknown>
@@ -248,7 +406,8 @@ export const makeDeliveryOperations = (
       ...(["author", "category", "tag"] as const).flatMap(
         (contentTypeId): readonly HttpContract.DeliveryOperation[] => [
           {
-            execute: ({ cms, parameters }) => findBySlug(cms, contentTypeId, parameters["slug"]!),
+            execute: ({ cms, parameters }) =>
+              publicOwnerBySlug(cms, contentTypeId, parameters["slug"]!),
             identifier: `getPublic${contentTypeId[0]!.toUpperCase()}${contentTypeId.slice(1)}BySlug`,
             method: "GET",
             path: `/${contentTypeId === "category" ? "categories" : `${contentTypeId}s`}/{slug}`,
@@ -257,7 +416,7 @@ export const makeDeliveryOperations = (
           {
             execute: ({ cms, parameters, request }) =>
               Effect.gen(function* () {
-                const owner = yield* findBySlug(cms, contentTypeId, parameters["slug"]!);
+                const owner = yield* publicOwnerBySlug(cms, contentTypeId, parameters["slug"]!);
                 const relationshipPath =
                   contentTypeId === "author"
                     ? "author"
@@ -286,18 +445,27 @@ export const makeDeliveryOperations = (
       ),
       {
         execute: ({ cms, parameters, request }) =>
-          queryPage(
-            cms,
-            request,
-            "comment",
-            {
-              all: [
-                { operator: "equals", path: "post", value: parameters["postId"]! },
-                { operator: "equals", path: "status", value: "approved" },
-              ],
-            },
-            [{ direction: "ascending", path: "created-at" }],
-          ),
+          Effect.gen(function* listApprovedComments() {
+            const post = yield* cms.getEntry({
+              contentTypeId: "post",
+              entryId: parameters["postId"]!,
+            });
+            if (post.values["status"] !== "published") {
+              return yield* CmsError.NotFound.make({ message: "Published Post was not found" });
+            }
+            return yield* queryPage(
+              cms,
+              request,
+              "comment",
+              {
+                all: [
+                  { operator: "equals", path: "post", value: post.id },
+                  { operator: "equals", path: "status", value: "approved" },
+                ],
+              },
+              [{ direction: "ascending", path: "created-at" }],
+            );
+          }),
         identifier: "listApprovedComments",
         method: "GET",
         path: "/posts/{postId}/comments",
@@ -392,12 +560,13 @@ export const makeDeliveryOperations = (
       {
         execute: ({ cms, parameters }) =>
           Effect.gen(function* () {
-            for (const contentTypeId of ["post", "author", "category", "tag"]) {
-              const entry = yield* cms
-                .getEntry({ contentTypeId, entryId: parameters["entryId"]! })
-                .pipe(Effect.catchTag("NotFound", () => Effect.succeed(undefined)));
+            const consistentSnapshot = yield* cms.readConsistentSnapshot,
+              content = publicContent(consistentSnapshot),
+              entryIdentifier = parameters["entryId"]!;
+            if (content.reachability.richTextReachableIdentifiers.has(entryIdentifier)) {
+              const entry = [...content.posts, ...content.authors, ...content.categories, ...content.tags]
+                .find((candidate) => candidate.id === entryIdentifier);
               if (entry !== undefined) {
-                if (contentTypeId === "post" && entry.values["status"] !== "published") break;
                 return publicValue(entry);
               }
             }
@@ -415,16 +584,12 @@ export const makeDeliveryOperations = (
           cacheControl: "public, max-age=31536000, immutable",
           execute: ({ cms, parameters, request, requestId, snapshot }) =>
             Effect.gen(function* () {
-              const posts = yield* queryAll(cms, "post", {
-                operator: "equals",
-                path: "status",
-                value: "published",
-              });
-              const authors = yield* queryAll(cms, "author");
-              const assetId = parameters["assetId"]!;
-              if (!publicAssetIds(posts, authors).has(assetId))
+              const consistentSnapshot = yield* cms.readConsistentSnapshot,
+                content = publicContent(consistentSnapshot),
+                assetIdentifier = parameters["assetId"]!;
+              if (!publicAssetIds(content.posts, content.authors).has(assetIdentifier))
                 return yield* CmsError.NotFound.make({ message: "Public Asset was not found" });
-              const asset = yield* cms.readAsset(assetId);
+              const asset = yield* cms.readAsset(assetIdentifier);
               return publicAssetResponse(asset, request, requestId, snapshot.fingerprint);
             }),
           identifier: method === "GET" ? "deliverPublicAsset" : "inspectPublicAsset",
@@ -439,34 +604,20 @@ export const makeDeliveryOperations = (
           Effect.gen(function* () {
             const consistentSnapshot = yield* cms.readConsistentSnapshot,
               snapshot = consistentSnapshot.definitionSnapshot,
-              posts = querySnapshot(
-                consistentSnapshot,
-                "post",
-                { operator: "equals", path: "status", value: "published" },
-                [{ direction: "descending", path: "published-at" }],
-              ),
-              comments = querySnapshot(
-                consistentSnapshot,
-                "comment",
-                { operator: "equals", path: "status", value: "approved" },
-                [{ direction: "ascending", path: "created-at" }],
-              ),
-              authors = querySnapshot(consistentSnapshot, "author"),
-              categories = querySnapshot(consistentSnapshot, "category"),
-              tags = querySnapshot(consistentSnapshot, "tag"),
-              reachableAssetIds = publicAssetIds(posts, authors),
+              content = publicContent(consistentSnapshot),
+              reachableAssetIds = publicAssetIds(content.posts, content.authors),
               assets = consistentSnapshot.assets
                 .filter((asset) => reachableAssetIds.has(asset.id))
                 .map(({ bytes: _bytes, ...asset }) => asset),
               artifact = {
                 assets: assets as unknown as ContentDefinition.JsonValue,
-                authors: authors.map(publicValue),
-                categories: categories.map(publicValue),
-                comments: comments.map(publicValue),
+                authors: content.authors.map(publicValue),
+                categories: content.categories.map(publicValue),
+                comments: content.comments.map(publicValue),
                 definitionFingerprint: snapshot.fingerprint,
                 generatedAt: "2026-08-23T16:00:00.000Z",
-                posts: posts.map(publicValue),
-                tags: tags.map(publicValue),
+                posts: content.posts.map(publicValue),
+                tags: content.tags.map(publicValue),
               },
               bytes = new TextEncoder().encode(JSON.stringify(artifact));
             if (bytes.byteLength > 5_000_000)
