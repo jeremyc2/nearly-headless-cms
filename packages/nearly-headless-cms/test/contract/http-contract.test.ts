@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { Effect } from "effect";
+import { Effect, Schema } from "effect";
 import { ContentDefinition } from "../../src/index.ts";
 import { HttpTransport, OpenApi } from "../../src/http/index.ts";
 import { DevelopmentCms } from "../../src/testing/index.ts";
@@ -49,11 +49,16 @@ describe("HTTP contract", () => {
       HttpTransport.makeHandler({
         deliveryOperations: [
           {
+            definitionRequirements: [],
             execute: () => Effect.succeed({ accepted: true }),
             identifier: "submit",
             method: "POST",
             path: "/submissions",
             reachableContentTypeIds: ["post"],
+            schemas: {
+              request: Schema.Struct({}),
+              response: Schema.Struct({ accepted: Schema.Boolean }),
+            },
           },
         ],
         maximumHeaderByteLength: 100,
@@ -109,11 +114,13 @@ describe("HTTP contract", () => {
         HttpTransport.makeHandler({
           deliveryOperations: [
             {
+              definitionRequirements: [],
               execute: () => Effect.never,
               identifier: "waitForever",
               method: "GET",
               path: "/wait-forever",
               reachableContentTypeIds: ["post"],
+              schemas: { request: Schema.Struct({}), response: Schema.Struct({}) },
             },
           ],
           requestTimeoutMilliseconds: 5,
@@ -122,5 +129,93 @@ describe("HTTP contract", () => {
       timedOut = await timeoutHandler(new Request("http://cms.test/api/v1/headless/wait-forever"));
     expect(timedOut.status).toBe(408);
     expect(((await timedOut.json()) as { code: string }).code).toBe("RequestTimeout");
+  });
+
+  test("derives stable OpenAPI request, success, parameter, and declared error schemas", () => {
+    const document = OpenApi.headless([
+      {
+        definitionRequirements: [],
+        execute: () => Effect.succeed({ status: "pending" }),
+        identifier: "submitComment",
+        method: "POST",
+        path: "/posts/{postId}/comments",
+        reachableContentTypeIds: ["post", "comment"],
+        schemas: {
+          pathParameters: { postId: Schema.String },
+          request: Schema.Struct({ body: Schema.String }),
+          requestBody: Schema.Struct({ body: Schema.String }),
+          response: Schema.Struct({ status: Schema.Literal("pending") }),
+        },
+        successStatus: 201,
+      },
+    ]);
+    expect(document.paths["/api/v1/headless/posts/{postId}/comments"]).toMatchObject({
+      post: {
+        operationId: "submitComment",
+        parameters: [
+          { in: "path", name: "postId", required: true, schema: { type: "string" } },
+        ],
+        requestBody: {
+          content: {
+            "application/json": {
+              schema: {
+                additionalProperties: false,
+                properties: { body: { type: "string" } },
+                required: ["body"],
+                type: "object",
+              },
+            },
+          },
+          required: true,
+        },
+        responses: {
+          "201": {
+            content: {
+              "application/json": {
+                schema: {
+                  additionalProperties: false,
+                  properties: { status: { enum: ["pending"], type: "string" } },
+                  required: ["status"],
+                  type: "object",
+                },
+              },
+            },
+          },
+          "400": { description: "Invalid input" },
+          "409": { description: "Conflict" },
+          "503": { description: "Retryable infrastructure failure" },
+        },
+      },
+    });
+    expect(
+      JSON.stringify(document.paths["/api/v1/headless/posts/{postId}/comments"]),
+    ).not.toContain('"default"');
+
+    expect(
+      OpenApi.management().paths[
+        "/api/v1/management/definition-spaces/{definitionSpaceId}/content-types/{contentTypeId}/entries"
+      ],
+    ).toMatchObject({
+      post: {
+        requestBody: {
+          content: {
+            "application/json": {
+              schema: {
+                properties: { values: { $ref: "#/components/schemas/JsonObject" } },
+              },
+            },
+          },
+        },
+        responses: {
+          "201": {
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/MutationResult" },
+              },
+            },
+          },
+        },
+      },
+    });
   });
 });

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { Effect, Exit } from "effect";
-import { Cms, ContentDefinition } from "../../src/index.ts";
+import { Cms, ContentDefinition, Operation } from "../../src/index.ts";
 import { DevelopmentCms } from "../../src/testing/index.ts";
 
 const initialSnapshot = ContentDefinition.compile({
@@ -235,6 +235,55 @@ describe("runtime Content Definition lifecycle", () => {
             snapshot: initialSnapshot,
           }),
         ),
+      ),
+    );
+  });
+
+  test("rejects activation that breaks a composed operation contract", async () => {
+    const operationContracts: readonly Operation.DefinitionContract[] = [
+      {
+        definitionRequirements: [
+          {
+            contentTypeId: "note",
+            fields: [{ kind: "text", path: "title", projectable: true, required: true }],
+          },
+        ],
+        identifier: "readPublicNote",
+      },
+    ];
+    await Effect.runPromise(
+      Effect.gen(function* contractActivation() {
+        const cms = yield* Cms.Service,
+          incompatibleNote = {
+            fields: [
+              { key: "title", kind: { kind: "integer" as const }, label: "Title", required: true },
+            ],
+            history: true,
+            id: "note",
+            kind: "contentType" as const,
+            name: "Note",
+            parentRevision: 1,
+            revision: 2,
+          },
+          appended = yield* cms.appendDefinitionRevision({
+            definition: incompatibleNote,
+            expectedCatalogVersion: 1,
+          }),
+          activation = yield* Effect.exit(
+            cms.activateDefinitionSnapshot({
+              expectedCatalogVersion: appended.version,
+              snapshot: {
+                definitionSpaceId: "definition-lifecycle",
+                definitions: [incompatibleNote],
+                snapshotId: "incompatible-operation-contract",
+              },
+            }),
+          );
+        expect(Exit.isFailure(activation)).toBeTrue();
+        expect((yield* cms.activeDefinitionSnapshot).snapshotId).toBe("initial");
+        expect((yield* cms.readDefinitionCatalog).version).toBe(appended.version);
+      }).pipe(
+        Effect.provide(DevelopmentCms.layer({ operationContracts, snapshot: initialSnapshot })),
       ),
     );
   });

@@ -50,7 +50,12 @@ import type {
 import { type Query, type QueryPage, evaluate as evaluateQuery } from "./entry-query.ts";
 import { Generator } from "./identifier.ts";
 import { CurrentIdentity } from "./identity.ts";
-import type { Action, Resource } from "./operation.ts";
+import {
+  type Action,
+  type DefinitionContract,
+  type Resource,
+  validateDefinitionContracts,
+} from "./operation.ts";
 import {
   type CatalogState,
   DefinitionCatalog,
@@ -144,6 +149,7 @@ export interface PrepareDefinitionMigrationInput {
 
 export interface CmsLayerOptions extends CompileOptions {
   readonly migrationHandlers?: readonly Handler[];
+  readonly operationContracts?: readonly DefinitionContract[];
 }
 
 export interface ServiceShape {
@@ -635,7 +641,14 @@ export const makeLayer = (
             handler,
           ]),
         ),
-        currentDefinitionSnapshot = catalog.read.pipe(Effect.map((state) => state.active.compiled)),
+        operationContracts = options.operationContracts ?? [],
+        currentDefinitionSnapshot = catalog.read.pipe(
+          Effect.flatMap((state) =>
+            attempt(() => validateDefinitionContracts(state.active.compiled, operationContracts)).pipe(
+              Effect.as(state.active.compiled),
+            ),
+          ),
+        ),
         authorize = (action: Action, resource: Resource): Effect.Effect<void, CmsError> =>
           Effect.gen(function* authorize() {
             const identity = yield* currentIdentity.current,
@@ -1550,6 +1563,7 @@ export const makeLayer = (
               });
             }
             const target = yield* attempt(() => compile(input.snapshot, compileOptions));
+            yield* attempt(() => validateDefinitionContracts(target, operationContracts));
             for (const definition of input.snapshot.definitions) {
               const revision = definition.revision ?? 1,
                 catalogRevision = state.revisions.find(

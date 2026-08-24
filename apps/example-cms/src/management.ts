@@ -3,6 +3,21 @@ import { CmsError } from "nearly-headless-cms";
 import type { HttpContract } from "nearly-headless-cms/http";
 import { Effect } from "effect";
 import { type CommandReceiptStore, memoryCommandReceiptStore } from "./command-receipt-store.ts";
+import {
+  authorDefinitionRequirement,
+  commentDefinitionRequirement,
+  postDefinitionRequirement,
+  taxonomyDefinitionRequirement,
+} from "./delivery.ts";
+import {
+  CascadeDeletionReceipt,
+  DetachmentReceipt,
+  EditorialReceipt,
+  EmptyRequest,
+  Identifier,
+  ImageReplacementReceipt,
+  ImageReplacementRequest,
+} from "./wire-schemas.ts";
 
 const transition =
     (
@@ -287,52 +302,117 @@ export const makeManagementOperations = (
 
   return [
     {
+      definitionRequirements: [
+        postDefinitionRequirement,
+        authorDefinitionRequirement,
+        taxonomyDefinitionRequirement("category"),
+        taxonomyDefinitionRequirement("tag"),
+      ],
       execute: transition("post", "published"),
       identifier: "publishPost",
       method: "POST",
       path: "/operations/posts/{entryId}/publications",
+      schemas: {
+        pathParameters: { entryId: Identifier },
+        request: EmptyRequest,
+        requestHeaders: { "cms-write-token": Identifier },
+        response: EditorialReceipt,
+      },
     },
     {
+      definitionRequirements: [postDefinitionRequirement],
       execute: transition("post", "draft"),
       identifier: "returnPostToDraft",
       method: "POST",
       path: "/operations/posts/{entryId}/draft-returns",
+      schemas: {
+        pathParameters: { entryId: Identifier },
+        request: EmptyRequest,
+        requestHeaders: { "cms-write-token": Identifier },
+        response: EditorialReceipt,
+      },
     },
     {
+      definitionRequirements: [commentDefinitionRequirement],
       execute: transition("comment", "approved"),
       identifier: "approveComment",
       method: "POST",
       path: "/operations/comments/{entryId}/approvals",
+      schemas: {
+        pathParameters: { entryId: Identifier },
+        request: EmptyRequest,
+        requestHeaders: { "cms-write-token": Identifier },
+        response: EditorialReceipt,
+      },
     },
     {
+      definitionRequirements: [commentDefinitionRequirement],
       execute: transition("comment", "rejected"),
       identifier: "rejectComment",
       method: "POST",
       path: "/operations/comments/{entryId}/rejections",
+      schemas: {
+        pathParameters: { entryId: Identifier },
+        request: EmptyRequest,
+        requestHeaders: { "cms-write-token": Identifier },
+        response: EditorialReceipt,
+      },
     },
     {
+      definitionRequirements: [postDefinitionRequirement, commentDefinitionRequirement],
       execute: deletePostWithComments,
       identifier: "deletePostWithComments",
       method: "POST",
       path: "/operations/posts/{entryId}/cascade-deletions",
+      schemas: {
+        pathParameters: { entryId: Identifier },
+        request: EmptyRequest,
+        requestHeaders: { "cms-write-token": Identifier },
+        response: CascadeDeletionReceipt,
+      },
     },
     {
+      definitionRequirements: [
+        taxonomyDefinitionRequirement("category"),
+        postDefinitionRequirement,
+      ],
       execute: detachTaxonomy("category", "categories"),
       identifier: "detachAndDeleteCategory",
       method: "POST",
       path: "/operations/categories/{entryId}/detachments",
+      schemas: {
+        pathParameters: { entryId: Identifier },
+        request: EmptyRequest,
+        requestHeaders: { "cms-write-token": Identifier },
+        response: DetachmentReceipt,
+      },
     },
     {
+      definitionRequirements: [taxonomyDefinitionRequirement("tag"), postDefinitionRequirement],
       execute: detachTaxonomy("tag", "tags"),
       identifier: "detachAndDeleteTag",
       method: "POST",
       path: "/operations/tags/{entryId}/detachments",
+      schemas: {
+        pathParameters: { entryId: Identifier },
+        request: EmptyRequest,
+        requestHeaders: { "cms-write-token": Identifier },
+        response: DetachmentReceipt,
+      },
     },
     {
+      definitionRequirements: [postDefinitionRequirement, authorDefinitionRequirement],
       execute: replaceImage,
       identifier: "replaceImage",
       method: "POST",
       path: "/operations/assets/{assetId}/replacements",
+      schemas: {
+        pathParameters: { assetId: Identifier },
+        request: ImageReplacementRequest,
+        requestBody: ImageReplacementRequest,
+        requestHeaders: { "idempotency-key": Identifier },
+        response: ImageReplacementReceipt,
+      },
     },
   ];
 };

@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Schema } from "effect";
 import type { IngestInput } from "../asset.ts";
 import { Service as CmsService } from "../cms.ts";
 import {
@@ -21,6 +21,7 @@ import {
   type DeliveryOperation,
   type ErrorDocument,
   type ManagementOperation,
+  type OperationSchema,
   discovery,
   headlessPrefix,
   managementPrefix,
@@ -61,7 +62,7 @@ class RequestFailure extends Error {
   }
 }
 
-const run = async <Value>(
+const runOperationInterruptibly = async <Value>(
     effect: Effect.Effect<Value, CmsError>,
     signal?: AbortSignal,
   ): Promise<OperationOutcome<Value>> =>
@@ -193,6 +194,62 @@ const run = async <Value>(
     }
     return value as JsonObject;
   },
+  validateSchema = (
+    schema: OperationSchema,
+    value: unknown,
+    message: string,
+  ): Effect.Effect<void, InvalidInput> =>
+    Schema.decodeUnknownEffect(schema)(value).pipe(
+      Effect.asVoid,
+      Effect.mapError(() => InvalidInput.make({ message })),
+    ),
+  validateOperationRequest = (
+    operation: DeliveryOperation | ManagementOperation,
+    request: Request,
+    parameters: Readonly<Record<string, string>>,
+  ): Effect.Effect<void, InvalidInput> =>
+    Effect.gen(function* validateOperationRequest() {
+      for (const [name, schema] of Object.entries(operation.schemas.pathParameters ?? {})) {
+        yield* validateSchema(schema, parameters[name], `Path parameter ${name} is invalid`);
+      }
+      for (const [name, schema] of Object.entries(operation.schemas.requestHeaders ?? {})) {
+        yield* validateSchema(
+          schema,
+          request.headers.get(name) ?? undefined,
+          `Request header ${name} is invalid`,
+        );
+      }
+      if (
+        operation.schemas.requestBody !== undefined &&
+        (request.headers.get("content-type") ?? "").toLowerCase().startsWith("application/json")
+      ) {
+        const body = yield* Effect.tryPromise({
+          catch: () => InvalidInput.make({ message: "JSON request body is malformed" }),
+          try: () => request.clone().json(),
+        });
+        yield* validateSchema(
+          operation.schemas.requestBody,
+          body,
+          `Request body for ${operation.identifier} is invalid`,
+        );
+      }
+    }),
+  executeOperation = (
+    operation: DeliveryOperation | ManagementOperation,
+    context: Parameters<DeliveryOperation["execute"]>[0],
+  ): Effect.Effect<unknown, CmsError> =>
+    validateOperationRequest(operation, context.request, context.parameters).pipe(
+      Effect.andThen(operation.execute(context)),
+      Effect.flatMap((value) =>
+        value instanceof Response || value === undefined
+          ? Effect.succeed(value)
+          : validateSchema(
+              operation.schemas.response,
+              value,
+              `Response body for ${operation.identifier} violated its declared schema`,
+            ).pipe(Effect.as(value)),
+      ),
+    ),
   compilePath = (
     path: string,
   ): { readonly expression: RegExp; readonly names: readonly string[] } => {
@@ -237,7 +294,7 @@ const run = async <Value>(
     success: (value: Value) => Response,
     signal?: AbortSignal,
   ): Promise<Response> => {
-    const outcome = await run(effect, signal);
+    const outcome = await runOperationInterruptibly(effect, signal);
     return outcome.success
       ? success(outcome.value as Value)
       : errorResponse(outcome.error!, requestId);
@@ -398,12 +455,15 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
         );
       }
       const url = new URL(request.url),
-        activeOutcome = await run(cms.activeDefinitionSnapshot, signal);
+        activeOutcome = await runOperationInterruptibly(cms.activeDefinitionSnapshot, signal);
       if (!activeOutcome.success) {
         return errorResponse(activeOutcome.error!, requestId);
       }
       const snapshot = activeOutcome.value!,
-        fingerprintOutcome = await run(ensureFingerprint(request, snapshot.fingerprint), signal);
+        fingerprintOutcome = await runOperationInterruptibly(
+          ensureFingerprint(request, snapshot.fingerprint),
+          signal,
+        );
       if (!fingerprintOutcome.success) {
         return errorResponse(fingerprintOutcome.error!, requestId);
       }
@@ -1159,7 +1219,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
           );
         }
         return withOutcome(
-          managementOperation.execute({ cms, parameters, request, requestId, snapshot }),
+          executeOperation(managementOperation, { cms, parameters, request, requestId, snapshot }),
           requestId,
           (value) =>
             value instanceof Response
@@ -1204,7 +1264,7 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
           matcher.names.map((name, index) => [name, decodeURIComponent(match[index + 1] ?? "")]),
         );
         return withOutcome(
-          matcher.operation.execute({ cms, parameters, request, requestId, snapshot }),
+          executeOperation(matcher.operation, { cms, parameters, request, requestId, snapshot }),
           requestId,
           (value) =>
             value instanceof Response

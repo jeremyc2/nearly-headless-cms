@@ -3,6 +3,8 @@ import type { CmsError } from "../cms-error.ts";
 import type { CompiledSnapshot } from "../content-definition.ts";
 import type { JsonValue } from "../internal/json.ts";
 import type { Effect } from "effect";
+import type { Schema } from "effect";
+import type { DefinitionRequirement } from "../operation.ts";
 
 export const managementPrefix = "/api/v1/management";
 export const headlessPrefix = "/api/v1/headless";
@@ -23,21 +25,38 @@ export interface OperationContext {
   readonly requestId: string;
 }
 
+/** Effect Schemas used for runtime decoding and OpenAPI generation. */
+export type OperationSchema = Schema.Codec<unknown, unknown, never, never>;
+
+export interface OperationSchemas {
+  readonly request: OperationSchema;
+  readonly response: OperationSchema;
+  readonly requestBody?: OperationSchema;
+  readonly pathParameters?: Readonly<Record<string, OperationSchema>>;
+  readonly queryParameters?: Readonly<Record<string, OperationSchema>>;
+  readonly requestHeaders?: Readonly<Record<string, OperationSchema>>;
+  readonly responseMediaType?: string;
+}
+
 export interface DeliveryOperation {
+  readonly definitionRequirements: readonly DefinitionRequirement[];
   readonly identifier: string;
   readonly method: "GET" | "POST" | "PUT" | "DELETE" | "HEAD";
   readonly path: `/${string}`;
   readonly reachableContentTypeIds: readonly string[];
   readonly requiresIdempotencyKey?: boolean;
   readonly cacheControl?: string;
+  readonly schemas: OperationSchemas;
   readonly successStatus?: 200 | 201;
   readonly execute: (context: OperationContext) => Effect.Effect<unknown, CmsError>;
 }
 
 export interface ManagementOperation {
+  readonly definitionRequirements: readonly DefinitionRequirement[];
   readonly identifier: string;
   readonly method: "GET" | "POST" | "PUT" | "DELETE" | "HEAD";
   readonly path: `/${string}`;
+  readonly schemas: OperationSchemas;
   readonly execute: (context: OperationContext) => Effect.Effect<unknown, CmsError>;
 }
 

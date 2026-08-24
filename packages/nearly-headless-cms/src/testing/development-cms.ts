@@ -7,6 +7,7 @@ import type { CompileOptions, CompiledSnapshot } from "../content-definition.ts"
 import type { Handler } from "../definition-migration.ts";
 import type { Generator } from "../identifier.ts";
 import type { CurrentIdentity } from "../identity.ts";
+import type { DefinitionContract } from "../operation.ts";
 import type { DefinitionCatalog, EntryPersistence } from "../persistence.ts";
 import { layer as allowAllAuthorizationLayer } from "../adapters/allow-all-authorization.ts";
 import { layer as anonymousIdentityLayer } from "../adapters/anonymous-identity.ts";
@@ -19,11 +20,13 @@ export interface Options {
   readonly snapshot: CompiledSnapshot;
   readonly compileOptions?: CompileOptions;
   readonly migrationHandlers?: readonly Handler[];
+  readonly operationContracts?: readonly DefinitionContract[];
 }
 
 export const layer = ({
   compileOptions,
   migrationHandlers,
+  operationContracts,
   snapshot,
 }: Options): Layer.Layer<CmsService> => {
   const assetLayer = memoryAssetLayer().pipe(Layer.provide(identifierLayer)),
@@ -46,5 +49,6 @@ export const layer = ({
   return makeCmsLayer({
     ...compileOptions,
     ...(migrationHandlers === undefined ? {} : { migrationHandlers }),
+    ...(operationContracts === undefined ? {} : { operationContracts }),
   }).pipe(Layer.provide(dependencies));
 };

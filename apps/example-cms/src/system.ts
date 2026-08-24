@@ -29,6 +29,8 @@ export const createExampleSystem = async (
 ): Promise<ExampleSystem> => {
   const storageRoot = options.storageRoot ?? ".data/example-cms",
     commandReceiptStore = filesystemCommandReceiptStore(`${storageRoot}/command-receipts`),
+    deliveryOperations = makeDeliveryOperations({ commandReceiptStore }),
+    managementOperations = makeManagementOperations({ commandReceiptStore }),
     identifierLayer = CryptoIdentifierGenerator.layer,
     filesystemLayer = BunFilesystemPersistence.cmsLayer({
       acknowledgement: "durable",
@@ -41,7 +43,11 @@ export const createExampleSystem = async (
       identifierLayer,
       filesystemLayer,
     ),
-    runtime = ManagedRuntime.make(Cms.layer.pipe(Layer.provide(dependencies))),
+    runtime = ManagedRuntime.make(
+      Cms.makeLayer({ operationContracts: [...deliveryOperations, ...managementOperations] }).pipe(
+        Layer.provide(dependencies),
+      ),
+    ),
     seedResult = options.seed ? await runtime.runPromise(seed) : undefined,
     handler = await runtime.runPromise(
       HttpTransport.makeHandler({
@@ -50,8 +56,8 @@ export const createExampleSystem = async (
           methods: ["GET", "POST", "HEAD", "OPTIONS"],
           origins: ["http://localhost:4321"],
         },
-        deliveryOperations: makeDeliveryOperations({ commandReceiptStore }),
-        managementOperations: makeManagementOperations({ commandReceiptStore }),
+        deliveryOperations,
+        managementOperations,
       }),
     );
   return {

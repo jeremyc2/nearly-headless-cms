@@ -3,8 +3,81 @@ import { CmsError, EntryQuery } from "nearly-headless-cms";
 import type { HttpContract } from "nearly-headless-cms/http";
 import { Effect } from "effect";
 import { type CommandReceiptStore, memoryCommandReceiptStore } from "./command-receipt-store.ts";
+import {
+  AssetBytes,
+  CommentReceipt,
+  CommentSubmission,
+  EmptyRequest,
+  EntryPage,
+  Identifier,
+  PageQuery,
+  PublicAuthor,
+  PublicBlogExport,
+  PublicComment,
+  PublicEntryReference,
+  PublicPost,
+  PublicTaxonomy,
+} from "./wire-schemas.ts";
 
 type PublicValue = ContentDefinition.JsonObject;
+
+export const postDefinitionRequirement = {
+    contentTypeId: "post",
+    fields: [
+      { kind: "text", path: "title", projectable: true, required: true },
+      { kind: "text", path: "slug", projectable: true, required: true },
+      { kind: "text", path: "excerpt", projectable: true, required: true },
+      { formatVersion: 1, kind: "rich-text", path: "body", projectable: true, required: true },
+      { kind: "asset", path: "featured-asset", projectable: true },
+      { kind: "text", path: "featured-alternative-text", projectable: true },
+      { kind: "relationship", path: "author", projectable: true, required: true },
+      { kind: "list", path: "categories", projectable: true },
+      { kind: "list", path: "tags", projectable: true },
+      { kind: "enum", path: "status", projectable: true, required: true },
+      { kind: "datetime", path: "published-at", projectable: true },
+    ],
+  } as const,
+  authorDefinitionRequirement = {
+    contentTypeId: "author",
+    fields: [
+      { kind: "text", path: "name", projectable: true, required: true },
+      { kind: "text", path: "slug", projectable: true, required: true },
+      { kind: "text", path: "biography", projectable: true, required: true },
+      { formatVersion: 1, kind: "rich-text", path: "profile", projectable: true },
+      { kind: "asset", path: "portrait", projectable: true },
+      { kind: "text", path: "portrait-alternative-text", projectable: true },
+      { kind: "list", path: "external-links", projectable: true },
+    ],
+  } as const,
+  taxonomyDefinitionRequirement = (contentTypeId: "category" | "tag") => ({
+    contentTypeId,
+    fields: [
+      { kind: "text", path: "name", projectable: true, required: true },
+      { kind: "text", path: "slug", projectable: true, required: true },
+      { kind: "text", path: "description", projectable: true },
+    ],
+  }) as const,
+  commentDefinitionRequirement = {
+    contentTypeId: "comment",
+    fields: [
+      { kind: "relationship", path: "post", projectable: true, required: true },
+      { kind: "text", path: "display-name", projectable: true, required: true },
+      { kind: "url", path: "website-url", projectable: true },
+      { kind: "text", path: "body", projectable: true, required: true },
+      { kind: "datetime", path: "created-at", projectable: true, required: true },
+      { kind: "enum", path: "status", projectable: true, required: true },
+    ],
+  } as const,
+  readSchemas = (
+    response: HttpContract.OperationSchema,
+    pathParameters: Readonly<Record<string, HttpContract.OperationSchema>> = {},
+    includePagination = false,
+  ): HttpContract.OperationSchemas => ({
+    pathParameters,
+    ...(includePagination ? { queryParameters: PageQuery } : {}),
+    request: EmptyRequest,
+    response,
+  });
 
 const lowerCamelCase = (key: string): string =>
     key.replaceAll(/-([a-z])/gu, (_match, letter: string) => letter.toUpperCase()),
@@ -383,6 +456,12 @@ export const makeDeliveryOperations = (
   const commandReceiptStore = options.commandReceiptStore ?? memoryCommandReceiptStore(),
     operations: readonly HttpContract.DeliveryOperation[] = [
       {
+        definitionRequirements: [
+          postDefinitionRequirement,
+          authorDefinitionRequirement,
+          taxonomyDefinitionRequirement("category"),
+          taxonomyDefinitionRequirement("tag"),
+        ],
         execute: ({ cms, request }) =>
           queryPage(
             cms,
@@ -395,25 +474,49 @@ export const makeDeliveryOperations = (
         method: "GET",
         path: "/posts",
         reachableContentTypeIds: ["post", "author", "category", "tag"],
+        schemas: readSchemas(EntryPage(PublicPost), {}, true),
       },
       {
+        definitionRequirements: [
+          postDefinitionRequirement,
+          authorDefinitionRequirement,
+          taxonomyDefinitionRequirement("category"),
+          taxonomyDefinitionRequirement("tag"),
+        ],
         execute: ({ cms, parameters }) => findBySlug(cms, "post", parameters["slug"]!, true),
         identifier: "getPublishedPostBySlug",
         method: "GET",
         path: "/posts/{slug}",
         reachableContentTypeIds: ["post", "author", "category", "tag"],
+        schemas: readSchemas(PublicPost, { slug: Identifier }),
       },
       ...(["author", "category", "tag"] as const).flatMap(
         (contentTypeId): readonly HttpContract.DeliveryOperation[] => [
           {
+            definitionRequirements: [
+              contentTypeId === "author"
+                ? authorDefinitionRequirement
+                : taxonomyDefinitionRequirement(contentTypeId),
+              postDefinitionRequirement,
+            ],
             execute: ({ cms, parameters }) =>
               publicOwnerBySlug(cms, contentTypeId, parameters["slug"]!),
             identifier: `getPublic${contentTypeId[0]!.toUpperCase()}${contentTypeId.slice(1)}BySlug`,
             method: "GET",
             path: `/${contentTypeId === "category" ? "categories" : `${contentTypeId}s`}/{slug}`,
             reachableContentTypeIds: [contentTypeId, "post"],
+            schemas: readSchemas(
+              contentTypeId === "author" ? PublicAuthor : PublicTaxonomy,
+              { slug: Identifier },
+            ),
           },
           {
+            definitionRequirements: [
+              contentTypeId === "author"
+                ? authorDefinitionRequirement
+                : taxonomyDefinitionRequirement(contentTypeId),
+              postDefinitionRequirement,
+            ],
             execute: ({ cms, parameters, request }) =>
               Effect.gen(function* () {
                 const owner = yield* publicOwnerBySlug(cms, contentTypeId, parameters["slug"]!);
@@ -440,10 +543,12 @@ export const makeDeliveryOperations = (
             method: "GET",
             path: `/${contentTypeId === "category" ? "categories" : `${contentTypeId}s`}/{slug}/posts`,
             reachableContentTypeIds: [contentTypeId, "post"],
+            schemas: readSchemas(EntryPage(PublicPost), { slug: Identifier }, true),
           },
         ],
       ),
       {
+        definitionRequirements: [postDefinitionRequirement, commentDefinitionRequirement],
         execute: ({ cms, parameters, request }) =>
           Effect.gen(function* listApprovedComments() {
             const post = yield* cms.getEntry({
@@ -470,8 +575,10 @@ export const makeDeliveryOperations = (
         method: "GET",
         path: "/posts/{postId}/comments",
         reachableContentTypeIds: ["post", "comment"],
+        schemas: readSchemas(EntryPage(PublicComment), { postId: Identifier }, true),
       },
       {
+        definitionRequirements: [postDefinitionRequirement, commentDefinitionRequirement],
         execute: ({ cms, parameters, request }) =>
           Effect.gen(function* () {
             const idempotencyKey = request.headers.get("idempotency-key")!;
@@ -555,9 +662,22 @@ export const makeDeliveryOperations = (
         path: "/posts/{postId}/comments",
         reachableContentTypeIds: ["post", "comment"],
         requiresIdempotencyKey: true,
+        schemas: {
+          pathParameters: { postId: Identifier },
+          request: CommentSubmission,
+          requestBody: CommentSubmission,
+          requestHeaders: { "idempotency-key": Identifier },
+          response: CommentReceipt,
+        },
         successStatus: 201,
       },
       {
+        definitionRequirements: [
+          postDefinitionRequirement,
+          authorDefinitionRequirement,
+          taxonomyDefinitionRequirement("category"),
+          taxonomyDefinitionRequirement("tag"),
+        ],
         execute: ({ cms, parameters }) =>
           Effect.gen(function* () {
             const consistentSnapshot = yield* cms.readConsistentSnapshot,
@@ -578,10 +698,12 @@ export const makeDeliveryOperations = (
         method: "GET",
         path: "/references/entries/{entryId}",
         reachableContentTypeIds: ["post", "author", "category", "tag"],
+        schemas: readSchemas(PublicEntryReference, { entryId: Identifier }),
       },
       ...(["GET", "HEAD"] as const).map(
         (method): HttpContract.DeliveryOperation => ({
           cacheControl: "public, max-age=31536000, immutable",
+          definitionRequirements: [postDefinitionRequirement, authorDefinitionRequirement],
           execute: ({ cms, parameters, request, requestId, snapshot }) =>
             Effect.gen(function* () {
               const consistentSnapshot = yield* cms.readConsistentSnapshot,
@@ -596,10 +718,23 @@ export const makeDeliveryOperations = (
           method,
           path: "/assets/{assetId}",
           reachableContentTypeIds: ["post", "author", "category", "tag"],
+          schemas: {
+            pathParameters: { assetId: Identifier },
+            request: EmptyRequest,
+            response: AssetBytes,
+            responseMediaType: "application/octet-stream",
+          },
         }),
       ),
       {
         cacheControl: "no-cache",
+        definitionRequirements: [
+          postDefinitionRequirement,
+          authorDefinitionRequirement,
+          taxonomyDefinitionRequirement("category"),
+          taxonomyDefinitionRequirement("tag"),
+          commentDefinitionRequirement,
+        ],
         execute: ({ cms, request, requestId }) =>
           Effect.gen(function* () {
             const consistentSnapshot = yield* cms.readConsistentSnapshot,
@@ -642,6 +777,7 @@ export const makeDeliveryOperations = (
         method: "GET",
         path: "/export",
         reachableContentTypeIds: ["post", "author", "category", "tag", "comment"],
+        schemas: readSchemas(PublicBlogExport),
       },
     ];
   return operations;
