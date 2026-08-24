@@ -153,6 +153,18 @@ const collectRichTextPublicationRules = (
       ? Effect.fail(CmsError.InvalidInput.make({ message: "CMS-Write-Token is required" }))
       : Effect.succeed(writeToken);
   },
+  requireDeletionRecord = (
+    result: Cms.EntryBatchMutationResult | undefined,
+  ): Effect.Effect<Exclude<Cms.DeleteResult, undefined>, CmsError.InfrastructureFailure> =>
+    result !== undefined && "writeToken" in result && !("entry" in result)
+      ? Effect.succeed(result)
+      : Effect.fail(
+          CmsError.InfrastructureFailure.make({
+            cause: result,
+            message: "History-enabled deletion did not return its deletion record",
+            retryable: false,
+          }),
+        ),
   queryAllEntries = (
     cms: Cms.ServiceShape,
     query: Omit<EntryQuery.Query, "cursor">,
@@ -197,8 +209,9 @@ const collectRichTextPublicationRules = (
         input: { contentTypeId: "post", entryId: postId, writeToken: postWriteToken },
         kind: "delete",
       });
-      yield* cms.mutateEntriesAtomically(mutations);
-      return { deletedCommentCount: commentStates.length, deletedPostId: postId };
+      const results = yield* cms.mutateEntriesAtomically(mutations),
+        deletionRecord = yield* requireDeletionRecord(results.at(-1));
+      return { deletionRecord, deletedCommentCount: commentStates.length, deletedPostId: postId };
     }),
   deleteAuthorWithPostsAndComments: HttpContract.ManagementOperation["execute"] = ({
     cms,
@@ -253,8 +266,10 @@ const collectRichTextPublicationRules = (
             kind: "delete",
           },
         ];
-      yield* cms.mutateEntriesAtomically(mutations);
+      const results = yield* cms.mutateEntriesAtomically(mutations),
+        deletionRecord = yield* requireDeletionRecord(results.at(-1));
       return {
+        deletionRecord,
         deletedAuthorId: authorId,
         deletedCommentCount: commentStates.length,
         deletedPostCount: postStates.length,
@@ -296,8 +311,13 @@ const collectRichTextPublicationRules = (
           input: { contentTypeId, entryId: taxonomyEntryId, writeToken: taxonomyWriteToken },
           kind: "delete",
         });
-        yield* cms.mutateEntriesAtomically(mutations);
-        return { detachedPostCount: postStates.length, removedEntryId: taxonomyEntryId };
+        const results = yield* cms.mutateEntriesAtomically(mutations),
+          deletionRecord = yield* requireDeletionRecord(results.at(-1));
+        return {
+          deletionRecord,
+          detachedPostCount: postStates.length,
+          removedEntryId: taxonomyEntryId,
+        };
       }),
   parseReplacementUpload = (request: Request) =>
     Effect.tryPromise({
@@ -722,6 +742,7 @@ export const makeManagementOperations = (
         request: ImageReplacementRequest,
         requestBody: ImageReplacementRequest,
         requestHeaders: { "idempotency-key": Identifier },
+        requestMediaType: "multipart/form-data",
         response: ImageReplacementReceipt,
       },
     },

@@ -90,6 +90,35 @@
         ],
         "type": "object"
       },
+      "DeletionRecord": {
+        "properties": {
+          "contentTypeId": {
+            "type": "string"
+          },
+          "deletedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "entryId": {
+            "type": "string"
+          },
+          "latestRevisionNumber": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "writeToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "entryId",
+          "contentTypeId",
+          "deletedAt",
+          "latestRevisionNumber",
+          "writeToken"
+        ],
+        "type": "object"
+      },
       "Discovery": {
         "additionalProperties": false,
         "properties": {

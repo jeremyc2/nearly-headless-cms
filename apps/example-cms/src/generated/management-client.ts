@@ -44,6 +44,13 @@ const definitionSpaceId = "example-blog",
       ),
     );
 
+type ContentDeletionResponse =
+  | OperationResponses["deleteAuthorWithPostsAndComments"]
+  | OperationResponses["deleteEntry"]
+  | OperationResponses["deletePostWithComments"]
+  | OperationResponses["detachAndDeleteCategory"]
+  | OperationResponses["detachAndDeleteTag"];
+
 export const makeManagementClient = (baseAddress = "") => {
   const generatedClient = makeGeneratedClient(baseAddress);
   function pathFor(contentTypeId: string): {
@@ -76,6 +83,40 @@ export const makeManagementClient = (baseAddress = "") => {
           path: pathFor(contentTypeId),
         }),
       ),
+    deleteContentEntry: (
+      contentTypeId: "post" | "author" | "category" | "tag" | "comment",
+      entryId: string,
+      writeToken: string,
+    ): Effect.Effect<ContentDeletionResponse, ManagementClientFailure> => {
+      const commandInput = {
+        headers: { "cms-write-token": writeToken },
+        path: { definitionSpaceId, entryId },
+      };
+      switch (contentTypeId) {
+        case "post":
+          return mapFailure(generatedClient.deletePostWithComments(commandInput));
+        case "author":
+          return mapFailure(generatedClient.deleteAuthorWithPostsAndComments(commandInput));
+        case "category":
+          return mapFailure(generatedClient.detachAndDeleteCategory(commandInput));
+        case "tag":
+          return mapFailure(generatedClient.detachAndDeleteTag(commandInput));
+        case "comment":
+          return mapFailure(
+            generatedClient.deleteEntry({
+              headers: { "CMS-Write-Token": writeToken },
+              path: pathFor(contentTypeId, entryId),
+            }),
+          );
+      }
+    },
+    deleteImageAndClearAssignments: (assetId: string, idempotencyKey: string) =>
+      mapFailure(
+        generatedClient.deleteImageAndClearAssignments({
+          headers: { "idempotency-key": idempotencyKey },
+          path: { assetId, definitionSpaceId },
+        }),
+      ),
     getCurrentState: (
       contentTypeId: string,
       entryId: string,
@@ -106,6 +147,17 @@ export const makeManagementClient = (baseAddress = "") => {
         generatedClient.listEntryRevisions({
           path: pathFor(contentTypeId, entryId),
           query: { pageSize: 20 },
+        }),
+      ),
+    permanentlyPurgeEntry: (
+      contentTypeId: string,
+      entryId: string,
+      writeToken: string,
+    ): Effect.Effect<undefined, ManagementClientFailure> =>
+      mapFailure(
+        generatedClient.permanentlyPurgeEntry({
+          body: { writeToken },
+          path: pathFor(contentTypeId, entryId),
         }),
       ),
     queryEntries: (
@@ -143,6 +195,28 @@ export const makeManagementClient = (baseAddress = "") => {
           path: pathFor(contentTypeId, entryId),
         }),
       ),
+    replaceImage: (
+      assetId: string,
+      file: File,
+      idempotencyKey: string,
+    ): Effect.Effect<OperationResponses["replaceImage"], ManagementClientFailure> => {
+      const formData = new FormData();
+      formData.set(
+        "metadata",
+        JSON.stringify({
+          filename: file.name,
+          mediaType: file.type || "application/octet-stream",
+        }),
+      );
+      formData.set("content", file);
+      return mapFailure(
+        generatedClient.replaceImage({
+          body: formData,
+          headers: { "idempotency-key": idempotencyKey },
+          path: { assetId, definitionSpaceId },
+        }),
+      );
+    },
     runEditorialCommand: (
       contentTypeId: "post" | "comment",
       entryId: string,

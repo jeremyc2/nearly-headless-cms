@@ -25,6 +25,13 @@ export type CurrentEntryState = {
   readonly revisionNumber: number;
   readonly writeToken: string;
 };
+export type DeletionRecord = {
+  readonly contentTypeId: string;
+  readonly deletedAt: string;
+  readonly entryId: string;
+  readonly latestRevisionNumber: number;
+  readonly writeToken: string;
+};
 export type Discovery = {
   readonly apiContractVersion: 1;
   readonly definitionFingerprint: string;
@@ -388,18 +395,7 @@ export interface OperationInputs {
       readonly "X-Request-Id"?: string;
       readonly "idempotency-key": string;
     };
-    readonly body: {
-      readonly content: string;
-      readonly metadata: {
-        readonly byteLength: number;
-        readonly defaultAlternativeText?: string;
-        readonly digest: string;
-        readonly filename: string;
-        readonly height?: number;
-        readonly mediaType: string;
-        readonly width?: number;
-      };
-    };
+    readonly body: FormData;
   };
   readonly restoreEntryRevision: {
     readonly path: {
@@ -446,11 +442,18 @@ export interface OperationResponses {
   readonly createEntry: MutationResult;
   readonly deleteAsset: undefined;
   readonly deleteAuthorWithPostsAndComments: {
+    readonly deletionRecord: {
+      readonly contentTypeId: string;
+      readonly deletedAt: string;
+      readonly entryId: string;
+      readonly latestRevisionNumber: number;
+      readonly writeToken: string;
+    };
     readonly deletedAuthorId: string;
     readonly deletedCommentCount: number;
     readonly deletedPostCount: number;
   };
-  readonly deleteEntry: undefined;
+  readonly deleteEntry: DeletionRecord | undefined;
   readonly deleteImageAndClearAssignments: {
     readonly clearedAuthorCount: number;
     readonly clearedPostCount: number;
@@ -458,14 +461,35 @@ export interface OperationResponses {
     readonly deletionCompleted: boolean;
   };
   readonly deletePostWithComments: {
+    readonly deletionRecord: {
+      readonly contentTypeId: string;
+      readonly deletedAt: string;
+      readonly entryId: string;
+      readonly latestRevisionNumber: number;
+      readonly writeToken: string;
+    };
     readonly deletedCommentCount: number;
     readonly deletedPostId: string;
   };
   readonly detachAndDeleteCategory: {
+    readonly deletionRecord: {
+      readonly contentTypeId: string;
+      readonly deletedAt: string;
+      readonly entryId: string;
+      readonly latestRevisionNumber: number;
+      readonly writeToken: string;
+    };
     readonly detachedPostCount: number;
     readonly removedEntryId: string;
   };
   readonly detachAndDeleteTag: {
+    readonly deletionRecord: {
+      readonly contentTypeId: string;
+      readonly deletedAt: string;
+      readonly entryId: string;
+      readonly latestRevisionNumber: number;
+      readonly writeToken: string;
+    };
     readonly detachedPostCount: number;
     readonly removedEntryId: string;
   };
@@ -642,6 +666,10 @@ const operationSpecifications = {
     method: "DELETE",
     path: "/api/v1/management/definition-spaces/{definitionSpaceId}/content-types/{contentTypeId}/entries/{entryId}",
     successResponses: [
+      {
+        responseMediaType: "application/json",
+        status: 200,
+      },
       {
         status: 204,
       },
@@ -953,7 +981,7 @@ const operationSpecifications = {
   replaceImage: {
     method: "POST",
     path: "/api/v1/management/definition-spaces/{definitionSpaceId}/operations/assets/{assetId}/replacements",
-    requestMediaType: "application/json",
+    requestMediaType: "multipart/form-data",
     successResponses: [
       {
         responseMediaType: "application/json",

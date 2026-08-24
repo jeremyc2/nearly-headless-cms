@@ -55,11 +55,13 @@ export class BrowserAdapter {
 
   render(): void {
     this.#rendering = true;
+    this.#observer.disconnect();
     const fragment = document.createDocumentFragment();
     for (const [blockIndex, block] of this.#state.document.children.entries()) {
       fragment.append(this.#renderBlock(block, blockIndex));
     }
     this.#host.replaceChildren(fragment);
+    this.#observer.observe(this.#host, { characterData: true, childList: true, subtree: true });
     this.#rendering = false;
     this.#restoreSelection();
   }

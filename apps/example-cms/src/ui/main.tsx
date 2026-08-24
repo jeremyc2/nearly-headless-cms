@@ -53,6 +53,16 @@ const richTextDocumentFrom = (value: unknown): RichText.Document | undefined => 
 };
 
 function Workbench() {
+  const pendingComments = useQuery({
+    queryFn: async () =>
+      Effect.runPromise(
+        managementClient.queryEntries("comment", {
+          pageSize: 100,
+          where: { operator: "equals", path: "status", value: "pending" },
+        }),
+      ),
+    queryKey: ["navigation", "pending-comments"],
+  });
   return (
     <div className="workbench">
       <aside className="navigation" aria-label="Content navigation">
@@ -79,7 +89,10 @@ function Workbench() {
             >
               <span className="navigation-symbol">{contentType.symbol}</span>
               <span>{contentType.label}</span>
-              {contentType.identifier === "comment" && <span className="count-badge">1</span>}
+              {contentType.identifier === "comment" &&
+                (pendingComments.data?.items.length ?? 0) > 0 && (
+                  <span className="count-badge">{pendingComments.data?.items.length}</span>
+                )}
             </Link>
           ))}
           <Link to="/assets" className="navigation-link">
@@ -99,21 +112,55 @@ function Workbench() {
 }
 
 function Overview() {
-  const queries = contentTypes.map((contentType) =>
-      useQuery({
+  const queries = useQueries({
+      queries: contentTypes.map((contentType) => ({
         queryFn: async () =>
           Effect.runPromise(
             managementClient.queryEntries(contentType.identifier, { pageSize: 100 }),
           ),
         queryKey: ["count", contentType.identifier],
-      }),
-    ),
+      })),
+    }),
+    assets = useQuery({
+      queryFn: async () => Effect.runPromise(managementClient.listAssets()),
+      queryKey: ["assets"],
+    }),
     counts = Object.fromEntries(
       contentTypes.map((contentType, index) => [
         contentType.identifier,
         queries[index]?.data?.items.length ?? "—",
       ]),
     ),
+    posts = queries[0]?.data?.items ?? [],
+    comments = queries[4]?.data?.items ?? [],
+    draftPostCount = posts.filter((post) => post.values["status"] === "draft").length,
+    pendingCommentCount = comments.filter(
+      (comment) => comment.values["status"] === "pending",
+    ).length,
+    recentCandidates = queries.flatMap((query) => query.data?.items ?? []).slice(0, 12),
+    recentRevisionQueries = useQueries({
+      queries: recentCandidates.map((entry) => ({
+        queryFn: async () =>
+          Effect.runPromise(managementClient.listRevisions(entry.contentTypeId, entry.id)),
+        queryKey: ["overview-revisions", entry.contentTypeId, entry.id],
+      })),
+    }),
+    recentEntries = recentCandidates
+      .map((entry, index) => ({
+        entry,
+        recordedAt: recentRevisionQueries[index]?.data?.items[0]?.recordedAt,
+      }))
+      .filter(
+        (
+          candidate,
+        ): candidate is { readonly entry: EntryRepresentation; readonly recordedAt: string } =>
+          candidate.recordedAt !== undefined,
+      )
+      .toSorted((left, right) => right.recordedAt.localeCompare(left.recordedAt))
+      .slice(0, 5),
+    today = new Intl.DateTimeFormat(undefined, {
+      dateStyle: "full",
+    }).format(new Date()),
     rebuild = useMutation({
       mutationFn: async () => {
         const response = await fetch("/development/rebuild", { method: "POST" });
@@ -127,7 +174,7 @@ function Overview() {
     <div className="page">
       <header className="page-header">
         <div>
-          <p className="eyebrow">Sunday, August 23</p>
+          <p className="eyebrow">{today}</p>
           <h1>Good afternoon</h1>
           <p>Your content is calm. Two things could use your attention.</p>
         </div>
@@ -142,7 +189,9 @@ function Overview() {
             <strong>{counts["post"]}</strong>
             <span>Posts</span>
           </div>
-          <small>1 draft</small>
+          <small>
+            {draftPostCount} draft{draftPostCount === 1 ? "" : "s"}
+          </small>
         </article>
         <article className="signal-card">
           <span className="signal-icon">☵</span>
@@ -150,12 +199,14 @@ function Overview() {
             <strong>{counts["comment"]}</strong>
             <span>Comments</span>
           </div>
-          <small className="attention">1 pending</small>
+          <small className={pendingCommentCount > 0 ? "attention" : ""}>
+            {pendingCommentCount} pending
+          </small>
         </article>
         <article className="signal-card">
           <span className="signal-icon">◫</span>
           <div>
-            <strong>1</strong>
+            <strong>{assets.data?.length ?? "—"}</strong>
             <span>Assets</span>
           </div>
           <small>All healthy</small>
@@ -236,12 +287,46 @@ function Overview() {
           </div>
         </section>
       </div>
+      <section className="panel recent-panel" aria-labelledby="recently-edited-heading">
+        <div className="panel-heading">
+          <div>
+            <p className="eyebrow">History</p>
+            <h2 id="recently-edited-heading">Recently edited content</h2>
+          </div>
+        </div>
+        {recentEntries.length === 0 && <p className="empty-state">Loading recent revisions…</p>}
+        <div className="entry-list">
+          {recentEntries.map(({ entry, recordedAt }) => (
+            <Link
+              className="entry-row"
+              key={entry.id}
+              params={{ contentTypeId: entry.contentTypeId, entryId: entry.id }}
+              to="/content/$contentTypeId/$entryId"
+            >
+              <span className="entry-monogram">{displayName(entry).slice(0, 1)}</span>
+              <span className="entry-title">
+                <strong>{displayName(entry)}</strong>
+                <small>
+                  {entry.contentTypeId} · {new Date(recordedAt).toLocaleString()}
+                </small>
+              </span>
+              <span>→</span>
+            </Link>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
 
 const stringValue = (value: unknown, fallback: string): string =>
     typeof value === "string" ? value : fallback,
+  suggestedSlug = (value: string): string =>
+    value
+      .normalize("NFKD")
+      .toLocaleLowerCase()
+      .replaceAll(/[^a-z0-9]+/gu, "-")
+      .replaceAll(/^-|-$/gu, ""),
   displayName = (entry: EntryRepresentation): string =>
     stringValue(
       entry.values["title"] ?? entry.values["name"] ?? entry.values["display-name"],
@@ -254,55 +339,104 @@ interface EditorialIssue {
 }
 
 const editorialIssues = (error: unknown): readonly EditorialIssue[] => {
-  if (
-    !(error instanceof ManagementClientFailure) ||
-    error.details === null ||
-    typeof error.details !== "object"
-  ) {
-    return [];
-  }
-  const candidates = Reflect.get(error.details, "issues");
-  if (!Array.isArray(candidates)) {
-    return [];
-  }
-  return candidates.flatMap((candidate) => {
-    if (candidate === null || typeof candidate !== "object") {
+    if (
+      !(error instanceof ManagementClientFailure) ||
+      error.details === null ||
+      typeof error.details !== "object"
+    ) {
       return [];
     }
-    const path = Reflect.get(candidate, "path"),
-      reason = Reflect.get(candidate, "reason");
-    return Array.isArray(path) && typeof reason === "string" ? [{ path, reason }] : [];
-  });
-};
+    const candidates = Reflect.get(error.details, "issues");
+    if (!Array.isArray(candidates)) {
+      return [];
+    }
+    return candidates.flatMap((candidate) => {
+      if (candidate === null || typeof candidate !== "object") {
+        return [];
+      }
+      const path = Reflect.get(candidate, "path"),
+        reason = Reflect.get(candidate, "reason");
+      return Array.isArray(path) && typeof reason === "string" ? [{ path, reason }] : [];
+    });
+  },
+  isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
+    value !== null && typeof value === "object" && !Array.isArray(value),
+  deletionRecordFrom = (
+    value: unknown,
+  ):
+    | {
+        readonly contentTypeId: string;
+        readonly entryId: string;
+        readonly writeToken: string;
+      }
+    | undefined => {
+    const candidate =
+      isRecord(value) && isRecord(value["deletionRecord"]) ? value["deletionRecord"] : value;
+    return isRecord(candidate) &&
+      typeof candidate["contentTypeId"] === "string" &&
+      typeof candidate["entryId"] === "string" &&
+      typeof candidate["writeToken"] === "string"
+      ? {
+          contentTypeId: candidate["contentTypeId"],
+          entryId: candidate["entryId"],
+          writeToken: candidate["writeToken"],
+        }
+      : undefined;
+  },
+  deletionConsequence = (contentTypeId: string): string => {
+    switch (contentTypeId) {
+      case "post":
+        return "This also deletes every Comment associated with the Post.";
+      case "author":
+        return "This also deletes the Author’s Posts and every Comment associated with them.";
+      case "category":
+        return "This detaches the Category from every Post before deleting it.";
+      case "tag":
+        return "This detaches the Tag from every Post before deleting it.";
+      default:
+        return "This removes the Entry from live content.";
+    }
+  };
 
 function ContentList() {
   const { contentTypeId } = useParams({ from: "/content/$contentTypeId" }),
     contentType = contentTypes.find((candidate) => candidate.identifier === contentTypeId),
     navigate = useNavigate(),
     [filterText, setFilterText] = useState(""),
+    [statusFilter, setStatusFilter] = useState("all"),
+    [sortDirection, setSortDirection] = useState<"ascending" | "descending">("descending"),
+    [cursor, setCursor] = useState<string>(),
+    [priorCursors, setPriorCursors] = useState<readonly (string | undefined)[]>([]),
+    filterPath =
+      contentTypeId === "post" ? "title" : contentTypeId === "comment" ? "display-name" : "name",
+    predicates = [
+      ...(filterText.trim().length === 0
+        ? []
+        : [{ operator: "contains", path: filterPath, value: filterText.trim() }]),
+      ...(statusFilter === "all"
+        ? []
+        : [{ operator: "equals", path: "status", value: statusFilter }]),
+    ],
+    sortPath =
+      contentTypeId === "comment"
+        ? "created-at"
+        : contentTypeId === "post"
+          ? "published-at"
+          : "name",
     entries = useQuery({
       queryFn: async () =>
         Effect.runPromise(
           managementClient.queryEntries(contentTypeId, {
-            pageSize: 50,
-            sort: [
-              {
-                direction: "descending",
-                path:
-                  contentTypeId === "comment"
-                    ? "created-at"
-                    : contentTypeId === "post"
-                      ? "published-at"
-                      : "name",
-              },
-            ],
+            ...(cursor === undefined ? {} : { cursor }),
+            pageSize: 20,
+            sort: [{ direction: sortDirection, path: sortPath }],
+            ...(predicates.length === 0
+              ? {}
+              : { where: predicates.length === 1 ? predicates[0] : { all: predicates } }),
           }),
         ),
-      queryKey: ["entries", contentTypeId],
+      queryKey: ["entries", contentTypeId, cursor, filterText, sortDirection, statusFilter],
     }),
-    visibleEntries = entries.data?.items.filter((entry) =>
-      displayName(entry).toLocaleLowerCase().includes(filterText.trim().toLocaleLowerCase()),
-    ),
     createEntry = useMutation({
       mutationFn: async () => {
         const suffix = crypto.randomUUID().slice(0, 8),
@@ -363,6 +497,10 @@ function ContentList() {
         });
       },
     });
+  useEffect(() => {
+    setCursor(undefined);
+    setPriorCursors([]);
+  }, [contentTypeId, filterText, sortDirection, statusFilter]);
   return (
     <div className="page">
       <header className="page-header">
@@ -398,13 +536,54 @@ function ContentList() {
               placeholder={`Filter ${contentType?.label.toLowerCase() ?? "entries"}`}
             />
           </label>
-          <button className="secondary-button">Status: all</button>
-          <button className="secondary-button">Newest first</button>
+          {(contentTypeId === "post" || contentTypeId === "comment") && (
+            <label>
+              <span className="visually-hidden">Filter by status</span>
+              <select
+                aria-label="Filter by status"
+                value={statusFilter}
+                onChange={(event) => {
+                  setStatusFilter(event.target.value);
+                }}
+              >
+                <option value="all">Status: all</option>
+                {(contentTypeId === "post"
+                  ? ["draft", "published"]
+                  : ["pending", "approved", "rejected"]
+                ).map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <label>
+            <span className="visually-hidden">Sort entries</span>
+            <select
+              aria-label="Sort entries"
+              value={sortDirection}
+              onChange={(event) => {
+                setSortDirection(event.target.value === "ascending" ? "ascending" : "descending");
+              }}
+            >
+              <option value="descending">
+                {contentTypeId === "post" || contentTypeId === "comment"
+                  ? "Newest first"
+                  : "Name Z–A"}
+              </option>
+              <option value="ascending">
+                {contentTypeId === "post" || contentTypeId === "comment"
+                  ? "Oldest first"
+                  : "Name A–Z"}
+              </option>
+            </select>
+          </label>
         </div>
         {entries.isLoading && <p className="empty-state">Loading Entries…</p>}
         {entries.error && <p className="error-state">{entries.error.message}</p>}
         <div className="entry-list">
-          {visibleEntries?.map((entry) => (
+          {entries.data?.items.map((entry) => (
             <Link
               key={entry.id}
               className="entry-row"
@@ -427,6 +606,34 @@ function ContentList() {
             </Link>
           ))}
         </div>
+        <nav className="pagination" aria-label="Entry pages">
+          <button
+            className="secondary-button"
+            type="button"
+            disabled={priorCursors.length === 0}
+            onClick={() => {
+              const previousCursor = priorCursors.at(-1);
+              setPriorCursors((current) => current.slice(0, -1));
+              setCursor(previousCursor);
+            }}
+          >
+            Previous
+          </button>
+          <span>Page {priorCursors.length + 1}</span>
+          <button
+            className="secondary-button"
+            type="button"
+            disabled={entries.data?.nextCursor === undefined}
+            onClick={() => {
+              if (entries.data?.nextCursor !== undefined) {
+                setPriorCursors((current) => [...current, cursor]);
+                setCursor(entries.data.nextCursor);
+              }
+            }}
+          >
+            Next
+          </button>
+        </nav>
       </section>
     </div>
   );
@@ -434,6 +641,7 @@ function ContentList() {
 
 function EntryEditor() {
   const { contentTypeId, entryId } = useParams({ from: "/content/$contentTypeId/$entryId" }),
+    navigate = useNavigate(),
     state = useQuery({
       queryFn: async () =>
         Effect.runPromise(managementClient.getCurrentState(contentTypeId, entryId)),
@@ -464,6 +672,16 @@ function EntryEditor() {
     }),
     loadedEntryIdentifier = useRef<string | undefined>(undefined),
     [values, setValues] = useState<Record<string, unknown>>({}),
+    [confirmDeletion, setConfirmDeletion] = useState(false),
+    [confirmPurge, setConfirmPurge] = useState(false),
+    [editorialConfirmation, setEditorialConfirmation] = useState<
+      "draft" | "published" | "approved" | "rejected"
+    >(),
+    [deletionRecord, setDeletionRecord] = useState<{
+      readonly contentTypeId: string;
+      readonly entryId: string;
+      readonly writeToken: string;
+    }>(),
     [conflict, setConflict] = useState<
       | {
           readonly latest: {
@@ -530,12 +748,70 @@ function EntryEditor() {
         await queryClient.invalidateQueries({ queryKey: ["revisions", contentTypeId, entryId] });
       },
     }),
+    deleteEntry = useMutation({
+      mutationFn: async () => {
+        if (
+          state.data === undefined ||
+          (contentTypeId !== "post" &&
+            contentTypeId !== "author" &&
+            contentTypeId !== "category" &&
+            contentTypeId !== "tag" &&
+            contentTypeId !== "comment")
+        ) {
+          throw new Error("Current Entry deletion state is unavailable");
+        }
+        const outcome = await Effect.runPromise(
+            managementClient.deleteContentEntry(contentTypeId, entryId, state.data.writeToken),
+          ),
+          receipt = deletionRecordFrom(outcome);
+        if (receipt === undefined) {
+          throw new Error("The deletion did not return a retained deletion record");
+        }
+        return receipt;
+      },
+      onSuccess: async (receipt) => {
+        setConfirmDeletion(false);
+        setDeletionRecord(receipt);
+        await queryClient.invalidateQueries({ queryKey: ["entries", contentTypeId] });
+        await queryClient.invalidateQueries({ queryKey: ["count", contentTypeId] });
+        await queryClient.invalidateQueries({ queryKey: ["navigation"] });
+      },
+    }),
+    permanentlyPurge = useMutation({
+      mutationFn: async () => {
+        if (deletionRecord === undefined) {
+          throw new Error("Deletion record is unavailable");
+        }
+        return Effect.runPromise(
+          managementClient.permanentlyPurgeEntry(
+            deletionRecord.contentTypeId,
+            deletionRecord.entryId,
+            deletionRecord.writeToken,
+          ),
+        );
+      },
+      onSuccess: async () => {
+        await navigate({ params: { contentTypeId }, to: "/content/$contentTypeId" });
+      },
+    }),
     titleField = "title" in values ? "title" : "name" in values ? "name" : "display-name";
   const title = stringValue(values[titleField], ""),
     bodyDocument = richTextDocumentFrom(values["body"]),
     profileDocument = richTextDocumentFrom(values["profile"]),
     updateField = (key: string, value: unknown) => {
-      setValues((current) => ({ ...current, [key]: value }));
+      setValues((current) => {
+        const replacement = { ...current, [key]: value };
+        if (
+          (key === "title" || key === "name") &&
+          typeof value === "string" &&
+          typeof current["slug"] === "string" &&
+          (current["slug"] === suggestedSlug(stringValue(current[key], "")) ||
+            current["slug"].startsWith("untitled-"))
+        ) {
+          return { ...replacement, slug: suggestedSlug(value) };
+        }
+        return replacement;
+      });
     },
     saveValues = (replacementValues = values, writeToken = state.data?.writeToken) => {
       save.mutate({ replacementValues, writeToken });
@@ -639,15 +915,25 @@ function EntryEditor() {
               />
             </label>
             {"slug" in values && (
-              <label className="field">
-                <span>Slug</span>
+              <div className="field">
+                <label htmlFor="entry-slug">Slug</label>
                 <input
+                  id="entry-slug"
                   value={String(values["slug"])}
                   onChange={(event) => {
                     updateField("slug", event.target.value);
                   }}
                 />
-              </label>
+                <button
+                  className="text-button"
+                  type="button"
+                  onClick={() => {
+                    updateField("slug", suggestedSlug(title));
+                  }}
+                >
+                  Suggest from title or name
+                </button>
+              </div>
             )}
             {"excerpt" in values && (
               <label className="field full">
@@ -923,7 +1209,9 @@ function EntryEditor() {
                   disabled={editorialCommand.isPending}
                   type="button"
                   onClick={() => {
-                    setEditorialStatus(values["status"] === "published" ? "draft" : "published");
+                    setEditorialConfirmation(
+                      values["status"] === "published" ? "draft" : "published",
+                    );
                   }}
                 >
                   {values["status"] === "published" ? "Return to draft" : "Publish Post"}
@@ -936,7 +1224,7 @@ function EntryEditor() {
                     disabled={editorialCommand.isPending}
                     type="button"
                     onClick={() => {
-                      setEditorialStatus("approved");
+                      setEditorialConfirmation("approved");
                     }}
                   >
                     Approve
@@ -946,7 +1234,7 @@ function EntryEditor() {
                     disabled={editorialCommand.isPending}
                     type="button"
                     onClick={() => {
-                      setEditorialStatus("rejected");
+                      setEditorialConfirmation("rejected");
                     }}
                   >
                     Reject
@@ -959,7 +1247,175 @@ function EntryEditor() {
               entryId={entryId}
               writeToken={state.data?.writeToken}
             />
+            <section className="panel danger-panel">
+              <p className="eyebrow">Danger zone</p>
+              <h2>Delete this Entry</h2>
+              <p>{deletionConsequence(contentTypeId)}</p>
+              <button
+                className="danger-button"
+                type="button"
+                disabled={deleteEntry.isPending || state.data === undefined}
+                onClick={() => {
+                  setConfirmDeletion(true);
+                }}
+              >
+                Delete Entry…
+              </button>
+              {deleteEntry.error && (
+                <p className="error-state" role="alert">
+                  {deleteEntry.error.message}
+                </p>
+              )}
+            </section>
           </aside>
+        </div>
+      )}
+      {editorialConfirmation !== undefined && (
+        <div className="rich-dialog-backdrop">
+          <div
+            className="rich-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="editorial-command-title"
+          >
+            <p className="eyebrow">Confirm editorial change</p>
+            <h2 id="editorial-command-title">
+              {editorialConfirmation === "published"
+                ? "Publish this Post?"
+                : editorialConfirmation === "draft"
+                  ? "Return this Post to draft?"
+                  : editorialConfirmation === "approved"
+                    ? "Approve this Comment?"
+                    : "Reject this Comment?"}
+            </h2>
+            <p>
+              {editorialConfirmation === "published" || editorialConfirmation === "approved"
+                ? "This content becomes public-eligible and appears after the next static refresh."
+                : "This content stops being public-eligible; an existing static build changes only after refresh."}
+            </p>
+            <div className="editor-actions">
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => {
+                  setEditorialConfirmation(undefined);
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className="primary-button"
+                type="button"
+                disabled={editorialCommand.isPending}
+                onClick={() => {
+                  setEditorialStatus(editorialConfirmation);
+                  setEditorialConfirmation(undefined);
+                }}
+              >
+                Confirm change
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {(confirmDeletion || deletionRecord !== undefined) && (
+        <div className="rich-dialog-backdrop">
+          <div
+            className="rich-dialog destructive-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="entry-deletion-title"
+          >
+            {deletionRecord === undefined ? (
+              <>
+                <p className="eyebrow">Confirm deletion</p>
+                <h2 id="entry-deletion-title">Delete “{title || "this Entry"}”?</h2>
+                <p>{deletionConsequence(contentTypeId)}</p>
+                <p>The retained revisions can be restored until you permanently purge them.</p>
+                <div className="editor-actions">
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    onClick={() => {
+                      setConfirmDeletion(false);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="danger-button"
+                    type="button"
+                    disabled={deleteEntry.isPending}
+                    onClick={() => {
+                      deleteEntry.mutate();
+                    }}
+                  >
+                    {deleteEntry.isPending ? "Deleting…" : "Delete Entry"}
+                  </button>
+                </div>
+              </>
+            ) : confirmPurge ? (
+              <>
+                <p className="eyebrow">Irreversible action</p>
+                <h2 id="entry-deletion-title">Permanently purge retained history?</h2>
+                <p>
+                  This cannot be undone. Every retained revision and the restoration path vanish.
+                </p>
+                {permanentlyPurge.error && (
+                  <p className="error-state" role="alert">
+                    {permanentlyPurge.error.message}
+                  </p>
+                )}
+                <div className="editor-actions">
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    onClick={() => {
+                      setConfirmPurge(false);
+                    }}
+                  >
+                    Keep retained history
+                  </button>
+                  <button
+                    className="danger-button"
+                    type="button"
+                    disabled={permanentlyPurge.isPending}
+                    onClick={() => {
+                      permanentlyPurge.mutate();
+                    }}
+                  >
+                    {permanentlyPurge.isPending ? "Purging…" : "Permanently purge"}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="eyebrow">Entry deleted</p>
+                <h2 id="entry-deletion-title">The live Entry is gone</h2>
+                <p>Its retained history remains available for restoration through the API.</p>
+                <div className="editor-actions">
+                  <button
+                    className="primary-button"
+                    type="button"
+                    onClick={() => {
+                      void navigate({ params: { contentTypeId }, to: "/content/$contentTypeId" });
+                    }}
+                  >
+                    Return to list
+                  </button>
+                  <button
+                    className="danger-button"
+                    type="button"
+                    onClick={() => {
+                      setConfirmPurge(true);
+                    }}
+                  >
+                    Permanently purge…
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -1420,6 +1876,10 @@ function HistoryPanel({
 
 function AssetsPage() {
   const input = useRef<HTMLInputElement>(null),
+    replacementInput = useRef<HTMLInputElement>(null),
+    [replacementAssetId, setReplacementAssetId] = useState<string>(),
+    [replacementConfirmationAssetId, setReplacementConfirmationAssetId] = useState<string>(),
+    [deletionAssetId, setDeletionAssetId] = useState<string>(),
     assets = useQuery({
       queryFn: async () => Effect.runPromise(managementClient.listAssets()),
       queryKey: ["assets"],
@@ -1428,6 +1888,30 @@ function AssetsPage() {
       mutationFn: async (file: File) => Effect.runPromise(managementClient.uploadAsset(file)),
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: ["assets"] });
+      },
+    }),
+    replace = useMutation({
+      mutationFn: async ({ assetId, file }: { readonly assetId: string; readonly file: File }) =>
+        Effect.runPromise(
+          managementClient.replaceImage(assetId, file, `replace-${crypto.randomUUID()}`),
+        ),
+      onSuccess: async () => {
+        setReplacementAssetId(undefined);
+        await queryClient.invalidateQueries({ queryKey: ["assets"] });
+        await queryClient.invalidateQueries({ queryKey: ["entry-state"] });
+        await queryClient.invalidateQueries({ queryKey: ["entries"] });
+      },
+    }),
+    deleteImage = useMutation({
+      mutationFn: async (assetId: string) =>
+        Effect.runPromise(
+          managementClient.deleteImageAndClearAssignments(assetId, `delete-${crypto.randomUUID()}`),
+        ),
+      onSuccess: async () => {
+        setDeletionAssetId(undefined);
+        await queryClient.invalidateQueries({ queryKey: ["assets"] });
+        await queryClient.invalidateQueries({ queryKey: ["entry-state"] });
+        await queryClient.invalidateQueries({ queryKey: ["entries"] });
       },
     });
   const chooseFile = () => {
@@ -1455,17 +1939,56 @@ function AssetsPage() {
             }
           }}
         />
+        <input
+          ref={replacementInput}
+          className="visually-hidden"
+          type="file"
+          accept="image/*"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file !== undefined && replacementAssetId !== undefined) {
+              replace.mutate({ assetId: replacementAssetId, file });
+            }
+            event.currentTarget.value = "";
+          }}
+        />
       </header>
       {upload.isSuccess && <p role="status">Asset uploaded successfully.</p>}
+      {replace.isSuccess && (
+        <p role="status">
+          Replacement completed: {replace.data.reassignedEntryCount} Entries reassigned.
+        </p>
+      )}
+      {deleteImage.isSuccess && (
+        <p role="status">
+          Image deleted after clearing {deleteImage.data.clearedPostCount} Post and{" "}
+          {deleteImage.data.clearedAuthorCount} Author assignments.
+        </p>
+      )}
       {upload.error && (
         <p role="alert" className="error-state">
           {upload.error.message}
         </p>
       )}
+      {(replace.error ?? deleteImage.error) !== null &&
+        (replace.error ?? deleteImage.error) !== undefined && (
+          <p role="alert" className="error-state">
+            {(replace.error ?? deleteImage.error)?.message}
+          </p>
+        )}
       <section className="asset-grid">
         {assets.data?.map((asset: AssetRepresentation) => (
           <article className="asset-card" key={asset.id}>
-            <div className="asset-preview">☼</div>
+            <div className="asset-preview">
+              {asset.metadata.mediaType.startsWith("image/") ? (
+                <img
+                  src={`/api/v1/management/definition-spaces/example-blog/assets/${encodeURIComponent(asset.id)}/content`}
+                  alt={asset.metadata.defaultAlternativeText ?? asset.metadata.filename}
+                />
+              ) : (
+                <span aria-hidden="true">◫</span>
+              )}
+            </div>
             <strong>{asset.metadata.filename}</strong>
             <small>
               {asset.metadata.mediaType} · {asset.metadata.byteLength.toLocaleString()} bytes
@@ -1473,12 +1996,111 @@ function AssetsPage() {
                 ? ""
                 : ` · ${asset.metadata.width} × ${asset.metadata.height ?? "?"}`}
             </small>
+            <div className="asset-actions">
+              <button
+                className="secondary-button"
+                type="button"
+                disabled={replace.isPending || deleteImage.isPending}
+                onClick={() => {
+                  setReplacementConfirmationAssetId(asset.id);
+                }}
+              >
+                Replace…
+              </button>
+              <button
+                className="danger-button"
+                type="button"
+                disabled={replace.isPending || deleteImage.isPending}
+                onClick={() => {
+                  setDeletionAssetId(asset.id);
+                }}
+              >
+                Delete…
+              </button>
+            </div>
           </article>
         ))}
         <button className="asset-upload" onClick={chooseFile}>
           ＋<span>Upload a new Asset</span>
         </button>
       </section>
+      {replacementConfirmationAssetId !== undefined && (
+        <div className="rich-dialog-backdrop">
+          <div
+            className="rich-dialog destructive-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="replace-image-title"
+          >
+            <p className="eyebrow">Confirm replacement</p>
+            <h2 id="replace-image-title">Replace this immutable image?</h2>
+            <p>
+              A new Asset will be ingested, every direct and Rich Text reference will be reassigned
+              atomically, and the old Asset will be deleted last.
+            </p>
+            <div className="editor-actions">
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => {
+                  setReplacementConfirmationAssetId(undefined);
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className="primary-button"
+                type="button"
+                onClick={() => {
+                  setReplacementAssetId(replacementConfirmationAssetId);
+                  setReplacementConfirmationAssetId(undefined);
+                  queueMicrotask(() => replacementInput.current?.click());
+                }}
+              >
+                Choose replacement file
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {deletionAssetId !== undefined && (
+        <div className="rich-dialog-backdrop">
+          <div
+            className="rich-dialog destructive-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-image-title"
+          >
+            <p className="eyebrow">Confirm deletion</p>
+            <h2 id="delete-image-title">Delete this image Asset?</h2>
+            <p>
+              Optional featured-image and portrait assignments will be cleared automatically. Rich
+              Text references still block deletion so authored content is never silently removed.
+            </p>
+            <div className="editor-actions">
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => {
+                  setDeletionAssetId(undefined);
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className="danger-button"
+                type="button"
+                disabled={deleteImage.isPending}
+                onClick={() => {
+                  deleteImage.mutate(deletionAssetId);
+                }}
+              >
+                {deleteImage.isPending ? "Deleting…" : "Clear assignments and delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

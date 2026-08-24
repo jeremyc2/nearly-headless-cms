@@ -61,6 +61,11 @@ describe("Example CMS destructive workflows", () => {
       receipt = await jsonRecord(response);
     expect(response.status).toBe(200);
     expect(receipt).toMatchObject({
+      deletionRecord: {
+        contentTypeId: "author",
+        entryId: authorId,
+        writeToken: expect.any(String),
+      },
       deletedAuthorId: authorId,
       deletedCommentCount: 2,
       deletedPostCount: 2,
@@ -184,5 +189,21 @@ describe("Example CMS destructive workflows", () => {
       ),
     );
     expect(assetLookup.status).toBe(404);
+  });
+
+  test("declares image replacement as multipart for generated Management clients", async () => {
+    const document = await jsonRecord(
+        await system.handler(new Request("http://cms.test/api/v1/management/openapi.json")),
+      ),
+      paths = document["paths"],
+      replacementPath = isRecord(paths)
+        ? paths[
+            "/api/v1/management/definition-spaces/{definitionSpaceId}/operations/assets/{assetId}/replacements"
+          ]
+        : undefined,
+      replacementPost = isRecord(replacementPath) ? replacementPath["post"] : undefined,
+      requestBody = isRecord(replacementPost) ? replacementPost["requestBody"] : undefined,
+      content = isRecord(requestBody) ? requestBody["content"] : undefined;
+    expect(isRecord(content) && content["multipart/form-data"] !== undefined).toBeTrue();
   });
 });

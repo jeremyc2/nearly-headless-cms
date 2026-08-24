@@ -1,6 +1,6 @@
 import { join } from "node:path";
-import * as HttpApiContract from "../packages/nearly-headless-cms/dist/http/http-api.js";
-import { OpenApi } from "../packages/nearly-headless-cms/dist/http/index.js";
+import * as HttpApiContract from "../packages/nearly-headless-cms/src/http/http-api.ts";
+import { OpenApi } from "../packages/nearly-headless-cms/src/http/index.ts";
 import { makeDeliveryOperations } from "../apps/example-cms/src/delivery.ts";
 import { makeManagementOperations } from "../apps/example-cms/src/management.ts";
 import { acceptanceCases } from "../acceptance/v0.1.ts";

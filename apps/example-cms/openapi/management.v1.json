@@ -90,6 +90,35 @@
         ],
         "type": "object"
       },
+      "DeletionRecord": {
+        "properties": {
+          "contentTypeId": {
+            "type": "string"
+          },
+          "deletedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "entryId": {
+            "type": "string"
+          },
+          "latestRevisionNumber": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "writeToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "entryId",
+          "contentTypeId",
+          "deletedAt",
+          "latestRevisionNumber",
+          "writeToken"
+        ],
+        "type": "object"
+      },
       "Discovery": {
         "additionalProperties": false,
         "properties": {
@@ -1742,6 +1771,16 @@
           }
         ],
         "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletionRecord"
+                }
+              }
+            },
+            "description": "Successful response"
+          },
           "204": {
             "description": "Operation completed without a response body"
           },
@@ -7205,7 +7244,7 @@
         ],
         "requestBody": {
           "content": {
-            "application/json": {
+            "multipart/form-data": {
               "schema": {
                 "additionalProperties": false,
                 "properties": {
@@ -7217,13 +7256,7 @@
                   "metadata": {
                     "additionalProperties": false,
                     "properties": {
-                      "byteLength": {
-                        "type": "integer"
-                      },
                       "defaultAlternativeText": {
-                        "type": "string"
-                      },
-                      "digest": {
                         "type": "string"
                       },
                       "filename": {
@@ -7240,8 +7273,6 @@
                       }
                     },
                     "required": [
-                      "byteLength",
-                      "digest",
                       "filename",
                       "mediaType"
                     ],
@@ -7511,9 +7542,38 @@
                     },
                     "deletedPostCount": {
                       "type": "integer"
+                    },
+                    "deletionRecord": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "contentTypeId": {
+                          "type": "string"
+                        },
+                        "deletedAt": {
+                          "type": "string"
+                        },
+                        "entryId": {
+                          "type": "string"
+                        },
+                        "latestRevisionNumber": {
+                          "type": "integer"
+                        },
+                        "writeToken": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "contentTypeId",
+                        "deletedAt",
+                        "entryId",
+                        "latestRevisionNumber",
+                        "writeToken"
+                      ],
+                      "type": "object"
                     }
                   },
                   "required": [
+                    "deletionRecord",
                     "deletedAuthorId",
                     "deletedCommentCount",
                     "deletedPostCount"
@@ -7729,6 +7789,34 @@
                 "schema": {
                   "additionalProperties": false,
                   "properties": {
+                    "deletionRecord": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "contentTypeId": {
+                          "type": "string"
+                        },
+                        "deletedAt": {
+                          "type": "string"
+                        },
+                        "entryId": {
+                          "type": "string"
+                        },
+                        "latestRevisionNumber": {
+                          "type": "integer"
+                        },
+                        "writeToken": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "contentTypeId",
+                        "deletedAt",
+                        "entryId",
+                        "latestRevisionNumber",
+                        "writeToken"
+                      ],
+                      "type": "object"
+                    },
                     "detachedPostCount": {
                       "type": "integer"
                     },
@@ -7737,6 +7825,7 @@
                     }
                   },
                   "required": [
+                    "deletionRecord",
                     "detachedPostCount",
                     "removedEntryId"
                   ],
@@ -8442,9 +8531,38 @@
                     },
                     "deletedPostId": {
                       "type": "string"
+                    },
+                    "deletionRecord": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "contentTypeId": {
+                          "type": "string"
+                        },
+                        "deletedAt": {
+                          "type": "string"
+                        },
+                        "entryId": {
+                          "type": "string"
+                        },
+                        "latestRevisionNumber": {
+                          "type": "integer"
+                        },
+                        "writeToken": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "contentTypeId",
+                        "deletedAt",
+                        "entryId",
+                        "latestRevisionNumber",
+                        "writeToken"
+                      ],
+                      "type": "object"
                     }
                   },
                   "required": [
+                    "deletionRecord",
                     "deletedCommentCount",
                     "deletedPostId"
                   ],
@@ -9145,6 +9263,34 @@
                 "schema": {
                   "additionalProperties": false,
                   "properties": {
+                    "deletionRecord": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "contentTypeId": {
+                          "type": "string"
+                        },
+                        "deletedAt": {
+                          "type": "string"
+                        },
+                        "entryId": {
+                          "type": "string"
+                        },
+                        "latestRevisionNumber": {
+                          "type": "integer"
+                        },
+                        "writeToken": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "contentTypeId",
+                        "deletedAt",
+                        "entryId",
+                        "latestRevisionNumber",
+                        "writeToken"
+                      ],
+                      "type": "object"
+                    },
                     "detachedPostCount": {
                       "type": "integer"
                     },
@@ -9153,6 +9299,7 @@
                     }
                   },
                   "required": [
+                    "deletionRecord",
                     "detachedPostCount",
                     "removedEntryId"
                   ],

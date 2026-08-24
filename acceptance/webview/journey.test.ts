@@ -68,6 +68,22 @@ describe("complete-system WebView journey", () => {
         expect(
           await waitFor(view, "location.pathname", (value: string) => value === editorPath),
         ).toBe(editorPath);
+        view.close();
+        view = new Bun.WebView({
+          console: (method, ...values) => {
+            if (method === "error") consoleErrors.push(...values);
+          },
+          height: 1_000,
+          width: 1_440,
+        });
+        await view.navigate(`http://localhost:3000${editorPath}`);
+        expect(
+          await waitFor(
+            view,
+            "document.querySelector('h1')?.textContent",
+            (value: string | undefined) => value === "A Lighthouse for Content",
+          ),
+        ).toBe("A Lighthouse for Content");
         await view.resize(390, 844);
         expect(await view.evaluate("innerWidth")).toBe(390);
 

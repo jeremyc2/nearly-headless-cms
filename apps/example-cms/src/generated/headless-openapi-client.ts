@@ -25,6 +25,13 @@ export type CurrentEntryState = {
   readonly revisionNumber: number;
   readonly writeToken: string;
 };
+export type DeletionRecord = {
+  readonly contentTypeId: string;
+  readonly deletedAt: string;
+  readonly entryId: string;
+  readonly latestRevisionNumber: number;
+  readonly writeToken: string;
+};
 export type Discovery = {
   readonly apiContractVersion: 1;
   readonly definitionFingerprint: string;

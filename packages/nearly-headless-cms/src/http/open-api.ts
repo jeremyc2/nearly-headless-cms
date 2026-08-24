@@ -343,7 +343,8 @@ const errorSchema = {
           ? requestBodySchemas.get(operationIdentifier)
           : effectSchema(declaredRequestBody),
       requestMediaType =
-        operationIdentifier === "ingestAsset" ? "multipart/form-data" : "application/json",
+        operationDescriptor.schemas?.requestMediaType ??
+        (operationIdentifier === "ingestAsset" ? "multipart/form-data" : "application/json"),
       responseMediaType =
         operationDescriptor.schemas?.responseMediaType ??
         (operationIdentifier === "readAsset" || operationIdentifier === "inspectAssetContent"

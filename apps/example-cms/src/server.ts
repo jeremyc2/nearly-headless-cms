@@ -14,6 +14,7 @@ class DashboardBuildFailure extends Schema.TaggedError<DashboardBuildFailure>()(
 
 const applicationDirectory = join(import.meta.dir, ".."),
   dashboardDirectory = join(applicationDirectory, "dist"),
+  dashboardIndexPath = join(dashboardDirectory, "index.html"),
   port = Number(Bun.env["EXAMPLE_CMS_PORT"] ?? "3000"),
   responseFrom = (response: Response) => HttpServerResponse.fromWeb(response),
   composition = makeExampleComposition({ seed: true }),
@@ -75,7 +76,23 @@ const applicationDirectory = join(import.meta.dir, ".."),
     root: dashboardDirectory,
     spa: true,
   }),
-  server = HttpRouter.serve(Layer.mergeAll(applicationRoutes, staticDashboard)).pipe(
+  dashboardHistoryFallbacks = Layer.effectDiscard(
+    HttpRouter.HttpRouter.pipe(
+      Effect.flatMap((router) =>
+        Effect.gen(function* registerDashboardHistoryFallbacks() {
+          const dashboardShell = () =>
+            HttpServerResponse.file(dashboardIndexPath, {
+              headers: { "content-type": "text/html; charset=utf-8" },
+            });
+          yield* router.add("GET", "/assets", dashboardShell);
+          yield* router.add("GET", "/content/*", dashboardShell);
+        }),
+      ),
+    ),
+  ),
+  server = HttpRouter.serve(
+    Layer.mergeAll(applicationRoutes, dashboardHistoryFallbacks, staticDashboard),
+  ).pipe(
     Layer.provide(
       BunHttpServer.layer({
         development: Bun.env.NODE_ENV !== "production",
@@ -96,6 +113,7 @@ const applicationDirectory = join(import.meta.dir, ".."),
         minify: Bun.env.NODE_ENV === "production",
         outdir: dashboardDirectory,
         plugins: [tailwind],
+        publicPath: "/",
         sourcemap: "linked",
         splitting: true,
         target: "browser",

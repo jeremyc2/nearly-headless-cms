@@ -42,6 +42,7 @@ export interface OperationSchemas {
   readonly pathParameters?: Readonly<Record<string, OperationSchema>>;
   readonly queryParameters?: Readonly<Record<string, OperationSchema>>;
   readonly requestHeaders?: Readonly<Record<string, OperationSchema>>;
+  readonly requestMediaType?: string;
   readonly responseMediaType?: string;
 }
 
