@@ -2,24 +2,23 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { type ExampleSystem, createExampleSystem } from "../../src/system.ts";
 
 const FIRST_INDEX = 0,
- HTTP_BAD_REQUEST = 400,
- HTTP_CONFLICT = 409,
- HTTP_CREATED = 201,
- HTTP_NOT_FOUND = 404,
- HTTP_NOT_MODIFIED = 304,
- HTTP_OK = 200,
- HTTP_PARTIAL_CONTENT = 206,
- ONE_ITEM = 1,
- TEN_BYTES = 10,
- TWO_ITEMS = 2,
-
- firstItem = <Item>(items: readonly Item[]): Item => {
-  const item = items[FIRST_INDEX];
-  if (item === undefined) {
-    throw new Error("Expected at least one item");
-  }
-  return item;
-};
+  HTTP_BAD_REQUEST = 400,
+  HTTP_CONFLICT = 409,
+  HTTP_CREATED = 201,
+  HTTP_NOT_FOUND = 404,
+  HTTP_NOT_MODIFIED = 304,
+  HTTP_OK = 200,
+  HTTP_PARTIAL_CONTENT = 206,
+  ONE_ITEM = 1,
+  TEN_BYTES = 10,
+  TWO_ITEMS = 2,
+  firstItem = <Item>(items: readonly Item[]): Item => {
+    const item = items[FIRST_INDEX];
+    if (item === undefined) {
+      throw new Error("Expected at least one item");
+    }
+    return item;
+  };
 
 describe("Example CMS Headless API", () => {
   let storageRoot: string, system: ExampleSystem;
@@ -246,7 +245,7 @@ describe("Example CMS Headless API", () => {
             method: "POST",
           },
         ),
-    );
+      );
     expect(cascaded.status).toBe(HTTP_OK);
     const cascadeReceipt = (await cascaded.json()) as { deletedCommentCount: number },
       deletedPostResponse = await system.handler(
@@ -259,7 +258,9 @@ describe("Example CMS Headless API", () => {
   // Bun test callbacks use async/await to keep each integration assertion sequential.
   // oxlint-disable-next-line effecttsgo/async-function -- Bun lifecycle and test callbacks require Promise-returning functions.
   test("replays durable Comment receipts and Definition state after restart", async () => {
-    const restartRoot = (await Bun.$`mktemp -d ${import.meta.dir}/.restart-api-XXXXXX`.text()).trim(),
+    const restartRoot = (
+        await Bun.$`mktemp -d ${import.meta.dir}/.restart-api-XXXXXX`.text()
+      ).trim(),
       firstSystem = await createExampleSystem({ seed: true, storageRoot: restartRoot }),
       postId = firstSystem.seed?.publishedPostId ?? "",
       makeRequest = () =>

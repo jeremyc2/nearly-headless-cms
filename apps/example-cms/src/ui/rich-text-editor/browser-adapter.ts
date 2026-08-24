@@ -214,10 +214,7 @@ export class BrowserAdapter {
       return undefined;
     }
     const blockIndex = Number(text.dataset["blockIndex"]),
-      boundedOffset = Math.min(
-        offset,
-        textLength(text.textContent),
-      ),
+      boundedOffset = Math.min(offset, textLength(text.textContent)),
       inlineIndex = Number(text.dataset["inlineIndex"]);
     if (!Number.isSafeInteger(blockIndex) || !Number.isSafeInteger(inlineIndex)) {
       return undefined;
@@ -271,15 +268,9 @@ export class BrowserAdapter {
     }
     nativeSelection.setBaseAndExtent(
       anchorNode,
-      Math.min(
-        anchor.offset,
-        textLength(anchorNode.textContent),
-      ),
+      Math.min(anchor.offset, textLength(anchorNode.textContent)),
       focusNode,
-      Math.min(
-        focus.offset,
-        textLength(focusNode.textContent),
-      ),
+      Math.min(focus.offset, textLength(focusNode.textContent)),
     );
   }
 

@@ -137,18 +137,12 @@ export const prepare = (input: PreparationInput): Preparation => {
         if (error instanceof Error) {
           message = error.message;
         }
-        issues.push(
-          migrationIssue(
-            entry.id,
-            "migrationHandlerFailure",
-            message,
-          ),
-        );
+        issues.push(migrationIssue(entry.id, "migrationHandlerFailure", message));
       }
     }
   }
   let entries: readonly Representation[] = [],
-   report: Preparation["report"];
+    report: Preparation["report"];
   if (issues.length === NO_PATHS) {
     entries = transformedEntries;
     report = { status: "ready", transformedEntryCount: transformedEntries.length };
@@ -248,41 +242,44 @@ export const validateGraph = (manifests: readonly Manifest[]): void => {
 
 /** Resolves the unique ordered migration path between two snapshots. */
 // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- dual's generic overload is not inferred by the linter for this public helper.
-export const path = dual(3, (
-  manifests: readonly Manifest[],
-  sourceSnapshotId: string,
-  targetSnapshotId: string,
-): readonly Manifest[] => {
-  validateGraph(manifests);
-  const search = (
-      currentSnapshotId: string,
-      visited: ReadonlySet<string>,
-    ): readonly Manifest[] | undefined => {
-      if (currentSnapshotId === targetSnapshotId) {
-        return [];
-      }
-      if (visited.has(currentSnapshotId)) {
-        return undefined;
-      }
-      const nextVisited = new Set(visited).add(currentSnapshotId);
-      for (const manifest of manifests.filter(
-        (candidate) => candidate.sourceSnapshotId === currentSnapshotId,
-      )) {
-        const remainder = search(manifest.targetSnapshotId, nextVisited);
-        if (remainder !== undefined) {
-          return [manifest, ...remainder];
+export const path = dual(
+  3,
+  (
+    manifests: readonly Manifest[],
+    sourceSnapshotId: string,
+    targetSnapshotId: string,
+  ): readonly Manifest[] => {
+    validateGraph(manifests);
+    const search = (
+        currentSnapshotId: string,
+        visited: ReadonlySet<string>,
+      ): readonly Manifest[] | undefined => {
+        if (currentSnapshotId === targetSnapshotId) {
+          return [];
         }
-      }
-      return undefined;
-    },
-    found = search(sourceSnapshotId, new Set());
-  if (found === undefined) {
-    throw InvalidInput.make({
-      message: `No Migration Path exists from ${sourceSnapshotId} to ${targetSnapshotId}`,
-    });
-  }
-  return found;
-});
+        if (visited.has(currentSnapshotId)) {
+          return undefined;
+        }
+        const nextVisited = new Set(visited).add(currentSnapshotId);
+        for (const manifest of manifests.filter(
+          (candidate) => candidate.sourceSnapshotId === currentSnapshotId,
+        )) {
+          const remainder = search(manifest.targetSnapshotId, nextVisited);
+          if (remainder !== undefined) {
+            return [manifest, ...remainder];
+          }
+        }
+        return undefined;
+      },
+      found = search(sourceSnapshotId, new Set());
+    if (found === undefined) {
+      throw InvalidInput.make({
+        message: `No Migration Path exists from ${sourceSnapshotId} to ${targetSnapshotId}`,
+      });
+    }
+    return found;
+  },
+);
 
 /** Persistable Migration Manifest metadata without executable compatibility logic. */
 export interface SerializableManifest extends Omit<Manifest, "compatible"> {

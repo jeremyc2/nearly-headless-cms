@@ -23,20 +23,28 @@ const cancellationPollAttempts = 50,
   seventhByte = 7,
   sixthByte = 6,
   thirdByte = 3,
-
- waitForStage = (root: string, attempt = 0): Promise<boolean> =>
-  readdir(join(root, "blobs")).then((blobNames) => {
-    if (blobNames.some((name) => name.startsWith(".nhcms-stage-"))) {return true;}
-    if (attempt >= cancellationPollAttempts - firstByte) {return false;}
-    return Bun.sleep(cancellationPollDelayMilliseconds).then(() => waitForStage(root, attempt + firstByte));
-  }),
-
- waitForNoStage = (root: string, attempt = 0): Promise<string[]> =>
-  readdir(join(root, "blobs")).then((blobNames) => {
-    const staging = blobNames.filter((name) => name.startsWith(".nhcms-stage-"));
-    if (staging.length === 0 || attempt >= cancellationPollAttempts - firstByte) {return staging;}
-    return Bun.sleep(cancellationPollDelayMilliseconds).then(() => waitForNoStage(root, attempt + firstByte));
-  });
+  waitForStage = (root: string, attempt = 0): Promise<boolean> =>
+    readdir(join(root, "blobs")).then((blobNames) => {
+      if (blobNames.some((name) => name.startsWith(".nhcms-stage-"))) {
+        return true;
+      }
+      if (attempt >= cancellationPollAttempts - firstByte) {
+        return false;
+      }
+      return Bun.sleep(cancellationPollDelayMilliseconds).then(() =>
+        waitForStage(root, attempt + firstByte),
+      );
+    }),
+  waitForNoStage = (root: string, attempt = 0): Promise<string[]> =>
+    readdir(join(root, "blobs")).then((blobNames) => {
+      const staging = blobNames.filter((name) => name.startsWith(".nhcms-stage-"));
+      if (staging.length === 0 || attempt >= cancellationPollAttempts - firstByte) {
+        return staging;
+      }
+      return Bun.sleep(cancellationPollDelayMilliseconds).then(() =>
+        waitForNoStage(root, attempt + firstByte),
+      );
+    });
 
 describe("BunFilesystemPersistence", () => {
   // Bun's test runner requires async callbacks for assertions over filesystem promises.

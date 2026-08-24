@@ -5,14 +5,13 @@ import { type InfrastructureFailure, InvalidInput, NotFound } from "../cms-error
 import { Generator } from "../identifier.ts";
 
 const AssetMetadataInput = Schema.Struct({
-  defaultAlternativeText: Schema.optional(Schema.String),
-  filename: Schema.String,
-  height: Schema.optional(Schema.Finite),
-  mediaType: Schema.String,
-  width: Schema.optional(Schema.Finite),
-}),
-
- DEFAULT_MAXIMUM_BYTE_LENGTH = 25_000_000,
+    defaultAlternativeText: Schema.optional(Schema.String),
+    filename: Schema.String,
+    height: Schema.optional(Schema.Finite),
+    mediaType: Schema.String,
+    width: Schema.optional(Schema.Finite),
+  }),
+  DEFAULT_MAXIMUM_BYTE_LENGTH = 25_000_000,
   DEFAULT_MAXIMUM_METADATA_BYTE_LENGTH = 16_384,
   EMPTY_BYTE_LENGTH = 0;
 
@@ -26,7 +25,7 @@ const collectBytes = (
   content: Uint8Array | Stream.Stream<Uint8Array, InfrastructureFailure>,
 ): Effect.Effect<Uint8Array, InfrastructureFailure> => {
   if (content instanceof Uint8Array) {
-    return Effect.succeed([...content]);
+    return Effect.succeed(content);
   }
   return Stream.runCollect(content).pipe(
     Effect.map((arrays) => {
@@ -94,8 +93,7 @@ export const layer = (options: Options = {}): Layer.Layer<Management, never, Gen
                     ? {}
                     : { defaultAlternativeText: input.defaultAlternativeText }),
                 }).pipe(Effect.orDie),
-              )
-                .byteLength > maximumMetadataByteLength
+              ).byteLength > maximumMetadataByteLength
             ) {
               return yield* InvalidInput.make({
                 message: "Asset metadata exceeds the configured limit",
@@ -109,12 +107,12 @@ export const layer = (options: Options = {}): Layer.Layer<Management, never, Gen
             }
             const assetIdentifier = yield* identifiers.generate("asset"),
               digest = createHash("sha256").update(bytes).digest("hex"),
-             metadata: Metadata = {
-              byteLength: bytes.byteLength,
-              digest,
-              filename: input.filename,
-              mediaType: input.mediaType,
-            };
+              metadata: Metadata = {
+                byteLength: bytes.byteLength,
+                digest,
+                filename: input.filename,
+                mediaType: input.mediaType,
+              };
             if (input.width !== undefined) {
               Object.assign(metadata, { width: input.width });
             }
@@ -146,7 +144,7 @@ export const layer = (options: Options = {}): Layer.Layer<Management, never, Gen
               if (asset === undefined) {
                 return Effect.fail(NotFound.make({ message: `Asset ${assetId} was not found` }));
               }
-          return Effect.succeed({ ...asset, bytes: [...asset.bytes] });
+              return Effect.succeed({ ...asset, bytes: new Uint8Array(asset.bytes) });
             }),
           ),
       });

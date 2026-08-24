@@ -9,7 +9,9 @@ describe("Example CMS Post publication", () => {
 
   // oxlint-disable-next-line effecttsgo/async-function -- Bun lifecycle hook performs async system setup.
   beforeAll(async () => {
-    storageRoot = (await Bun.$`mktemp -d ${import.meta.dir}/.publication-validation-XXXXXX`.text()).trim();
+    storageRoot = (
+      await Bun.$`mktemp -d ${import.meta.dir}/.publication-validation-XXXXXX`.text()
+    ).trim();
     system = await createExampleSystem({ seed: true, storageRoot });
   });
 

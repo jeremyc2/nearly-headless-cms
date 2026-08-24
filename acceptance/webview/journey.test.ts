@@ -13,18 +13,18 @@ const enabled = Bun.env["ACCEPTANCE_SERVERS_READY"] === "1",
     predicate: (value: Value) => boolean,
   ): Promise<Value> => {
     const deadline = performance.now() + 15_000,
-     // oxlint-disable-next-line effecttsgo/async-function -- Bun WebView evaluation and sleep are Promise-based platform lifecycle operations.
-     poll = async (): Promise<Value> => {
-      if (performance.now() >= deadline) {
-        throw new Error(`WebView condition timed out: ${expression}`);
-      }
-      const value = await view.evaluate<Value>(expression);
-      if (predicate(value)) {
-        return value;
-      }
-      await Bun.sleep(50);
-      return poll();
-    };
+      // oxlint-disable-next-line effecttsgo/async-function -- Bun WebView evaluation and sleep are Promise-based platform lifecycle operations.
+      poll = async (): Promise<Value> => {
+        if (performance.now() >= deadline) {
+          throw new Error(`WebView condition timed out: ${expression}`);
+        }
+        const value = await view.evaluate<Value>(expression);
+        if (predicate(value)) {
+          return value;
+        }
+        await Bun.sleep(50);
+        return poll();
+      };
     return poll();
   };
 

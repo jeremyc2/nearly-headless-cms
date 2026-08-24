@@ -6,8 +6,7 @@ const HTTP_NOT_FOUND = 404,
   PAGE_SIZE = 100,
   TWO = 2,
   ZERO = 0,
-
- isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
+  isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
     value !== null && typeof value === "object" && !Array.isArray(value),
   jsonRecord = (response: Response): Promise<Readonly<Record<string, unknown>>> =>
     response.json().then((body: unknown) => {
@@ -22,7 +21,9 @@ describe("Example CMS destructive workflows", () => {
 
   // oxlint-disable-next-line effecttsgo/async-function -- Bun's lifecycle hook requires a Promise-returning callback.
   beforeEach(async () => {
-    storageRoot = (await Bun.$`mktemp -d ${import.meta.dir}/.destructive-workflows-XXXXXX`.text()).trim();
+    storageRoot = (
+      await Bun.$`mktemp -d ${import.meta.dir}/.destructive-workflows-XXXXXX`.text()
+    ).trim();
     system = await createExampleSystem({ seed: true, storageRoot });
   });
 
@@ -39,7 +40,11 @@ describe("Example CMS destructive workflows", () => {
       ),
       { authors } = exported,
       { posts } = exported;
-    if (!Array.isArray(authors) || !isRecord(authors[ZERO]) || typeof authors[ZERO]["id"] !== "string") {
+    if (
+      !Array.isArray(authors) ||
+      !isRecord(authors[ZERO]) ||
+      typeof authors[ZERO]["id"] !== "string"
+    ) {
       throw new Error("Expected a seeded Author");
     }
     if (!Array.isArray(posts) || !isRecord(posts[ZERO]) || typeof posts[ZERO]["id"] !== "string") {
@@ -203,9 +208,9 @@ describe("Example CMS destructive workflows", () => {
   // oxlint-disable-next-line effecttsgo/async-function -- Bun's test callback requires a Promise-returning callback.
   test("declares image replacement as multipart for generated Management clients", async () => {
     const document = await jsonRecord(
-      await system.handler(new Request("http://cms.test/api/v1/management/openapi.json")),
-    ),
-     { paths } = document;
+        await system.handler(new Request("http://cms.test/api/v1/management/openapi.json")),
+      ),
+      { paths } = document;
     let replacementPath: unknown;
     if (isRecord(paths)) {
       replacementPath =

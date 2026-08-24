@@ -236,39 +236,39 @@ interface References {
 }
 
 const snapshotDefinitionValidationMessage = (
-  state: CatalogState,
-  snapshot: SnapshotInput,
-): string | undefined => {
-  for (const definition of snapshot.definitions) {
-    const revision = definition.revision ?? 1,
-      catalogRevision = state.revisions.find(
-      (record) => record.definitionId === definition.id && record.revision === revision,
-    );
-    if (
-      catalogRevision === undefined ||
-      canonicalJson(catalogRevision.definition) !== canonicalJson(definition)
-    ) {
-      return `Definition ${definition.id} revision ${revision} has not been appended to the Catalog`;
-    }
-    if (state.retiredDefinitionIds.has(definition.id)) {
-      const activeDefinitionRevision =
-        state.active.input.definitions.find((candidate) => candidate.id === definition.id)
-          ?.revision ?? 0;
-      if (revision <= activeDefinitionRevision) {
-        return `Retired Definition ${definition.id} requires a new revision before reactivation`;
+    state: CatalogState,
+    snapshot: SnapshotInput,
+  ): string | undefined => {
+    for (const definition of snapshot.definitions) {
+      const revision = definition.revision ?? 1,
+        catalogRevision = state.revisions.find(
+          (record) => record.definitionId === definition.id && record.revision === revision,
+        );
+      if (
+        catalogRevision === undefined ||
+        canonicalJson(catalogRevision.definition) !== canonicalJson(definition)
+      ) {
+        return `Definition ${definition.id} revision ${revision} has not been appended to the Catalog`;
+      }
+      if (state.retiredDefinitionIds.has(definition.id)) {
+        const activeDefinitionRevision =
+          state.active.input.definitions.find((candidate) => candidate.id === definition.id)
+            ?.revision ?? 0;
+        if (revision <= activeDefinitionRevision) {
+          return `Retired Definition ${definition.id} requires a new revision before reactivation`;
+        }
       }
     }
-  }
-  return undefined;
-},
+    return undefined;
+  },
   compatibleManifest = (source: CompiledSnapshot, target: CompiledSnapshot): Manifest => ({
-  compatible: true,
-  handlerIdentifier: "nearly-headless-cms.compatible-identity",
-  handlerVersion: 1,
-  id: `compatible-${source.snapshotId}-${target.snapshotId}`,
-  sourceSnapshotId: source.snapshotId,
-  targetSnapshotId: target.snapshotId,
-});
+    compatible: true,
+    handlerIdentifier: "nearly-headless-cms.compatible-identity",
+    handlerVersion: 1,
+    id: `compatible-${source.snapshotId}-${target.snapshotId}`,
+    sourceSnapshotId: source.snapshotId,
+    targetSnapshotId: target.snapshotId,
+  });
 
 interface EnsureUniqueValuesInput {
   readonly contentType: CompiledContentType;
@@ -310,7 +310,9 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
       visit = (fields: readonly ResolvedField[], object: JsonObject): void => {
         for (const field of fields) {
           const value = object[field.key];
-          if (value !== undefined && value !== null &&
+          if (
+            value !== undefined &&
+            value !== null &&
             field.nestedFields !== undefined &&
             field.kind.kind === "list" &&
             Array.isArray(value)
@@ -1243,7 +1245,7 @@ export const makeLayer = (
               });
             }
             const offset = yield* attempt(() => decodeHistoryCursor(input.cursor, input.entryId)),
-              newestFirst = [...record.revisions].reverse(),
+              newestFirst = [...record.revisions].toReversed(),
               revisions = newestFirst.slice(offset, offset + input.pageSize),
               items = revisions.map(({ values: _values, ...metadata }) => metadata),
               nextOffset = offset + items.length;

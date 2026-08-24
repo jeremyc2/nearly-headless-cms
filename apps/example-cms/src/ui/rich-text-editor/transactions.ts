@@ -211,10 +211,7 @@ const selectedText = (
       block = paragraph;
       replace = (replacement) => ({
         ...rootBlock,
-        children: [
-          asParagraph(replacement),
-          ...rootBlock.children.slice(firstIndex),
-        ],
+        children: [asParagraph(replacement), ...rootBlock.children.slice(firstIndex)],
       });
     } else if (rootBlock.type === "ordered-list" || rootBlock.type === "unordered-list") {
       const listItemIndex = anchor.listItemIndex ?? emptyIndex,
@@ -230,12 +227,9 @@ const selectedText = (
           conditionalValue(
             index === listItemIndex,
             {
-                ...candidate,
-                children: [
-                  asParagraph(replacement),
-                  ...candidate.children.slice(firstIndex),
-                ],
-              },
+              ...candidate,
+              children: [asParagraph(replacement), ...candidate.children.slice(firstIndex)],
+            },
             candidate,
           ),
         ),
@@ -359,11 +353,11 @@ const insertText = (state: State, text: string): State => {
           selected.start === emptyIndex,
           [],
           [
-              {
-                text: selected.text.text.slice(emptyIndex, selected.start),
-                type: "text" as const,
-                ...conditionalValue(activeMarks.length === emptyIndex, {}, { marks: activeMarks }),
-              },
+            {
+              text: selected.text.text.slice(emptyIndex, selected.start),
+              type: "text" as const,
+              ...conditionalValue(activeMarks.length === emptyIndex, {}, { marks: activeMarks }),
+            },
           ],
         ),
         {
@@ -375,11 +369,11 @@ const insertText = (state: State, text: string): State => {
           selected.end === selected.text.text.length,
           [],
           [
-              {
-                text: selected.text.text.slice(selected.end),
-                type: "text" as const,
-                ...conditionalValue(activeMarks.length === emptyIndex, {}, { marks: activeMarks }),
-              },
+            {
+              text: selected.text.text.slice(selected.end),
+              type: "text" as const,
+              ...conditionalValue(activeMarks.length === emptyIndex, {}, { marks: activeMarks }),
+            },
           ],
         ),
       ],
@@ -419,8 +413,8 @@ const insertText = (state: State, text: string): State => {
             conditionalValue(
               index === listItemIndex,
               [
-                  { children: [{ ...secondBlock, children: [before] }], type: "list-item" },
-                  { children: [secondBlock], type: "list-item" },
+                { children: [{ ...secondBlock, children: [before] }], type: "list-item" },
+                { children: [secondBlock], type: "list-item" },
               ],
               [listItem],
             ),
@@ -577,7 +571,8 @@ export const transact = (state: State, command: Command): State => {
             ...state.document.children.slice(blockIndex + firstIndex),
           ],
           nextBlockIndex =
-            blockIndex + conditionalValue(remainingItems.length === emptyIndex, emptyIndex, firstIndex),
+            blockIndex +
+            conditionalValue(remainingItems.length === emptyIndex, emptyIndex, firstIndex),
           position = {
             blockIndex: nextBlockIndex,
             inlineIndex: state.selection.anchor.inlineIndex,

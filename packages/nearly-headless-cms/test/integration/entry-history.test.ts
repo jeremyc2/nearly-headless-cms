@@ -7,18 +7,18 @@ const FOURTH_REVISION_NUMBER = 4,
   SECOND_REVISION_NUMBER = 2,
   THIRD_REVISION_NUMBER = 3,
   snapshot = ContentDefinition.compile({
-  definitionSpaceId: "history-contract",
-  definitions: [
-    {
-      fields: [{ key: "title", kind: { kind: "text" }, label: "Title", required: true }],
-      history: true,
-      id: "note",
-      kind: "contentType",
-      name: "Note",
-      revisionRetention: { maximumRevisionCount: 2 },
-    },
-  ],
-  snapshotId: "initial",
+    definitionSpaceId: "history-contract",
+    definitions: [
+      {
+        fields: [{ key: "title", kind: { kind: "text" }, label: "Title", required: true }],
+        history: true,
+        id: "note",
+        kind: "contentType",
+        name: "Note",
+        revisionRetention: { maximumRevisionCount: 2 },
+      },
+    ],
+    snapshotId: "initial",
   });
 
 describe("Entry History state machine", () => {

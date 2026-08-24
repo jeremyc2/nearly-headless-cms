@@ -179,20 +179,22 @@ describe("Authorization and Relationship Expansion contract", () => {
           expansion: ["metadata.editor.friend"],
           pageSize: 10,
         });
-        expect(expandedNestedRelationship.items[emptyCollectionLength]?.values["metadata"]).toEqual({
-          editor: {
-            contentTypeId: "person",
-            id: graceEntry.id,
-            values: {
-              friend: {
-                contentTypeId: "person",
-                id: adaEntry.id,
-                values: { friend: null, name: "Ada" },
+        expect(expandedNestedRelationship.items[emptyCollectionLength]?.values["metadata"]).toEqual(
+          {
+            editor: {
+              contentTypeId: "person",
+              id: graceEntry.id,
+              values: {
+                friend: {
+                  contentTypeId: "person",
+                  id: adaEntry.id,
+                  values: { friend: null, name: "Ada" },
+                },
+                name: "Grace",
               },
-              name: "Grace",
             },
           },
-        });
+        );
         expect(actions).toEqual(["entry.query", "entry.expand"]);
 
         deniedAction.current = "entry.expand";
@@ -206,8 +208,8 @@ describe("Authorization and Relationship Expansion contract", () => {
         );
         expect(Exit.isFailure(denied)).toBeTrue();
         expect(actions).toEqual(["entry.read", "entry.expand"]);
-      // This test invocation is the application entry point and owns the isolated CMS layer.
-      // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer.
+        // This test invocation is the application entry point and owns the isolated CMS layer.
+        // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer.
       }).pipe(Effect.provide(makeLayer(actions, deniedAction))),
     );
   });

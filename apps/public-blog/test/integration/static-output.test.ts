@@ -9,7 +9,9 @@ describe("Public Blog static output", () => {
           workspaceDraftPostExists = yield* Effect.promise(() =>
             Bun.file(`${workspace}/dist/posts/the-unfinished-map/index.html`).exists(),
           ),
-          workspaceFeed = yield* Effect.promise(() => Bun.file(`${workspace}/dist/feed.xml`).text()),
+          workspaceFeed = yield* Effect.promise(() =>
+            Bun.file(`${workspace}/dist/feed.xml`).text(),
+          ),
           workspaceIndexExists = yield* Effect.promise(() =>
             Bun.file(`${workspace}/dist/index.html`).exists(),
           ),

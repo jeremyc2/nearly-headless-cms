@@ -1,7 +1,6 @@
 const repository = `${import.meta.dir}/../../..`,
   repositoryArchivePath =
-    Bun.env["PACKAGE_ARCHIVE"] ??
-    `${repository}/.artifacts/npm/nearly-headless-cms-0.1.0.tgz`,
+    Bun.env["PACKAGE_ARCHIVE"] ?? `${repository}/.artifacts/npm/nearly-headless-cms-0.1.0.tgz`,
   successfulExitCode = 0;
 if (!(await Bun.file(repositoryArchivePath).exists())) {
   throw new Error(`Package archive does not exist: ${repositoryArchivePath}`);

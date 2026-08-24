@@ -105,7 +105,9 @@ export const makeManagementClient = (baseAddress = "") => {
       definitionSpaceId: string;
       entryId?: string;
     };
-    if (entryId !== undefined) {path.entryId = entryId;}
+    if (entryId !== undefined) {
+      path.entryId = entryId;
+    }
     return path;
   }
   return {
@@ -275,10 +277,14 @@ export const makeManagementClient = (baseAddress = "") => {
         path: { definitionSpaceId, entryId },
       };
       if (contentTypeId === "post") {
-        if (status === "published") {return mapFailure(generatedClient.publishPost(input));}
+        if (status === "published") {
+          return mapFailure(generatedClient.publishPost(input));
+        }
         return mapFailure(generatedClient.returnPostToDraft(input));
       }
-      if (status === "approved") {return mapFailure(generatedClient.approveComment(input));}
+      if (status === "approved") {
+        return mapFailure(generatedClient.approveComment(input));
+      }
       return mapFailure(generatedClient.rejectComment(input));
     },
     uploadAsset: (file: File): Effect.Effect<AssetRepresentation, ManagementClientFailure> => {

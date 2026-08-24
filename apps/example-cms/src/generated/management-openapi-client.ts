@@ -1090,9 +1090,9 @@ function requestOperation({
         });
       }
       const mediaType = response.headers.get("content-type") ?? "",
-       successResponse = specification.successResponses.find(
-        ({ status }) => status === response.status,
-      );
+        successResponse = specification.successResponses.find(
+          ({ status }) => status === response.status,
+        );
       if (successResponse === undefined) {
         if (mediaType.includes("application/json")) {
           const failure: unknown = await response.json();

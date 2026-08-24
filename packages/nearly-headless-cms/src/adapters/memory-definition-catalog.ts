@@ -44,10 +44,7 @@ const catalogCloneState = (state: CatalogState): CatalogState => ({
     }
     return { ...record, parentRevision: definition.parentRevision };
   },
-  catalogMakeInitialState = ({
-    activatedAt,
-    snapshot,
-  }: InitialCatalogStateInput): CatalogState => {
+  catalogMakeInitialState = ({ activatedAt, snapshot }: InitialCatalogStateInput): CatalogState => {
     const initialSnapshot: DefinitionSnapshotRecord = {
       activatedAt,
       compiled: snapshot,
@@ -84,27 +81,26 @@ const catalogCloneState = (state: CatalogState): CatalogState => ({
       }) =>
         SynchronizedRef.modifyEffect(state, (current) => {
           if (current.version !== expectedCatalogVersion) {
-            return Effect.fail(
-              Conflict.make({ message: "Definition Catalog version is stale" }),
-            );
+            return Effect.fail(Conflict.make({ message: "Definition Catalog version is stale" }));
           }
           const committed = {
             ...catalogCloneState(catalogState),
             version: expectedCatalogVersion + catalogIncrementVersion,
           };
-          return entryPersistence.commitGeneration(expectedEntryGeneration, entryRecords).pipe(
-            Effect.map(
-              (entries) => [{ catalog: catalogCloneState(committed), entries }, committed] as const,
-            ),
-          );
+          return entryPersistence
+            .commitGeneration(expectedEntryGeneration, entryRecords)
+            .pipe(
+              Effect.map(
+                (entries) =>
+                  [{ catalog: catalogCloneState(committed), entries }, committed] as const,
+              ),
+            );
         }),
       read: SynchronizedRef.get(state).pipe(Effect.map(catalogCloneState)),
       replace: (expectedVersion, replacement) =>
         SynchronizedRef.modifyEffect(state, (current) => {
           if (current.version !== expectedVersion) {
-            return Effect.fail(
-              Conflict.make({ message: "Definition Catalog version is stale" }),
-            );
+            return Effect.fail(Conflict.make({ message: "Definition Catalog version is stale" }));
           }
           const committed = {
             ...catalogCloneState(replacement),

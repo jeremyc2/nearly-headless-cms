@@ -133,7 +133,9 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
   }),
   cloneState = (state: State): State => {
     const clonedState: State = {
-      assets: new Map([...state.assets].map(([assetId, asset]) => [assetId, structuredClone(asset)])),
+      assets: new Map(
+        [...state.assets].map(([assetId, asset]) => [assetId, structuredClone(asset)]),
+      ),
       entryGeneration: state.entryGeneration,
       generation: state.generation,
       records: new Map(
@@ -383,7 +385,9 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
         await createWriterLock(configuration, lockPath, lockToken);
       } catch (error) {
         if (filesystemErrorCode(error) === "EEXIST") {
-          throw new Error("Filesystem Persistence root already has an initialized writer", { cause: error });
+          throw new Error("Filesystem Persistence root already has an initialized writer", {
+            cause: error,
+          });
         }
         throw error;
       }
@@ -418,10 +422,11 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
       maximumByteLength = configuration.maximumAssetByteLength ?? defaultAssetMaximumByteLength;
     return Effect.acquireUseRelease(
       fromPromise(
-        () => Promise.resolve({
-          ended: false,
-          writer: Bun.file(stagePath).writer({ highWaterMark: 65_536 }),
-        }),
+        () =>
+          Promise.resolve({
+            ended: false,
+            writer: Bun.file(stagePath).writer({ highWaterMark: 65_536 }),
+          }),
         "Filesystem Asset staging file creation failed",
       ),
       (stage) =>
@@ -563,8 +568,8 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
     if (!(await formatFile.exists())) {
       const rootEntries = await readdir(configuration.root),
         unexpected = rootEntries.filter(
-        (name) => !["generations", "blobs", "writer.lock"].includes(name),
-      );
+          (name) => !["generations", "blobs", "writer.lock"].includes(name),
+        );
       if (unexpected.length > 0) {
         throw new Error("Filesystem Persistence root is not empty");
       }
@@ -577,7 +582,9 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
         assets: new Map(),
         ...(definitionSnapshot === undefined
           ? {}
-          : { catalog: initialCatalog(definitionSnapshot, DateTime.formatIso(DateTime.nowUnsafe())) }),
+          : {
+              catalog: initialCatalog(definitionSnapshot, DateTime.formatIso(DateTime.nowUnsafe())),
+            }),
         entryGeneration: initialGeneration,
         generation: initialGeneration,
         records: new Map(),
@@ -661,13 +668,13 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
                   );
                 }
                 const next: State = {
-                  assets: current.assets,
-                  entryGeneration: current.entryGeneration + initialVersion,
-                  generation: current.generation + initialVersion,
-                  records: new Map(records),
-                  ...(current.catalog === undefined ? {} : { catalog: current.catalog }),
-                },
-                 entryEncodingByteLength = encode([...records]).byteLength;
+                    assets: current.assets,
+                    entryGeneration: current.entryGeneration + initialVersion,
+                    generation: current.generation + initialVersion,
+                    records: new Map(records),
+                    ...(current.catalog === undefined ? {} : { catalog: current.catalog }),
+                  },
+                  entryEncodingByteLength = encode([...records]).byteLength;
                 if (
                   entryEncodingByteLength >
                   (configuration.maximumEntryEncodingByteLength ?? defaultEntryMaximumByteLength)
@@ -734,7 +741,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
               }),
             ),
           ingest: (input) =>
-            Effect.gen(function*  ingest() {
+            Effect.gen(function* ingest() {
               if (input.filename.trim().length === emptyLength || !input.mediaType.includes("/")) {
                 return yield* InvalidInput.make({
                   message: "Asset filename and media type are required",
@@ -747,25 +754,28 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
                 mediaType: input.mediaType,
                 width: input.width,
               }).byteLength;
-              if (metadataByteLength > (configuration.maximumMetadataByteLength ?? defaultMetadataMaximumByteLength)) {
+              if (
+                metadataByteLength >
+                (configuration.maximumMetadataByteLength ?? defaultMetadataMaximumByteLength)
+              ) {
                 return yield* InvalidInput.make({
                   message: "Asset metadata exceeds the configured limit",
                 });
               }
               const committedBlob = yield* commitAssetBlob(configuration, input.content),
-               assetId = yield* identifiers.generate("asset"),
-               metadata: Metadata = {
-                byteLength: committedBlob.byteLength,
-                digest: committedBlob.digest,
-                filename: input.filename,
-                mediaType: input.mediaType,
-                ...(input.width === undefined ? {} : { width: input.width }),
-                ...(input.height === undefined ? {} : { height: input.height }),
-                ...(input.defaultAlternativeText === undefined
-                  ? {}
-                  : { defaultAlternativeText: input.defaultAlternativeText }),
-              },
-               diskAsset: DiskAsset = { id: assetId, metadata };
+                assetId = yield* identifiers.generate("asset"),
+                metadata: Metadata = {
+                  byteLength: committedBlob.byteLength,
+                  digest: committedBlob.digest,
+                  filename: input.filename,
+                  mediaType: input.mediaType,
+                  ...(input.width === undefined ? {} : { width: input.width }),
+                  ...(input.height === undefined ? {} : { height: input.height }),
+                  ...(input.defaultAlternativeText === undefined
+                    ? {}
+                    : { defaultAlternativeText: input.defaultAlternativeText }),
+                },
+                diskAsset: DiskAsset = { id: assetId, metadata };
               yield* SynchronizedRef.modifyEffect(state, (current) => {
                 const next: State = {
                   assets: new Map(current.assets).set(assetId, diskAsset),
@@ -787,9 +797,9 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
             ),
           ),
           read: (assetId) =>
-            Effect.gen(function*  read() {
+            Effect.gen(function* read() {
               const current = yield* SynchronizedRef.get(state),
-               asset = current.assets.get(assetId);
+                asset = current.assets.get(assetId);
               if (asset === undefined) {
                 return yield* NotFound.make({ message: `Asset ${assetId} was not found` });
               }

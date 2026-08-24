@@ -183,7 +183,9 @@ const coreNodeTypes = new Set([
         issues.push(...validateTextChild(child, [...path, "children", index]));
       }
     } else {
-      issues.push(makeIssue([...path, "children"], "expectedChildren", "Link requires text children"));
+      issues.push(
+        makeIssue([...path, "children"], "expectedChildren", "Link requires text children"),
+      );
     }
     return issues;
   },
@@ -193,10 +195,18 @@ const coreNodeTypes = new Set([
   ): readonly ValidationIssue[] => {
     const issues: ValidationIssue[] = [];
     if (typeof node["entryId"] !== "string" || node["entryId"].length === emptyLength) {
-      issues.push(makeIssue([...path, "entryId"], "expectedEntryId", "Entry reference requires an Entry ID"));
+      issues.push(
+        makeIssue([...path, "entryId"], "expectedEntryId", "Entry reference requires an Entry ID"),
+      );
     }
     if (!Array.isArray(node["children"]) || node["children"].length === emptyLength) {
-      issues.push(makeIssue([...path, "children"], "requiredLabel", "Entry reference requires an authored label"));
+      issues.push(
+        makeIssue(
+          [...path, "children"],
+          "requiredLabel",
+          "Entry reference requires an authored label",
+        ),
+      );
     } else {
       for (const [index, child] of node["children"].entries()) {
         issues.push(...validateTextChild(child, [...path, "children", index]));
@@ -244,31 +254,43 @@ const coreNodeTypes = new Set([
   validateInlineChildren = (
     children: unknown[],
     path: readonly (string | number)[],
-  ): readonly ValidationIssue[] => children.flatMap((child, index) =>
-    validateInline(child, [...path, index]),
-  ),
+  ): readonly ValidationIssue[] =>
+    children.flatMap((child, index) => validateInline(child, [...path, index])),
   validateTextChildren = (
     children: unknown[],
     path: readonly (string | number)[],
-  ): readonly ValidationIssue[] => children.flatMap((child, index) =>
-    validateTextChild(child, [...path, index]),
-  ),
+  ): readonly ValidationIssue[] =>
+    children.flatMap((child, index) => validateTextChild(child, [...path, index])),
   validateAssetReference = (
     node: Readonly<Record<string, unknown>>,
     path: readonly (string | number)[],
   ): readonly ValidationIssue[] => {
     const issues: ValidationIssue[] = [];
     if (typeof node["assetId"] !== "string" || node["assetId"].length === emptyLength) {
-      issues.push(makeIssue([...path, "assetId"], "expectedAssetId", "Asset reference requires an Asset ID"));
+      issues.push(
+        makeIssue([...path, "assetId"], "expectedAssetId", "Asset reference requires an Asset ID"),
+      );
     }
     if (typeof node["alternativeText"] !== "string") {
-      issues.push(makeIssue([...path, "alternativeText"], "expectedAlternativeText", "Asset reference requires authored alternative text"));
+      issues.push(
+        makeIssue(
+          [...path, "alternativeText"],
+          "expectedAlternativeText",
+          "Asset reference requires authored alternative text",
+        ),
+      );
     }
     if (node["caption"] !== undefined && typeof node["caption"] !== "string") {
       issues.push(makeIssue([...path, "caption"], "expectedCaption", "Caption must be text"));
     }
     if (!Array.isArray(node["children"]) || node["children"].length > emptyLength) {
-      issues.push(makeIssue([...path, "children"], "assetReferenceIsAtomic", "Asset reference cannot contain children"));
+      issues.push(
+        makeIssue(
+          [...path, "children"],
+          "assetReferenceIsAtomic",
+          "Asset reference cannot contain children",
+        ),
+      );
     }
     return issues;
   },
@@ -448,30 +470,30 @@ const coreNodeTypes = new Set([
 export const validate = dual(
   (arguments_) => arguments_.length === 2 || isObject(arguments_[0]),
   (value: unknown, options: ValidationOptions = {}): Document => {
-  if (
-    !isObject(value) ||
-    value["format"] !== format ||
-    value["version"] !== formatVersion ||
-    !Array.isArray(value["children"])
-  ) {
-    throw InvalidInput.make({ message: `Rich Text must use ${format} version ${formatVersion}` });
-  }
-  const extensions = new Map(
-      (options.extensions ?? []).map((extension) => [
-        `${extension.identifier}@${extension.version}`,
-        extension,
-      ]),
-    ),
-    issues = value["children"].flatMap((child, index) =>
-      validateBlock(child, ["children", index], extensions),
-    );
-  if (issues.length > emptyLength) {
-    throw InvalidInput.make({
-      issues,
-      message: issues.at(emptyLength)?.message ?? "Invalid Rich Text",
-    });
-  }
-  return structuredClone(value) as unknown as Document;
+    if (
+      !isObject(value) ||
+      value["format"] !== format ||
+      value["version"] !== formatVersion ||
+      !Array.isArray(value["children"])
+    ) {
+      throw InvalidInput.make({ message: `Rich Text must use ${format} version ${formatVersion}` });
+    }
+    const extensions = new Map(
+        (options.extensions ?? []).map((extension) => [
+          `${extension.identifier}@${extension.version}`,
+          extension,
+        ]),
+      ),
+      issues = value["children"].flatMap((child, index) =>
+        validateBlock(child, ["children", index], extensions),
+      );
+    if (issues.length > emptyLength) {
+      throw InvalidInput.make({
+        issues,
+        message: issues.at(emptyLength)?.message ?? "Invalid Rich Text",
+      });
+    }
+    return structuredClone(value) as unknown as Document;
   },
 );
 
@@ -524,28 +546,28 @@ export interface Renderer<Result> {
 
 /** Renders a validated document through a Content Client-owned Renderer. */
 // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- dual's generic overload is not inferred by the linter for this public helper.
-export const render = dual(2, <Result>(
-  document: Document,
-  renderer: Renderer<Result>,
-): readonly Result[] => {
-  const renderNode = (node: Node): Result => {
-    if (node.type === "text") {
-      return renderer.text(node);
-    }
-    let children: readonly Result[] = [];
-    if ("children" in node) {
-      children = node.children.map(renderNode);
-    }
-    if (node.type === "link") {
-      return renderer.link(node, children);
-    }
-    if (node.type === "entry-reference") {
-      return renderer.entryReference(node, children);
-    }
-    if (coreNodeTypes.has(node.type)) {
-      return renderer.block(node as Exclude<BlockNode, ExtensionNode>, children);
-    }
-    return renderer.extension(node as ExtensionNode, children);
-  };
-  return document.children.map(renderNode);
-});
+export const render = dual(
+  2,
+  <Result>(document: Document, renderer: Renderer<Result>): readonly Result[] => {
+    const renderNode = (node: Node): Result => {
+      if (node.type === "text") {
+        return renderer.text(node);
+      }
+      let children: readonly Result[] = [];
+      if ("children" in node) {
+        children = node.children.map(renderNode);
+      }
+      if (node.type === "link") {
+        return renderer.link(node, children);
+      }
+      if (node.type === "entry-reference") {
+        return renderer.entryReference(node, children);
+      }
+      if (coreNodeTypes.has(node.type)) {
+        return renderer.block(node as Exclude<BlockNode, ExtensionNode>, children);
+      }
+      return renderer.extension(node as ExtensionNode, children);
+    };
+    return document.children.map(renderNode);
+  },
+);

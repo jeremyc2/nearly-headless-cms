@@ -21,25 +21,25 @@ const repository = path.join(import.meta.dir, ".."),
     }
   },
   // oxlint-disable-next-line effecttsgo/async-function -- CLI readiness polling requires awaited retries.
-  waitFor = async (requestUrl: string): Promise<void> => {
+  waitFor = (requestUrl: string): Promise<void> => {
     const deadline = performance.now() + 20_000,
-     // oxlint-disable-next-line effecttsgo/async-function -- recursive polling requires awaited retries.
-     poll = async (): Promise<void> => {
-      if (performance.now() >= deadline) {
-        throw new Error(`Timed out waiting for ${requestUrl}`);
-      }
-      try {
-        // oxlint-disable-next-line effecttsgo/global-fetch -- CLI acceptance polling intentionally uses the platform fetch boundary.
-        const response = await fetch(requestUrl);
-        if (response.ok) {
-          return;
+      // oxlint-disable-next-line effecttsgo/async-function -- recursive polling requires awaited retries.
+      poll = async (): Promise<void> => {
+        if (performance.now() >= deadline) {
+          throw new Error(`Timed out waiting for ${requestUrl}`);
         }
-      } catch {
-        // Keep polling until the service becomes reachable.
-      }
-      await Bun.sleep(100);
-      return poll();
-    };
+        try {
+          // oxlint-disable-next-line effecttsgo/global-fetch -- CLI acceptance polling intentionally uses the platform fetch boundary.
+          const response = await fetch(requestUrl);
+          if (response.ok) {
+            return;
+          }
+        } catch {
+          // Keep polling until the service becomes reachable.
+        }
+        await Bun.sleep(100);
+        return poll();
+      };
     return poll();
   };
 

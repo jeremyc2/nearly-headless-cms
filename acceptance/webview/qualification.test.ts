@@ -12,30 +12,29 @@ const ACCEPTANCE_RUN_COUNT = 10,
   waitFor = <Value>(
     view: Bun.WebView,
     expression: string,
-  predicate: (value: Value) => boolean,
-): Promise<Value> => {
+    predicate: (value: Value) => boolean,
+  ): Promise<Value> => {
     const deadline = performance.now() + WAIT_TIMEOUT_MILLISECONDS,
-     // oxlint-disable-next-line effecttsgo/async-function -- Bun WebView evaluation and sleep are Promise-based platform lifecycle operations.
-     poll = async (): Promise<Value> => {
-      if (performance.now() >= deadline) {
-        throw new Error(`WebView condition timed out: ${expression}`);
-      }
-      const value = await view.evaluate<Value>(expression);
-      if (predicate(value)) {
-        return value;
-      }
-      await Bun.sleep(POLLING_INTERVAL_MILLISECONDS);
-      return poll();
-    };
+      // oxlint-disable-next-line effecttsgo/async-function -- Bun WebView evaluation and sleep are Promise-based platform lifecycle operations.
+      poll = async (): Promise<Value> => {
+        if (performance.now() >= deadline) {
+          throw new Error(`WebView condition timed out: ${expression}`);
+        }
+        const value = await view.evaluate<Value>(expression);
+        if (predicate(value)) {
+          return value;
+        }
+        await Bun.sleep(POLLING_INTERVAL_MILLISECONDS);
+        return poll();
+      };
     return poll();
   },
-
- selectAcceptanceTest = (enabledRun: boolean): typeof test => {
-  if (enabledRun) {
-    return test;
-  }
-  return test.skip;
-};
+  selectAcceptanceTest = (enabledRun: boolean): typeof test => {
+    if (enabledRun) {
+      return test;
+    }
+    return test.skip;
+  };
 
 afterAll(() => {
   Bun.WebView.closeAll();
@@ -51,7 +50,9 @@ describe("Bun WebView qualification", () => {
         const consoleErrors: unknown[] = [],
           view = new Bun.WebView({
             console: (method, ...values) => {
-              if (method === "error") {consoleErrors.push(...values);}
+              if (method === "error") {
+                consoleErrors.push(...values);
+              }
             },
             height: 600,
             width: 800,

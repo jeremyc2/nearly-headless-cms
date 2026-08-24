@@ -336,14 +336,20 @@ const validateCalendarDate = (value: string): boolean => {
       normalizedYear = year ?? defaultCalendarYear,
       normalizedMonth = month ?? defaultCalendarMonth,
       normalizedDay = day ?? defaultCalendarDay,
-      daysInMonth = normalizedMonth === 2
-        ? (normalizedYear % 4 === 0 && (normalizedYear % 100 !== 0 || normalizedYear % 400 === 0)
-          ? 29
-          : 28)
-        : ([4, 6, 9, 11].includes(normalizedMonth)
-          ? 30
-          : 31);
-    return normalizedMonth >= 1 && normalizedMonth <= 12 && normalizedDay >= 1 && normalizedDay <= daysInMonth;
+      daysInMonth =
+        normalizedMonth === 2
+          ? (normalizedYear % 4 === 0 && (normalizedYear % 100 !== 0 || normalizedYear % 400 === 0)
+            ? 29
+            : 28)
+          : ([4, 6, 9, 11].includes(normalizedMonth)
+            ? 30
+            : 31);
+    return (
+      normalizedMonth >= 1 &&
+      normalizedMonth <= 12 &&
+      normalizedDay >= 1 &&
+      normalizedDay <= daysInMonth
+    );
   },
   validateValue = ({
     customRegistrations,
@@ -749,264 +755,271 @@ const validateCalendarDate = (value: string): boolean => {
 
 /** Compiles and fingerprints a complete snapshot or throws `InvalidInput` atomically. */
 // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- dual's generic overload is not inferred by the linter for this public helper.
-export const compile = dual(2, (input: SnapshotInput, options: CompileOptions = {}): CompiledSnapshot => {
-  const definitions = new Map<string, Definition>(),
-    inputIssues = [
-      ...validateIdentifier(input.definitionSpaceId, ["definitionSpaceId"]),
-      ...validateIdentifier(input.snapshotId, ["snapshotId"]),
-    ];
-  for (const [definitionIndex, definition] of input.definitions.entries()) {
-    inputIssues.push(...validateIdentifier(definition.id, ["definitions", definitionIndex, "id"]));
-    if (definitions.has(definition.id)) {
+export const compile = dual(
+  2,
+  (input: SnapshotInput, options: CompileOptions = {}): CompiledSnapshot => {
+    const definitions = new Map<string, Definition>(),
+      inputIssues = [
+        ...validateIdentifier(input.definitionSpaceId, ["definitionSpaceId"]),
+        ...validateIdentifier(input.snapshotId, ["snapshotId"]),
+      ];
+    for (const [definitionIndex, definition] of input.definitions.entries()) {
       inputIssues.push(
-        issue(
-          ["definitions", definitionIndex, "id"],
-          "duplicateDefinition",
-          `Definition ${definition.id} occurs more than once`,
-        ),
+        ...validateIdentifier(definition.id, ["definitions", definitionIndex, "id"]),
       );
+      if (definitions.has(definition.id)) {
+        inputIssues.push(
+          issue(
+            ["definitions", definitionIndex, "id"],
+            "duplicateDefinition",
+            `Definition ${definition.id} occurs more than once`,
+          ),
+        );
+      }
+      definitions.set(definition.id, definition);
     }
-    definitions.set(definition.id, definition);
-  }
-  if (inputIssues.length > emptyLength) {
-    fail("Invalid Definition Snapshot", inputIssues);
-  }
-  const contentTypes = new Map<string, CompiledContentType>(),
-    customRegistrations = new Map(
-      (options.customFieldKinds ?? []).map((registration) => [
-        `${registration.identifier}@${registration.formatVersion}`,
-        registration,
-      ]),
-    );
-  for (const definition of definitions.values()) {
-    if (definition.kind === "contentType") {
-      contentTypes.set(definition.id, {
-        definition,
-        fields: resolveFields({
-          customRegistrations,
+    if (inputIssues.length > emptyLength) {
+      fail("Invalid Definition Snapshot", inputIssues);
+    }
+    const contentTypes = new Map<string, CompiledContentType>(),
+      customRegistrations = new Map(
+        (options.customFieldKinds ?? []).map((registration) => [
+          `${registration.identifier}@${registration.formatVersion}`,
+          registration,
+        ]),
+      );
+    for (const definition of definitions.values()) {
+      if (definition.kind === "contentType") {
+        contentTypes.set(definition.id, {
           definition,
-          definitions,
-          resolving: [],
-        }),
-      });
-    } else {
-      resolveFields({ customRegistrations, definition, definitions, resolving: [] });
+          fields: resolveFields({
+            customRegistrations,
+            definition,
+            definitions,
+            resolving: [],
+          }),
+        });
+      } else {
+        resolveFields({ customRegistrations, definition, definitions, resolving: [] });
+      }
     }
-  }
-  for (const [contentTypeId, compiledContentType] of contentTypes) {
-    const validateRelationshipTargets = (
-      fields: readonly ResolvedField[],
-      parentPath: readonly (string | number)[],
-    ): void => {
-      for (const field of fields) {
-        const fieldPath = [...parentPath, field.key],
-         relationshipKind = (() => {
-          if (field.kind.kind === "relationship") {
-            return field.kind;
+    for (const [contentTypeId, compiledContentType] of contentTypes) {
+      const validateRelationshipTargets = (
+        fields: readonly ResolvedField[],
+        parentPath: readonly (string | number)[],
+      ): void => {
+        for (const field of fields) {
+          const fieldPath = [...parentPath, field.key],
+            relationshipKind = (() => {
+              if (field.kind.kind === "relationship") {
+                return field.kind;
+              }
+              if (field.kind.kind === "list" && field.kind.element.kind === "relationship") {
+                return field.kind.element;
+              }
+              return;
+            })();
+          for (const targetContentTypeId of relationshipKind?.targetContentTypeIds ?? []) {
+            if (!contentTypes.has(targetContentTypeId)) {
+              fail("Invalid Relationship target", [
+                issue(
+                  fieldPath,
+                  "missingRelationshipTarget",
+                  `Content Type ${targetContentTypeId} does not exist`,
+                ),
+              ]);
+            }
           }
-          if (field.kind.kind === "list" && field.kind.element.kind === "relationship") {
-            return field.kind.element;
+          if (field.nestedFields !== undefined) {
+            validateRelationshipTargets(field.nestedFields, fieldPath);
           }
-          return;
-        })();
-        for (const targetContentTypeId of relationshipKind?.targetContentTypeIds ?? []) {
-          if (!contentTypes.has(targetContentTypeId)) {
-            fail("Invalid Relationship target", [
+        }
+      };
+      validateRelationshipTargets(compiledContentType.fields, [
+        "definitions",
+        contentTypeId,
+        "fields",
+      ]);
+    }
+    const compilerFormatVersion = input.compilerFormatVersion ?? defaultCompilerFormatVersion,
+      snapshotFingerprint = fingerprint(input),
+      validateFields = ({
+        fields,
+        parentPath,
+        validateOptions,
+        values,
+      }: {
+        readonly fields: readonly ResolvedField[];
+        readonly parentPath: readonly (string | number)[];
+        readonly validateOptions: ValidateEntryOptions;
+        readonly values: JsonObject;
+      }): { readonly result: JsonObject; readonly issues: readonly ValidationIssue[] } => {
+        const entryIssues: ValidationIssue[] = [],
+          knownKeys = new Set(fields.map((field) => field.key)),
+          result: Record<string, JsonValue> = {};
+        for (const key of Object.keys(values)) {
+          if (!knownKeys.has(key)) {
+            entryIssues.push(
               issue(
-                fieldPath,
-                "missingRelationshipTarget",
-                `Content Type ${targetContentTypeId} does not exist`,
+                [...parentPath, key],
+                "unknownField",
+                `Unknown Field ${[...parentPath, key].join(".")}`,
               ),
-            ]);
+            );
           }
         }
-        if (field.nestedFields !== undefined) {
-          validateRelationshipTargets(field.nestedFields, fieldPath);
-        }
-      }
-    };
-    validateRelationshipTargets(compiledContentType.fields, [
-      "definitions",
-      contentTypeId,
-      "fields",
-    ]);
-  }
-  const compilerFormatVersion = input.compilerFormatVersion ?? defaultCompilerFormatVersion,
-    snapshotFingerprint = fingerprint(input),
-    validateFields = ({
-      fields,
-      parentPath,
-      validateOptions,
-      values,
-    }: {
-      readonly fields: readonly ResolvedField[];
-      readonly parentPath: readonly (string | number)[];
-      readonly validateOptions: ValidateEntryOptions;
-      readonly values: JsonObject;
-    }): { readonly result: JsonObject; readonly issues: readonly ValidationIssue[] } => {
-      const entryIssues: ValidationIssue[] = [],
-        knownKeys = new Set(fields.map((field) => field.key)),
-        result: Record<string, JsonValue> = {};
-      for (const key of Object.keys(values)) {
-        if (!knownKeys.has(key)) {
-          entryIssues.push(
-            issue(
-              [...parentPath, key],
-              "unknownField",
-              `Unknown Field ${[...parentPath, key].join(".")}`,
-            ),
-          );
-        }
-      }
-      for (const field of fields) {
-        const fieldPath = [...parentPath, field.key],
-          fieldValue = values[field.key];
-        if (fieldValue === undefined) {
-          if (validateOptions.applyDefaults && field.defaultValue !== undefined) {
-            result[field.key] = cloneJson(field.defaultValue);
-          } else if (field.required === true) {
-            entryIssues.push(issue(fieldPath, "required", `${field.label} is required`));
-          }
-          continue;
-        }
-        if (fieldValue === null) {
-          if (field.nullable === true) {
-            result[field.key] = null;
-          } else {
-            entryIssues.push(issue(fieldPath, "notNullable", `${field.label} cannot be null`));
-          }
-          continue;
-        }
-        if (field.nestedFields !== undefined && field.kind.kind === "list") {
-          if (!Array.isArray(fieldValue)) {
-            entryIssues.push(issue(fieldPath, "expectedList", `${field.label} must be a list`));
+        for (const field of fields) {
+          const fieldPath = [...parentPath, field.key],
+            fieldValue = values[field.key];
+          if (fieldValue === undefined) {
+            if (validateOptions.applyDefaults && field.defaultValue !== undefined) {
+              result[field.key] = cloneJson(field.defaultValue);
+            } else if (field.required === true) {
+              entryIssues.push(issue(fieldPath, "required", `${field.label} is required`));
+            }
             continue;
           }
-          if (
-            field.kind.minimumLength !== undefined &&
-            fieldValue.length < field.kind.minimumLength
-          ) {
-            entryIssues.push(
-              issue(
-                fieldPath,
-                "tooFewItems",
-                `Must contain at least ${field.kind.minimumLength} items`,
-              ),
-            );
+          if (fieldValue === null) {
+            if (field.nullable === true) {
+              result[field.key] = null;
+            } else {
+              entryIssues.push(issue(fieldPath, "notNullable", `${field.label} cannot be null`));
+            }
+            continue;
           }
-          if (
-            field.kind.maximumLength !== undefined &&
-            fieldValue.length > field.kind.maximumLength
-          ) {
-            entryIssues.push(
-              issue(
-                fieldPath,
-                "tooManyItems",
-                `Must contain at most ${field.kind.maximumLength} items`,
-              ),
-            );
-          }
-          if (
-            field.kind.distinct === true &&
-            new Set(fieldValue.map((item) => JSON.stringify(item))).size !== fieldValue.length
-          ) {
-            entryIssues.push(issue(fieldPath, "duplicateListItem", "List items must be distinct"));
-          }
-          const listResult: JsonValue[] = [];
-          for (const [itemIndex, item] of fieldValue.entries()) {
-            if (!isJsonObject(item)) {
+          if (field.nestedFields !== undefined && field.kind.kind === "list") {
+            if (!Array.isArray(fieldValue)) {
+              entryIssues.push(issue(fieldPath, "expectedList", `${field.label} must be a list`));
+              continue;
+            }
+            if (
+              field.kind.minimumLength !== undefined &&
+              fieldValue.length < field.kind.minimumLength
+            ) {
               entryIssues.push(
                 issue(
-                  [...fieldPath, itemIndex],
-                  "expectedFieldGroupObject",
-                  `${field.label} items must be objects`,
+                  fieldPath,
+                  "tooFewItems",
+                  `Must contain at least ${field.kind.minimumLength} items`,
                 ),
+              );
+            }
+            if (
+              field.kind.maximumLength !== undefined &&
+              fieldValue.length > field.kind.maximumLength
+            ) {
+              entryIssues.push(
+                issue(
+                  fieldPath,
+                  "tooManyItems",
+                  `Must contain at most ${field.kind.maximumLength} items`,
+                ),
+              );
+            }
+            if (
+              field.kind.distinct === true &&
+              new Set(fieldValue.map((item) => JSON.stringify(item))).size !== fieldValue.length
+            ) {
+              entryIssues.push(
+                issue(fieldPath, "duplicateListItem", "List items must be distinct"),
+              );
+            }
+            const listResult: JsonValue[] = [];
+            for (const [itemIndex, item] of fieldValue.entries()) {
+              if (!isJsonObject(item)) {
+                entryIssues.push(
+                  issue(
+                    [...fieldPath, itemIndex],
+                    "expectedFieldGroupObject",
+                    `${field.label} items must be objects`,
+                  ),
+                );
+                continue;
+              }
+              const nested = validateFields({
+                fields: field.nestedFields,
+                parentPath: [...fieldPath, itemIndex],
+                validateOptions,
+                values: item,
+              });
+              entryIssues.push(...nested.issues);
+              listResult.push(nested.result);
+            }
+            result[field.key] = listResult;
+            continue;
+          }
+          if (field.nestedFields !== undefined) {
+            if (!isJsonObject(fieldValue)) {
+              entryIssues.push(
+                issue(fieldPath, "expectedFieldGroupObject", `${field.label} must be an object`),
               );
               continue;
             }
             const nested = validateFields({
               fields: field.nestedFields,
-              parentPath: [...fieldPath, itemIndex],
+              parentPath: fieldPath,
               validateOptions,
-              values: item,
+              values: fieldValue,
             });
             entryIssues.push(...nested.issues);
-            listResult.push(nested.result);
-          }
-          result[field.key] = listResult;
-          continue;
-        }
-        if (field.nestedFields !== undefined) {
-          if (!isJsonObject(fieldValue)) {
-            entryIssues.push(
-              issue(fieldPath, "expectedFieldGroupObject", `${field.label} must be an object`),
-            );
+            result[field.key] = nested.result;
             continue;
           }
-          const nested = validateFields({
-            fields: field.nestedFields,
-            parentPath: fieldPath,
-            validateOptions,
-            values: fieldValue,
-          });
-          entryIssues.push(...nested.issues);
-          result[field.key] = nested.result;
-          continue;
+          entryIssues.push(
+            ...validateValue({
+              customRegistrations,
+              fieldKind: field.kind,
+              path: fieldPath,
+              value: fieldValue,
+            }),
+          );
+          result[field.key] = cloneJson(fieldValue);
         }
-        entryIssues.push(
-          ...validateValue({
-            customRegistrations,
-            fieldKind: field.kind,
-            path: fieldPath,
-            value: fieldValue,
-          }),
-        );
-        result[field.key] = cloneJson(fieldValue);
-      }
-      return { issues: entryIssues, result };
-    },
-    validateEntry = (
-      contentTypeId: string,
-      values: JsonObject,
-      validateOptions: ValidateEntryOptions,
-    ): JsonObject => {
-      const compiledContentType = contentTypes.get(contentTypeId);
-      if (compiledContentType === undefined) {
-        return fail("Unknown Content Type", [
-          issue(
-            ["contentTypeId"],
-            "unknownContentType",
-            `Content Type ${contentTypeId} does not exist`,
-          ),
-        ]);
-      }
-      if (!isJsonValue(values) || values === null || Array.isArray(values)) {
-        fail("Invalid Entry values", [
-          issue(["values"], "expectedObject", "Entry values must be a JSON-compatible object"),
-        ]);
-      }
-      const validated = validateFields({
-        fields: compiledContentType.fields,
-        parentPath: [],
-        validateOptions,
-        values,
-      });
-      if (validated.issues.length > emptyLength) {
-        fail("Entry validation failed", validated.issues);
-      }
-      return validated.result;
+        return { issues: entryIssues, result };
+      },
+      validateEntry = (
+        contentTypeId: string,
+        values: JsonObject,
+        validateOptions: ValidateEntryOptions,
+      ): JsonObject => {
+        const compiledContentType = contentTypes.get(contentTypeId);
+        if (compiledContentType === undefined) {
+          return fail("Unknown Content Type", [
+            issue(
+              ["contentTypeId"],
+              "unknownContentType",
+              `Content Type ${contentTypeId} does not exist`,
+            ),
+          ]);
+        }
+        if (!isJsonValue(values) || values === null || Array.isArray(values)) {
+          fail("Invalid Entry values", [
+            issue(["values"], "expectedObject", "Entry values must be a JSON-compatible object"),
+          ]);
+        }
+        const validated = validateFields({
+          fields: compiledContentType.fields,
+          parentPath: [],
+          validateOptions,
+          values,
+        });
+        if (validated.issues.length > emptyLength) {
+          fail("Entry validation failed", validated.issues);
+        }
+        return validated.result;
+      };
+    return {
+      compilerFormatVersion,
+      contentTypes,
+      definitionSpaceId: input.definitionSpaceId,
+      definitions,
+      fingerprint: snapshotFingerprint,
+      input: structuredClone(input),
+      snapshotId: input.snapshotId,
+      validateEntry,
     };
-  return {
-    compilerFormatVersion,
-    contentTypes,
-    definitionSpaceId: input.definitionSpaceId,
-    definitions,
-    fingerprint: snapshotFingerprint,
-    input: structuredClone(input),
-    snapshotId: input.snapshotId,
-    validateEntry,
-  };
-});
+  },
+);
 
 /** Whether activation can preserve all existing Entry representations unchanged. */
 export type Compatibility = "compatible" | "migrationRequired";
@@ -1022,33 +1035,33 @@ const fieldCompatibilitySignature = (field: ResolvedField): string =>
 
 /** Classifies a snapshot change without modifying catalog or Entry state. */
 // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- dual's generic overload is not inferred by the linter for this public helper.
-export const classifyCompatibility = dual(2, (
-  source: CompiledSnapshot,
-  target: CompiledSnapshot,
-): Compatibility => {
-  for (const [contentTypeId, sourceContentType] of source.contentTypes) {
-    const targetContentType = target.contentTypes.get(contentTypeId);
-    if (targetContentType === undefined) {
-      return "migrationRequired";
-    }
-    const targetFields = new Map(targetContentType.fields.map((field) => [field.key, field]));
-    for (const sourceField of sourceContentType.fields) {
-      const targetField = targetFields.get(sourceField.key);
-      if (
-        targetField === undefined ||
-        fieldCompatibilitySignature(sourceField) !== fieldCompatibilitySignature(targetField)
-      ) {
+export const classifyCompatibility = dual(
+  2,
+  (source: CompiledSnapshot, target: CompiledSnapshot): Compatibility => {
+    for (const [contentTypeId, sourceContentType] of source.contentTypes) {
+      const targetContentType = target.contentTypes.get(contentTypeId);
+      if (targetContentType === undefined) {
         return "migrationRequired";
       }
-    }
-    for (const targetField of targetContentType.fields) {
-      if (
-        !sourceContentType.fields.some((field) => field.key === targetField.key) &&
-        targetField.required === true
-      ) {
-        return "migrationRequired";
+      const targetFields = new Map(targetContentType.fields.map((field) => [field.key, field]));
+      for (const sourceField of sourceContentType.fields) {
+        const targetField = targetFields.get(sourceField.key);
+        if (
+          targetField === undefined ||
+          fieldCompatibilitySignature(sourceField) !== fieldCompatibilitySignature(targetField)
+        ) {
+          return "migrationRequired";
+        }
+      }
+      for (const targetField of targetContentType.fields) {
+        if (
+          !sourceContentType.fields.some((field) => field.key === targetField.key) &&
+          targetField.required === true
+        ) {
+          return "migrationRequired";
+        }
       }
     }
-  }
-  return "compatible";
-});
+    return "compatible";
+  },
+);

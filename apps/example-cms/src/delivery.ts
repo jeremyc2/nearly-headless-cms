@@ -1,4 +1,10 @@
-import { type Asset, type Cms, CmsError, type ContentDefinition, EntryQuery } from "nearly-headless-cms";
+import {
+  type Asset,
+  type Cms,
+  CmsError,
+  type ContentDefinition,
+  EntryQuery,
+} from "nearly-headless-cms";
 import type { HttpContract } from "nearly-headless-cms/http";
 import { DateTime, Effect, Schema } from "effect";
 import { type CommandReceiptStore, memoryCommandReceiptStore } from "./command-receipt-store.ts";
@@ -311,8 +317,12 @@ const lowerCamelCase = (key: string): string =>
         sort?: readonly EntryQuery.Sort[];
         where?: EntryQuery.Predicate;
       };
-      if (sort !== undefined) {query.sort = sort;}
-      if (where !== undefined) {query.where = where;}
+      if (sort !== undefined) {
+        query.sort = sort;
+      }
+      if (where !== undefined) {
+        query.where = where;
+      }
       const page = EntryQuery.evaluate({
         entries: consistentSnapshot.entries,
         options: { generation: consistentSnapshot.generation },
@@ -450,24 +460,36 @@ const lowerCamelCase = (key: string): string =>
       }),
     ),
   publicAssetBody = (request: Request, bytes: Uint8Array): ArrayBuffer | null => {
-    if (request.method === "HEAD") {return null;}
-    return [...bytes].buffer;
+    if (request.method === "HEAD") {
+      return null;
+    }
+    return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
   },
   publicOwnerPath = (contentTypeId: "author" | "category" | "tag"): string => {
-    if (contentTypeId === "category") {return "categories";}
+    if (contentTypeId === "category") {
+      return "categories";
+    }
     return `${contentTypeId}s`;
   },
   publicOwnerDefinition = (contentTypeId: "author" | "category" | "tag") => {
-    if (contentTypeId === "author") {return authorDefinitionRequirement;}
+    if (contentTypeId === "author") {
+      return authorDefinitionRequirement;
+    }
     return taxonomyDefinitionRequirement(contentTypeId);
   },
   publicOwnerSchema = (contentTypeId: "author" | "category" | "tag") => {
-    if (contentTypeId === "author") {return PublicAuthor;}
+    if (contentTypeId === "author") {
+      return PublicAuthor;
+    }
     return PublicTaxonomy;
   },
   publicRelationshipPath = (contentTypeId: "author" | "category" | "tag"): string => {
-    if (contentTypeId === "author") {return "author";}
-    if (contentTypeId === "category") {return "categories";}
+    if (contentTypeId === "author") {
+      return "author";
+    }
+    if (contentTypeId === "category") {
+      return "categories";
+    }
     return "tags";
   },
   publicAssetResponse = ({
@@ -509,9 +531,13 @@ const lowerCamelCase = (key: string): string =>
         return new Response(null, { headers, status: 416 });
       }
       let start = Number(match[1]);
-      if (match[1] === "") {start = Math.max(FIRST_INDEX, asset.bytes.byteLength - Number(match[2]));}
+      if (match[1] === "") {
+        start = Math.max(FIRST_INDEX, asset.bytes.byteLength - Number(match[2]));
+      }
       let end = Number(match[2]);
-      if (match[1] === "" || match[2] === "") {end = asset.bytes.byteLength - ONE_ITEM;}
+      if (match[1] === "" || match[2] === "") {
+        end = asset.bytes.byteLength - ONE_ITEM;
+      }
       if (
         !Number.isSafeInteger(start) ||
         !Number.isSafeInteger(end) ||
@@ -750,7 +776,9 @@ export const makeDeliveryOperations = (
                 },
               }),
               submissionId = (() => {
-                if ("writeToken" in result) {return result.entry.id;}
+                if ("writeToken" in result) {
+                  return result.entry.id;
+                }
                 return result.id;
               })(),
               receipt = { status: "pending", submissionId };
@@ -842,7 +870,9 @@ export const makeDeliveryOperations = (
               });
             }),
           identifier: (() => {
-            if (method === "GET") {return "deliverPublicAsset";}
+            if (method === "GET") {
+              return "deliverPublicAsset";
+            }
             return "inspectPublicAsset";
           })(),
           method,

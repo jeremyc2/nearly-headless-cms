@@ -168,34 +168,50 @@ function headingLevel(blockType: string): 2 | 3 | 4 {
 }
 
 function dialogHeading(type: string): string {
-  if (type === "entry") {return "Entry reference";}
+  if (type === "entry") {
+    return "Entry reference";
+  }
   return type;
 }
 
 function revisionClass(index: number): string {
-  if (index === 0) {return "revision-dot current";}
+  if (index === 0) {
+    return "revision-dot current";
+  }
   return "revision-dot";
 }
 
 function revisionLabel(index: number): string {
-  if (index === 0) {return "Current · inspect · ";}
+  if (index === 0) {
+    return "Current · inspect · ";
+  }
   return "Inspect · ";
 }
 
 function assetDimensions(width: number | undefined, height: number | undefined): string {
-  if (width === undefined) {return "";}
+  if (width === undefined) {
+    return "";
+  }
   return ` · ${width} × ${height ?? "?"}`;
 }
 
 function deleteImageLabel(isPending: boolean): string {
-  if (isPending) {return "Deleting…";}
+  if (isPending) {
+    return "Deleting…";
+  }
   return "Clear assignments and delete";
 }
 
 function editorialConfirmationLabel(value: string): string {
-  if (value === "published") {return "Publish this Post?";}
-  if (value === "draft") {return "Return this Post to draft?";}
-  if (value === "approved") {return "Approve this Comment?";}
+  if (value === "published") {
+    return "Publish this Post?";
+  }
+  if (value === "draft") {
+    return "Return this Post to draft?";
+  }
+  if (value === "approved") {
+    return "Approve this Comment?";
+  }
   return "Reject this Comment?";
 }
 
@@ -207,12 +223,16 @@ function editorialConfirmationDescription(value: string): string {
 }
 
 function entryDeletionTitle(title: string): string {
-  if (title.length > 0) {return title;}
+  if (title.length > 0) {
+    return title;
+  }
   return "this Entry";
 }
 
 function assetCaption(caption: string): { caption?: string } {
-  if (caption.length > 0) {return { caption };}
+  if (caption.length > 0) {
+    return { caption };
+  }
   return {};
 }
 
@@ -245,7 +265,9 @@ function editorialButtonLabel(value: unknown): string {
 }
 
 function relatedContentType(contentTypeId: string): string {
-  if (contentTypeId === "comment") {return "post";}
+  if (contentTypeId === "comment") {
+    return "post";
+  }
   return "author";
 }
 
@@ -506,7 +528,8 @@ function Overview() {
               <span className="entry-title">
                 <strong>{displayName(entry)}</strong>
                 <small>
-                  {entry.contentTypeId} · {DateTime.toDate(DateTime.makeUnsafe(recordedAt)).toLocaleString()}
+                  {entry.contentTypeId} ·{" "}
+                  {DateTime.toDate(DateTime.makeUnsafe(recordedAt)).toLocaleString()}
                 </small>
               </span>
               <span>→</span>
@@ -660,8 +683,7 @@ function ContentList() {
     queryOptions.where = { all: predicates };
   }
   const entries = useQuery({
-      queryFn: () =>
-        Effect.runPromise(managementClient.queryEntries(contentTypeId, queryOptions)),
+      queryFn: () => Effect.runPromise(managementClient.queryEntries(contentTypeId, queryOptions)),
       queryKey: ["entries", contentTypeId, cursor, filterText, sortDirection, statusFilter],
     }),
     createEntry = useMutation({
@@ -869,14 +891,12 @@ function EntryEditor() {
   const { contentTypeId, entryId } = useParams({ from: "/content/$contentTypeId/$entryId" }),
     navigate = useNavigate(),
     state = useQuery({
-      queryFn: () =>
-        Effect.runPromise(managementClient.getCurrentState(contentTypeId, entryId)),
+      queryFn: () => Effect.runPromise(managementClient.getCurrentState(contentTypeId, entryId)),
       queryKey: ["entry-state", contentTypeId, entryId],
     }),
     authors = useQuery({
       enabled: contentTypeId === "post",
-      queryFn: () =>
-        Effect.runPromise(managementClient.queryEntries("author", { pageSize: 100 })),
+      queryFn: () => Effect.runPromise(managementClient.queryEntries("author", { pageSize: 100 })),
       queryKey: ["relationship-options", "author"],
     }),
     categories = useQuery({
@@ -887,8 +907,7 @@ function EntryEditor() {
     }),
     tags = useQuery({
       enabled: contentTypeId === "post",
-      queryFn: () =>
-        Effect.runPromise(managementClient.queryEntries("tag", { pageSize: 100 })),
+      queryFn: () => Effect.runPromise(managementClient.queryEntries("tag", { pageSize: 100 })),
       queryKey: ["relationship-options", "tag"],
     }),
     assets = useQuery({
@@ -1148,9 +1167,7 @@ function EntryEditor() {
           </div>
         </section>
       )}
-      {state.isLoading && (
-        <p>Loading current state…</p>
-      )}
+      {state.isLoading && <p>Loading current state…</p>}
       {!state.isLoading && (
         <div className="editor-layout">
           <section className="story-canvas panel">
@@ -1401,10 +1418,7 @@ function EntryEditor() {
                       type="datetime-local"
                       value={publicationInputValue(values["published-at"])}
                       onChange={(event) => {
-                        updateField(
-                          "published-at",
-                          publicationValue(event.target.value),
-                        );
+                        updateField("published-at", publicationValue(event.target.value));
                       }}
                     />
                   </label>
@@ -1519,9 +1533,7 @@ function EntryEditor() {
             <h2 id="editorial-command-title">
               {editorialConfirmationLabel(editorialConfirmation)}
             </h2>
-            <p>
-              {editorialConfirmationDescription(editorialConfirmation)}
-            </p>
+            <p>{editorialConfirmationDescription(editorialConfirmation)}</p>
             <div className="editor-actions">
               <button
                 className="secondary-button"
@@ -1738,7 +1750,7 @@ function RichTextField({
               ) {
                 adapter.current?.dispatch({
                   blockType: "heading",
-                    headingLevel: headingLevel(blockType),
+                  headingLevel: headingLevel(blockType),
                   type: "setBlockKind",
                 });
               } else if (
@@ -2024,8 +2036,7 @@ function HistoryPanel({
 }) {
   const [selectedRevisionNumber, setSelectedRevisionNumber] = useState<number>(),
     revisions = useQuery({
-      queryFn: () =>
-        Effect.runPromise(managementClient.listRevisions(contentTypeId, entryId)),
+      queryFn: () => Effect.runPromise(managementClient.listRevisions(contentTypeId, entryId)),
       queryKey: ["revisions", contentTypeId, entryId],
     }),
     inspectedRevision = useQuery({
@@ -2102,9 +2113,7 @@ function HistoryPanel({
                 Close
               </button>
             </div>
-            {inspectedRevision.isLoading && (
-              <p>Loading revision…</p>
-            )}
+            {inspectedRevision.isLoading && <p>Loading revision…</p>}
             {!inspectedRevision.isLoading && (
               <pre>{JSON.stringify(inspectedRevision.data?.values, null, 2)}</pre>
             )}
@@ -2242,9 +2251,7 @@ function AssetsPage() {
                   alt={asset.metadata.defaultAlternativeText ?? asset.metadata.filename}
                 />
               )}
-              {!asset.metadata.mediaType.startsWith("image/") && (
-                <span aria-hidden="true">◫</span>
-              )}
+              {!asset.metadata.mediaType.startsWith("image/") && <span aria-hidden="true">◫</span>}
             </div>
             <strong>{asset.metadata.filename}</strong>
             <small>

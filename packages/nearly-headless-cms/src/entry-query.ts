@@ -168,8 +168,12 @@ const encodeCursor = (cursor: CursorPayload): string =>
       return left - right;
     }
     if (typeof left === "string" && typeof right === "string") {
-      if (left < right) {return NEGATIVE_ONE;}
-      if (left > right) {return ONE;}
+      if (left < right) {
+        return NEGATIVE_ONE;
+      }
+      if (left > right) {
+        return ONE;
+      }
       return ZERO;
     }
     if (typeof left === "boolean" && typeof right === "boolean") {
@@ -465,8 +469,12 @@ export const evaluate = ({ entries, options, query, snapshot }: EvaluationInput)
         }
       }
     }
-    if (leftEntry.id < rightEntry.id) {return NEGATIVE_ONE;}
-    if (leftEntry.id > rightEntry.id) {return ONE;}
+    if (leftEntry.id < rightEntry.id) {
+      return NEGATIVE_ONE;
+    }
+    if (leftEntry.id > rightEntry.id) {
+      return ONE;
+    }
     return ZERO;
   });
   const items = matchingEntries

@@ -18,7 +18,9 @@ describe("Example CMS public visibility", () => {
 
   // oxlint-disable-next-line effecttsgo/async-function -- Bun's lifecycle hook requires a Promise-returning callback.
   beforeAll(async () => {
-    storageRoot = (await Bun.$`mktemp -d ${import.meta.dir}/.public-visibility-XXXXXX`.text()).trim();
+    storageRoot = (
+      await Bun.$`mktemp -d ${import.meta.dir}/.public-visibility-XXXXXX`.text()
+    ).trim();
     system = await createExampleSystem({ seed: true, storageRoot });
   });
 
@@ -40,42 +42,46 @@ describe("Example CMS public visibility", () => {
           posts: readonly { id: string }[];
         },
         authorIdentifier = initialExport.authors[authorIndex]?.id ?? "",
-       createPosts = (postNumber: number): Promise<void> => {
-        if (postNumber >= postsToCreate) {return Promise.resolve();}
-        return system.handler(
-          new Request(managementEntriesUrl("post"), {
-            body: JSON.stringify({
-              values: {
-                author: authorIdentifier,
-                body: {
-                  children: [
-                    {
-                      children: [{ text: `Complete export ${postNumber}`, type: "text" }],
-                      type: "paragraph",
+        createPosts = (postNumber: number): Promise<void> => {
+          if (postNumber >= postsToCreate) {
+            return Promise.resolve();
+          }
+          return system
+            .handler(
+              new Request(managementEntriesUrl("post"), {
+                body: JSON.stringify({
+                  values: {
+                    author: authorIdentifier,
+                    body: {
+                      children: [
+                        {
+                          children: [{ text: `Complete export ${postNumber}`, type: "text" }],
+                          type: "paragraph",
+                        },
+                      ],
+                      format: "nearly-headless-cms/rich-text",
+                      version: richTextVersion,
                     },
-                  ],
-                  format: "nearly-headless-cms/rich-text",
-                  version: richTextVersion,
-                },
-                categories: [],
-                excerpt: `Complete export fixture ${postNumber}`,
-                "featured-alternative-text": null,
-                "featured-asset": null,
-                "published-at": `2026-08-22T${String(postNumber % hoursPerDay).padStart(hourTextWidth, "0")}:00:00.000Z`,
-                slug: `complete-export-${postNumber}`,
-                status: "published",
-                tags: [],
-                title: `Complete export ${postNumber}`,
-              },
-            }),
-            headers: { "content-type": "application/json" },
-            method: "POST",
-          }),
-        ).then((response) => {
-          expect(response.status).toBe(createdEntryStatus);
-          return createPosts(postNumber + loopIncrement);
-        });
-      };
+                    categories: [],
+                    excerpt: `Complete export fixture ${postNumber}`,
+                    "featured-alternative-text": null,
+                    "featured-asset": null,
+                    "published-at": `2026-08-22T${String(postNumber % hoursPerDay).padStart(hourTextWidth, "0")}:00:00.000Z`,
+                    slug: `complete-export-${postNumber}`,
+                    status: "published",
+                    tags: [],
+                    title: `Complete export ${postNumber}`,
+                  },
+                }),
+                headers: { "content-type": "application/json" },
+                method: "POST",
+              }),
+            )
+            .then((response) => {
+              expect(response.status).toBe(createdEntryStatus);
+              return createPosts(postNumber + loopIncrement);
+            });
+        };
       await createPosts(0);
 
       const completeExportResponse = await system.handler(
@@ -92,7 +98,7 @@ describe("Example CMS public visibility", () => {
   // oxlint-disable-next-line effecttsgo/async-function -- Bun's test callback requires a Promise-returning callback.
   test("hides Comments, taxonomies, and Entry references outside published reachability", async () => {
     const draftPostId = system.seed?.draftPostId ?? "",
-     categoryResponse = await system.handler(
+      categoryResponse = await system.handler(
         new Request(managementEntriesUrl("category"), {
           body: JSON.stringify({
             values: {

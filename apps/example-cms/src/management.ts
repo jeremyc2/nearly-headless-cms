@@ -66,12 +66,11 @@ interface UsesAssetInput {
 }
 
 const isJsonValueArray = (
-  value: ContentDefinition.JsonValue,
-): value is readonly ContentDefinition.JsonValue[] => Array.isArray(value),
- isRecord = (value: object): value is Record<string, unknown> =>
+    value: ContentDefinition.JsonValue,
+  ): value is readonly ContentDefinition.JsonValue[] => Array.isArray(value),
+  isRecord = (value: object): value is Record<string, unknown> =>
     Object.keys(value).every((key) => typeof key === "string"),
-
- collectRichTextPublicationRules = ({
+  collectRichTextPublicationRules = ({
     issues,
     path,
     references,
@@ -91,10 +90,12 @@ const isJsonValueArray = (
     if (value === null || typeof value !== "object") {
       return;
     }
-    if (!isRecord(value)) {return;}
+    if (!isRecord(value)) {
+      return;
+    }
     const objectValue = value,
-     nodeType = objectValue["type"],
-      {alternativeText} = objectValue,
+      nodeType = objectValue["type"],
+      { alternativeText } = objectValue,
       entryIdentifier = objectValue["entryId"];
     if (
       nodeType === "asset-reference" &&
@@ -191,7 +192,7 @@ const isJsonValueArray = (
         if (
           contentTypeId === "post" &&
           status === "published" &&
-          current.values["published-at"] == null
+          current.values["published-at"] === null
         ) {
           Object.assign(values, { "published-at": DateTime.formatIso(yield* DateTime.now) });
         }
@@ -402,13 +403,15 @@ const isJsonValueArray = (
           if (metadata === null || typeof metadata !== "object" || Array.isArray(metadata)) {
             throw new Error("invalid replacement metadata");
           }
-          if (!isRecord(metadata)) {throw new Error("invalid replacement metadata");}
+          if (!isRecord(metadata)) {
+            throw new Error("invalid replacement metadata");
+          }
           const metadataObject = metadata,
-           {filename} = metadataObject,
-            {mediaType} = metadataObject,
-            {defaultAlternativeText} = metadataObject,
-            {height} = metadataObject,
-            {width} = metadataObject;
+            { filename } = metadataObject,
+            { mediaType } = metadataObject,
+            { defaultAlternativeText } = metadataObject,
+            { height } = metadataObject,
+            { width } = metadataObject;
           if (typeof filename !== "string" || typeof mediaType !== "string") {
             throw new TypeError("invalid replacement metadata");
           }

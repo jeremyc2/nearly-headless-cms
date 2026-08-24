@@ -345,9 +345,7 @@ const runOperationInterruptibly = <Value>(
         retryable: false,
       }),
     ).pipe(
-      Stream.map((chunk) =>
-        typeof chunk === "string" ? new TextEncoder().encode(chunk) : chunk,
-      ),
+      Stream.map((chunk) => (typeof chunk === "string" ? new TextEncoder().encode(chunk) : chunk)),
     ),
   stageFilePart = (
     part: Multipart.File,
@@ -396,8 +394,7 @@ const runOperationInterruptibly = <Value>(
             return error;
           }),
         ),
-      (handle) =>
-        Effect.promise(() => handle.close().catch(() => {})),
+      (handle) => Effect.promise(() => handle.close().catch(() => {})),
     );
   },
   // oxlint-disable-next-line effecttsgo/async-function -- multipart parsing and temporary-file APIs are Promise-based.

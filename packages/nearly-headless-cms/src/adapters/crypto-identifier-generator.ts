@@ -3,17 +3,17 @@ import { Generator } from "../identifier.ts";
 import { InfrastructureFailure } from "../cms-error.ts";
 
 const cryptography = Crypto.make({
-  digest: (algorithm, data) => {
-    const digestInput = new Uint8Array(data.byteLength);
-    digestInput.set(data);
-    return Effect.promise(() =>
-      globalThis.crypto.subtle
-        .digest(algorithm, digestInput)
-        .then((digest) => new Uint8Array(digest)),
-    );
-  },
-  randomBytes: (size) => globalThis.crypto.getRandomValues(new Uint8Array(size)),
-}),
+    digest: (algorithm, data) => {
+      const digestInput = new Uint8Array(data.byteLength);
+      digestInput.set(data);
+      return Effect.promise(() =>
+        globalThis.crypto.subtle
+          .digest(algorithm, digestInput)
+          .then((digest) => new Uint8Array(digest)),
+      );
+    },
+    randomBytes: (size) => globalThis.crypto.getRandomValues(new Uint8Array(size)),
+  }),
   layer = Layer.succeed(
     Generator,
     Generator.of({
