@@ -1,16 +1,17 @@
 ---
-import Pagination from "../../../../components/pagination.astro"
-import PostCard from "../../../../components/post-card.astro"
-import { publicExport } from "../../../../data/public-export.ts"
-import { paginate } from "../../../../domain/public-model.ts"
+import PaginatedPostList from "../../../../components/paginated-post-list.astro"
+import { categoryArchivePaths } from "../../../../domain/archive-pages.ts"
 import SiteLayout from "../../../../layouts/site-layout.astro"
 
-export function getStaticPaths() {
-  return publicExport.categories.flatMap((category) => paginate(publicExport.posts.filter((post) => post.categories.includes(category.id)), 6).map((page) => ({
-    params: { page: String(page.pageNumber), slug: category.slug },
-    props: { category, page }
-  })))
-}
+export const getStaticPaths = categoryArchivePaths
 const { category, page } = Astro.props
 ---
-<SiteLayout title={`${category.name} · Page ${page.pageNumber}`}><header class="listing-header"><div class="shell"><p class="eyebrow">Category</p><h1>{category.name}</h1></div></header><section class="shell content-stack"><div class="post-grid">{page.items.map((post) => <PostCard post={post} />)}</div><Pagination basePath={`/categories/${category.slug}`} previousPage={page.previousPage} nextPage={page.nextPage} /></section></SiteLayout>
+
+<SiteLayout title={`${category.name} · Page ${page.pageNumber}`}>
+  <PaginatedPostList
+    basePath={`/categories/${category.slug}`}
+    label="Category"
+    page={page}
+    title={category.name}
+  />
+</SiteLayout>
