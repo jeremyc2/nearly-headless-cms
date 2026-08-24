@@ -8,6 +8,18 @@ import { Asset, ContentDefinition, Persistence } from "../../src/index.ts";
 import { CryptoIdentifierGenerator } from "../../src/adapters/index.ts";
 import { BunFilesystemPersistence } from "../../src/bun/filesystem/index.ts";
 
+const cancellationPollAttempts = 50,
+  cancellationPollDelayMilliseconds = 10,
+  fifthByte = 5,
+  firstByte = 1,
+  fourthByte = 4,
+  initialGeneration = 0,
+  killSignal = 9,
+  secondByte = 2,
+  seventhByte = 7,
+  sixthByte = 6,
+  thirdByte = 3;
+
 describe("BunFilesystemPersistence", () => {
   test("durably commits the Definition Catalog and Entry generation in one cutover", async () => {
     const root = await mkdtemp(join(tmpdir(), "nearly-headless-cms-cutover-")),
@@ -153,14 +165,14 @@ describe("BunFilesystemPersistence", () => {
     const root = await mkdtemp(join(tmpdir(), "nearly-headless-cms-bounded-stream-")),
       filesystemLayer = BunFilesystemPersistence.layer({
         acknowledgement: "atomic",
-        maximumAssetByteLength: 5,
+        maximumAssetByteLength: fifthByte,
         root,
       }).pipe(Layer.provide(CryptoIdentifierGenerator.layer));
     let pulledChunks = 0;
     const content = Stream.fromIterable([
-        new Uint8Array([1, 2, 3]),
-        new Uint8Array([4, 5, 6]),
-        new Uint8Array([7]),
+        new Uint8Array([firstByte, secondByte, thirdByte]),
+        new Uint8Array([fourthByte, fifthByte, sixthByte]),
+        new Uint8Array([seventhByte]),
       ]).pipe(
         Stream.tap(() =>
           Effect.sync(() => {
@@ -181,7 +193,7 @@ describe("BunFilesystemPersistence", () => {
         }).pipe(Effect.provide(filesystemLayer)),
       );
     expect(Exit.isFailure(result)).toBeTrue();
-    expect(pulledChunks).toBe(2);
+    expect(pulledChunks).toBe(secondByte);
   });
 
   test("stages Asset chunks before the source completes and removes the stage on cancellation", async () => {
@@ -193,7 +205,7 @@ describe("BunFilesystemPersistence", () => {
         Effect.gen(function* observeStreamingStage() {
           const assets = yield* Asset.Management,
             firstChunkPulled = yield* Deferred.make<boolean>(),
-            content = Stream.make(new Uint8Array([1, 2, 3])).pipe(
+            content = Stream.make(new Uint8Array([firstByte, secondByte, thirdByte])).pipe(
               Stream.tap(() => Deferred.succeed(firstChunkPulled, true)),
               Stream.concat(Stream.never),
             ),
@@ -206,24 +218,24 @@ describe("BunFilesystemPersistence", () => {
               .pipe(Effect.forkChild);
           yield* Deferred.await(firstChunkPulled);
           const stageExistedWhilePending = yield* Effect.promise(async () => {
-            for (let attempt = 0; attempt < 50; attempt += 1) {
+            for (let attempt = 0; attempt < cancellationPollAttempts; attempt += firstByte) {
               const blobNames = await readdir(join(root, "blobs"));
               if (blobNames.some((name) => name.startsWith(".nhcms-stage-"))) {
                 return true;
               }
-              await Bun.sleep(10);
+              await Bun.sleep(cancellationPollDelayMilliseconds);
             }
             return false;
           });
           yield* Fiber.interrupt(ingestion);
           const stagingAfterCancellation = yield* Effect.promise(async () => {
-            for (let attempt = 0; attempt < 50; attempt += 1) {
+            for (let attempt = 0; attempt < cancellationPollAttempts; attempt += firstByte) {
               const blobNames = await readdir(join(root, "blobs")),
                 staging = blobNames.filter((name) => name.startsWith(".nhcms-stage-"));
               if (staging.length === 0) {
                 return staging;
               }
-              await Bun.sleep(10);
+              await Bun.sleep(cancellationPollDelayMilliseconds);
             }
             const blobNames = await readdir(join(root, "blobs"));
             return blobNames.filter((name) => name.startsWith(".nhcms-stage-"));
@@ -316,7 +328,7 @@ describe("BunFilesystemPersistence", () => {
       );
     }
     expect(new TextDecoder().decode(firstOutput.value)).toContain("writer-ready");
-    child.kill(9);
+    child.kill(killSignal);
     await child.exited;
 
     const recoveredGeneration = await Effect.runPromise(
@@ -329,6 +341,6 @@ describe("BunFilesystemPersistence", () => {
         ),
       ),
     );
-    expect(recoveredGeneration.generation).toBe(0);
+    expect(recoveredGeneration.generation).toBe(initialGeneration);
   });
 });
