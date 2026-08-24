@@ -1,6 +1,8 @@
 import type { RichText } from "nearly-headless-cms";
 import { type Command, type State, transact } from "./transactions.ts";
 
+const EMPTY_TEXT_OFFSET = 0;
+
 export interface BrowserAdapterOptions {
   readonly host: HTMLDivElement;
   readonly initialState: State;
@@ -179,12 +181,12 @@ export class BrowserAdapter {
     if (text === undefined || text === null || !this.#host.contains(text)) {
       return undefined;
     }
-    const blockIndex = Number(text.dataset["blockIndex"]),
-      inlineIndex = Number(text.dataset["inlineIndex"]),
-      boundedOffset = Math.min(
+    const boundedOffset = Math.min(
         offset,
-        text.textContent === "\u200B" ? 0 : (text.textContent?.length ?? 0),
-      );
+        text.textContent === "\u200B" ? EMPTY_TEXT_OFFSET : (text.textContent?.length ?? EMPTY_TEXT_OFFSET),
+      ),
+      blockIndex = Number(text.dataset["blockIndex"]),
+      inlineIndex = Number(text.dataset["inlineIndex"]);
     return Number.isSafeInteger(blockIndex) && Number.isSafeInteger(inlineIndex)
       ? {
           blockIndex,
@@ -241,12 +243,12 @@ export class BrowserAdapter {
       anchorNode,
       Math.min(
         anchor.offset,
-        anchorNode.textContent === "\u200B" ? 0 : (anchorNode.textContent?.length ?? 0),
+        anchorNode.textContent === "\u200B" ? EMPTY_TEXT_OFFSET : (anchorNode.textContent?.length ?? EMPTY_TEXT_OFFSET),
       ),
       focusNode,
       Math.min(
         focus.offset,
-        focusNode.textContent === "\u200B" ? 0 : (focusNode.textContent?.length ?? 0),
+        focusNode.textContent === "\u200B" ? EMPTY_TEXT_OFFSET : (focusNode.textContent?.length ?? EMPTY_TEXT_OFFSET),
       ),
     );
   }
