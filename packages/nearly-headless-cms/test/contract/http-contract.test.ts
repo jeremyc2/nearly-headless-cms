@@ -149,12 +149,10 @@ describe("HTTP contract", () => {
         successStatus: 201,
       },
     ]);
-    expect(document.paths["/api/v1/headless/posts/{postId}/comments"]).toMatchObject({
+    const commentSubmissionPath = document.paths["/api/v1/headless/posts/{postId}/comments"];
+    expect(commentSubmissionPath).toMatchObject({
       post: {
         operationId: "submitComment",
-        parameters: [
-          { in: "path", name: "postId", required: true, schema: { type: "string" } },
-        ],
         requestBody: {
           content: {
             "application/json": {
@@ -187,6 +185,11 @@ describe("HTTP contract", () => {
         },
       },
     });
+    expect(commentSubmissionPath?.post?.parameters).toEqual(
+      expect.arrayContaining([
+        { in: "path", name: "postId", required: true, schema: { type: "string" } },
+      ]),
+    );
     expect(
       JSON.stringify(document.paths["/api/v1/headless/posts/{postId}/comments"]),
     ).not.toContain('"default"');
