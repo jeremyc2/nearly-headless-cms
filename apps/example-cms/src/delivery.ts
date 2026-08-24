@@ -442,7 +442,7 @@ const lowerCamelCase = (key: string): string =>
     ),
   publicAssetBody = (request: Request, bytes: Uint8Array): ArrayBuffer | null => {
     if (request.method === "HEAD") {return null;}
-    return bytes.slice().buffer;
+    return [...bytes].buffer;
   },
   publicOwnerPath = (contentTypeId: "author" | "category" | "tag"): string => {
     if (contentTypeId === "category") {return "categories";}

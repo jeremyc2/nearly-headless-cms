@@ -308,9 +308,10 @@ const issue = (
         };
       }
       case "list": {
-        return fieldKind.element.kind === "relationship"
-          ? { filter: ["equals", "notEquals", "isNull"], projectable: true }
-          : { projectable: true };
+        if (fieldKind.element.kind === "relationship") {
+          return { filter: ["equals", "notEquals", "isNull"], projectable: true };
+        }
+        return { projectable: true };
       }
       case "json":
       case "rich-text": {
@@ -384,10 +385,14 @@ const validateCalendarDate = (value: string): boolean => {
           !Number.isFinite(value) ||
           (fieldKind.kind === "integer" && !Number.isSafeInteger(value))
         ) {
+          let reason = "expectedFiniteNumber";
+          if (fieldKind.kind === "integer") {
+            reason = "expectedSafeInteger";
+          }
           return [
             issue(
               path,
-              fieldKind.kind === "integer" ? "expectedSafeInteger" : "expectedFiniteNumber",
+              reason,
               `Expected ${fieldKind.kind}`,
             ),
           ];
