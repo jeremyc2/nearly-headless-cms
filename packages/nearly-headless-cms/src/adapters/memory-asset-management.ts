@@ -18,7 +18,7 @@ const collectBytes = (
   content: Uint8Array | Stream.Stream<Uint8Array, InfrastructureFailure>,
 ): Effect.Effect<Uint8Array, InfrastructureFailure> => {
   if (content instanceof Uint8Array) {
-    return Effect.succeed([...content]);
+    return Effect.succeed(content.slice());
   }
   return Stream.runCollect(content).pipe(
     Effect.map((arrays) => {
@@ -128,7 +128,7 @@ export const layer = (options: Options = {}): Layer.Layer<Management, never, Gen
               if (asset === undefined) {
                 return Effect.fail(NotFound.make({ message: `Asset ${assetId} was not found` }));
               }
-              return Effect.succeed({ ...asset, bytes: [...asset.bytes] });
+              return Effect.succeed({ ...asset, bytes: asset.bytes.slice() });
             }),
           ),
       });
