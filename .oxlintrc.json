@@ -43,7 +43,7 @@
     "eslint/new-cap": "off",
     "no-magic-numbers": "off",
     "typescript/prefer-readonly-parameter-types": [
-      "error",
+      "off",
       {
         "checkParameterProperties": false,
         "ignoreInferredTypes": true,
