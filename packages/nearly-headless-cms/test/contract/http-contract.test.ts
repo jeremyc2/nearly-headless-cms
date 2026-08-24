@@ -46,12 +46,17 @@ const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
   });
 
 describe("HTTP contract", () => {
+  // Bun's test runner requires an async callback for the native Request and Response promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
   test("streams bounded multipart Asset uploads and rejects unexpected metadata", async () => {
     const handler = await Effect.runPromise(
         HttpTransport.makeHandler({
           maximumMultipartFileByteLength: payloadByteFive,
           maximumMultipartMetadataByteLength: 256,
-        }).pipe(Effect.provide(DevelopmentCms.layer({ snapshot }))),
+        }).pipe(
+          // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer.
+          Effect.provide(DevelopmentCms.layer({ snapshot })),
+        ),
       ),
       assetUrl = "http://cms.test/api/v1/management/definition-spaces/example-blog/assets",
       metadata = JSON.stringify({ filename: "pixel.bin", mediaType: "application/octet-stream" }),
@@ -127,6 +132,8 @@ describe("HTTP contract", () => {
     });
   });
 
+  // Bun's test runner requires an async callback for the native Request and Response promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
   test("returns a deletion receipt only for history-enabled Entries", async () => {
     const deletionSnapshot = ContentDefinition.compile({
         definitionSpaceId: "delete-contract",
@@ -149,9 +156,12 @@ describe("HTTP contract", () => {
       }),
       handler = await Effect.runPromise(
         HttpTransport.makeHandler().pipe(
+          // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer.
           Effect.provide(DevelopmentCms.layer({ snapshot: deletionSnapshot })),
         ),
       ),
+      // The helper awaits the native Response body before returning its validated payload.
+      // oxlint-disable-next-line effecttsgo/async-function -- helper intentionally awaits a native HTTP promise.
       createEntry = async (contentTypeId: string): Promise<Readonly<Record<string, unknown>>> => {
         const response = await handler(
             new Request(
@@ -208,9 +218,14 @@ describe("HTTP contract", () => {
     expect(await temporaryDeletion.text()).toBe("");
   });
 
+  // Bun's test runner requires an async callback for the native Request and Response promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
   test("serves versioned Management operations while keeping Headless CRUD absent", async () => {
     const handler = await Effect.runPromise(
-        HttpTransport.makeHandler().pipe(Effect.provide(DevelopmentCms.layer({ snapshot }))),
+        HttpTransport.makeHandler().pipe(
+          // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer.
+          Effect.provide(DevelopmentCms.layer({ snapshot })),
+        ),
       ),
       created = await handler(
         new Request(
@@ -234,6 +249,8 @@ describe("HTTP contract", () => {
     expect(OpenApi.headless([]).paths).not.toHaveProperty("/content-types/{contentTypeId}/entries");
   });
 
+  // Bun's test runner requires an async callback for the native Request and Response promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
   test("mounts each declared operation through the portable Effect HttpApi route Layer", async () => {
     const routes = HttpTransport.layer({
         deliveryOperations: [
@@ -266,6 +283,8 @@ describe("HTTP contract", () => {
     }
   });
 
+  // Bun's test runner requires an async callback for the native Request and Response promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
   test("maps transport limits, media, and methods to their stable HTTP failures", async () => {
     const handler = await Effect.runPromise(
         HttpTransport.makeHandler({
@@ -286,7 +305,10 @@ describe("HTTP contract", () => {
           maximumHeaderByteLength,
           maximumJsonBodyByteLength,
           maximumUrlLength: headerLengthLimit,
-        }).pipe(Effect.provide(DevelopmentCms.layer({ snapshot }))),
+        }).pipe(
+          // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer.
+          Effect.provide(DevelopmentCms.layer({ snapshot })),
+        ),
       ),
       oversizedBody = await handler(
         new Request(
@@ -345,7 +367,10 @@ describe("HTTP contract", () => {
             },
           ],
           requestTimeoutMilliseconds,
-        }).pipe(Effect.provide(DevelopmentCms.layer({ snapshot }))),
+        }).pipe(
+          // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer.
+          Effect.provide(DevelopmentCms.layer({ snapshot })),
+        ),
       ),
       timedOut = await timeoutHandler(new Request("http://cms.test/api/v1/headless/wait-forever"));
     expect(timedOut.status).toBe(requestTimeoutStatus);

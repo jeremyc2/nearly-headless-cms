@@ -7,20 +7,25 @@ const enabled = Bun.env["ACCEPTANCE_SERVERS_READY"] === "1",
     }
     return test.skip;
   })(),
-  waitFor = async <Value>(
+  waitFor = <Value>(
     view: Bun.WebView,
     expression: string,
     predicate: (value: Value) => boolean,
   ): Promise<Value> => {
-    const deadline = Date.now() + 15_000;
-    while (Date.now() < deadline) {
+    const deadline = performance.now() + 15_000,
+     // oxlint-disable-next-line effecttsgo/async-function -- Bun WebView evaluation and sleep are Promise-based platform lifecycle operations.
+     poll = async (): Promise<Value> => {
+      if (performance.now() >= deadline) {
+        throw new Error(`WebView condition timed out: ${expression}`);
+      }
       const value = await view.evaluate<Value>(expression);
       if (predicate(value)) {
         return value;
       }
       await Bun.sleep(50);
-    }
-    throw new Error(`WebView condition timed out: ${expression}`);
+      return poll();
+    };
+    return poll();
   };
 
 afterAll(() => {
@@ -30,6 +35,7 @@ afterAll(() => {
 describe("complete-system WebView journey", () => {
   acceptanceTest(
     "uses trusted input, responsive layout, history navigation, and semantic page structure",
+    // oxlint-disable-next-line effecttsgo/async-function -- Bun's test runner requires a Promise-returning lifecycle callback.
     async () => {
       const consoleErrors: unknown[] = [];
       let view = new Bun.WebView({

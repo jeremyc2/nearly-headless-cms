@@ -1,4 +1,4 @@
-import { Clock, Context, Effect, Layer, Semaphore } from "effect";
+import { Clock, Context, DateTime, Effect, Layer, Schema, Semaphore } from "effect";
 import {
   Management as AssetManagement,
   type Asset as AssetValue,
@@ -184,7 +184,29 @@ export class Service extends Context.Service<Service, ServiceShape>()(
   "nearly-headless-cms/cms/Service",
 ) {}
 
-const sourceProperty = (source: string | undefined): { readonly source?: string } => {
+const attempt = <Value>(operation: () => Value): Effect.Effect<Value, InvalidInput> =>
+    Effect.try({
+      catch: (cause) => {
+        if (Schema.is(InvalidInput)(cause)) {
+          return cause;
+        }
+        let message = "Invalid input";
+        if (cause instanceof Error) {
+          message = cause.message;
+        }
+        return InvalidInput.make({ message });
+      },
+      try: operation,
+    }),
+  parentRevisionProperty = (
+    parentRevision: number | undefined,
+  ): { readonly parentRevision?: number } => {
+    if (parentRevision === undefined) {
+      return {};
+    }
+    return { parentRevision };
+  },
+  sourceProperty = (source: string | undefined): { readonly source?: string } => {
     if (source === undefined) {
       return {};
     }
@@ -196,28 +218,6 @@ const sourceProperty = (source: string | undefined): { readonly source?: string 
     }
     return { writeToken };
   },
-  parentRevisionProperty = (
-    parentRevision: number | undefined,
-  ): { readonly parentRevision?: number } => {
-    if (parentRevision === undefined) {
-      return {};
-    }
-    return { parentRevision };
-  },
-  attempt = <Value>(operation: () => Value): Effect.Effect<Value, InvalidInput> =>
-    Effect.try({
-      catch: (cause) => {
-        if (cause instanceof InvalidInput) {
-          return cause;
-        }
-        let message = "Invalid input";
-        if (cause instanceof Error) {
-          message = cause.message;
-        }
-        return InvalidInput.make({ message });
-      },
-      try: operation,
-    }),
   liveRecords = (generation: EntryGeneration): readonly EntryRecord[] =>
     [...generation.records.values()].filter((record) => record.deletionRecord === undefined),
   oneOrMany = (value: JsonValue): readonly JsonValue[] => {
@@ -234,6 +234,41 @@ interface References {
   }[];
   readonly assetIds: readonly string[];
 }
+
+const snapshotDefinitionValidationMessage = (
+  state: CatalogState,
+  snapshot: SnapshotInput,
+): string | undefined => {
+  for (const definition of snapshot.definitions) {
+    const revision = definition.revision ?? 1,
+      catalogRevision = state.revisions.find(
+      (record) => record.definitionId === definition.id && record.revision === revision,
+    );
+    if (
+      catalogRevision === undefined ||
+      canonicalJson(catalogRevision.definition) !== canonicalJson(definition)
+    ) {
+      return `Definition ${definition.id} revision ${revision} has not been appended to the Catalog`;
+    }
+    if (state.retiredDefinitionIds.has(definition.id)) {
+      const activeDefinitionRevision =
+        state.active.input.definitions.find((candidate) => candidate.id === definition.id)
+          ?.revision ?? 0;
+      if (revision <= activeDefinitionRevision) {
+        return `Retired Definition ${definition.id} requires a new revision before reactivation`;
+      }
+    }
+  }
+  return undefined;
+},
+  compatibleManifest = (source: CompiledSnapshot, target: CompiledSnapshot): Manifest => ({
+  compatible: true,
+  handlerIdentifier: "nearly-headless-cms.compatible-identity",
+  handlerVersion: 1,
+  id: `compatible-${source.snapshotId}-${target.snapshotId}`,
+  sourceSnapshotId: source.snapshotId,
+  targetSnapshotId: target.snapshotId,
+});
 
 interface EnsureUniqueValuesInput {
   readonly contentType: CompiledContentType;
@@ -275,10 +310,7 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
       visit = (fields: readonly ResolvedField[], object: JsonObject): void => {
         for (const field of fields) {
           const value = object[field.key];
-          if (value === undefined || value === null) {
-            continue;
-          }
-          if (
+          if (value !== undefined && value !== null &&
             field.nestedFields !== undefined &&
             field.kind.kind === "list" &&
             Array.isArray(value)
@@ -288,42 +320,45 @@ const relationshipKind = (field: Field): RelationshipFieldKind | undefined => {
                 visit(field.nestedFields, item);
               }
             }
-            continue;
-          }
-          if (field.nestedFields !== undefined && isJsonObject(value)) {
+          } else if (
+            value !== undefined &&
+            value !== null &&
+            field.nestedFields !== undefined &&
+            isJsonObject(value)
+          ) {
             visit(field.nestedFields, value);
-            continue;
-          }
-          const relationship = relationshipKind(field);
-          if (relationship !== undefined) {
-            const entryIds = oneOrMany(value);
-            for (const entryId of entryIds) {
-              if (typeof entryId === "string") {
-                relationships.push({
-                  entryId,
-                  targetContentTypeIds: relationship.targetContentTypeIds,
-                });
+          } else if (value !== undefined && value !== null) {
+            const relationship = relationshipKind(field);
+            if (relationship !== undefined) {
+              const entryIds = oneOrMany(value);
+              for (const entryId of entryIds) {
+                if (typeof entryId === "string") {
+                  relationships.push({
+                    entryId,
+                    targetContentTypeIds: relationship.targetContentTypeIds,
+                  });
+                }
               }
             }
-          }
-          const isAssetField =
-            field.kind.kind === "asset" ||
-            (field.kind.kind === "list" && field.kind.element.kind === "asset");
-          if (isAssetField) {
-            const fieldAssetIds = oneOrMany(value);
-            for (const assetId of fieldAssetIds) {
-              if (typeof assetId === "string") {
-                assetIds.push(assetId);
+            const isAssetField =
+              field.kind.kind === "asset" ||
+              (field.kind.kind === "list" && field.kind.element.kind === "asset");
+            if (isAssetField) {
+              const fieldAssetIds = oneOrMany(value);
+              for (const assetId of fieldAssetIds) {
+                if (typeof assetId === "string") {
+                  assetIds.push(assetId);
+                }
               }
             }
-          }
-          if (field.kind.kind === "rich-text") {
-            const document = RichText.validate(value),
-              richTextReferences = RichText.references(document);
-            for (const entryId of richTextReferences.entryIds) {
-              relationships.push({ entryId, targetContentTypeIds: [] });
+            if (field.kind.kind === "rich-text") {
+              const document = RichText.validate(value),
+                richTextReferences = RichText.references(document);
+              for (const entryId of richTextReferences.entryIds) {
+                relationships.push({ entryId, targetContentTypeIds: [] });
+              }
+              assetIds.push(...richTextReferences.assetIds);
             }
-            assetIds.push(...richTextReferences.assetIds);
           }
         }
       };
@@ -787,7 +822,7 @@ export const makeLayer = (
               return entry;
             }
             const writeToken = yield* identifiers.generate("write-token"),
-              recordedAt = new Date(yield* Clock.currentTimeMillis).toISOString(),
+              recordedAt = DateTime.formatIso(yield* DateTime.now),
               revision: Revision = {
                 definitionSnapshotId: snapshot.snapshotId,
                 recordedAt,
@@ -892,7 +927,7 @@ export const makeLayer = (
               revisionNumber = (current.revisions.at(-1)?.revisionNumber ?? 0) + 1,
               revision: Revision = {
                 definitionSnapshotId: snapshot.snapshotId,
-                recordedAt: new Date(now).toISOString(),
+                recordedAt: DateTime.formatIso(yield* DateTime.now),
                 revisionNumber,
                 values: cloneJson(values),
               };
@@ -952,7 +987,7 @@ export const makeLayer = (
             }
             const writeToken = yield* identifiers.generate("write-token"),
               now = yield* Clock.currentTimeMillis,
-              deletedAt = new Date(now).toISOString(),
+              deletedAt = DateTime.formatIso(yield* DateTime.now),
               deletionRecord: DeletionRecord = {
                 contentTypeId: input.contentTypeId,
                 deletedAt,
@@ -1042,7 +1077,7 @@ export const makeLayer = (
                   revisionNumber = (current.revisions.at(-1)?.revisionNumber ?? 0) + 1,
                   revision: Revision = {
                     definitionSnapshotId: snapshot.snapshotId,
-                    recordedAt: new Date(now).toISOString(),
+                    recordedAt: DateTime.formatIso(yield* DateTime.now),
                     revisionNumber,
                     values: cloneJson(values),
                   };
@@ -1085,7 +1120,7 @@ export const makeLayer = (
               }
               const writeToken = yield* identifiers.generate("write-token"),
                 now = yield* Clock.currentTimeMillis,
-                deletedAt = new Date(now).toISOString(),
+                deletedAt = DateTime.formatIso(yield* DateTime.now),
                 deletionRecord: DeletionRecord = {
                   contentTypeId: input.contentTypeId,
                   deletedAt,
@@ -1348,7 +1383,7 @@ export const makeLayer = (
               revisionNumber = (current.revisions.at(-1)?.revisionNumber ?? 0) + 1,
               revision: Revision = {
                 definitionSnapshotId: snapshot.snapshotId,
-                recordedAt: new Date(now).toISOString(),
+                recordedAt: DateTime.formatIso(yield* DateTime.now),
                 restoredFromRevisionNumber: input.revisionNumber,
                 revisionNumber,
                 values: cloneJson(values),
@@ -1558,7 +1593,7 @@ export const makeLayer = (
                 compileOptions,
               ),
             );
-            const recordedAt = new Date(yield* Clock.currentTimeMillis).toISOString();
+            const recordedAt = DateTime.formatIso(yield* DateTime.now);
             return yield* catalog.replace(input.expectedCatalogVersion, {
               ...state,
               events: [
@@ -1596,7 +1631,7 @@ export const makeLayer = (
                 message: `Definition ${input.definitionId} was not found`,
               });
             }
-            const recordedAt = new Date(yield* Clock.currentTimeMillis).toISOString();
+            const recordedAt = DateTime.formatIso(yield* DateTime.now);
             return yield* catalog.replace(input.expectedCatalogVersion, {
               ...state,
               events: [
@@ -1710,29 +1745,12 @@ export const makeLayer = (
             yield* attempt(() => {
               validateDefinitionContracts({ contracts: operationContracts, snapshot: target });
             });
-            for (const definition of input.snapshot.definitions) {
-              const revision = definition.revision ?? 1,
-                catalogRevision = state.revisions.find(
-                  (record) => record.definitionId === definition.id && record.revision === revision,
-                );
-              if (
-                catalogRevision === undefined ||
-                canonicalJson(catalogRevision.definition) !== canonicalJson(definition)
-              ) {
-                return yield* InvalidInput.make({
-                  message: `Definition ${definition.id} revision ${revision} has not been appended to the Catalog`,
-                });
-              }
-              if (state.retiredDefinitionIds.has(definition.id)) {
-                const activeDefinitionRevision =
-                  state.active.input.definitions.find((candidate) => candidate.id === definition.id)
-                    ?.revision ?? 0;
-                if (revision <= activeDefinitionRevision) {
-                  return yield* InvalidInput.make({
-                    message: `Retired Definition ${definition.id} requires a new revision before reactivation`,
-                  });
-                }
-              }
+            const definitionValidationMessage = snapshotDefinitionValidationMessage(
+              state,
+              input.snapshot,
+            );
+            if (definitionValidationMessage !== undefined) {
+              return yield* InvalidInput.make({ message: definitionValidationMessage });
             }
             const source = state.active.compiled,
               compatibility = classifyCompatibility(source, target);
@@ -1751,14 +1769,7 @@ export const makeLayer = (
             const generation = yield* persistence.readGeneration;
             let manifest: Manifest;
             if (compatibility === "compatible") {
-              manifest = {
-                compatible: true,
-                handlerIdentifier: "nearly-headless-cms.compatible-identity",
-                handlerVersion: 1,
-                id: `compatible-${source.snapshotId}-${target.snapshotId}`,
-                sourceSnapshotId: source.snapshotId,
-                targetSnapshotId: target.snapshotId,
-              };
+              manifest = compatibleManifest(source, target);
             } else {
               if (migrationManifest === undefined) {
                 throw new Error("Migration manifest is missing");
@@ -1855,7 +1866,7 @@ export const makeLayer = (
               }
             }
 
-            const activatedAt = new Date(yield* Clock.currentTimeMillis).toISOString(),
+            const activatedAt = DateTime.formatIso(yield* DateTime.now),
               snapshotRecord: DefinitionSnapshotRecord = {
                 activatedAt,
                 compiled: target,

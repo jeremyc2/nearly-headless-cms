@@ -1,6 +1,4 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdtemp, rm } from "node:fs/promises";
-import { join } from "node:path";
 import { type ExampleSystem, createExampleSystem } from "../../src/system.ts";
 
 const HTTP_NOT_FOUND = 404,
@@ -11,27 +9,30 @@ const HTTP_NOT_FOUND = 404,
 
  isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
     value !== null && typeof value === "object" && !Array.isArray(value),
-  jsonRecord = async (response: Response): Promise<Readonly<Record<string, unknown>>> => {
-    const body: unknown = await response.json();
-    if (!isRecord(body)) {
-      throw new Error("Expected a JSON object");
-    }
-    return body;
-  };
+  jsonRecord = (response: Response): Promise<Readonly<Record<string, unknown>>> =>
+    response.json().then((body: unknown) => {
+      if (!isRecord(body)) {
+        throw new Error("Expected a JSON object");
+      }
+      return body;
+    });
 
 describe("Example CMS destructive workflows", () => {
   let storageRoot: string, system: ExampleSystem;
 
+  // oxlint-disable-next-line effecttsgo/async-function -- Bun's lifecycle hook requires a Promise-returning callback.
   beforeEach(async () => {
-    storageRoot = await mkdtemp(join(import.meta.dir, ".destructive-workflows-"));
+    storageRoot = (await Bun.$`mktemp -d ${import.meta.dir}/.destructive-workflows-XXXXXX`.text()).trim();
     system = await createExampleSystem({ seed: true, storageRoot });
   });
 
+  // oxlint-disable-next-line effecttsgo/async-function -- Bun's lifecycle hook requires a Promise-returning callback.
   afterEach(async () => {
     await system.dispose();
-    await rm(storageRoot, { force: true, recursive: true });
+    await Bun.$`rm -rf ${storageRoot}`;
   });
 
+  // oxlint-disable-next-line effecttsgo/async-function -- Bun's test callback requires a Promise-returning callback.
   test("deleting an Author atomically deletes their Posts and Comments", async () => {
     const exported = await jsonRecord(
         await system.handler(new Request("http://cms.test/api/v1/headless/export")),
@@ -99,6 +100,7 @@ describe("Example CMS destructive workflows", () => {
     expect(postPage["items"]).toEqual([]);
   });
 
+  // oxlint-disable-next-line effecttsgo/async-function -- Bun's test callback requires a Promise-returning callback.
   test("deleting an image clears optional assignments before deleting the Asset", async () => {
     const form = new FormData();
     form.set(
@@ -198,6 +200,7 @@ describe("Example CMS destructive workflows", () => {
     expect(assetLookup.status).toBe(HTTP_NOT_FOUND);
   });
 
+  // oxlint-disable-next-line effecttsgo/async-function -- Bun's test callback requires a Promise-returning callback.
   test("declares image replacement as multipart for generated Management clients", async () => {
     const document = await jsonRecord(
       await system.handler(new Request("http://cms.test/api/v1/management/openapi.json")),

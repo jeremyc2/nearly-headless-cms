@@ -1,6 +1,4 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { mkdtemp, rm } from "node:fs/promises";
-import path from "node:path";
 import { type ExampleSystem, createExampleSystem } from "../../src/system.ts";
 
 const badRequestStatus = 400,
@@ -9,16 +7,19 @@ const badRequestStatus = 400,
 describe("Example CMS Post publication", () => {
   let storageRoot: string, system: ExampleSystem;
 
+  // oxlint-disable-next-line effecttsgo/async-function -- Bun lifecycle hook performs async system setup.
   beforeAll(async () => {
-    storageRoot = await mkdtemp(path.join(import.meta.dir, ".publication-validation-"));
+    storageRoot = (await Bun.$`mktemp -d ${import.meta.dir}/.publication-validation-XXXXXX`.text()).trim();
     system = await createExampleSystem({ seed: true, storageRoot });
   });
 
+  // oxlint-disable-next-line effecttsgo/async-function -- Bun lifecycle hook performs async cleanup.
   afterAll(async () => {
     await system.dispose();
-    await rm(storageRoot, { force: true, recursive: true });
+    await Bun.$`rm -rf ${storageRoot}`;
   });
 
+  // oxlint-disable-next-line effecttsgo/async-function -- Bun test callback drives multiple HTTP assertions.
   test("returns Field-path issues for public image and live-reference rules", async () => {
     const draftIdentifier = system.seed?.draftPostId ?? "",
       stateUrl = `http://cms.test/api/v1/management/definition-spaces/example-blog/content-types/post/entries/${draftIdentifier}/state`,

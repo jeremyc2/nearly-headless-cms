@@ -152,6 +152,7 @@ describe("runtime Content Definition lifecycle", () => {
         expect(catalog.events.map((event) => event.eventType)).toContain("revisionAppended");
         expect(catalog.events.map((event) => event.eventType)).toContain("snapshotActivated");
       }).pipe(
+        // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer.
         Effect.provide(
           DevelopmentCms.layer({
             migrationHandlers: [
@@ -235,6 +236,7 @@ describe("runtime Content Definition lifecycle", () => {
           ),
         ).toBeTrue();
       }).pipe(
+        // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer.
         Effect.provide(
           DevelopmentCms.layer({
             compileOptions: { customFieldKinds: [ratingRegistration] },
@@ -245,7 +247,7 @@ describe("runtime Content Definition lifecycle", () => {
     );
   });
 
-  test("rejects activation that breaks a composed operation contract", async () => {
+  test("rejects activation that breaks a composed operation contract", () => {
     const operationContracts: readonly Operation.DefinitionContract[] = [
       {
         definitionRequirements: [
@@ -257,7 +259,7 @@ describe("runtime Content Definition lifecycle", () => {
         identifier: "readPublicNote",
       },
     ];
-    await Effect.runPromise(
+    return Effect.runPromise(
       Effect.gen(function* contractActivation() {
         const cms = yield* Cms.Service,
           incompatibleNote = {
@@ -289,6 +291,7 @@ describe("runtime Content Definition lifecycle", () => {
         expect((yield* cms.activeDefinitionSnapshot).snapshotId).toBe("initial");
         expect((yield* cms.readDefinitionCatalog).version).toBe(appended.version);
       }).pipe(
+        // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer.
         Effect.provide(DevelopmentCms.layer({ operationContracts, snapshot: initialSnapshot })),
       ),
     );

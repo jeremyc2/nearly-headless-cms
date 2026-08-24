@@ -1,3 +1,5 @@
+// This standalone Bun CLI resolves repository paths before any Effect application exists.
+// oxlint-disable-next-line effecttsgo/node-builtin-import
 import path from "node:path";
 
 const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
@@ -99,6 +101,7 @@ for (const forbidden of [
 const sourceGlob = new Bun.Glob("apps/public-blog/src/**/*.{ts,astro}"),
   sourcePaths = await Array.fromAsync(sourceGlob.scan({ cwd: repository }));
 await Promise.all(
+  // oxlint-disable-next-line effecttsgo/async-function -- parallel architecture scans use async file reads.
   sourcePaths.map(async (relativePath) => {
     const source = await Bun.file(path.join(repository, relativePath)).text();
     if (
@@ -131,6 +134,7 @@ const portableDistributionGlob = new Bun.Glob("packages/nearly-headless-cms/dist
 await Promise.all(
   portableDistributionPaths
     .filter((relativePath) => !relativePath.includes("/bun/filesystem/"))
+    // oxlint-disable-next-line effecttsgo/async-function -- parallel portability scans use async file reads.
     .map(async (relativePath) => {
       const source = await Bun.file(path.join(repository, relativePath)).text();
       if (/\bBun\.|["']bun:/u.test(source)) {
@@ -176,6 +180,8 @@ const publicApiSourcePaths = [
 let documentedPublicDeclarationCount = 0;
 for (const sourcePath of publicApiSourcePaths) {
   const packageRelativePath = `packages/nearly-headless-cms/${sourcePath}`,
+    // Check files in declaration order so diagnostics remain deterministic.
+    // oxlint-disable-next-line no-await-in-loop -- checks intentionally run sequentially.
     sourceText = await Bun.file(path.join(repository, packageRelativePath)).text(),
     lines = sourceText.split("\n");
   for (const [lineIndex, line] of lines.entries()) {
@@ -202,6 +208,7 @@ for (const sourcePath of publicApiSourcePaths) {
 if (undocumentedDeclarations.length > 0) {
   throw new Error(`Public API declarations need TSDoc:\n${undocumentedDeclarations.join("\n")}`);
 }
+// oxlint-disable-next-line effecttsgo/global-console -- this script's contract is machine-readable CLI stdout.
 console.log(
   JSON.stringify(
     {

@@ -113,5 +113,7 @@ describe("Entry History state machine", () => {
   });
 
   test("keeps opaque tokens, retained revisions, deletion records, restoration, and purge coherent", () =>
+    // This test invocation is the application entry point and owns the isolated CMS layer.
+    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer.
     Effect.runPromise(runHistoryScenario.pipe(Effect.provide(DevelopmentCms.layer({ snapshot })))));
 });

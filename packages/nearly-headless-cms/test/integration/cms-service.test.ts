@@ -39,6 +39,9 @@ const snapshot = ContentDefinition.compile({
     snapshotId: "initial",
   }),
   run = <Value, Error>(effect: Effect.Effect<Value, Error, Cms.Service>): Promise<Value> =>
+    // This test helper is the application entry point for each isolated test run.
+    // The layer must be provided here so every run gets a fresh in-memory CMS.
+    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer per run.
     Effect.runPromise(effect.pipe(Effect.provide(DevelopmentCms.layer({ snapshot })))),
   verifySuccessfulOperations = Effect.gen(function* verifySuccessfulOperations() {
     const cms = yield* Cms.Service,
@@ -82,9 +85,8 @@ const snapshot = ContentDefinition.compile({
   });
 
 describe("Cms.Service", () => {
-  test("enforces definitions, Relationships, unique values, and history-aware concurrency", async () => {
-    await run(verifySuccessfulOperations);
-
-    expect(run(verifyFailedRelationship)).rejects.toThrow("Relationship target");
-  });
+  test("enforces definitions, Relationships, unique values, and history-aware concurrency", () =>
+    run(verifySuccessfulOperations).then(() => {
+      expect(verifyFailedRelationship.pipe(run)).rejects.toThrow("Relationship target");
+    }));
 });

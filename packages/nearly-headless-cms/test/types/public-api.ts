@@ -77,4 +77,5 @@ export const serviceLayer: Layer.Layer<Cms.Service> = DevelopmentCms.layer({
     snapshotId: "first",
   }),
 });
-export const deepService = DeepService;
+const asUnknown = (value: unknown): unknown => value;
+export const deepService = asUnknown(DeepService);

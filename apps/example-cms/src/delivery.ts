@@ -1,6 +1,6 @@
-import { type Cms, CmsError, type ContentDefinition, EntryQuery } from "nearly-headless-cms";
+import { type Asset, type Cms, CmsError, type ContentDefinition, EntryQuery } from "nearly-headless-cms";
 import type { HttpContract } from "nearly-headless-cms/http";
-import { Effect, Schema } from "effect";
+import { DateTime, Effect, Schema } from "effect";
 import { type CommandReceiptStore, memoryCommandReceiptStore } from "./command-receipt-store.ts";
 import {
   AssetBytes,
@@ -19,6 +19,17 @@ import {
 } from "./wire-schemas.ts";
 
 type PublicValue = ContentDefinition.JsonObject;
+
+const canonicalizeJsonValue = (value: unknown): unknown => {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return value;
+  }
+  return Object.fromEntries(
+    Object.entries(value)
+      .toSorted(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey))
+      .map(([key, child]) => [key, canonicalizeJsonValue(child)]),
+  );
+};
 
 interface QueryEntriesInput {
   readonly cms: Cms.ServiceShape;
@@ -53,11 +64,7 @@ interface PublicReachabilityInput {
 }
 
 interface PublicAssetResponseInput {
-  readonly asset: Awaited<
-    ReturnType<Cms.ServiceShape["readAsset"]> extends Effect.Effect<infer Value, unknown>
-      ? Value
-      : never
-  >;
+  readonly asset: Asset.StoredAsset;
   readonly definitionFingerprint: string;
   readonly request: Request;
   readonly requestId: string;
@@ -127,6 +134,7 @@ export const postDefinitionRequirement = {
       { kind: "enum", path: "status", projectable: true, required: true },
     ],
   } as const,
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- local schema adapter is intentionally direct-call only.
   readSchemas = (
     response: HttpContract.OperationSchema,
     pathParameters: Readonly<Record<string, HttpContract.OperationSchema>> = {},
@@ -198,17 +206,18 @@ const lowerCamelCase = (key: string): string =>
         }
         return CmsError.InvalidInput.make({ message: "Malformed Comment submission" });
       },
-      try: async () => {
+      try: () => {
         if (!(request.headers.get("content-type") ?? "").startsWith("application/json")) {
-          throw CmsError.InvalidInput.make({
-            message: "Comment submission requires application/json",
-          });
+          return Promise.reject(
+            CmsError.InvalidInput.make({ message: "Comment submission requires application/json" }),
+          );
         }
-        const value = (await request.json()) as unknown;
-        if (!Schema.is(Schema.JsonObject)(value)) {
-          throw CmsError.InvalidInput.make({ message: "Comment submission must be an object" });
-        }
-        return value;
+        return request.json().then((value: unknown) => {
+          if (!Schema.is(Schema.JsonObject)(value)) {
+            throw CmsError.InvalidInput.make({ message: "Comment submission must be an object" });
+          }
+          return value;
+        });
       },
     }),
   findBySlug = ({ cms, contentTypeId, publicOnly = false, slug }: FindBySlugInput) => {
@@ -442,7 +451,7 @@ const lowerCamelCase = (key: string): string =>
     ),
   publicAssetBody = (request: Request, bytes: Uint8Array): ArrayBuffer | null => {
     if (request.method === "HEAD") {return null;}
-    return bytes.slice().buffer;
+    return [...bytes].buffer;
   },
   publicOwnerPath = (contentTypeId: "author" | "category" | "tag"): string => {
     if (contentTypeId === "category") {return "categories";}
@@ -672,19 +681,9 @@ export const makeDeliveryOperations = (
           Effect.gen(function* execute() {
             const idempotencyKey = request.headers.get("idempotency-key") ?? "",
               body = yield* parseBody(request),
-              canonicalInput = JSON.stringify(body, (_propertyName, leftValue) => {
-                if (
-                  leftValue === null ||
-                  typeof leftValue !== "object" ||
-                  Array.isArray(leftValue)
-                ) {
-                  return leftValue;
-                }
-                const entries = Object.entries(leftValue).toSorted(([leftKey], [rightKey]) =>
-                  leftKey.localeCompare(rightKey),
-                );
-                return Object.fromEntries(entries);
-              }),
+              canonicalInput = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(
+                canonicalizeJsonValue(body),
+              ).pipe(Effect.orDie),
               prior = yield* commandReceiptStore
                 .read(
                   `comment-submission:${requiredParameter(parameters, "postId")}`,
@@ -743,7 +742,7 @@ export const makeDeliveryOperations = (
                 contentTypeId: "comment",
                 values: {
                   body: commentBody,
-                  "created-at": new Date().toISOString(),
+                  "created-at": DateTime.formatIso(yield* DateTime.now),
                   "display-name": displayName,
                   post: post.id,
                   status: "pending",
@@ -885,7 +884,11 @@ export const makeDeliveryOperations = (
                 posts: content.posts.map(publicValue),
                 tags: content.tags.map(publicValue),
               },
-              bytes = new TextEncoder().encode(JSON.stringify(artifact));
+              bytes = new TextEncoder().encode(
+                yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(artifact).pipe(
+                  Effect.orDie,
+                ),
+              );
             if (bytes.byteLength > MAX_PUBLIC_EXPORT_BYTES) {
               return yield* CmsError.ExportTooLarge.make({
                 message: "Public Content Export exceeds the configured 5000000-byte bound",

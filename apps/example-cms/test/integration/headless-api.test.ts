@@ -1,6 +1,4 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { mkdtemp, rm } from "node:fs/promises";
-import { join } from "node:path";
 import { type ExampleSystem, createExampleSystem } from "../../src/system.ts";
 
 const FIRST_INDEX = 0,
@@ -26,16 +24,22 @@ const FIRST_INDEX = 0,
 describe("Example CMS Headless API", () => {
   let storageRoot: string, system: ExampleSystem;
 
+  // Bun's lifecycle callback requires a Promise-returning function for asynchronous setup.
+  // oxlint-disable-next-line effecttsgo/async-function -- Bun lifecycle and test callbacks require Promise-returning functions.
   beforeAll(async () => {
-    storageRoot = await mkdtemp(join(import.meta.dir, ".headless-api-"));
+    storageRoot = (await Bun.$`mktemp -d ${import.meta.dir}/.headless-api-XXXXXX`.text()).trim();
     system = await createExampleSystem({ seed: true, storageRoot });
   });
 
+  // Bun's lifecycle callback requires a Promise-returning function for asynchronous teardown.
+  // oxlint-disable-next-line effecttsgo/async-function -- Bun lifecycle and test callbacks require Promise-returning functions.
   afterAll(async () => {
     await system.dispose();
-    await rm(storageRoot, { force: true, recursive: true });
+    await Bun.$`rm -rf ${storageRoot}`;
   });
 
+  // Bun test callbacks use async/await to keep each integration assertion sequential.
+  // oxlint-disable-next-line effecttsgo/async-function -- Bun lifecycle and test callbacks require Promise-returning functions.
   test("exports only public-eligible Posts and approved Comments", async () => {
     const response = await system.handler(new Request("http://cms.test/api/v1/headless/export"));
     expect(response.status).toBe(HTTP_OK);
@@ -48,6 +52,8 @@ describe("Example CMS Headless API", () => {
     expect(exported.comments.every((comment) => comment.status === "approved")).toBeTrue();
   });
 
+  // Bun test callbacks use async/await to keep each integration assertion sequential.
+  // oxlint-disable-next-line effecttsgo/async-function -- Bun lifecycle and test callbacks require Promise-returning functions.
   test("deduplicates pending Comment submission by idempotency key", async () => {
     const exportResponse = await system.handler(
         new Request("http://cms.test/api/v1/headless/export"),
@@ -70,6 +76,8 @@ describe("Example CMS Headless API", () => {
     expect(await second.json()).toEqual(await first.json());
   });
 
+  // Bun test callbacks use async/await to keep each integration assertion sequential.
+  // oxlint-disable-next-line effecttsgo/async-function -- Bun lifecycle and test callbacks require Promise-returning functions.
   test("supports bounded listings, conditional export, and public Asset ranges", async () => {
     const invalidPage = await system.handler(
       new Request("http://cms.test/api/v1/headless/posts?pageSize=0"),
@@ -112,6 +120,8 @@ describe("Example CMS Headless API", () => {
     expect(draft.status).toBe(HTTP_NOT_FOUND);
   });
 
+  // Bun test callbacks use async/await to keep each integration assertion sequential.
+  // oxlint-disable-next-line effecttsgo/async-function -- Bun lifecycle and test callbacks require Promise-returning functions.
   test("exposes named editorial Management commands with Write Token concurrency", async () => {
     const postId = system.seed?.publishedPostId ?? "",
       statePath = `http://cms.test/api/v1/management/definition-spaces/example-blog/content-types/post/entries/${postId}/state`,
@@ -159,6 +169,8 @@ describe("Example CMS Headless API", () => {
     ).toBe("published");
   });
 
+  // Bun test callbacks use async/await to keep each integration assertion sequential.
+  // oxlint-disable-next-line effecttsgo/async-function -- Bun lifecycle and test callbacks require Promise-returning functions.
   test("runs detachment, image replacement, and cascade deletion commands through safe commit boundaries", async () => {
     const exportBeforeResponse = await system.handler(
         new Request("http://cms.test/api/v1/headless/export"),
@@ -244,8 +256,10 @@ describe("Example CMS Headless API", () => {
     expect(deletedPostResponse.status).toBe(HTTP_NOT_FOUND);
   });
 
+  // Bun test callbacks use async/await to keep each integration assertion sequential.
+  // oxlint-disable-next-line effecttsgo/async-function -- Bun lifecycle and test callbacks require Promise-returning functions.
   test("replays durable Comment receipts and Definition state after restart", async () => {
-    const restartRoot = await mkdtemp(join(import.meta.dir, ".restart-api-")),
+    const restartRoot = (await Bun.$`mktemp -d ${import.meta.dir}/.restart-api-XXXXXX`.text()).trim(),
       firstSystem = await createExampleSystem({ seed: true, storageRoot: restartRoot }),
       postId = firstSystem.seed?.publishedPostId ?? "",
       makeRequest = () =>
@@ -272,7 +286,7 @@ describe("Example CMS Headless API", () => {
       expect(schema.status).toBe(HTTP_OK);
     } finally {
       await restartedSystem.dispose();
-      await rm(restartRoot, { force: true, recursive: true });
+      await Bun.$`rm -rf ${restartRoot}`;
     }
   });
 });

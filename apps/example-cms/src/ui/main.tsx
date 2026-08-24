@@ -15,7 +15,7 @@ import {
   useNavigate,
   useParams,
 } from "@tanstack/react-router";
-import { Effect } from "effect";
+import { DateTime, Effect, Schema } from "effect";
 import { type MouseEvent, StrictMode, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { RichText } from "nearly-headless-cms";
@@ -137,7 +137,7 @@ function publicationValue(value: string): string | null {
   if (value === "") {
     return null;
   }
-  return new Date(value).toISOString();
+  return DateTime.formatIso(DateTime.makeUnsafe(value));
 }
 
 function featuredAlternativeTextField(rootField: string): string {
@@ -251,7 +251,7 @@ function relatedContentType(contentTypeId: string): string {
 
 function Workbench() {
   const pendingComments = useQuery({
-    queryFn: async () =>
+    queryFn: () =>
       Effect.runPromise(
         managementClient.queryEntries("comment", {
           pageSize: 100,
@@ -311,7 +311,7 @@ function Workbench() {
 function Overview() {
   const queries = useQueries({
       queries: contentTypes.map((contentType) => ({
-        queryFn: async () =>
+        queryFn: () =>
           Effect.runPromise(
             managementClient.queryEntries(contentType.identifier, { pageSize: 100 }),
           ),
@@ -319,7 +319,7 @@ function Overview() {
       })),
     }),
     assets = useQuery({
-      queryFn: async () => Effect.runPromise(managementClient.listAssets()),
+      queryFn: () => Effect.runPromise(managementClient.listAssets()),
       queryKey: ["assets"],
     }),
     counts = Object.fromEntries(
@@ -337,7 +337,7 @@ function Overview() {
     recentCandidates = queries.flatMap((query) => query.data?.items ?? []).slice(0, 12),
     recentRevisionQueries = useQueries({
       queries: recentCandidates.map((entry) => ({
-        queryFn: async () =>
+        queryFn: () =>
           Effect.runPromise(managementClient.listRevisions(entry.contentTypeId, entry.id)),
         queryKey: ["overview-revisions", entry.contentTypeId, entry.id],
       })),
@@ -357,9 +357,11 @@ function Overview() {
       .slice(0, 5),
     today = new Intl.DateTimeFormat(undefined, {
       dateStyle: "full",
-    }).format(new Date()),
+    }).format(DateTime.toDate(DateTime.nowUnsafe())),
     rebuild = useMutation({
+      // oxlint-disable-next-line effecttsgo/async-function -- React query mutation is an intentional browser async boundary.
       mutationFn: async () => {
+        // oxlint-disable-next-line effecttsgo/global-fetch -- Browser mutation boundary is owned by the UI query client.
         const response = await fetch("/development/rebuild", { method: "POST" });
         if (!response.ok) {
           throw new Error("The demonstration build could not be started");
@@ -504,7 +506,7 @@ function Overview() {
               <span className="entry-title">
                 <strong>{displayName(entry)}</strong>
                 <small>
-                  {entry.contentTypeId} · {new Date(recordedAt).toLocaleString()}
+                  {entry.contentTypeId} · {DateTime.toDate(DateTime.makeUnsafe(recordedAt)).toLocaleString()}
                 </small>
               </span>
               <span>→</span>
@@ -541,7 +543,7 @@ interface EditorialIssue {
 
 const editorialIssues = (error: unknown): readonly EditorialIssue[] => {
     if (
-      !(error instanceof ManagementClientFailure) ||
+      !Schema.is(ManagementClientFailure)(error) ||
       error.details === null ||
       typeof error.details !== "object"
     ) {
@@ -658,12 +660,15 @@ function ContentList() {
     queryOptions.where = { all: predicates };
   }
   const entries = useQuery({
-      queryFn: async () =>
+      queryFn: () =>
         Effect.runPromise(managementClient.queryEntries(contentTypeId, queryOptions)),
       queryKey: ["entries", contentTypeId, cursor, filterText, sortDirection, statusFilter],
     }),
     createEntry = useMutation({
+      // oxlint-disable-next-line effecttsgo(async-function) -- React query mutation must bridge browser fetch.
+      // oxlint-disable-next-line effecttsgo/async-function -- entry creation sequences dependent requests.
       mutationFn: async () => {
+        // oxlint-disable-next-line effecttsgo/crypto-random-uuid -- browser UI labels need a synchronous local identifier.
         const suffix = crypto.randomUUID().slice(0, 8),
           relatedContentTypeId = relatedContentType(contentTypeId);
         let related: { items: readonly { id: string }[] } | undefined;
@@ -699,7 +704,7 @@ function ContentList() {
         } else if (contentTypeId === "comment") {
           values = {
             body: "Comment awaiting editing.",
-            "created-at": new Date().toISOString(),
+            "created-at": DateTime.formatIso(DateTime.nowUnsafe()),
             "display-name": `Reader ${suffix}`,
             post: relatedEntryId,
             status: "pending",
@@ -715,6 +720,8 @@ function ContentList() {
         }
         return Effect.runPromise(managementClient.createEntry(contentTypeId, values));
       },
+      // oxlint-disable-next-line effecttsgo(async-function) -- React query callback sequences invalidation before navigation.
+      // oxlint-disable-next-line effecttsgo/async-function -- cache invalidation must remain sequential.
       onSuccess: async (result) => {
         let entry;
         if ("entry" in result) {
@@ -862,31 +869,31 @@ function EntryEditor() {
   const { contentTypeId, entryId } = useParams({ from: "/content/$contentTypeId/$entryId" }),
     navigate = useNavigate(),
     state = useQuery({
-      queryFn: async () =>
+      queryFn: () =>
         Effect.runPromise(managementClient.getCurrentState(contentTypeId, entryId)),
       queryKey: ["entry-state", contentTypeId, entryId],
     }),
     authors = useQuery({
       enabled: contentTypeId === "post",
-      queryFn: async () =>
+      queryFn: () =>
         Effect.runPromise(managementClient.queryEntries("author", { pageSize: 100 })),
       queryKey: ["relationship-options", "author"],
     }),
     categories = useQuery({
       enabled: contentTypeId === "post",
-      queryFn: async () =>
+      queryFn: () =>
         Effect.runPromise(managementClient.queryEntries("category", { pageSize: 100 })),
       queryKey: ["relationship-options", "category"],
     }),
     tags = useQuery({
       enabled: contentTypeId === "post",
-      queryFn: async () =>
+      queryFn: () =>
         Effect.runPromise(managementClient.queryEntries("tag", { pageSize: 100 })),
       queryKey: ["relationship-options", "tag"],
     }),
     assets = useQuery({
       enabled: contentTypeId === "post" || contentTypeId === "author",
-      queryFn: async () => Effect.runPromise(managementClient.listAssets()),
+      queryFn: () => Effect.runPromise(managementClient.listAssets()),
       queryKey: ["assets"],
     }),
     loadedEntryIdentifier = useRef<string | null>(null),
@@ -919,7 +926,7 @@ function EntryEditor() {
     }
   }, [entryId, state.data]);
   const save = useMutation({
-      mutationFn: async ({
+      mutationFn: ({
         replacementValues,
         writeToken,
       }: {
@@ -934,14 +941,16 @@ function EntryEditor() {
             writeToken,
           }),
         ),
+      // oxlint-disable-next-line effecttsgo/async-function -- React query error callback awaits the latest server state.
       onError: async (error) => {
-        if (error instanceof ManagementClientFailure && error.status === 409) {
+        if (Schema.is(ManagementClientFailure)(error) && error.status === 409) {
           const latest = await Effect.runPromise(
             managementClient.getCurrentState(contentTypeId, entryId),
           );
           setConflict({ latest });
         }
       },
+      // oxlint-disable-next-line effecttsgo/async-function -- React query callback awaits cache invalidation.
       onSuccess: async (result) => {
         let updatedState;
         if ("entry" in result) {
@@ -957,7 +966,7 @@ function EntryEditor() {
       },
     }),
     editorialCommand = useMutation({
-      mutationFn: async (status: "draft" | "published" | "approved" | "rejected") => {
+      mutationFn: (status: "draft" | "published" | "approved" | "rejected") => {
         if (state.data === undefined || (contentTypeId !== "post" && contentTypeId !== "comment")) {
           throw new Error("Current Entry state is unavailable");
         }
@@ -970,6 +979,7 @@ function EntryEditor() {
           }),
         );
       },
+      // oxlint-disable-next-line effecttsgo/async-function -- React query callback awaits cache invalidation.
       onSuccess: async (result) => {
         setValues(structuredClone(result.entry.values));
         await queryClient.invalidateQueries({ queryKey: ["entry-state", contentTypeId, entryId] });
@@ -978,6 +988,7 @@ function EntryEditor() {
       },
     }),
     deleteEntry = useMutation({
+      // oxlint-disable-next-line effecttsgo/async-function -- deletion sequence requires awaited server state.
       mutationFn: async () => {
         if (
           state.data === undefined ||
@@ -998,6 +1009,7 @@ function EntryEditor() {
         }
         return receipt;
       },
+      // oxlint-disable-next-line effecttsgo/async-function -- React query callback awaits cache invalidation.
       onSuccess: async (receipt) => {
         setConfirmDeletion(false);
         setDeletionRecord(receipt);
@@ -1007,7 +1019,7 @@ function EntryEditor() {
       },
     }),
     permanentlyPurge = useMutation({
-      mutationFn: async () => {
+      mutationFn: () => {
         if (deletionRecord === undefined) {
           throw new Error("Deletion record is unavailable");
         }
@@ -1019,6 +1031,10 @@ function EntryEditor() {
           ),
         );
       },
+      // oxlint-disable-next-line effecttsgo/async-function -- React query callback awaits navigation.
+      // oxlint-disable-next-line effecttsgo/async-function -- asset invalidation follows the completed upload.
+      // oxlint-disable-next-line effecttsgo/async-function -- cache invalidation follows deletion completion.
+      // oxlint-disable-next-line effecttsgo/async-function -- asset invalidation follows deletion completion.
       onSuccess: async () => {
         await navigate({ params: { contentTypeId }, to: "/content/$contentTypeId" });
       },
@@ -1132,9 +1148,10 @@ function EntryEditor() {
           </div>
         </section>
       )}
-      {state.isLoading ? (
+      {state.isLoading && (
         <p>Loading current state…</p>
-      ) : (
+      )}
+      {!state.isLoading && (
         <div className="editor-layout">
           <section className="story-canvas panel">
             <p className="eyebrow">Story canvas</p>
@@ -1538,7 +1555,7 @@ function EntryEditor() {
             aria-modal="true"
             aria-labelledby="entry-deletion-title"
           >
-            {deletionRecord === undefined ? (
+            {deletionRecord === undefined && (
               <>
                 <p className="eyebrow">Confirm deletion</p>
                 <h2 id="entry-deletion-title">Delete “{entryDeletionTitle(title)}”?</h2>
@@ -1566,7 +1583,8 @@ function EntryEditor() {
                   </button>
                 </div>
               </>
-            ) : (confirmPurge ? (
+            )}
+            {deletionRecord !== undefined && confirmPurge && (
               <>
                 <p className="eyebrow">Irreversible action</p>
                 <h2 id="entry-deletion-title">Permanently purge retained history?</h2>
@@ -1600,7 +1618,8 @@ function EntryEditor() {
                   </button>
                 </div>
               </>
-            ) : (
+            )}
+            {deletionRecord !== undefined && !confirmPurge && (
               <>
                 <p className="eyebrow">Entry deleted</p>
                 <h2 id="entry-deletion-title">The live Entry is gone</h2>
@@ -1626,7 +1645,7 @@ function EntryEditor() {
                   </button>
                 </div>
               </>
-            ))}
+            )}
           </div>
         </div>
       )}
@@ -1657,12 +1676,12 @@ function RichTextField({
         }
     >(),
     assets = useQuery({
-      queryFn: async () => Effect.runPromise(managementClient.listAssets()),
+      queryFn: () => Effect.runPromise(managementClient.listAssets()),
       queryKey: ["assets"],
     }),
     entryQueries = useQueries({
       queries: contentTypes.map((contentType) => ({
-        queryFn: async () =>
+        queryFn: () =>
           Effect.runPromise(
             managementClient.queryEntries(contentType.identifier, { pageSize: 100 }),
           ),
@@ -2005,20 +2024,20 @@ function HistoryPanel({
 }) {
   const [selectedRevisionNumber, setSelectedRevisionNumber] = useState<number>(),
     revisions = useQuery({
-      queryFn: async () =>
+      queryFn: () =>
         Effect.runPromise(managementClient.listRevisions(contentTypeId, entryId)),
       queryKey: ["revisions", contentTypeId, entryId],
     }),
     inspectedRevision = useQuery({
       enabled: selectedRevisionNumber !== undefined,
-      queryFn: async () =>
+      queryFn: () =>
         Effect.runPromise(
           managementClient.inspectRevision(contentTypeId, entryId, selectedRevisionNumber ?? 0),
         ),
       queryKey: ["revision", contentTypeId, entryId, selectedRevisionNumber],
     }),
     restore = useMutation({
-      mutationFn: async (revisionNumber: number) => {
+      mutationFn: (revisionNumber: number) => {
         if (writeToken === undefined) {
           throw new Error("Current Write Token is unavailable");
         }
@@ -2031,6 +2050,7 @@ function HistoryPanel({
           }),
         );
       },
+      // oxlint-disable-next-line effecttsgo/async-function -- React query callback awaits cache invalidation.
       onSuccess: async () => {
         setSelectedRevisionNumber(undefined);
         await queryClient.invalidateQueries({ queryKey: ["entry-state", contentTypeId, entryId] });
@@ -2059,7 +2079,7 @@ function HistoryPanel({
             <strong>Revision {revision.revisionNumber}</strong>
             <small>
               {revisionLabel(index)}
-              {new Date(revision.recordedAt).toLocaleString()}
+              {DateTime.toDate(DateTime.makeUnsafe(revision.recordedAt)).toLocaleString()}
             </small>
           </span>
         </button>
@@ -2082,9 +2102,10 @@ function HistoryPanel({
                 Close
               </button>
             </div>
-            {inspectedRevision.isLoading ? (
+            {inspectedRevision.isLoading && (
               <p>Loading revision…</p>
-            ) : (
+            )}
+            {!inspectedRevision.isLoading && (
               <pre>{JSON.stringify(inspectedRevision.data?.values, null, 2)}</pre>
             )}
             <button
@@ -2111,20 +2132,23 @@ function AssetsPage() {
     [replacementConfirmationAssetId, setReplacementConfirmationAssetId] = useState<string>(),
     [deletionAssetId, setDeletionAssetId] = useState<string>(),
     assets = useQuery({
-      queryFn: async () => Effect.runPromise(managementClient.listAssets()),
+      queryFn: () => Effect.runPromise(managementClient.listAssets()),
       queryKey: ["assets"],
     }),
     upload = useMutation({
-      mutationFn: async (file: File) => Effect.runPromise(managementClient.uploadAsset(file)),
+      mutationFn: (file: File) => Effect.runPromise(managementClient.uploadAsset(file)),
+      // oxlint-disable-next-line effecttsgo/async-function -- React query callback awaits cache invalidation.
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: ["assets"] });
       },
     }),
     replace = useMutation({
-      mutationFn: async ({ assetId, file }: { readonly assetId: string; readonly file: File }) =>
+      mutationFn: ({ assetId, file }: { readonly assetId: string; readonly file: File }) =>
         Effect.runPromise(
+          // oxlint-disable-next-line effecttsgo/crypto-random-uuid -- the management client accepts a synchronous idempotency key.
           managementClient.replaceImage(assetId, file, `replace-${crypto.randomUUID()}`),
         ),
+      // oxlint-disable-next-line effecttsgo/async-function -- React query callback awaits cache invalidation.
       onSuccess: async () => {
         setReplacementAssetId(undefined);
         await queryClient.invalidateQueries({ queryKey: ["assets"] });
@@ -2133,15 +2157,17 @@ function AssetsPage() {
       },
     }),
     deleteImage = useMutation({
-      mutationFn: async (assetId: string) =>
+      mutationFn: (assetId: string) =>
         Effect.runPromise(
+          // oxlint-disable-next-line effecttsgo/crypto-random-uuid -- the management client accepts a synchronous idempotency key.
           managementClient.deleteImageAndClearAssignments(assetId, `delete-${crypto.randomUUID()}`),
         ),
-      onSuccess: async () => {
+      onSuccess: () => {
         setDeletionAssetId(undefined);
-        await queryClient.invalidateQueries({ queryKey: ["assets"] });
-        await queryClient.invalidateQueries({ queryKey: ["entry-state"] });
-        await queryClient.invalidateQueries({ queryKey: ["entries"] });
+        return queryClient
+          .invalidateQueries({ queryKey: ["assets"] })
+          .then(() => queryClient.invalidateQueries({ queryKey: ["entry-state"] }))
+          .then(() => queryClient.invalidateQueries({ queryKey: ["entries"] }));
       },
     }),
     chooseFile = () => {
@@ -2210,12 +2236,13 @@ function AssetsPage() {
         {assets.data?.map((asset: AssetRepresentation) => (
           <article className="asset-card" key={asset.id}>
             <div className="asset-preview">
-              {asset.metadata.mediaType.startsWith("image/") ? (
+              {asset.metadata.mediaType.startsWith("image/") && (
                 <img
                   src={`/api/v1/management/definition-spaces/example-blog/assets/${encodeURIComponent(asset.id)}/content`}
                   alt={asset.metadata.defaultAlternativeText ?? asset.metadata.filename}
                 />
-              ) : (
+              )}
+              {!asset.metadata.mediaType.startsWith("image/") && (
                 <span aria-hidden="true">◫</span>
               )}
             </div>

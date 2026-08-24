@@ -1,10 +1,18 @@
 import { createHash } from "node:crypto";
-import { Effect, Layer, Stream, SynchronizedRef } from "effect";
+import { Effect, Layer, Schema, Stream, SynchronizedRef } from "effect";
 import { type Asset, Management, type Metadata, type StoredAsset } from "../asset.ts";
 import { type InfrastructureFailure, InvalidInput, NotFound } from "../cms-error.ts";
 import { Generator } from "../identifier.ts";
 
-const DEFAULT_MAXIMUM_BYTE_LENGTH = 25_000_000,
+const AssetMetadataInput = Schema.Struct({
+  defaultAlternativeText: Schema.optional(Schema.String),
+  filename: Schema.String,
+  height: Schema.optional(Schema.Finite),
+  mediaType: Schema.String,
+  width: Schema.optional(Schema.Finite),
+}),
+
+ DEFAULT_MAXIMUM_BYTE_LENGTH = 25_000_000,
   DEFAULT_MAXIMUM_METADATA_BYTE_LENGTH = 16_384,
   EMPTY_BYTE_LENGTH = 0;
 
@@ -18,7 +26,7 @@ const collectBytes = (
   content: Uint8Array | Stream.Stream<Uint8Array, InfrastructureFailure>,
 ): Effect.Effect<Uint8Array, InfrastructureFailure> => {
   if (content instanceof Uint8Array) {
-    return Effect.succeed(content.slice());
+    return Effect.succeed([...content]);
   }
   return Stream.runCollect(content).pipe(
     Effect.map((arrays) => {
@@ -76,7 +84,17 @@ export const layer = (options: Options = {}): Layer.Layer<Management, never, Gen
               });
             }
             if (
-              new TextEncoder().encode(JSON.stringify({ ...input, content: undefined }))
+              new TextEncoder().encode(
+                yield* Schema.encodeEffect(Schema.fromJsonString(AssetMetadataInput))({
+                  filename: input.filename,
+                  mediaType: input.mediaType,
+                  ...(input.width === undefined ? {} : { width: input.width }),
+                  ...(input.height === undefined ? {} : { height: input.height }),
+                  ...(input.defaultAlternativeText === undefined
+                    ? {}
+                    : { defaultAlternativeText: input.defaultAlternativeText }),
+                }).pipe(Effect.orDie),
+              )
                 .byteLength > maximumMetadataByteLength
             ) {
               return yield* InvalidInput.make({
@@ -128,7 +146,7 @@ export const layer = (options: Options = {}): Layer.Layer<Management, never, Gen
               if (asset === undefined) {
                 return Effect.fail(NotFound.make({ message: `Asset ${assetId} was not found` }));
               }
-              return Effect.succeed({ ...asset, bytes: asset.bytes.slice() });
+          return Effect.succeed({ ...asset, bytes: [...asset.bytes] });
             }),
           ),
       });

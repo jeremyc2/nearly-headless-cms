@@ -1,5 +1,7 @@
 import { afterAll, describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
+// Baseline paths are test-runner setup paths; there is no Effect runtime involved in this Bun test.
+// oxlint-disable-next-line effecttsgo/node-builtin-import
 import { join } from "node:path";
 
 let acceptanceTest = test.skip;
@@ -30,9 +32,10 @@ const baselineDirectory = join(import.meta.dir, "baselines"),
     { height: 1000, width: 1440 },
   ] as const,
   waitUntilReady = (view: Bun.WebView, expression: string): Promise<void> => {
-    const deadline = Date.now() + settleTimeoutMilliseconds,
+    const deadline = performance.now() + settleTimeoutMilliseconds,
+      // oxlint-disable-next-line effecttsgo/async-function -- Bun WebView evaluation and sleep are Promise-based platform lifecycle operations.
       poll = async (): Promise<void> => {
-        if (Date.now() >= deadline) {
+        if (performance.now() >= deadline) {
           throw new Error(`Visual page did not settle: ${expression}`);
         }
         if (await view.evaluate<boolean>(expression)) {
@@ -51,6 +54,7 @@ afterAll(() => {
   Bun.WebView.closeAll();
 });
 
+// oxlint-disable-next-line effecttsgo/async-function -- screenshot and filesystem APIs are Promise-based Bun platform operations.
 const captureAndCheckBaseline = async (
   view: Bun.WebView,
   pageName: string,
@@ -78,6 +82,7 @@ describe("responsive visual baselines", () => {
     for (const viewport of viewports) {
       acceptanceTest(
         `${page.name} at ${viewport.width}×${viewport.height}`,
+        // oxlint-disable-next-line effecttsgo/async-function -- Bun's test runner requires a Promise-returning lifecycle callback.
         async () => {
           const view = new Bun.WebView({ height: viewport.height, width: viewport.width });
           try {

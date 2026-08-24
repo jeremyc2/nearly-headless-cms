@@ -1,5 +1,6 @@
-import { Conflict, InvalidInput, type ValidationIssue } from "./cms-error.ts";
 import { Schema } from "effect";
+import { dual } from "effect/Function";
+import { Conflict, InvalidInput, type ValidationIssue } from "./cms-error.ts";
 import type { CompiledSnapshot } from "./content-definition.ts";
 import type { Representation } from "./entry.ts";
 import type { JsonObject, JsonValue } from "./internal/json.ts";
@@ -166,7 +167,8 @@ export const prepare = (input: PreparationInput): Preparation => {
 };
 
 /** Rejects a preparation whose source Entry generation has changed. */
-export const assertFresh = (preparation: Preparation, currentGeneration: number): void => {
+// oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- dual's generic overload is not inferred by the linter for this public helper.
+export const assertFresh = dual(2, (preparation: Preparation, currentGeneration: number): void => {
   if (preparation.sourceGeneration !== currentGeneration) {
     throw Conflict.make({
       message: "Migration Preparation is stale because the source generation changed",
@@ -175,7 +177,7 @@ export const assertFresh = (preparation: Preparation, currentGeneration: number)
   if (preparation.report.status !== "ready") {
     throw InvalidInput.make({ message: "A failed Migration Preparation cannot be cut over" });
   }
-};
+});
 
 interface PathCountInput {
   readonly manifests: readonly Manifest[];
@@ -245,7 +247,8 @@ export const validateGraph = (manifests: readonly Manifest[]): void => {
 };
 
 /** Resolves the unique ordered migration path between two snapshots. */
-export const path = (
+// oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- dual's generic overload is not inferred by the linter for this public helper.
+export const path = dual(3, (
   manifests: readonly Manifest[],
   sourceSnapshotId: string,
   targetSnapshotId: string,
@@ -279,7 +282,7 @@ export const path = (
     });
   }
   return found;
-};
+});
 
 /** Persistable Migration Manifest metadata without executable compatibility logic. */
 export interface SerializableManifest extends Omit<Manifest, "compatible"> {

@@ -279,6 +279,18 @@ const encodeCursor = (cursor: CursorPayload): string =>
     }
     return !matchesPredicate(values, predicate.not);
   },
+  predicateChildren = (predicate: Predicate): readonly Predicate[] => {
+    if (isAllPredicate(predicate)) {
+      return predicate.all;
+    }
+    if (isAnyPredicate(predicate)) {
+      return predicate.any;
+    }
+    if ("not" in predicate) {
+      return [predicate.not];
+    }
+    return [];
+  },
   findField = (fields: readonly ResolvedField[], path: string): ResolvedField | undefined => {
     const segments = path.split(".");
     let currentFields = fields,
@@ -313,10 +325,7 @@ const encodeCursor = (cursor: CursorPayload): string =>
       }
       return;
     }
-    let children: readonly Predicate[];
-    if (isAllPredicate(predicate)) {children = predicate.all;}
-    else if (isAnyPredicate(predicate)) {children = predicate.any;}
-    else {children = [predicate.not];}
+    const children = predicateChildren(predicate);
     if (children.length === ZERO) {
       throw InvalidInput.make({ message: "Boolean Query groups cannot be empty" });
     }

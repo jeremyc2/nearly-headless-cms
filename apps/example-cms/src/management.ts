@@ -6,7 +6,7 @@ import {
   type EntryQuery,
 } from "nearly-headless-cms";
 import type { HttpContract } from "nearly-headless-cms/http";
-import { Effect, Schema } from "effect";
+import { DateTime, Effect, Schema } from "effect";
 
 function conditionalProperty<T>(condition: boolean, property: string, value: T): Record<string, T> {
   if (condition) {
@@ -65,7 +65,13 @@ interface UsesAssetInput {
   readonly values: ContentDefinition.JsonObject;
 }
 
-const collectRichTextPublicationRules = ({
+const isJsonValueArray = (
+  value: ContentDefinition.JsonValue,
+): value is readonly ContentDefinition.JsonValue[] => Array.isArray(value),
+ isRecord = (value: object): value is Record<string, unknown> =>
+    Object.keys(value).every((key) => typeof key === "string"),
+
+ collectRichTextPublicationRules = ({
     issues,
     path,
     references,
@@ -85,9 +91,11 @@ const collectRichTextPublicationRules = ({
     if (value === null || typeof value !== "object") {
       return;
     }
-    const nodeType = Reflect.get(value, "type"),
-      alternativeText = Reflect.get(value, "alternativeText"),
-      entryIdentifier = Reflect.get(value, "entryId");
+    if (!isRecord(value)) {return;}
+    const objectValue = value,
+     nodeType = objectValue["type"],
+      {alternativeText} = objectValue,
+      entryIdentifier = objectValue["entryId"];
     if (
       nodeType === "asset-reference" &&
       (typeof alternativeText !== "string" || alternativeText.trim() === "")
@@ -135,11 +143,7 @@ const collectRichTextPublicationRules = ({
         value: values["body"],
       });
       for (const reference of references) {
-        let target: Awaited<
-          ReturnType<Cms.ServiceShape["getEntry"]> extends Effect.Effect<infer Value, unknown>
-            ? Value
-            : never
-        > | null = null;
+        let target: Entry.Representation | null = null;
         for (const contentTypeIdentifier of ["post", "author", "category", "tag"]) {
           target = yield* cms
             .getEntry({ contentTypeId: contentTypeIdentifier, entryId: reference.entryIdentifier })
@@ -189,7 +193,7 @@ const collectRichTextPublicationRules = ({
           status === "published" &&
           current.values["published-at"] == null
         ) {
-          Object.assign(values, { "published-at": new Date().toISOString() });
+          Object.assign(values, { "published-at": DateTime.formatIso(yield* DateTime.now) });
         }
         return yield* cms.updateEntry({
           contentTypeId,
@@ -387,45 +391,47 @@ const collectRichTextPublicationRules = ({
         CmsError.InvalidInput.make({
           message: "Image replacement requires multipart metadata and content",
         }),
-      try: async () => {
-        const form = await request.formData(),
-          metadataValue = form.get("metadata"),
-          contentValue = form.get("content");
-        if (typeof metadataValue !== "string" || !(contentValue instanceof File)) {
-          throw new Error("invalid replacement upload");
-        }
-        const metadata: unknown = JSON.parse(metadataValue);
-        if (metadata === null || typeof metadata !== "object" || Array.isArray(metadata)) {
-          throw new Error("invalid replacement metadata");
-        }
-        const filename = Reflect.get(metadata, "filename"),
-          mediaType = Reflect.get(metadata, "mediaType"),
-          defaultAlternativeText = Reflect.get(metadata, "defaultAlternativeText"),
-          height = Reflect.get(metadata, "height"),
-          width = Reflect.get(metadata, "width");
-        if (typeof filename !== "string" || typeof mediaType !== "string") {
-          throw new TypeError("invalid replacement metadata");
-        }
-        return {
-          content: new Uint8Array(await contentValue.arrayBuffer()),
-          filename,
-          mediaType,
-          ...conditionalProperty(
-            typeof defaultAlternativeText === "string",
-            "defaultAlternativeText",
-            defaultAlternativeText,
-          ),
-          ...conditionalProperty(typeof height === "number", "height", height),
-          ...conditionalProperty(typeof width === "number", "width", width),
-        };
-      },
+      try: () =>
+        request.formData().then((form) => {
+          const metadataValue = form.get("metadata"),
+            contentValue = form.get("content");
+          if (typeof metadataValue !== "string" || !(contentValue instanceof File)) {
+            throw new Error("invalid replacement upload");
+          }
+          const metadata: unknown = JSON.parse(metadataValue);
+          if (metadata === null || typeof metadata !== "object" || Array.isArray(metadata)) {
+            throw new Error("invalid replacement metadata");
+          }
+          if (!isRecord(metadata)) {throw new Error("invalid replacement metadata");}
+          const metadataObject = metadata,
+           {filename} = metadataObject,
+            {mediaType} = metadataObject,
+            {defaultAlternativeText} = metadataObject,
+            {height} = metadataObject,
+            {width} = metadataObject;
+          if (typeof filename !== "string" || typeof mediaType !== "string") {
+            throw new TypeError("invalid replacement metadata");
+          }
+          return contentValue.arrayBuffer().then((content) => ({
+            content: new Uint8Array(content),
+            filename,
+            mediaType,
+            ...conditionalProperty(
+              typeof defaultAlternativeText === "string",
+              "defaultAlternativeText",
+              defaultAlternativeText,
+            ),
+            ...conditionalProperty(typeof height === "number", "height", height),
+            ...conditionalProperty(typeof width === "number", "width", width),
+          }));
+        }),
     }),
   replaceRichTextAsset = (
     value: ContentDefinition.JsonValue,
     oldAssetId: string,
     newAssetId: string,
   ): ContentDefinition.JsonValue => {
-    if (Array.isArray(value)) {
+    if (isJsonValueArray(value)) {
       return value.map((item) => replaceRichTextAsset(item, oldAssetId, newAssetId));
     }
     if (value === null || typeof value !== "object") {

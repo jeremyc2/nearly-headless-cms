@@ -102,10 +102,10 @@ const emptyCollectionLength = 0,
   };
 
 describe("Authorization and Relationship Expansion contract", () => {
-  test("materializes bounded scalar and list paths with exactly one expansion authorization", async () => {
+  test("materializes bounded scalar and list paths with exactly one expansion authorization", () => {
     const actions: Action[] = [],
       deniedAction: { current?: Action } = {};
-    await Effect.runPromise(
+    return Effect.runPromise(
       Effect.gen(function* () {
         const cms = yield* CmsService,
           ada = yield* cms.createEntry({
@@ -206,6 +206,8 @@ describe("Authorization and Relationship Expansion contract", () => {
         );
         expect(Exit.isFailure(denied)).toBeTrue();
         expect(actions).toEqual(["entry.read", "entry.expand"]);
+      // This test invocation is the application entry point and owns the isolated CMS layer.
+      // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer.
       }).pipe(Effect.provide(makeLayer(actions, deniedAction))),
     );
   });

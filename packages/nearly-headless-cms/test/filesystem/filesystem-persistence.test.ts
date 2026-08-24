@@ -1,9 +1,13 @@
 import { describe, expect, test } from "bun:test";
+// The test exercises the Bun filesystem adapter's on-disk behavior; these helpers have no Bun equivalent.
+// oxlint-disable-next-line effecttsgo/node-builtin-import
 import { mkdtemp, readdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
+// Path joining is host-path setup for this filesystem integration test, outside the Effect service graph.
+// oxlint-disable-next-line effecttsgo/node-builtin-import
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { Deferred, Effect, Exit, Fiber, Layer, Stream } from "effect";
+import { DateTime, Deferred, Effect, Exit, Fiber, Layer, Stream } from "effect";
 import { Asset, ContentDefinition, Persistence } from "../../src/index.ts";
 import { CryptoIdentifierGenerator } from "../../src/adapters/index.ts";
 import { BunFilesystemPersistence } from "../../src/bun/filesystem/index.ts";
@@ -18,9 +22,25 @@ const cancellationPollAttempts = 50,
   secondByte = 2,
   seventhByte = 7,
   sixthByte = 6,
-  thirdByte = 3;
+  thirdByte = 3,
+
+ waitForStage = (root: string, attempt = 0): Promise<boolean> =>
+  readdir(join(root, "blobs")).then((blobNames) => {
+    if (blobNames.some((name) => name.startsWith(".nhcms-stage-"))) {return true;}
+    if (attempt >= cancellationPollAttempts - firstByte) {return false;}
+    return Bun.sleep(cancellationPollDelayMilliseconds).then(() => waitForStage(root, attempt + firstByte));
+  }),
+
+ waitForNoStage = (root: string, attempt = 0): Promise<string[]> =>
+  readdir(join(root, "blobs")).then((blobNames) => {
+    const staging = blobNames.filter((name) => name.startsWith(".nhcms-stage-"));
+    if (staging.length === 0 || attempt >= cancellationPollAttempts - firstByte) {return staging;}
+    return Bun.sleep(cancellationPollDelayMilliseconds).then(() => waitForNoStage(root, attempt + firstByte));
+  });
 
 describe("BunFilesystemPersistence", () => {
+  // Bun's test runner requires async callbacks for assertions over filesystem promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- Bun test callback intentionally awaits native filesystem APIs.
   test("durably commits the Definition Catalog and Entry generation in one cutover", async () => {
     const root = await mkdtemp(join(tmpdir(), "nearly-headless-cms-cutover-")),
       initialSnapshot = ContentDefinition.compile({
@@ -79,7 +99,7 @@ describe("BunFilesystemPersistence", () => {
             ]),
           ),
           catalogState = yield* catalog.read,
-          activatedAt = new Date().toISOString(),
+          activatedAt = DateTime.formatIso(yield* DateTime.now),
           snapshotRecord = {
             activatedAt,
             compiled: targetSnapshot,
@@ -96,7 +116,11 @@ describe("BunFilesystemPersistence", () => {
           expectedCatalogVersion: catalogState.version,
           expectedEntryGeneration: generationWithEntry.generation,
         });
-      }).pipe(Effect.provide(makeLayer())),
+      }).pipe(
+        // This test invocation is the application entry point and owns the isolated CMS layer.
+        // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer.
+        Effect.provide(makeLayer()),
+      ),
     );
 
     const recovered = await Effect.runPromise(
@@ -104,12 +128,18 @@ describe("BunFilesystemPersistence", () => {
         const entries = yield* Persistence.EntryPersistence,
           catalog = yield* Persistence.DefinitionCatalog;
         return { catalog: yield* catalog.read, entries: yield* entries.readGeneration };
-      }).pipe(Effect.provide(makeLayer())),
+      }).pipe(
+        // This test invocation is the application entry point and owns the isolated CMS layer.
+        // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer.
+        Effect.provide(makeLayer()),
+      ),
     );
     expect(recovered.catalog.active.compiled.snapshotId).toBe("with-slug");
     expect(recovered.entries.records.get("note-1")?.entry.values["slug"]).toBe("durable");
   });
 
+  // Bun's test runner requires async callbacks for assertions over filesystem promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- Bun test callback intentionally awaits native filesystem APIs.
   test("recovers committed Entry generations and digest-verified Assets after restart", async () => {
     const root = await mkdtemp(join(tmpdir(), "nearly-headless-cms-")),
       filesystemLayer = BunFilesystemPersistence.layer({ acknowledgement: "atomic", root }).pipe(
@@ -138,7 +168,11 @@ describe("BunFilesystemPersistence", () => {
             mediaType: "text/plain",
           });
           return asset.id;
-        }).pipe(Effect.provide(filesystemLayer)),
+        }).pipe(
+          // This test invocation is the application entry point and owns the isolated filesystem layer.
+          // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer.
+          Effect.provide(filesystemLayer),
+        ),
       ),
       recovered = await Effect.runPromise(
         Effect.gen(function* recovered() {
@@ -149,6 +183,8 @@ describe("BunFilesystemPersistence", () => {
             generation: yield* entries.readGeneration,
           };
         }).pipe(
+          // This test invocation is the application entry point and owns the isolated filesystem layer.
+          // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer.
           Effect.provide(
             BunFilesystemPersistence.layer({ acknowledgement: "atomic", root }).pipe(
               Layer.provide(CryptoIdentifierGenerator.layer),
@@ -161,6 +197,8 @@ describe("BunFilesystemPersistence", () => {
     expect(new TextDecoder().decode(recovered.asset.bytes)).toBe("asset bytes");
   });
 
+  // Bun's test runner requires async callbacks for assertions over filesystem promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- Bun test callback intentionally awaits native filesystem APIs.
   test("interrupts an oversized Asset stream at the configured bound", async () => {
     const root = await mkdtemp(join(tmpdir(), "nearly-headless-cms-bounded-stream-")),
       filesystemLayer = BunFilesystemPersistence.layer({
@@ -190,12 +228,18 @@ describe("BunFilesystemPersistence", () => {
               mediaType: "application/octet-stream",
             }),
           );
-        }).pipe(Effect.provide(filesystemLayer)),
+        }).pipe(
+          // This test invocation is the application entry point and owns the isolated filesystem layer.
+          // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer.
+          Effect.provide(filesystemLayer),
+        ),
       );
     expect(Exit.isFailure(result)).toBeTrue();
     expect(pulledChunks).toBe(secondByte);
   });
 
+  // Bun's test runner requires async callbacks for assertions over filesystem promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- Bun test callback intentionally awaits native filesystem APIs.
   test("stages Asset chunks before the source completes and removes the stage on cancellation", async () => {
     const root = await mkdtemp(join(tmpdir(), "nearly-headless-cms-stream-stage-")),
       filesystemLayer = BunFilesystemPersistence.layer({ acknowledgement: "atomic", root }).pipe(
@@ -217,37 +261,23 @@ describe("BunFilesystemPersistence", () => {
               })
               .pipe(Effect.forkChild);
           yield* Deferred.await(firstChunkPulled);
-          const stageExistedWhilePending = yield* Effect.promise(async () => {
-            for (let attempt = 0; attempt < cancellationPollAttempts; attempt += firstByte) {
-              const blobNames = await readdir(join(root, "blobs"));
-              if (blobNames.some((name) => name.startsWith(".nhcms-stage-"))) {
-                return true;
-              }
-              await Bun.sleep(cancellationPollDelayMilliseconds);
-            }
-            return false;
-          });
+          const stageExistedWhilePending = yield* Effect.promise(() => waitForStage(root));
           yield* Fiber.interrupt(ingestion);
-          const stagingAfterCancellation = yield* Effect.promise(async () => {
-            for (let attempt = 0; attempt < cancellationPollAttempts; attempt += firstByte) {
-              const blobNames = await readdir(join(root, "blobs")),
-                staging = blobNames.filter((name) => name.startsWith(".nhcms-stage-"));
-              if (staging.length === 0) {
-                return staging;
-              }
-              await Bun.sleep(cancellationPollDelayMilliseconds);
-            }
-            const blobNames = await readdir(join(root, "blobs"));
-            return blobNames.filter((name) => name.startsWith(".nhcms-stage-"));
-          });
+          const stagingAfterCancellation = yield* Effect.promise(() => waitForNoStage(root));
           return { stageExistedWhilePending, stagingAfterCancellation };
-        }).pipe(Effect.provide(filesystemLayer)),
+        }).pipe(
+          // This test invocation is the application entry point and owns the isolated filesystem layer.
+          // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer.
+          Effect.provide(filesystemLayer),
+        ),
       );
 
     expect(observed.stageExistedWhilePending).toBeTrue();
     expect(observed.stagingAfterCancellation).toEqual([]);
   });
 
+  // Bun's test runner requires async callbacks for assertions over filesystem promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- Bun test callback intentionally awaits native filesystem APIs.
   test("enforces one writer and only cleans the exact abandoned-staging convention", async () => {
     const root = await mkdtemp(join(tmpdir(), "nearly-headless-cms-writer-")),
       makeFilesystemLayer = () =>
@@ -269,6 +299,8 @@ describe("BunFilesystemPersistence", () => {
     await Effect.runPromise(
       Persistence.EntryPersistence.pipe(
         Effect.flatMap((entries) => entries.readGeneration),
+        // This test invocation is the application entry point and owns the isolated filesystem layer.
+        // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer.
         Effect.provide(makeFilesystemLayer()),
       ),
     );
@@ -284,6 +316,8 @@ describe("BunFilesystemPersistence", () => {
       Effect.exit(
         Persistence.EntryPersistence.pipe(
           Effect.flatMap((entries) => entries.readGeneration),
+          // This test invocation is the application entry point and owns the isolated filesystem layer.
+          // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer.
           Effect.provide(makeFilesystemLayer()),
         ),
       ),
@@ -293,6 +327,8 @@ describe("BunFilesystemPersistence", () => {
     expect(await Bun.file(join(root, "writer.lock")).exists()).toBeFalse();
   });
 
+  // Bun's test runner requires async callbacks for assertions over filesystem promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- Bun test callback intentionally awaits native filesystem APIs.
   test("recovers the writer lock after its owning process terminates", async () => {
     const root = await mkdtemp(join(tmpdir(), "nearly-headless-cms-writer-crash-")),
       packageSourceUrl = pathToFileURL(join(import.meta.dir, "../../src/index.ts")).href,
@@ -334,6 +370,8 @@ describe("BunFilesystemPersistence", () => {
     const recoveredGeneration = await Effect.runPromise(
       Persistence.EntryPersistence.pipe(
         Effect.flatMap((entries) => entries.readGeneration),
+        // This test invocation is the application entry point and owns the isolated filesystem layer.
+        // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer.
         Effect.provide(
           BunFilesystemPersistence.layer({ acknowledgement: "atomic", root }).pipe(
             Layer.provide(CryptoIdentifierGenerator.layer),

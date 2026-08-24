@@ -1,10 +1,10 @@
 import { InvalidInput, type ValidationIssue } from "./cms-error.ts";
+import { dual } from "effect/Function";
 import { type JsonObject, type JsonValue, isJsonValue } from "./internal/json.ts";
 
-/** Stable identifier stored in every Nearly Headless CMS Rich Text document. */
-export const format = "nearly-headless-cms/rich-text";
-/** Current serialized Rich Text document format version. */
+/** Stable identifier and serialized format constants for every Rich Text document. */
 export const emptyLength = 0,
+  format = "nearly-headless-cms/rich-text",
   formatVersion = 1,
   headingLevels = [2, 3, 4] as const;
 
@@ -148,11 +148,11 @@ const coreNodeTypes = new Set([
     node: Readonly<Record<string, unknown>>,
     path: readonly (string | number)[],
   ): readonly ValidationIssue[] => {
-    const issues: ValidationIssue[] = [];
+    const issues: ValidationIssue[] = [],
+      { marks } = node;
     if (typeof node["text"] !== "string") {
       issues.push(makeIssue([...path, "text"], "expectedText", "Text leaves require text"));
     }
-    const { marks } = node;
     if (marks !== undefined) {
       if (
         !Array.isArray(marks) ||
@@ -170,6 +170,40 @@ const coreNodeTypes = new Set([
     }
     return issues;
   },
+  validateLink = (
+    node: Readonly<Record<string, unknown>>,
+    path: readonly (string | number)[],
+  ): readonly ValidationIssue[] => {
+    const issues: ValidationIssue[] = [];
+    if (typeof node["url"] !== "string" || !URL.canParse(node["url"])) {
+      issues.push(makeIssue([...path, "url"], "expectedUrl", "Link requires a valid URL"));
+    }
+    if (Array.isArray(node["children"])) {
+      for (const [index, child] of node["children"].entries()) {
+        issues.push(...validateTextChild(child, [...path, "children", index]));
+      }
+    } else {
+      issues.push(makeIssue([...path, "children"], "expectedChildren", "Link requires text children"));
+    }
+    return issues;
+  },
+  validateEntryReference = (
+    node: Readonly<Record<string, unknown>>,
+    path: readonly (string | number)[],
+  ): readonly ValidationIssue[] => {
+    const issues: ValidationIssue[] = [];
+    if (typeof node["entryId"] !== "string" || node["entryId"].length === emptyLength) {
+      issues.push(makeIssue([...path, "entryId"], "expectedEntryId", "Entry reference requires an Entry ID"));
+    }
+    if (!Array.isArray(node["children"]) || node["children"].length === emptyLength) {
+      issues.push(makeIssue([...path, "children"], "requiredLabel", "Entry reference requires an authored label"));
+    } else {
+      for (const [index, child] of node["children"].entries()) {
+        issues.push(...validateTextChild(child, [...path, "children", index]));
+      }
+    }
+    return issues;
+  },
   validateInline = (
     node: unknown,
     path: readonly (string | number)[],
@@ -182,50 +216,10 @@ const coreNodeTypes = new Set([
         return validateText(node, path);
       }
       case "link": {
-        const issues: ValidationIssue[] = [];
-        if (typeof node["url"] === "string") {
-          if (!URL.canParse(node["url"])) {
-            issues.push(makeIssue([...path, "url"], "expectedUrl", "Link URL is invalid"));
-          }
-        } else {
-          issues.push(makeIssue([...path, "url"], "expectedUrl", "Link requires a URL"));
-        }
-        if (Array.isArray(node["children"])) {
-          for (const [index, child] of node["children"].entries()) {
-            issues.push(...validateTextChild(child, [...path, "children", index]));
-          }
-        } else {
-          issues.push(
-            makeIssue([...path, "children"], "expectedChildren", "Link requires text children"),
-          );
-        }
-        return issues;
+        return validateLink(node, path);
       }
       case "entry-reference": {
-        const issues: ValidationIssue[] = [];
-        if (typeof node["entryId"] !== "string" || node["entryId"].length === emptyLength) {
-          issues.push(
-            makeIssue(
-              [...path, "entryId"],
-              "expectedEntryId",
-              "Entry reference requires an Entry ID",
-            ),
-          );
-        }
-        if (!Array.isArray(node["children"]) || node["children"].length === emptyLength) {
-          issues.push(
-            makeIssue(
-              [...path, "children"],
-              "requiredLabel",
-              "Entry reference requires an authored label",
-            ),
-          );
-        } else {
-          for (const [index, child] of node["children"].entries()) {
-            issues.push(...validateTextChild(child, [...path, "children", index]));
-          }
-        }
-        return issues;
+        return validateEntryReference(node, path);
       }
       default: {
         return [makeIssue(path, "invalidInlineNode", `Node ${node["type"]} is not allowed inline`)];
@@ -246,6 +240,37 @@ const coreNodeTypes = new Set([
       ];
     }
     return validateText(node, path);
+  },
+  validateInlineChildren = (
+    children: unknown[],
+    path: readonly (string | number)[],
+  ): readonly ValidationIssue[] => children.flatMap((child, index) =>
+    validateInline(child, [...path, index]),
+  ),
+  validateTextChildren = (
+    children: unknown[],
+    path: readonly (string | number)[],
+  ): readonly ValidationIssue[] => children.flatMap((child, index) =>
+    validateTextChild(child, [...path, index]),
+  ),
+  validateAssetReference = (
+    node: Readonly<Record<string, unknown>>,
+    path: readonly (string | number)[],
+  ): readonly ValidationIssue[] => {
+    const issues: ValidationIssue[] = [];
+    if (typeof node["assetId"] !== "string" || node["assetId"].length === emptyLength) {
+      issues.push(makeIssue([...path, "assetId"], "expectedAssetId", "Asset reference requires an Asset ID"));
+    }
+    if (typeof node["alternativeText"] !== "string") {
+      issues.push(makeIssue([...path, "alternativeText"], "expectedAlternativeText", "Asset reference requires authored alternative text"));
+    }
+    if (node["caption"] !== undefined && typeof node["caption"] !== "string") {
+      issues.push(makeIssue([...path, "caption"], "expectedCaption", "Caption must be text"));
+    }
+    if (!Array.isArray(node["children"]) || node["children"].length > emptyLength) {
+      issues.push(makeIssue([...path, "children"], "assetReferenceIsAtomic", "Asset reference cannot contain children"));
+    }
+    return issues;
   },
   validateBlock = (
     node: unknown,
@@ -272,9 +297,7 @@ const coreNodeTypes = new Set([
           );
         }
         if (Array.isArray(node["children"])) {
-          for (const [index, child] of node["children"].entries()) {
-            issues.push(...validateInline(child, [...path, "children", index]));
-          }
+          issues.push(...validateInlineChildren(node["children"], [...path, "children"]));
         } else {
           issues.push(
             makeIssue([...path, "children"], "expectedChildren", "Block requires inline children"),
@@ -313,9 +336,7 @@ const coreNodeTypes = new Set([
             makeIssue([...path, "children"], "expectedTextLeaf", "Code block requires text leaves"),
           ];
         }
-        for (const [index, child] of node["children"].entries()) {
-          issues.push(...validateTextChild(child, [...path, "children", index]));
-        }
+        issues.push(...validateTextChildren(node["children"], [...path, "children"]));
         return issues;
       }
       case "ordered-list":
@@ -344,37 +365,7 @@ const coreNodeTypes = new Set([
         return issues;
       }
       case "asset-reference": {
-        if (typeof node["assetId"] !== "string" || node["assetId"].length === emptyLength) {
-          issues.push(
-            makeIssue(
-              [...path, "assetId"],
-              "expectedAssetId",
-              "Asset reference requires an Asset ID",
-            ),
-          );
-        }
-        if (typeof node["alternativeText"] !== "string") {
-          issues.push(
-            makeIssue(
-              [...path, "alternativeText"],
-              "expectedAlternativeText",
-              "Asset reference requires authored alternative text",
-            ),
-          );
-        }
-        if (node["caption"] !== undefined && typeof node["caption"] !== "string") {
-          issues.push(makeIssue([...path, "caption"], "expectedCaption", "Caption must be text"));
-        }
-        if (!Array.isArray(node["children"]) || node["children"].length > emptyLength) {
-          issues.push(
-            makeIssue(
-              [...path, "children"],
-              "assetReferenceIsAtomic",
-              "Asset reference cannot contain children",
-            ),
-          );
-        }
-        return issues;
+        return validateAssetReference(node, path);
       }
       default: {
         if (coreNodeTypes.has(node["type"])) {
@@ -453,7 +444,10 @@ const coreNodeTypes = new Set([
   };
 
 /** Validates and normalizes a Rich Text value, rejecting unsupported content visibly. */
-export const validate = (value: unknown, options: ValidationOptions = {}): Document => {
+// oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- dual's generic overload is not inferred by the linter for this public helper.
+export const validate = dual(
+  (arguments_) => arguments_.length === 2 || isObject(arguments_[0]),
+  (value: unknown, options: ValidationOptions = {}): Document => {
   if (
     !isObject(value) ||
     value["format"] !== format ||
@@ -478,12 +472,17 @@ export const validate = (value: unknown, options: ValidationOptions = {}): Docum
     });
   }
   return structuredClone(value) as unknown as Document;
-};
+  },
+);
 
 /** Validates a typed Rich Text document and returns its JSON-compatible persisted form. */
 /** Validates and converts a Rich Text document to a JSON-compatible persisted value. */
-export const toJson = (document: Document, options: ValidationOptions = {}): JsonObject =>
-  validate(document, options) as unknown as JsonObject;
+// oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- dual's generic overload is not inferred by the linter for this public helper.
+export const toJson = dual(
+  (arguments_) => arguments_.length === 2 || isObject(arguments_[0]),
+  (document: Document, options: ValidationOptions = {}): JsonObject =>
+    validate(document, options) as unknown as JsonObject,
+);
 
 /** All distinct live Entry and Asset identifiers reachable from a document. */
 export interface References {
@@ -493,8 +492,8 @@ export interface References {
 
 /** Collects live references in linear time over the Rich Text tree. */
 export const references = (document: Document): References => {
-  const entryIds: string[] = [],
-    assetIds: string[] = [],
+  const assetIds: string[] = [],
+    entryIds: string[] = [],
     visit = (node: Node): void => {
       if (node.type === "entry-reference") {
         entryIds.push(node.entryId);
@@ -524,7 +523,8 @@ export interface Renderer<Result> {
 }
 
 /** Renders a validated document through a Content Client-owned Renderer. */
-export const render = <Result>(
+// oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- dual's generic overload is not inferred by the linter for this public helper.
+export const render = dual(2, <Result>(
   document: Document,
   renderer: Renderer<Result>,
 ): readonly Result[] => {
@@ -548,4 +548,4 @@ export const render = <Result>(
     return renderer.extension(node as ExtensionNode, children);
   };
   return document.children.map(renderNode);
-};
+});

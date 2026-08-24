@@ -9,14 +9,15 @@ const ACCEPTANCE_RUN_COUNT = 10,
   WAIT_TIMEOUT_MILLISECONDS = 15_000,
   ZERO = 0,
   enabled = Bun.env["ACCEPTANCE_SERVERS_READY"] === "1",
-  waitFor = async <Value>(
+  waitFor = <Value>(
     view: Bun.WebView,
     expression: string,
   predicate: (value: Value) => boolean,
 ): Promise<Value> => {
-    const deadline = Date.now() + WAIT_TIMEOUT_MILLISECONDS,
+    const deadline = performance.now() + WAIT_TIMEOUT_MILLISECONDS,
+     // oxlint-disable-next-line effecttsgo/async-function -- Bun WebView evaluation and sleep are Promise-based platform lifecycle operations.
      poll = async (): Promise<Value> => {
-      if (Date.now() >= deadline) {
+      if (performance.now() >= deadline) {
         throw new Error(`WebView condition timed out: ${expression}`);
       }
       const value = await view.evaluate<Value>(expression);
@@ -43,7 +44,9 @@ afterAll(() => {
 describe("Bun WebView qualification", () => {
   selectAcceptanceTest(enabled)(
     "completes ten consecutive native WebKit lifecycle runs without a retry",
+    // oxlint-disable-next-line effecttsgo/async-function -- Bun's test runner requires a Promise-returning lifecycle callback.
     async () => {
+      // oxlint-disable-next-line effecttsgo/async-function -- recursive acceptance retries compose native WebView Promise operations.
       const runQualification = async (runNumber: number): Promise<void> => {
         const consoleErrors: unknown[] = [],
           view = new Bun.WebView({

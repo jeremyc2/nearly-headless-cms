@@ -594,9 +594,14 @@ function requestOperation({
 > {
   return Effect.tryPromise({
     catch: (cause) =>
-      Schema.is(TransportFailure)(cause) || Schema.is(ProtocolFailure)(cause) || Schema.is(DeclaredFailure)(cause)
+      Schema.is(TransportFailure)(cause) ||
+      Schema.is(ProtocolFailure)(cause) ||
+      Schema.is(DeclaredFailure)(cause)
         ? cause
-        : TransportFailure.make({ message: cause instanceof Error ? cause.message : "Connection failed" }),
+        : TransportFailure.make({
+            message: cause instanceof Error ? cause.message : "Connection failed",
+          }),
+    // oxlint-disable-next-line effecttsgo/async-function -- generated clients expose a Promise-backed transport boundary; converting this callback to Effect would change the generated public client contract.
     try: async () => {
       let { path } = specification;
       if ("path" in input && input.path !== undefined) {
@@ -623,11 +628,13 @@ function requestOperation({
           body = requestBody;
         } else {
           headers.set("content-type", specification.requestMediaType ?? "application/json");
+          // oxlint-disable-next-line effecttsgo/prefer-schema-over-json -- request bodies are OpenAPI-generated unknown shapes and must be serialized using the browser JSON boundary.
           body = JSON.stringify(requestBody);
         }
       }
       let response: Response;
       try {
+        // oxlint-disable-next-line effecttsgo/global-fetch-in-effect -- generated clients intentionally use the platform fetch boundary so callers can supply the browser or server runtime.
         response = await fetch(requestUrl, { body, headers, method: specification.method, signal });
       } catch (error) {
         throw TransportFailure.make({

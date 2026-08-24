@@ -1,6 +1,4 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { mkdtemp, rm } from "node:fs/promises";
-import { join } from "node:path";
 import { type ExampleSystem, createExampleSystem } from "../../src/system.ts";
 
 const authorIndex = 0,
@@ -18,18 +16,21 @@ const authorIndex = 0,
 describe("Example CMS public visibility", () => {
   let storageRoot: string, system: ExampleSystem;
 
+  // oxlint-disable-next-line effecttsgo/async-function -- Bun's lifecycle hook requires a Promise-returning callback.
   beforeAll(async () => {
-    storageRoot = await mkdtemp(join(import.meta.dir, ".public-visibility-"));
+    storageRoot = (await Bun.$`mktemp -d ${import.meta.dir}/.public-visibility-XXXXXX`.text()).trim();
     system = await createExampleSystem({ seed: true, storageRoot });
   });
 
+  // oxlint-disable-next-line effecttsgo/async-function -- Bun's lifecycle hook requires a Promise-returning callback.
   afterAll(async () => {
     await system.dispose();
-    await rm(storageRoot, { force: true, recursive: true });
+    await Bun.$`rm -rf ${storageRoot}`;
   });
 
   test(
     "exports every public Entry across internal query pages",
+    // oxlint-disable-next-line effecttsgo/async-function -- Bun's test callback requires a Promise-returning callback.
     async () => {
       const initialExportResponse = await system.handler(
           new Request("http://cms.test/api/v1/headless/export"),
@@ -38,9 +39,10 @@ describe("Example CMS public visibility", () => {
           authors: readonly { id: string }[];
           posts: readonly { id: string }[];
         },
-        authorIdentifier = initialExport.authors[authorIndex]?.id ?? "";
-      for (let postNumber = 0; postNumber < postsToCreate; postNumber += loopIncrement) {
-        const response = await system.handler(
+        authorIdentifier = initialExport.authors[authorIndex]?.id ?? "",
+       createPosts = (postNumber: number): Promise<void> => {
+        if (postNumber >= postsToCreate) {return Promise.resolve();}
+        return system.handler(
           new Request(managementEntriesUrl("post"), {
             body: JSON.stringify({
               values: {
@@ -69,9 +71,12 @@ describe("Example CMS public visibility", () => {
             headers: { "content-type": "application/json" },
             method: "POST",
           }),
-        );
-        expect(response.status).toBe(createdEntryStatus);
-      }
+        ).then((response) => {
+          expect(response.status).toBe(createdEntryStatus);
+          return createPosts(postNumber + loopIncrement);
+        });
+      };
+      await createPosts(0);
 
       const completeExportResponse = await system.handler(
           new Request("http://cms.test/api/v1/headless/export"),
@@ -84,6 +89,7 @@ describe("Example CMS public visibility", () => {
     exportTimeoutMilliseconds,
   );
 
+  // oxlint-disable-next-line effecttsgo/async-function -- Bun's test callback requires a Promise-returning callback.
   test("hides Comments, taxonomies, and Entry references outside published reachability", async () => {
     const draftPostId = system.seed?.draftPostId ?? "",
      categoryResponse = await system.handler(

@@ -1,8 +1,9 @@
-import { createReadStream } from "node:fs";
+// oxlint-disable-next-line effecttsgo/node-builtin-import -- Temporary upload staging requires fsync/open semantics unavailable in the HTTP FileSystem abstraction.
 import { mkdtemp, open, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
+// oxlint-disable-next-line effecttsgo/node-builtin-import -- Bun does not provide a path manipulation API for composing temporary paths.
 import { join } from "node:path";
-import { Effect, Layer, Predicate, Schema, Stream } from "effect";
+import { Duration, Effect, Fiber, Layer, Predicate, Schema, Stream } from "effect";
 import { HttpRouter, HttpServerRequest, HttpServerResponse, Multipart } from "effect/unstable/http";
 import { HttpApiBuilder } from "effect/unstable/httpapi";
 import type { IngestInput } from "../asset.ts";
@@ -114,6 +115,7 @@ interface StagedAssetUpload {
   readonly metadata: Omit<IngestInput, "content">;
 }
 
+// oxlint-disable-next-line effecttsgo/extends-native-error -- This transport-only error is converted to a CmsError before entering an Effect failure channel.
 class RequestFailure extends Error {
   readonly code: string;
   readonly status: number;
@@ -125,7 +127,7 @@ class RequestFailure extends Error {
   }
 }
 
-const runOperationInterruptibly = async <Value>(
+const runOperationInterruptibly = <Value>(
     effect: Effect.Effect<Value, CmsError>,
     signal?: AbortSignal,
   ): Promise<OperationOutcome<Value>> =>
@@ -241,6 +243,7 @@ const runOperationInterruptibly = async <Value>(
   },
   bodylessResponse = (status: number, requestId: string, fingerprint?: string): Response =>
     new Response(null, { headers: responseHeaders(requestId, fingerprint), status }),
+  // oxlint-disable-next-line effecttsgo/async-function -- Web Request.arrayBuffer is Promise-based.
   parseJson = async (request: Request, maximumByteLength: number): Promise<JsonObject> => {
     if (!(request.headers.get("content-type") ?? "").toLowerCase().startsWith("application/json")) {
       throw new RequestFailure(
@@ -335,19 +338,16 @@ const runOperationInterruptibly = async <Value>(
     return InvalidInput.make({ message: "Malformed multipart Asset upload" });
   },
   stagedContent = (path: string): Stream.Stream<Uint8Array, InfrastructureFailure> =>
-    Stream.fromAsyncIterable(createReadStream(path), (cause) =>
+    Stream.fromAsyncIterable(Bun.file(path).stream(), (cause) =>
       InfrastructureFailure.make({
         cause,
         message: "Staged multipart Asset read failed",
         retryable: false,
       }),
     ).pipe(
-      Stream.map((chunk) => {
-        if (typeof chunk === "string") {
-          return new TextEncoder().encode(chunk);
-        }
-        return new Uint8Array(chunk);
-      }),
+      Stream.map((chunk) =>
+        typeof chunk === "string" ? new TextEncoder().encode(chunk) : chunk,
+      ),
     ),
   stageFilePart = (
     part: Multipart.File,
@@ -374,9 +374,12 @@ const runOperationInterruptibly = async <Value>(
           }
           return Effect.tryPromise({
             catch: () => new RequestFailure("InternalError", "Upload staging failed", 500),
+            // oxlint-disable-next-line effecttsgo/async-function -- FileHandle.write is Promise-based and must remain ordered.
             try: async () => {
               let offset = 0;
               while (offset < chunk.byteLength) {
+                // File writes must remain sequential so each offset follows the prior write.
+                // oxlint-disable-next-line no-await-in-loop -- preserve ordered chunk writes.
                 const result = await handle.write(chunk, offset, chunk.byteLength - offset, null);
                 if (result.bytesWritten === 0) {
                   throw new Error("Upload staging write made no progress");
@@ -394,11 +397,10 @@ const runOperationInterruptibly = async <Value>(
           }),
         ),
       (handle) =>
-        Effect.promise(async () => {
-          await handle.close().catch(() => {});
-        }),
+        Effect.promise(() => handle.close().catch(() => {})),
     );
   },
+  // oxlint-disable-next-line effecttsgo/async-function -- multipart parsing and temporary-file APIs are Promise-based.
   stageMultipartAsset = async (
     request: Request,
     signal: AbortSignal,
@@ -466,7 +468,7 @@ const runOperationInterruptibly = async <Value>(
         });
       }
       return {
-        cleanup: async () => rm(directory, { force: true, recursive: true }),
+        cleanup: () => rm(directory, { force: true, recursive: true }),
         content: stagedContent(contentPath),
         metadata,
       };
@@ -571,6 +573,7 @@ const runOperationInterruptibly = async <Value>(
     }
     return Effect.void;
   },
+  // oxlint-disable-next-line effecttsgo/async-function -- the public Web handler contract returns a Promise<Response>.
   respondWithOutcome = async <Value>({
     effect,
     requestId,
@@ -702,7 +705,9 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
       maximumMultipartMetadataByteLength = options.maximumMultipartMetadataByteLength ?? 64_000,
       maximumUrlLength = options.maximumUrlLength ?? 8192,
       requestTimeoutMilliseconds = options.requestTimeoutMilliseconds ?? 30_000,
+      // oxlint-disable-next-line effecttsgo/crypto-random-uuid -- this public callback contract returns a request ID synchronously.
       requestIdentifier = options.requestIdentifier ?? (() => crypto.randomUUID()),
+      // oxlint-disable-next-line effecttsgo/async-function -- request handling awaits body parsing and Effect execution.
       handleRequest = async (
         request: Request,
         signal: AbortSignal,
@@ -1788,15 +1793,23 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
         });
       };
 
+    // oxlint-disable-next-line effecttsgo/async-function -- Handler is a Web-standard Promise<Response> callback.
     return async (request): Promise<Response> => {
       const requestId = requestIdentifier(),
         controller = new AbortController(),
         onClientAbort = (): void => {
           controller.abort(request.signal.reason);
         },
-        timeout = setTimeout(() => {
-          controller.abort(new Error("request timeout"));
-        }, requestTimeoutMilliseconds);
+        // oxlint-disable-next-line effecttsgo/run-effect-inside-effect -- this Web handler owns a timer fiber outside the request Effect.
+        timeoutFiber = Effect.runFork(
+          Effect.sleep(Duration.millis(requestTimeoutMilliseconds)).pipe(
+            Effect.andThen(
+              Effect.sync(() => {
+                controller.abort(new Error("request timeout"));
+              }),
+            ),
+          ),
+        );
       request.signal.addEventListener("abort", onClientAbort, { once: true });
       try {
         const scopedRequest = new Request(request, { signal: controller.signal });
@@ -1814,27 +1827,33 @@ export const makeHandler = (options: Options = {}): Effect.Effect<Handler, never
             }
             throw error;
           }),
-          new Promise<Response>((resolve) => {
-            controller.signal.addEventListener(
-              "abort",
-              () => {
-                resolve(
-                  requestFailureResponse(
-                    new RequestFailure(
-                      "RequestTimeout",
-                      "The request was interrupted or exceeded its configured duration",
-                      408,
+          // oxlint-disable-next-line effecttsgo/run-effect-inside-effect -- bridge the abort callback into Promise.race.
+          Effect.runPromise(
+            Effect.callback<Response>((resume) => {
+              controller.signal.addEventListener(
+                "abort",
+                () => {
+                  resume(
+                    Effect.succeed(
+                      requestFailureResponse(
+                        new RequestFailure(
+                          "RequestTimeout",
+                          "The request was interrupted or exceeded its configured duration",
+                          408,
+                        ),
+                        requestId,
+                      ),
                     ),
-                    requestId,
-                  ),
-                );
-              },
-              { once: true },
-            );
-          }),
+                  );
+                },
+                { once: true },
+              );
+            }),
+          ),
         ]);
       } finally {
-        clearTimeout(timeout);
+        // oxlint-disable-next-line effecttsgo/run-effect-inside-effect -- interrupt the owned timer fiber during Web handler cleanup.
+        await Effect.runPromise(Fiber.interrupt(timeoutFiber));
         request.signal.removeEventListener("abort", onClientAbort);
       }
     };

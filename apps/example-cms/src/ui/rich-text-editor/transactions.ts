@@ -483,6 +483,7 @@ const insertText = (state: State, text: string): State => {
     );
   };
 
+// oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- editor transaction API is intentionally a direct two-argument operation.
 export const transact = (state: State, command: Command): State => {
   switch (command.type) {
     case "select": {

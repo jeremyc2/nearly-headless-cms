@@ -7,12 +7,12 @@ import {
   isJsonObject,
   isJsonValue,
 } from "./internal/json.ts";
+import { dual } from "effect/Function";
 
 /** JSON-compatible object and value types used by serializable definitions. */
 export type { JsonObject, JsonValue } from "./internal/json.ts";
 
 const calendarDatePattern = /^\d{4}-\d{2}-\d{2}$/u,
-  calendarMonthOffset = 1,
   customIdentifierPattern = /^(?:[a-z][a-z0-9-]*\.)+[a-z][a-z0-9-]*$/u,
   defaultCalendarDay = 1,
   defaultCalendarMonth = 1,
@@ -333,18 +333,17 @@ const validateCalendarDate = (value: string): boolean => {
       return false;
     }
     const [year, month, day] = value.split("-").map(Number),
-      date = new Date(
-        Date.UTC(
-          year ?? defaultCalendarYear,
-          (month ?? defaultCalendarMonth) - calendarMonthOffset,
-          day ?? defaultCalendarDay,
-        ),
-      );
-    return (
-      date.getUTCFullYear() === year &&
-      date.getUTCMonth() + calendarMonthOffset === month &&
-      date.getUTCDate() === day
-    );
+      normalizedYear = year ?? defaultCalendarYear,
+      normalizedMonth = month ?? defaultCalendarMonth,
+      normalizedDay = day ?? defaultCalendarDay,
+      daysInMonth = normalizedMonth === 2
+        ? (normalizedYear % 4 === 0 && (normalizedYear % 100 !== 0 || normalizedYear % 400 === 0)
+          ? 29
+          : 28)
+        : ([4, 6, 9, 11].includes(normalizedMonth)
+          ? 30
+          : 31);
+    return normalizedMonth >= 1 && normalizedMonth <= 12 && normalizedDay >= 1 && normalizedDay <= daysInMonth;
   },
   validateValue = ({
     customRegistrations,
@@ -749,12 +748,13 @@ const validateCalendarDate = (value: string): boolean => {
   };
 
 /** Compiles and fingerprints a complete snapshot or throws `InvalidInput` atomically. */
-export const compile = (input: SnapshotInput, options: CompileOptions = {}): CompiledSnapshot => {
-  const inputIssues = [
+// oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- dual's generic overload is not inferred by the linter for this public helper.
+export const compile = dual(2, (input: SnapshotInput, options: CompileOptions = {}): CompiledSnapshot => {
+  const definitions = new Map<string, Definition>(),
+    inputIssues = [
       ...validateIdentifier(input.definitionSpaceId, ["definitionSpaceId"]),
       ...validateIdentifier(input.snapshotId, ["snapshotId"]),
-    ],
-    definitions = new Map<string, Definition>();
+    ];
   for (const [definitionIndex, definition] of input.definitions.entries()) {
     inputIssues.push(...validateIdentifier(definition.id, ["definitions", definitionIndex, "id"]));
     if (definitions.has(definition.id)) {
@@ -771,13 +771,13 @@ export const compile = (input: SnapshotInput, options: CompileOptions = {}): Com
   if (inputIssues.length > emptyLength) {
     fail("Invalid Definition Snapshot", inputIssues);
   }
-  const customRegistrations = new Map(
+  const contentTypes = new Map<string, CompiledContentType>(),
+    customRegistrations = new Map(
       (options.customFieldKinds ?? []).map((registration) => [
         `${registration.identifier}@${registration.formatVersion}`,
         registration,
       ]),
-    ),
-    contentTypes = new Map<string, CompiledContentType>();
+    );
   for (const definition of definitions.values()) {
     if (definition.kind === "contentType") {
       contentTypes.set(definition.id, {
@@ -799,13 +799,16 @@ export const compile = (input: SnapshotInput, options: CompileOptions = {}): Com
       parentPath: readonly (string | number)[],
     ): void => {
       for (const field of fields) {
-        const fieldPath = [...parentPath, field.key];
-        let relationshipKind: Extract<FieldKind, { readonly kind: "relationship" }> | undefined;
-        if (field.kind.kind === "relationship") {
-          relationshipKind = field.kind;
-        } else if (field.kind.kind === "list" && field.kind.element.kind === "relationship") {
-          relationshipKind = field.kind.element;
-        }
+        const fieldPath = [...parentPath, field.key],
+         relationshipKind = (() => {
+          if (field.kind.kind === "relationship") {
+            return field.kind;
+          }
+          if (field.kind.kind === "list" && field.kind.element.kind === "relationship") {
+            return field.kind.element;
+          }
+          return;
+        })();
         for (const targetContentTypeId of relationshipKind?.targetContentTypeIds ?? []) {
           if (!contentTypes.has(targetContentTypeId)) {
             fail("Invalid Relationship target", [
@@ -841,9 +844,9 @@ export const compile = (input: SnapshotInput, options: CompileOptions = {}): Com
       readonly validateOptions: ValidateEntryOptions;
       readonly values: JsonObject;
     }): { readonly result: JsonObject; readonly issues: readonly ValidationIssue[] } => {
-      const result: Record<string, JsonValue> = {},
-        entryIssues: ValidationIssue[] = [],
-        knownKeys = new Set(fields.map((field) => field.key));
+      const entryIssues: ValidationIssue[] = [],
+        knownKeys = new Set(fields.map((field) => field.key)),
+        result: Record<string, JsonValue> = {};
       for (const key of Object.keys(values)) {
         if (!knownKeys.has(key)) {
           entryIssues.push(
@@ -1003,7 +1006,7 @@ export const compile = (input: SnapshotInput, options: CompileOptions = {}): Com
     snapshotId: input.snapshotId,
     validateEntry,
   };
-};
+});
 
 /** Whether activation can preserve all existing Entry representations unchanged. */
 export type Compatibility = "compatible" | "migrationRequired";
@@ -1018,7 +1021,8 @@ const fieldCompatibilitySignature = (field: ResolvedField): string =>
   });
 
 /** Classifies a snapshot change without modifying catalog or Entry state. */
-export const classifyCompatibility = (
+// oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- dual's generic overload is not inferred by the linter for this public helper.
+export const classifyCompatibility = dual(2, (
   source: CompiledSnapshot,
   target: CompiledSnapshot,
 ): Compatibility => {
@@ -1047,4 +1051,4 @@ export const classifyCompatibility = (
     }
   }
   return "compatible";
-};
+});

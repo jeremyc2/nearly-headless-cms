@@ -1,7 +1,8 @@
-import { createHash } from "node:crypto";
+// oxlint-disable-next-line effecttsgo/node-builtin-import -- This Bun adapter needs durable fsync/open and directory primitives unavailable in Effect's portable FileSystem layer.
 import { mkdir, open, readdir, rename, rm, stat } from "node:fs/promises";
+// oxlint-disable-next-line effecttsgo/node-builtin-import -- Bun does not provide a path manipulation API; these operations are platform-neutral string handling.
 import { basename, join } from "node:path";
-import { Context, Effect, Layer, Stream, SynchronizedRef } from "effect";
+import { Context, DateTime, Effect, Layer, Stream, SynchronizedRef } from "effect";
 import { type IngestInput, Management, type Metadata } from "../../asset.ts";
 import {
   type CmsError,
@@ -111,7 +112,11 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
       catch: (cause) => failure(message, cause),
       try: operation,
     }),
-  digest = (bytes: Uint8Array): string => createHash("sha256").update(bytes).digest("hex"),
+  digest = (bytes: Uint8Array): string => {
+    const hasher = new Bun.CryptoHasher("sha256");
+    hasher.update(bytes);
+    return hasher.digest("hex");
+  },
   encode = (value: unknown): Uint8Array => new TextEncoder().encode(`${JSON.stringify(value)}\n`),
   cloneCatalog = (catalog: CatalogState): CatalogState => ({
     ...catalog,
@@ -206,6 +211,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
       version: initialVersion,
     };
   },
+  // oxlint-disable-next-line effecttsgo/async-function -- Bun filesystem handles expose Promise-based synchronization boundaries.
   synchronize = async (path: string): Promise<void> => {
     const handle = await open(path, "r");
     try {
@@ -214,12 +220,14 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
       await handle.close();
     }
   },
+  // oxlint-disable-next-line effecttsgo/async-function -- Atomic persistence coordinates Bun and node filesystem promises.
   writeAtomic = async (
     path: string,
     bytes: Uint8Array,
     acknowledgement: Configuration["acknowledgement"],
   ): Promise<void> => {
     const parentDirectory = path.slice(0, Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"))),
+      // oxlint-disable-next-line effecttsgo/crypto-random-uuid -- staging paths are built synchronously in Bun's filesystem bridge.
       stagePath = join(parentDirectory, `${stagingPrefix}${basename(path)}-${crypto.randomUUID()}`);
     try {
       await Bun.write(stagePath, bytes);
@@ -244,6 +252,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
     }
     return undefined;
   },
+  // oxlint-disable-next-line effecttsgo/async-function -- Lock records are read through Bun's filesystem Promise API.
   readWriterLock = async (lockPath: string): Promise<WriterLock> => {
     const parsed: unknown = JSON.parse(await Bun.file(lockPath).text());
     if (typeof parsed !== "object" || parsed === null) {
@@ -270,6 +279,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
       return filesystemErrorCode(error) !== "ESRCH";
     }
   },
+  // oxlint-disable-next-line effecttsgo/async-function -- Lock creation requires sequential Bun filesystem operations.
   createWriterLock = async (
     configuration: Configuration,
     lockPath: string,
@@ -279,7 +289,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
     try {
       await handle.writeFile(
         JSON.stringify({
-          createdAt: new Date().toISOString(),
+          createdAt: DateTime.formatIso(DateTime.nowUnsafe()),
           processId: process.pid,
           token: lockToken,
         }),
@@ -295,9 +305,12 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
       throw error;
     }
   },
+  // oxlint-disable-next-line effecttsgo/async-function -- Recovery locking is a filesystem callback boundary.
   acquireRecoveryGuard = async (configuration: Configuration): Promise<() => Promise<void>> => {
     const guardPath = join(configuration.root, `${stagingPrefix}writer-recovery`),
+      // oxlint-disable-next-line effecttsgo/crypto-random-uuid -- lock acquisition is a synchronous token-generation step around Bun file operations.
       guardToken = crypto.randomUUID(),
+      // oxlint-disable-next-line effecttsgo/async-function -- Guard creation requires sequential Bun filesystem operations.
       createGuard = async (): Promise<void> => {
         const handle = await open(guardPath, "wx");
         try {
@@ -328,6 +341,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
       await rm(guardPath, { force: true });
       await createGuard();
     }
+    // oxlint-disable-next-line effecttsgo/async-function -- Returned release callback closes the Bun filesystem guard.
     return async () => {
       const guard = await readWriterLock(guardPath).catch(() => {});
       if (guard?.token === guardToken) {
@@ -335,10 +349,12 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
       }
     };
   },
+  // oxlint-disable-next-line effecttsgo/async-function -- Writer recovery coordinates sequential filesystem operations.
   acquireWriterLock = async (
     configuration: Configuration,
   ): Promise<{ readonly lockPath: string; readonly lockToken: string }> => {
     const lockPath = join(configuration.root, "writer.lock"),
+      // oxlint-disable-next-line effecttsgo/crypto-random-uuid -- lock acquisition is a synchronous token-generation step around Bun file operations.
       lockToken = crypto.randomUUID();
     try {
       await createWriterLock(configuration, lockPath, lockToken);
@@ -376,6 +392,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
       await releaseRecoveryGuard();
     }
   },
+  // oxlint-disable-next-line effecttsgo/async-function -- Lock cleanup reads and removes a Bun filesystem record.
   removeOwnedWriterLock = async (lockPath: string, lockToken: string): Promise<void> => {
     const lock = await readWriterLock(lockPath).catch(() => {});
     if (lock?.token === lockToken) {
@@ -390,17 +407,18 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
     InfrastructureFailure | InvalidInput
   > => {
     const blobsDirectory = join(configuration.root, "blobs"),
+      // oxlint-disable-next-line effecttsgo/crypto-random-uuid -- staging paths are computed before the Effect stream starts and must remain synchronous.
       stagePath = join(blobsDirectory, `${stagingPrefix}blob-${crypto.randomUUID()}`),
+      contentStream = (() => {
+        if (content instanceof Uint8Array) {
+          return Stream.make(content);
+        }
+        return content;
+      })(),
       maximumByteLength = configuration.maximumAssetByteLength ?? defaultAssetMaximumByteLength;
-    let contentStream: Stream.Stream<Uint8Array, InfrastructureFailure>;
-    if (content instanceof Uint8Array) {
-      contentStream = Stream.make(content);
-    } else {
-      contentStream = content;
-    }
     return Effect.acquireUseRelease(
       fromPromise(
-        async () => ({
+        () => Promise.resolve({
           ended: false,
           writer: Bun.file(stagePath).writer({ highWaterMark: 65_536 }),
         }),
@@ -419,51 +437,65 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
                   InvalidInput.make({ message: "Asset bytes exceed the configured limit" }),
                 );
               }
-              return fromPromise(async () => {
-                hasher.update(chunk);
-                stage.writer.write(chunk);
-                await stage.writer.flush();
-                byteLength = nextByteLength;
-              }, "Filesystem Asset staging write failed");
+              return fromPromise(
+                () =>
+                  Promise.resolve().then(() => {
+                    hasher.update(chunk);
+                    return Promise.resolve(stage.writer.write(chunk)).then(() => {
+                      byteLength = nextByteLength;
+                      return stage.writer.flush();
+                    });
+                  }),
+                "Filesystem Asset staging write failed",
+              );
             },
           );
-          yield* fromPromise(async () => {
-            await stage.writer.end();
-            stage.ended = true;
-            if (configuration.acknowledgement === "durable") {
-              await synchronize(stagePath);
-            }
-          }, "Filesystem Asset staging finalization failed");
+          yield* fromPromise(
+            () =>
+              Promise.resolve(stage.writer.end()).then(() => {
+                stage.ended = true;
+                return configuration.acknowledgement === "durable"
+                  ? synchronize(stagePath)
+                  : undefined;
+              }),
+            "Filesystem Asset staging finalization failed",
+          );
           const assetDigest = hasher.digest("hex"),
             blobPath = join(blobsDirectory, assetDigest),
             blobExists = yield* fromPromise(
-              async () => Bun.file(blobPath).exists(),
+              () => Bun.file(blobPath).exists(),
               "Filesystem Asset Blob lookup failed",
             );
           if (blobExists) {
             yield* fromPromise(
-              async () => rm(stagePath, { force: true }),
+              () => rm(stagePath, { force: true }),
               "Filesystem duplicate Asset staging cleanup failed",
             );
           } else {
-            yield* fromPromise(async () => {
-              await rename(stagePath, blobPath);
-              if (configuration.acknowledgement === "durable") {
-                await synchronize(blobsDirectory);
-              }
-            }, "Filesystem Asset Blob commit failed");
+            yield* fromPromise(
+              () =>
+                rename(stagePath, blobPath).then(() =>
+                  configuration.acknowledgement === "durable"
+                    ? synchronize(blobsDirectory)
+                    : undefined,
+                ),
+              "Filesystem Asset Blob commit failed",
+            );
           }
           return { byteLength, digest: assetDigest };
         }),
       (stage) =>
-        fromPromise(async () => {
-          if (!stage.ended) {
-            await Promise.resolve(stage.writer.end()).catch(() => {});
-          }
-          await rm(stagePath, { force: true }).catch(() => {});
-        }, "Filesystem Asset staging cleanup failed").pipe(Effect.ignore),
+        fromPromise(
+          () =>
+            (stage.ended
+              ? Promise.resolve()
+              : Promise.resolve(stage.writer.end()).catch(() => {})
+            ).then(() => rm(stagePath, { force: true }).catch(() => {})),
+          "Filesystem Asset staging cleanup failed",
+        ).pipe(Effect.ignore),
     );
   },
+  // oxlint-disable-next-line effecttsgo/async-function -- Persistence spans ordered atomic filesystem writes.
   persistState = async (configuration: Configuration, state: State): Promise<void> => {
     const generationsDirectory = join(configuration.root, "generations"),
       generationName = `generation-${String(state.generation).padStart(generationFilenameWidth, "0")}.json`,
@@ -492,6 +524,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
       configuration.acknowledgement,
     );
   },
+  // oxlint-disable-next-line effecttsgo/async-function -- JSON loading uses Bun's asynchronous file API.
   readJson = async <Value>(path: string): Promise<Value> => {
     const file = Bun.file(path);
     if (!(await file.exists())) {
@@ -499,16 +532,22 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
     }
     return (await file.json()) as Value;
   },
+  // oxlint-disable-next-line effecttsgo/async-function -- Cleanup intentionally preserves sequential filesystem ordering.
   removeAbandonedStaging = async (directory: string): Promise<void> => {
     for (const entry of await readdir(directory, { withFileTypes: true })) {
       const path = join(directory, entry.name);
       if (entry.name.startsWith(stagingPrefix)) {
+        // Preserve deterministic cleanup ordering while removing abandoned staging entries.
+        // oxlint-disable-next-line no-await-in-loop -- cleanup must remain sequential.
         await rm(path, { force: true, recursive: entry.isDirectory() });
       } else if (entry.isDirectory() && ["generations", "blobs"].includes(entry.name)) {
+        // Preserve recursive cleanup ordering for nested staging directories.
+        // oxlint-disable-next-line no-await-in-loop -- recursive cleanup must remain sequential.
         await removeAbandonedStaging(path);
       }
     }
   },
+  // oxlint-disable-next-line effecttsgo/async-function -- Root initialization coordinates ordered filesystem operations.
   initializeRoot = async (
     configuration: Configuration,
     definitionSnapshot?: CompiledSnapshot,
@@ -538,7 +577,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
         assets: new Map(),
         ...(definitionSnapshot === undefined
           ? {}
-          : { catalog: initialCatalog(definitionSnapshot, new Date().toISOString()) }),
+          : { catalog: initialCatalog(definitionSnapshot, DateTime.formatIso(DateTime.nowUnsafe())) }),
         entryGeneration: initialGeneration,
         generation: initialGeneration,
         records: new Map(),
@@ -640,7 +679,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
                   );
                 }
                 return fromPromise(
-                  async () => persistState(configuration, next),
+                  () => persistState(configuration, next),
                   "Filesystem Entry commit failed",
                 ).pipe(
                   Effect.map(
@@ -680,7 +719,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
                   ...(current.catalog === undefined ? {} : { catalog: current.catalog }),
                 };
                 return fromPromise(
-                  async () => persistState(configuration, next),
+                  () => persistState(configuration, next),
                   "Filesystem Asset deletion commit failed",
                 ).pipe(Effect.map(() => [undefined, next] as const));
               },
@@ -736,7 +775,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
                   ...(current.catalog === undefined ? {} : { catalog: current.catalog }),
                 };
                 return fromPromise(
-                  async () => persistState(configuration, next),
+                  () => persistState(configuration, next),
                   "Filesystem Asset metadata commit failed",
                 ).pipe(Effect.map(() => [undefined, next] as const));
               });
@@ -755,12 +794,10 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
                 return yield* NotFound.make({ message: `Asset ${assetId} was not found` });
               }
               const bytes = yield* fromPromise(
-                async () =>
-                  new Uint8Array(
-                    await Bun.file(
-                      join(configuration.root, "blobs", asset.metadata.digest),
-                    ).arrayBuffer(),
-                  ),
+                () =>
+                  Bun.file(join(configuration.root, "blobs", asset.metadata.digest))
+                    .arrayBuffer()
+                    .then((buffer) => new Uint8Array(buffer)),
                 "Filesystem Asset Blob read failed",
               );
               if (
@@ -823,7 +860,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
                     records: new Map(entryRecords),
                   };
                 return fromPromise(
-                  async () => persistState(configuration, next),
+                  () => persistState(configuration, next),
                   "Atomic Definition Cutover commit failed",
                 ).pipe(
                   Effect.map(
@@ -868,7 +905,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
                     generation: current.generation + 1,
                   };
                 return fromPromise(
-                  async () => persistState(configuration, next),
+                  () => persistState(configuration, next),
                   "Filesystem Definition Catalog commit failed",
                 ).pipe(Effect.map(() => [cloneCatalog(catalog), next] as const));
               },
@@ -890,16 +927,16 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
       }
       const identifiers = yield* Generator;
       yield* fromPromise(
-        async () => mkdir(configuration.root, { recursive: true }),
+        () => mkdir(configuration.root, { recursive: true }),
         "Filesystem Persistence root creation failed",
       );
       const acquiredLock = yield* fromPromise(
-        async () => acquireWriterLock(configuration),
+        () => acquireWriterLock(configuration),
         "Filesystem Persistence root already has an initialized writer",
       );
       return yield* Effect.gen(function* initializeFilesystemRoot() {
         const initialState = yield* fromPromise(
-            async () => initializeRoot(configuration, definitionSnapshot, compileOptions),
+            () => initializeRoot(configuration, definitionSnapshot, compileOptions),
             "Filesystem Persistence initialization failed",
           ),
           context = yield* makeServices(configuration, identifiers, initialState);
@@ -907,7 +944,7 @@ const failure = (message: string, cause: unknown, retryable = false): Infrastruc
       }).pipe(
         Effect.onError(() =>
           fromPromise(
-            async () => removeOwnedWriterLock(acquiredLock.lockPath, acquiredLock.lockToken),
+            () => removeOwnedWriterLock(acquiredLock.lockPath, acquiredLock.lockToken),
             "Filesystem Persistence writer lock cleanup failed",
           ).pipe(Effect.ignore),
         ),
@@ -924,7 +961,7 @@ export const layer = (
   Layer.effectContext(
     Effect.acquireRelease(acquire(configuration), (acquired) =>
       fromPromise(
-        async () => removeOwnedWriterLock(acquired.lockPath, acquired.lockToken),
+        () => removeOwnedWriterLock(acquired.lockPath, acquired.lockToken),
         "Filesystem Persistence writer lock cleanup failed",
       ).pipe(Effect.ignore),
     ).pipe(Effect.map((acquired) => acquired.context)),
@@ -943,7 +980,7 @@ export const cmsLayer = (
       acquire(configuration, configuration.definitionSnapshot, configuration.compileOptions ?? {}),
       (acquired) =>
         fromPromise(
-          async () => removeOwnedWriterLock(acquired.lockPath, acquired.lockToken),
+          () => removeOwnedWriterLock(acquired.lockPath, acquired.lockToken),
           "Filesystem Persistence writer lock cleanup failed",
         ).pipe(Effect.ignore),
     ).pipe(Effect.map((acquired) => acquired.context)),
@@ -953,6 +990,7 @@ export const cmsLayer = (
 export const inspect = (
   root: string,
 ): Effect.Effect<{ readonly format: string; readonly generation: number }, InfrastructureFailure> =>
+  // oxlint-disable-next-line effecttsgo/async-function -- Diagnostic inspection is a read-only filesystem boundary.
   fromPromise(async () => {
     const marker = await readJson<{ readonly format: string; readonly version: number }>(
         join(root, "format.json"),
