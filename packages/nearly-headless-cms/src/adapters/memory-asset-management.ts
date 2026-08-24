@@ -4,6 +4,10 @@ import { type Asset, Management, type StoredAsset } from "../asset.ts";
 import { type InfrastructureFailure, InvalidInput, NotFound } from "../cms-error.ts";
 import { Generator } from "../identifier.ts";
 
+const DEFAULT_MAXIMUM_BYTE_LENGTH = 25_000_000,
+  DEFAULT_MAXIMUM_METADATA_BYTE_LENGTH = 16_384,
+  EMPTY_BYTE_LENGTH = 0;
+
 /** Bounds for the in-memory development Asset Adapter. */
 export interface Options {
   readonly maximumByteLength?: number;
@@ -18,9 +22,10 @@ const collectBytes = (
   }
   return Stream.runCollect(content).pipe(
     Effect.map((arrays) => {
-      const length = arrays.reduce((total, bytes) => total + bytes.byteLength, 0),
-        combined = new Uint8Array(length);
-      let offset = 0;
+      const combined = new Uint8Array(
+        arrays.reduce((total, bytes) => total + bytes.byteLength, EMPTY_BYTE_LENGTH),
+      );
+      let offset = EMPTY_BYTE_LENGTH;
       for (const bytes of arrays) {
         combined.set(bytes, offset);
         offset += bytes.byteLength;
@@ -36,9 +41,10 @@ export const layer = (options: Options = {}): Layer.Layer<Management, never, Gen
     Management,
     Effect.gen(function* makeMemoryAssetManagement() {
       const identifiers = yield* Generator,
-        state = yield* SynchronizedRef.make<ReadonlyMap<string, StoredAsset>>(new Map()),
-        maximumByteLength = options.maximumByteLength ?? 25_000_000,
-        maximumMetadataByteLength = options.maximumMetadataByteLength ?? 16_384;
+        maximumByteLength = options.maximumByteLength ?? DEFAULT_MAXIMUM_BYTE_LENGTH,
+        maximumMetadataByteLength =
+          options.maximumMetadataByteLength ?? DEFAULT_MAXIMUM_METADATA_BYTE_LENGTH,
+        state = yield* SynchronizedRef.make<ReadonlyMap<string, StoredAsset>>(new Map());
       return Management.of({
         delete: (assetId) =>
           SynchronizedRef.modifyEffect(state, (assets) => {
@@ -59,7 +65,10 @@ export const layer = (options: Options = {}): Layer.Layer<Management, never, Gen
           ),
         ingest: (input) =>
           Effect.gen(function* () {
-            if (input.filename.trim().length === 0 || !input.mediaType.includes("/"))
+            if (
+              input.filename.trim().length === EMPTY_BYTE_LENGTH ||
+              !input.mediaType.includes("/")
+            )
               return yield* InvalidInput.make({
                 message: "Asset filename and media type are required",
               });
@@ -75,9 +84,9 @@ export const layer = (options: Options = {}): Layer.Layer<Management, never, Gen
               return yield* InvalidInput.make({
                 message: "Asset bytes exceed the configured limit",
               });
-            const assetIdentifier = yield* identifiers.generate("asset");
-            const digest = createHash("sha256").update(bytes).digest("hex");
-            const stored: StoredAsset = {
+            const assetIdentifier = yield* identifiers.generate("asset"),
+              digest = createHash("sha256").update(bytes).digest("hex"),
+              stored: StoredAsset = {
               bytes,
               id: assetIdentifier,
               metadata: {
