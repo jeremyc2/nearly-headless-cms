@@ -1,6 +1,6 @@
 import { Effect, Layer, SynchronizedRef } from "effect";
-import { Conflict } from "../CmsError.ts";
-import { type EntryGeneration, EntryPersistence, type EntryRecord } from "../Persistence.ts";
+import { Conflict } from "../cms-error.ts";
+import { type EntryGeneration, EntryPersistence, type EntryRecord } from "../persistence.ts";
 
 const cloneRecord = (record: EntryRecord): EntryRecord => structuredClone(record),
   cloneGeneration = (generation: EntryGeneration): EntryGeneration => ({

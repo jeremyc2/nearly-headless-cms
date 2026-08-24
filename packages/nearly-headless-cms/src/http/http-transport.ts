@@ -1,6 +1,6 @@
 import { Effect } from "effect";
-import type { IngestInput } from "../Asset.ts";
-import { Service as CmsService } from "../Cms.ts";
+import type { IngestInput } from "../asset.ts";
+import { Service as CmsService } from "../cms.ts";
 import {
   AssetReferenced,
   type CmsError,
@@ -15,7 +15,7 @@ import {
   ReferenceBlockedDeletion,
   UnsupportedQueryCapability,
   type ValidationIssue,
-} from "../CmsError.ts";
+} from "../cms-error.ts";
 import type { JsonObject, JsonValue } from "../internal/json.ts";
 import {
   type DeliveryOperation,
@@ -24,8 +24,8 @@ import {
   discovery,
   headlessPrefix,
   managementPrefix,
-} from "./HttpContract.ts";
-import * as OpenApi from "./OpenApi.ts";
+} from "./http-contract.ts";
+import * as OpenApi from "./open-api.ts";
 
 export interface Options {
   readonly deliveryOperations?: readonly DeliveryOperation[];

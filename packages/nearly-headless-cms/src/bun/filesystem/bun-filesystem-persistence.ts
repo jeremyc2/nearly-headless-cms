@@ -2,16 +2,16 @@ import { createHash } from "node:crypto";
 import { mkdir, open, readdir, rename, rm, stat } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { Context, Effect, Layer, Stream, SynchronizedRef } from "effect";
-import { type IngestInput, Management, type Metadata } from "../../Asset.ts";
+import { type IngestInput, Management, type Metadata } from "../../asset.ts";
 import {
   type CmsError,
   Conflict,
   InfrastructureFailure,
   InvalidInput,
   NotFound,
-} from "../../CmsError.ts";
-import { Generator } from "../../Identifier.ts";
-import { type CompileOptions, type CompiledSnapshot, compile } from "../../ContentDefinition.ts";
+} from "../../cms-error.ts";
+import { Generator } from "../../identifier.ts";
+import { type CompileOptions, type CompiledSnapshot, compile } from "../../content-definition.ts";
 import {
   type CatalogState,
   DefinitionCatalog,
@@ -19,7 +19,7 @@ import {
   type EntryGeneration,
   EntryPersistence,
   type EntryRecord,
-} from "../../Persistence.ts";
+} from "../../persistence.ts";
 
 const stagingPrefix = ".nhcms-stage-",
   storageFormat = "nearly-headless-cms/filesystem",

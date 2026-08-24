@@ -1,6 +1,6 @@
-export * as AllowAllAuthorization from "./AllowAllAuthorization.ts";
-export * as AnonymousIdentity from "./AnonymousIdentity.ts";
-export * as CryptoIdentifierGenerator from "./CryptoIdentifierGenerator.ts";
-export * as MemoryAssetManagement from "./MemoryAssetManagement.ts";
-export * as MemoryDefinitionCatalog from "./MemoryDefinitionCatalog.ts";
-export * as MemoryEntryPersistence from "./MemoryEntryPersistence.ts";
+export * as AllowAllAuthorization from "./allow-all-authorization.ts";
+export * as AnonymousIdentity from "./anonymous-identity.ts";
+export * as CryptoIdentifierGenerator from "./crypto-identifier-generator.ts";
+export * as MemoryAssetManagement from "./memory-asset-management.ts";
+export * as MemoryDefinitionCatalog from "./memory-definition-catalog.ts";
+export * as MemoryEntryPersistence from "./memory-entry-persistence.ts";

@@ -1,17 +1,17 @@
 import { describe, expect, test } from "bun:test";
 import { Effect, Exit, Layer } from "effect";
-import type { Management as AssetManagement } from "../../src/Asset.ts";
-import { Service as AuthorizationService } from "../../src/Authorization.ts";
-import { Service as CmsService, layer as cmsLayer } from "../../src/Cms.ts";
+import type { Management as AssetManagement } from "../../src/asset.ts";
+import { Service as AuthorizationService } from "../../src/authorization.ts";
+import { Service as CmsService, layer as cmsLayer } from "../../src/cms.ts";
 import { ContentDefinition } from "../../src/index.ts";
-import type { Generator } from "../../src/Identifier.ts";
-import { CurrentIdentity, anonymous } from "../../src/Identity.ts";
-import type { Action } from "../../src/Operation.ts";
-import type { DefinitionCatalog, EntryPersistence } from "../../src/Persistence.ts";
-import { layer as identifierLayer } from "../../src/adapters/CryptoIdentifierGenerator.ts";
-import { layer as memoryAssetLayer } from "../../src/adapters/MemoryAssetManagement.ts";
-import { layer as memoryCatalogLayer } from "../../src/adapters/MemoryDefinitionCatalog.ts";
-import { layer as memoryEntryLayer } from "../../src/adapters/MemoryEntryPersistence.ts";
+import type { Generator } from "../../src/identifier.ts";
+import { CurrentIdentity, anonymous } from "../../src/identity.ts";
+import type { Action } from "../../src/operation.ts";
+import type { DefinitionCatalog, EntryPersistence } from "../../src/persistence.ts";
+import { layer as identifierLayer } from "../../src/adapters/crypto-identifier-generator.ts";
+import { layer as memoryAssetLayer } from "../../src/adapters/memory-asset-management.ts";
+import { layer as memoryCatalogLayer } from "../../src/adapters/memory-definition-catalog.ts";
+import { layer as memoryEntryLayer } from "../../src/adapters/memory-entry-persistence.ts";
 
 const snapshot = ContentDefinition.compile({
     definitionSpaceId: "authorization-contract",

@@ -1,6 +1,6 @@
-import type { ServiceShape as CmsService } from "../Cms.ts";
-import type { CmsError } from "../CmsError.ts";
-import type { CompiledSnapshot } from "../ContentDefinition.ts";
+import type { ServiceShape as CmsService } from "../cms.ts";
+import type { CmsError } from "../cms-error.ts";
+import type { CompiledSnapshot } from "../content-definition.ts";
 import type { JsonValue } from "../internal/json.ts";
 import type { Effect } from "effect";
 

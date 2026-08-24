@@ -1,3 +1,3 @@
-export * as HttpContract from "./HttpContract.ts";
-export * as HttpTransport from "./HttpTransport.ts";
-export * as OpenApi from "./OpenApi.ts";
+export * as HttpContract from "./http-contract.ts";
+export * as HttpTransport from "./http-transport.ts";
+export * as OpenApi from "./open-api.ts";

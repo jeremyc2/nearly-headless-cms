@@ -1,4 +1,4 @@
-import { InvalidInput, type ValidationIssue } from "./CmsError.ts";
+import { InvalidInput, type ValidationIssue } from "./cms-error.ts";
 import {
   type JsonObject,
   type JsonValue,

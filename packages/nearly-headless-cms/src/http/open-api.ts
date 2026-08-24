@@ -3,7 +3,7 @@ import {
   type ManagementOperation,
   headlessPrefix,
   managementPrefix,
-} from "./HttpContract.ts";
+} from "./http-contract.ts";
 
 export interface Document {
   readonly openapi: "3.1.0";

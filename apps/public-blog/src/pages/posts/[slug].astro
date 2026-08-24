@@ -1,8 +1,8 @@
 ---
-import CommentForm from "../../components/CommentForm.astro"
-import RichText from "../../components/RichText.astro"
+import CommentForm from "../../components/comment-form.astro"
+import RichText from "../../components/rich-text.astro"
 import { assetById, authorById, categoryById, publicExport, tagById } from "../../data/public-export.ts"
-import SiteLayout from "../../layouts/SiteLayout.astro"
+import SiteLayout from "../../layouts/site-layout.astro"
 export function getStaticPaths() { return publicExport.posts.map((post) => ({ params: { slug: post.slug }, props: { post } })) }
 const { post } = Astro.props,
  author = authorById.get(post.author),

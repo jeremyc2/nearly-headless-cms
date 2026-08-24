@@ -1,4 +1,4 @@
-import type { Representation } from "./Entry.ts";
+import type { Representation } from "./entry.ts";
 import type { JsonObject } from "./internal/json.ts";
 
 export interface RevisionMetadata {

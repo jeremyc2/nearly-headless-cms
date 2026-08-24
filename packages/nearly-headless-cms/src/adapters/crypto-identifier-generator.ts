@@ -1,5 +1,5 @@
 import { Effect, Layer } from "effect";
-import { Generator } from "../Identifier.ts";
+import { Generator } from "../identifier.ts";
 
 export const layer = Layer.succeed(
   Generator,

@@ -1,6 +1,6 @@
 ---
 import { publicExport } from "../../data/public-export.ts"
-import SiteLayout from "../../layouts/SiteLayout.astro"
+import SiteLayout from "../../layouts/site-layout.astro"
 ---
 <SiteLayout title="Tags"><header class="listing-header"><div class="shell"><p class="eyebrow">Cross-cutting topics</p><h1>Tags</h1></div></header><section class="shell tag-cloud">{publicExport.tags.map((tag) => <a href={`/tags/${tag.slug}/`}>#{tag.name}<small>{publicExport.posts.filter((post) => post.tags.includes(tag.id)).length}</small></a>)}</section></SiteLayout>
 

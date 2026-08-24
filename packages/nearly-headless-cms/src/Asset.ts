@@ -1,6 +1,11 @@
 import type { Effect, Stream } from "effect";
 import { Context } from "effect";
-import type { AssetReferenced, InfrastructureFailure, InvalidInput, NotFound } from "./CmsError.ts";
+import type {
+  AssetReferenced,
+  InfrastructureFailure,
+  InvalidInput,
+  NotFound,
+} from "./cms-error.ts";
 
 export interface Metadata {
   readonly filename: string;

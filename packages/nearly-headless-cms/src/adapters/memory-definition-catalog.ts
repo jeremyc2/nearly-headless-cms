@@ -1,11 +1,11 @@
 import { Clock, Effect, Layer, SynchronizedRef } from "effect";
-import type { CompiledSnapshot } from "../ContentDefinition.ts";
-import { Conflict } from "../CmsError.ts";
+import type { CompiledSnapshot } from "../content-definition.ts";
+import { Conflict } from "../cms-error.ts";
 import {
   type CatalogState,
   DefinitionCatalog,
   type DefinitionSnapshotRecord,
-} from "../Persistence.ts";
+} from "../persistence.ts";
 
 export interface Options {
   readonly snapshot: CompiledSnapshot;

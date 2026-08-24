@@ -1,10 +1,10 @@
 import type { Effect } from "effect";
 import { Context } from "effect";
-import type { CmsError, InfrastructureFailure } from "./CmsError.ts";
-import type { CompiledSnapshot, SnapshotInput } from "./ContentDefinition.ts";
-import type { Representation } from "./Entry.ts";
-import type { DeletionRecord, Revision } from "./EntryHistory.ts";
-import type { Manifest, Preparation } from "./DefinitionMigration.ts";
+import type { CmsError, InfrastructureFailure } from "./cms-error.ts";
+import type { CompiledSnapshot, SnapshotInput } from "./content-definition.ts";
+import type { Representation } from "./entry.ts";
+import type { DeletionRecord, Revision } from "./entry-history.ts";
+import type { Manifest, Preparation } from "./definition-migration.ts";
 
 export interface EntryRecord {
   readonly entry: Representation;

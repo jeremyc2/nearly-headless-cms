@@ -1,6 +1,6 @@
-import { Conflict, InvalidInput, type ValidationIssue } from "./CmsError.ts";
-import type { CompiledSnapshot } from "./ContentDefinition.ts";
-import type { Representation } from "./Entry.ts";
+import { Conflict, InvalidInput, type ValidationIssue } from "./cms-error.ts";
+import type { CompiledSnapshot } from "./content-definition.ts";
+import type { Representation } from "./entry.ts";
 import type { JsonObject, JsonValue } from "./internal/json.ts";
 
 export interface Manifest {

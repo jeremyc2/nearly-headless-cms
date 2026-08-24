@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
 import { Effect, Layer, Stream, SynchronizedRef } from "effect";
-import { type Asset, Management, type StoredAsset } from "../Asset.ts";
-import { type InfrastructureFailure, InvalidInput, NotFound } from "../CmsError.ts";
-import { Generator } from "../Identifier.ts";
+import { type Asset, Management, type StoredAsset } from "../asset.ts";
+import { type InfrastructureFailure, InvalidInput, NotFound } from "../cms-error.ts";
+import { Generator } from "../identifier.ts";
 
 export interface Options {
   readonly maximumByteLength?: number;

@@ -4,8 +4,8 @@ import {
   type Asset as AssetValue,
   type IngestInput,
   type StoredAsset,
-} from "./Asset.ts";
-import { Service as AuthorizationService } from "./Authorization.ts";
+} from "./asset.ts";
+import { Service as AuthorizationService } from "./authorization.ts";
 import {
   AssetReferenced,
   type CmsError,
@@ -15,7 +15,7 @@ import {
   NotFound,
   ReferenceBlockedDeletion,
   UnsupportedQueryCapability,
-} from "./CmsError.ts";
+} from "./cms-error.ts";
 import {
   type CompileOptions,
   type CompiledContentType,
@@ -28,7 +28,7 @@ import {
   capabilitiesFor,
   classifyCompatibility,
   compile,
-} from "./ContentDefinition.ts";
+} from "./content-definition.ts";
 import {
   type Handler,
   type Manifest,
@@ -37,8 +37,8 @@ import {
   path as migrationPath,
   prepare,
   validateGraph,
-} from "./DefinitionMigration.ts";
-import type { CreateInput, ReadInput, Representation, UpdateInput } from "./Entry.ts";
+} from "./definition-migration.ts";
+import type { CreateInput, ReadInput, Representation, UpdateInput } from "./entry.ts";
 import type {
   CurrentState,
   DeletionRecord,
@@ -46,11 +46,11 @@ import type {
   RestoreInput,
   Revision,
   RevisionPage,
-} from "./EntryHistory.ts";
-import { type Query, type QueryPage, evaluate as evaluateQuery } from "./EntryQuery.ts";
-import { Generator } from "./Identifier.ts";
-import { CurrentIdentity } from "./Identity.ts";
-import type { Action, Resource } from "./Operation.ts";
+} from "./entry-history.ts";
+import { type Query, type QueryPage, evaluate as evaluateQuery } from "./entry-query.ts";
+import { Generator } from "./identifier.ts";
+import { CurrentIdentity } from "./identity.ts";
+import type { Action, Resource } from "./operation.ts";
 import {
   type CatalogState,
   DefinitionCatalog,
@@ -58,8 +58,8 @@ import {
   type EntryGeneration,
   EntryPersistence,
   type EntryRecord,
-} from "./Persistence.ts";
-import * as RichText from "./RichText.ts";
+} from "./persistence.ts";
+import * as RichText from "./rich-text.ts";
 import {
   type JsonObject,
   type JsonValue,

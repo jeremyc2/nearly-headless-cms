@@ -1,1 +1,1 @@
-export * as BunFilesystemPersistence from "./BunFilesystemPersistence.ts";
+export * as BunFilesystemPersistence from "./bun-filesystem-persistence.ts";

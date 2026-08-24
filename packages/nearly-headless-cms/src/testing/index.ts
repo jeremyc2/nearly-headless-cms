@@ -1,1 +1,1 @@
-export * as DevelopmentCms from "./DevelopmentCms.ts";
+export * as DevelopmentCms from "./development-cms.ts";

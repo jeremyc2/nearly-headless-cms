@@ -1,4 +1,4 @@
-import { InvalidInput, type ValidationIssue } from "./CmsError.ts";
+import { InvalidInput, type ValidationIssue } from "./cms-error.ts";
 import { type JsonObject, type JsonValue, isJsonValue } from "./internal/json.ts";
 
 export const format = "nearly-headless-cms/rich-text";

@@ -1,6 +1,6 @@
 import type { Effect } from "effect";
 import { Context } from "effect";
-import type { InfrastructureFailure } from "./CmsError.ts";
+import type { InfrastructureFailure } from "./cms-error.ts";
 
 export type Kind =
   | "entry"

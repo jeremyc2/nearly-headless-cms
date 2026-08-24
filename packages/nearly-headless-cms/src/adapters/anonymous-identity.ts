@@ -1,5 +1,5 @@
 import { Effect, Layer } from "effect";
-import { CurrentIdentity, anonymous } from "../Identity.ts";
+import { CurrentIdentity, anonymous } from "../identity.ts";
 
 export const layer = Layer.succeed(
   CurrentIdentity,

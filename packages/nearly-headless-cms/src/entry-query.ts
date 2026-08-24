@@ -1,6 +1,10 @@
-import { Conflict, InvalidInput, UnsupportedQueryCapability } from "./CmsError.ts";
-import { type CompiledSnapshot, type ResolvedField, capabilitiesFor } from "./ContentDefinition.ts";
-import type { Representation } from "./Entry.ts";
+import { Conflict, InvalidInput, UnsupportedQueryCapability } from "./cms-error.ts";
+import {
+  type CompiledSnapshot,
+  type ResolvedField,
+  capabilitiesFor,
+} from "./content-definition.ts";
+import type { Representation } from "./entry.ts";
 import {
   type JsonObject,
   type JsonValue,

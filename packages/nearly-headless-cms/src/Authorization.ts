@@ -1,8 +1,8 @@
 import type { Effect } from "effect";
 import { Context } from "effect";
-import type { InfrastructureFailure } from "./CmsError.ts";
-import type { Identity } from "./Identity.ts";
-import type { Action, Resource } from "./Operation.ts";
+import type { InfrastructureFailure } from "./cms-error.ts";
+import type { Identity } from "./identity.ts";
+import type { Action, Resource } from "./operation.ts";
 
 export class Service extends Context.Service<
   Service,

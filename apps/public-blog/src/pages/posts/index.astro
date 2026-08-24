@@ -1,7 +1,7 @@
 ---
-import PostCard from "../../components/PostCard.astro"
+import PostCard from "../../components/post-card.astro"
 import { publicExport } from "../../data/public-export.ts"
-import SiteLayout from "../../layouts/SiteLayout.astro"
+import SiteLayout from "../../layouts/site-layout.astro"
 ---
 <SiteLayout title="Archive"><header class="listing-header"><div class="shell"><p class="eyebrow">Every field note</p><h1>The archive</h1><p>Published Posts, newest first.</p></div></header><section class="shell content-stack"><div class="post-grid">{publicExport.posts.map((post) => <PostCard post={post} />)}</div></section></SiteLayout>
 
