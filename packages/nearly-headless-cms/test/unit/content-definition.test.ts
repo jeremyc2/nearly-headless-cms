@@ -1,7 +1,7 @@
+import { type CompiledSnapshot, type JsonObject, compileSnapshot } from "../../src/content-definition.ts";
 import { expect, test } from "bun:test";
-import { ContentDefinition } from "../../src/index.ts";
 
-const fieldGroupSnapshot = ContentDefinition.compile({
+const fieldGroupSnapshot: CompiledSnapshot = compileSnapshot({
   definitionSpaceId: "field-groups",
   definitions: [
     {
@@ -42,7 +42,7 @@ const fieldGroupSnapshot = ContentDefinition.compile({
 });
 
 test("ContentDefinition.compile compiles and validates Entry values without coercion", () => {
-  const snapshot = ContentDefinition.compile({
+  const snapshot: CompiledSnapshot = compileSnapshot({
     definitionSpaceId: "example-blog",
     definitions: [
       {
@@ -68,9 +68,9 @@ test("ContentDefinition.compile compiles and validates Entry values without coer
     status: "draft",
     title: "Hello",
   });
-  expect(() => snapshot.validateEntry("post", { title: 1 }, { applyDefaults: false })).toThrow(
-    "title",
-  );
+  expect(() =>
+    snapshot.validateEntry("post", { title: 1 } satisfies JsonObject, { applyDefaults: false }),
+  ).toThrow("title");
 });
 
 test("ContentDefinition.compile validates nested and inline Field Groups", () => {
@@ -87,7 +87,10 @@ test("ContentDefinition.compile validates nested and inline Field Groups", () =>
   expect(() =>
     fieldGroupSnapshot.validateEntry(
       "person",
-      { address: { city: "London", mystery: true }, "display-name": "Ada" },
+      {
+        address: { city: "London", mystery: true },
+        "display-name": "Ada",
+      } satisfies JsonObject,
       { applyDefaults: false },
     ),
   ).toThrow("address.mystery");
@@ -95,7 +98,7 @@ test("ContentDefinition.compile validates nested and inline Field Groups", () =>
 
 test("ContentDefinition.compile rejects cyclic Field Group composition", () => {
   expect(() =>
-    ContentDefinition.compile({
+    compileSnapshot({
       definitionSpaceId: "field-groups",
       definitions: [
         {
@@ -119,7 +122,7 @@ test("ContentDefinition.compile rejects cyclic Field Group composition", () => {
 });
 
 test("ContentDefinition.compile validates ordered lists of reusable Field Groups", () => {
-  const compiled = ContentDefinition.compile({
+  const compiled: CompiledSnapshot = compileSnapshot({
     definitionSpaceId: "test-space",
     definitions: [
       {
@@ -158,6 +161,10 @@ test("ContentDefinition.compile validates ordered lists of reusable Field Groups
     links: [{ label: "First" }, { label: "Second" }],
   });
   expect(() =>
-    compiled.validateEntry("page", { links: [{ unknown: true }] }, { applyDefaults: true }),
+    compiled.validateEntry(
+      "page",
+      { links: [{ unknown: true }] } satisfies JsonObject,
+      { applyDefaults: true },
+    ),
   ).toThrow("Entry validation failed");
 });

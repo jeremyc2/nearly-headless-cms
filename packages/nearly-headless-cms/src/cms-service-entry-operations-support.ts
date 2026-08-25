@@ -1,29 +1,14 @@
-import { Clock, DateTime, Effect } from "effect";
-import {
-  type CmsError,
-  InvalidInput,
-  NotFound,
-} from "./cms-error.ts";
-import type { CompiledContentType, CompiledSnapshot } from "./content-definition.ts";
 import type { CreateInput, ReadInput, Representation, UpdateInput } from "./entry.ts";
-import type { DeletionRecord, Revision } from "./entry-history.ts";
-import { type Query, type QueryPage, evaluate as evaluateQuery } from "./entry-query.ts";
-import { cloneJson } from "./internal/json.ts";
-import type { EntryGeneration, EntryRecord } from "./persistence.ts";
-import type { CmsServiceOperationContext } from "./cms-service-operation-context.ts";
 import type { DeleteEntryInput, DeleteResult, MutationResult } from "./cms-types.ts";
-import entryOperationSupport from "./cms-service-entry-operation-support.ts";
+import type { Query, QueryPage } from "./entry-query.ts";
+import type { CmsError } from "./cms-error.ts";
+import type { CmsServiceOperationContext } from "./cms-service-operation-context.ts";
+import type { CompiledSnapshot } from "./content-definition.ts";
+import { Effect } from "effect";
 import cmsSupport from "./cms-support.ts";
-
-const { applyRetention, attempt, collectReferences, ensureReferences, ensureUniqueValues, entryResource, expandRepresentation, liveRecords, project } =
-    cmsSupport,
-  {
-    assertLiveEntry,
-    assertReferenceDeletionAllowed,
-    assertWriteToken,
-    commitEntryWithHistory,
-    commitEntryWithoutHistory,
-  } = entryOperationSupport;
+import entryOperationSupport from "./cms-service-entry-operation-support.ts";
+import entryOperationsPrepareSupport from "./cms-service-entry-operations-prepare-support.ts";
+import { evaluate as evaluateQuery } from "./entry-query-evaluation.ts";
 
 interface AuthorizeEntryExpansionInput {
   readonly contentTypeId: string;
@@ -32,68 +17,30 @@ interface AuthorizeEntryExpansionInput {
   readonly snapshot: CompiledSnapshot;
 }
 
-interface CommitCreatedEntryWithHistoryInput {
-  readonly entry: Representation;
-  readonly entryId: string;
-  readonly generation: EntryGeneration;
-  readonly records: Map<string, EntryRecord>;
-  readonly snapshot: CompiledSnapshot;
-  readonly values: Representation["values"];
-}
-
-interface ExpandQueryPageInput {
-  readonly expansion: readonly string[] | undefined;
-  readonly generation: EntryGeneration;
-  readonly page: QueryPage;
-  readonly snapshot: CompiledSnapshot;
-}
-
-interface PersistCreatedEntryInput {
-  readonly input: CreateInput;
-  readonly prepared: PreparedCreateEntry;
-  readonly snapshot: CompiledSnapshot;
-}
-
-interface PreparedCreateEntry {
-  readonly contentType: CompiledContentType;
-  readonly generation: EntryGeneration;
-  readonly values: Representation["values"];
-}
-
-interface PreparedDeleteEntry {
-  readonly contentType: CompiledContentType;
-  readonly current: EntryRecord;
-  readonly generation: EntryGeneration;
-  readonly records: Map<string, EntryRecord>;
-}
-
-interface PreparedUpdateEntry {
-  readonly contentType: CompiledContentType;
-  readonly current: EntryRecord;
-  readonly entry: Representation;
-  readonly generation: EntryGeneration;
-  readonly records: Map<string, EntryRecord>;
-  readonly snapshotId: string;
-}
-
-interface RemoveDeletedEntryRecordInput {
-  readonly entryId: string;
-  readonly generation: number;
-  readonly records: Map<string, EntryRecord>;
-}
-
-const authorizeDeleteEntry = (
-  context: CmsServiceOperationContext,
-  input: DeleteEntryInput,
-): Effect.Effect<CompiledSnapshot, CmsError> =>
-  Effect.gen(function* authorizeDeleteEntryEffect() {
-    const snapshot = yield* context.currentDefinitionSnapshot;
-    yield* context.authorize(
-      "entry.delete",
-      entryResource(snapshot, input.contentTypeId, input.entryId),
-    );
-    return snapshot;
-  }),
+const { attempt, entryResource, expandRepresentation, liveRecords, project } = cmsSupport,
+  { commitEntryWithHistory, commitEntryWithoutHistory } = entryOperationSupport,
+  {
+    expandQueryPage,
+    persistCreatedEntry,
+    prepareCreateEntry,
+    prepareDeleteEntry,
+    prepareUpdateEntry,
+    readLiveEntryRecord,
+    recordDeletedEntry,
+    removeDeletedEntryRecord,
+  } = entryOperationsPrepareSupport,
+  authorizeDeleteEntry = (
+    context: CmsServiceOperationContext,
+    input: DeleteEntryInput,
+  ): Effect.Effect<CompiledSnapshot, CmsError> =>
+    Effect.gen(function* authorizeDeleteEntryEffect() {
+      const snapshot = yield* context.currentDefinitionSnapshot;
+      yield* context.authorize(
+        "entry.delete",
+        entryResource(snapshot, input.contentTypeId, input.entryId),
+      );
+      return snapshot;
+    }),
   authorizeEntryExpansion = (
     context: CmsServiceOperationContext,
     input: AuthorizeEntryExpansionInput,
@@ -152,230 +99,30 @@ const authorizeDeleteEntry = (
       });
       return snapshot;
     }),
-  commitCreatedEntryWithHistory = (
-    context: CmsServiceOperationContext,
-    input: CommitCreatedEntryWithHistoryInput,
-  ): Effect.Effect<MutationResult, CmsError> =>
-    Effect.gen(function* commitCreatedEntryWithHistoryEffect() {
-      const revision: Revision = {
-          definitionSnapshotId: input.snapshot.snapshotId,
-          recordedAt: DateTime.formatIso(yield* DateTime.now),
-          revisionNumber: 1,
-          values: cloneJson(input.values),
-        },
-        writeToken = yield* context.identifiers.generate("write-token");
-      input.records.set(input.entryId, {
-        entry: input.entry,
-        revisions: [revision],
-        writeToken,
-      });
-      yield* context.persistence.commitGeneration(input.generation.generation, input.records);
-      return { entry: input.entry, revisionNumber: 1, writeToken };
-    }),
-  expandQueryPage = (input: ExpandQueryPageInput): Effect.Effect<QueryPage, CmsError> =>
-    Effect.gen(function* expandQueryPageEffect() {
-      if (input.expansion === undefined || input.expansion.length === 0) {
-        return input.page;
-      }
-      const items = yield* attempt(() =>
-        input.page.items.map((entry) =>
-          expandRepresentation({
-            entry,
-            expansion: input.expansion,
-            generation: input.generation,
-            snapshot: input.snapshot,
-          }),
-        ),
-      );
-      if (input.page.nextCursor === undefined) {
-        return { items };
-      }
-      return { items, nextCursor: input.page.nextCursor };
-    }),
-  persistCreatedEntry = (
-    context: CmsServiceOperationContext,
-    input: PersistCreatedEntryInput,
-  ): Effect.Effect<MutationResult, CmsError> =>
-    Effect.gen(function* persistCreatedEntryEffect() {
-      const entryId = yield* context.identifiers.generate("entry"),
-        entry: Representation = {
-          contentTypeId: input.input.contentTypeId,
-          id: entryId,
-          values: input.prepared.values,
-        },
-        records = new Map(input.prepared.generation.records);
-      if (input.prepared.contentType.definition.history !== true) {
-        return yield* commitEntryWithoutHistory(
-          context,
-          entry,
-          entryId,
-          input.prepared.generation.generation,
-          records,
-        );
-      }
-      return yield* commitCreatedEntryWithHistory(context, {
-        entry,
-        entryId,
-        generation: input.prepared.generation,
-        records,
-        snapshot: input.snapshot,
-        values: input.prepared.values,
-      });
-    }),
-  prepareCreateEntry = (
-    context: CmsServiceOperationContext,
-    snapshot: CompiledSnapshot,
-    input: CreateInput,
-  ): Effect.Effect<PreparedCreateEntry, CmsError> =>
-    Effect.gen(function* prepareCreateEntryEffect() {
-      yield* context.authorize("entry.create", entryResource(snapshot, input.contentTypeId));
-      const contentType = snapshot.contentTypes.get(input.contentTypeId);
-      if (contentType === undefined) {
-        return yield* InvalidInput.make({
-          message: `Unknown Content Type ${input.contentTypeId}`,
-        });
-      }
-      const generation = yield* context.persistence.readGeneration,
-        values = yield* attempt(() =>
-          snapshot.validateEntry(input.contentTypeId, input.values, { applyDefaults: true }),
-        );
-      yield* attempt(() => {
-        ensureUniqueValues({ contentType, records: generation.records.values(), values });
-      });
-      yield* ensureReferences(
-        yield* attempt(() => collectReferences(contentType, values)),
-        generation,
-        context.assets,
-      );
-      return { contentType, generation, values };
-    }),
-  prepareDeleteEntry = (
-    context: CmsServiceOperationContext,
-    snapshot: CompiledSnapshot,
-    input: DeleteEntryInput,
-  ): Effect.Effect<PreparedDeleteEntry, CmsError> =>
-    Effect.gen(function* prepareDeleteEntryEffect() {
-      const generation = yield* context.persistence.readGeneration,
-        current = yield* assertLiveEntry(
-          generation.records.get(input.entryId),
-          input.contentTypeId,
-          input.entryId,
-        ),
-        contentType = snapshot.contentTypes.get(input.contentTypeId);
-      if (contentType === undefined) {
-        return yield* NotFound.make({ message: `Entry ${input.entryId} was not found` });
-      }
-      yield* assertWriteToken(contentType, current, input.writeToken);
-      yield* assertReferenceDeletionAllowed(snapshot, generation, input.entryId);
-      return { contentType, current, generation, records: new Map(generation.records) };
-    }),
-  prepareUpdateEntry = (
-    context: CmsServiceOperationContext,
-    snapshot: CompiledSnapshot,
-    input: UpdateInput,
-  ): Effect.Effect<PreparedUpdateEntry, CmsError> =>
-    Effect.gen(function* prepareUpdateEntryEffect() {
-      yield* context.authorize(
-        "entry.update",
-        entryResource(snapshot, input.contentTypeId, input.entryId),
-      );
-      const contentType = snapshot.contentTypes.get(input.contentTypeId);
-      if (contentType === undefined) {
-        return yield* InvalidInput.make({
-          message: `Unknown Content Type ${input.contentTypeId}`,
-        });
-      }
-      const generation = yield* context.persistence.readGeneration,
-        current = yield* assertLiveEntry(
-          generation.records.get(input.entryId),
-          input.contentTypeId,
-          input.entryId,
-        );
-      yield* assertWriteToken(contentType, current, input.writeToken);
-      const entry: Representation = {
-          contentTypeId: input.contentTypeId,
-          id: input.entryId,
-          values: yield* attempt(() =>
-            snapshot.validateEntry(input.contentTypeId, input.values, { applyDefaults: false }),
-          ),
-        },
-        records = new Map(generation.records);
-      yield* attempt(() => {
-        ensureUniqueValues({
-          contentType,
-          ignoredEntryId: input.entryId,
-          records: generation.records.values(),
-          values: entry.values,
-        });
-      });
-      yield* ensureReferences(
-        yield* attempt(() => collectReferences(contentType, entry.values)),
-        generation,
-        context.assets,
-      );
-      return { contentType, current, entry, generation, records, snapshotId: snapshot.snapshotId };
-    }),
-  readLiveEntryRecord = (
-    context: CmsServiceOperationContext,
-    input: ReadInput,
-  ): Effect.Effect<EntryRecord, CmsError> =>
-    Effect.gen(function* readLiveEntryRecordEffect() {
-      const generation = yield* context.persistence.readGeneration;
-      return yield* assertLiveEntry(
-        generation.records.get(input.entryId),
-        input.contentTypeId,
-        input.entryId,
-      );
-    }),
-  recordDeletedEntry = (
-    context: CmsServiceOperationContext,
-    prepared: PreparedDeleteEntry,
-    input: DeleteEntryInput,
-  ): Effect.Effect<DeletionRecord, CmsError> =>
-    Effect.gen(function* recordDeletedEntryEffect() {
-      const deletedAt = DateTime.formatIso(yield* DateTime.now),
-        now = yield* Clock.currentTimeMillis,
-        writeToken = yield* context.identifiers.generate("write-token"),
-        deletionRecord: DeletionRecord = {
-          contentTypeId: input.contentTypeId,
-          deletedAt,
-          entryId: input.entryId,
-          latestRevisionNumber: prepared.current.revisions.at(-1)?.revisionNumber ?? 0,
-          writeToken,
-        };
-      prepared.records.set(input.entryId, {
-        ...prepared.current,
-        deletionRecord,
-        revisions: applyRetention(prepared.current.revisions, prepared.contentType, now),
-        writeToken,
-      });
-      yield* context.persistence.commitGeneration(prepared.generation.generation, prepared.records);
-      return deletionRecord;
-    }),
-  removeDeletedEntryRecord = (
-    context: CmsServiceOperationContext,
-    input: RemoveDeletedEntryRecordInput,
-  ): Effect.Effect<void, CmsError> =>
-    Effect.gen(function* removeDeletedEntryRecordEffect() {
-      input.records.delete(input.entryId);
-      yield* context.persistence.commitGeneration(input.generation, input.records);
-    }),
   runCreateEntry = (
     context: CmsServiceOperationContext,
     input: CreateInput,
   ): Effect.Effect<MutationResult, CmsError> =>
     Effect.gen(function* runCreateEntryEffect() {
-      const snapshot = yield* context.currentDefinitionSnapshot,
-        prepared = yield* prepareCreateEntry(context, snapshot, input);
-      return yield* persistCreatedEntry(context, { input, prepared, snapshot });
+      const createEntryState = {
+          snapshot: yield* context.currentDefinitionSnapshot,
+        },
+        prepared = yield* prepareCreateEntry(context, createEntryState.snapshot, input);
+      return yield* persistCreatedEntry(context, {
+        input,
+        prepared,
+        snapshot: createEntryState.snapshot,
+      });
     }),
   runDeleteEntry = (
     context: CmsServiceOperationContext,
     input: DeleteEntryInput,
   ): Effect.Effect<DeleteResult, CmsError> =>
     Effect.gen(function* runDeleteEntryEffect() {
-      const snapshot = yield* authorizeDeleteEntry(context, input),
-        prepared = yield* prepareDeleteEntry(context, snapshot, input);
+      const deleteEntryState = {
+          snapshot: yield* authorizeDeleteEntry(context, input),
+        },
+        prepared = yield* prepareDeleteEntry(context, deleteEntryState.snapshot, input);
       if (prepared.contentType.definition.history !== true) {
         return yield* removeDeletedEntryRecord(context, {
           entryId: input.entryId,
@@ -390,9 +137,9 @@ const authorizeDeleteEntry = (
     input: ReadInput,
   ): Effect.Effect<Representation, CmsError> =>
     Effect.gen(function* runGetEntryEffect() {
-      const snapshot = yield* authorizeGetEntry(context, input),
-        generation = yield* context.persistence.readGeneration,
-        record = yield* readLiveEntryRecord(context, input);
+      const generation = yield* context.persistence.readGeneration,
+        record = yield* readLiveEntryRecord(context, input),
+        snapshot = yield* authorizeGetEntry(context, input);
       return project(
         yield* attempt(() =>
           expandRepresentation({
@@ -410,21 +157,21 @@ const authorizeDeleteEntry = (
     query: Query,
   ): Effect.Effect<QueryPage, CmsError> =>
     Effect.gen(function* runQueryEntriesEffect() {
-      const snapshot = yield* authorizeQueryEntries(context, query),
+      const contextSnapshotForQuery = yield* authorizeQueryEntries(context, query),
         generation = yield* context.persistence.readGeneration,
         page = yield* attempt(() =>
           evaluateQuery({
             entries: liveRecords(generation).map((record) => record.entry),
             options: { generation: generation.generation },
             query,
-            snapshot,
+            snapshot: contextSnapshotForQuery,
           }),
         );
       return yield* expandQueryPage({
         expansion: query.expansion,
         generation,
         page,
-        snapshot,
+        snapshot: contextSnapshotForQuery,
       });
     }),
   runUpdateEntry = (
@@ -432,8 +179,8 @@ const authorizeDeleteEntry = (
     input: UpdateInput,
   ): Effect.Effect<MutationResult, CmsError> =>
     Effect.gen(function* runUpdateEntryEffect() {
-      const snapshot = yield* context.currentDefinitionSnapshot,
-        prepared = yield* prepareUpdateEntry(context, snapshot, input);
+      const contextSnapshotForUpdate = yield* context.currentDefinitionSnapshot,
+        prepared = yield* prepareUpdateEntry(context, contextSnapshotForUpdate, input);
       if (prepared.contentType.definition.history !== true) {
         return yield* commitEntryWithoutHistory(
           context,
@@ -463,4 +210,7 @@ export default {
   runUpdateEntry,
 };
 
-export type { PreparedDeleteEntry, PreparedUpdateEntry };
+export type {
+  PreparedDeleteEntry,
+  PreparedUpdateEntry,
+} from "./cms-service-entry-operations-prepare-support.ts";

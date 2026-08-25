@@ -1,28 +1,26 @@
-// oxlint-disable-next-line effecttsgo/node-builtin-import -- This Bun adapter needs durable fsync/open and directory primitives unavailable in Effect's portable FileSystem layer.
-import { open, rm } from "node:fs/promises";
-// oxlint-disable-next-line effecttsgo/node-builtin-import -- Bun does not provide a path manipulation API; these operations are platform-neutral string handling.
-import { join } from "node:path";
-import { type CompileOptions, type CompiledSnapshot, compile } from "../../content-definition.ts";
-import type { CatalogState, DefinitionSnapshotRecord } from "../../persistence.ts";
-import { DateTime } from "effect";
 import {
   type Configuration,
-  type DiskCatalog,
   type DiskGeneration,
   type DiskManifest,
   type State,
   type WriterLock,
   emptyLength,
   generationFilenameWidth,
-  initialVersion,
   lockProbeSignal,
   stagingPrefix,
   storageFormat,
   storageFormatVersion,
 } from "./bun-filesystem-persistence-types.ts";
+// oxlint-disable-next-line effecttsgo/node-builtin-import -- This Bun adapter needs durable fsync/open and directory primitives unavailable in Effect's portable FileSystem layer.
+import { open, rm } from "node:fs/promises";
+import { DateTime } from "effect";
+import filesystemLockIoCatalogSupport from "./bun-filesystem-persistence-lock-io-catalog-support.ts";
 import filesystemSupport from "./bun-filesystem-persistence-support.ts";
+// oxlint-disable-next-line effecttsgo/node-builtin-import -- Bun does not provide a path manipulation API; these operations are platform-neutral string handling.
+import { join } from "node:path";
 
-const { digest, encode, filesystemErrorCode, synchronize, writeAtomic } = filesystemSupport,
+const { catalogGenerationFields, decodeCatalog, initialCatalog } = filesystemLockIoCatalogSupport,
+  { digest, encode, filesystemErrorCode, synchronize, writeAtomic } = filesystemSupport,
   // oxlint-disable-next-line effecttsgo/async-function -- Recovery locking is a filesystem callback boundary.
   acquireRecoveryGuard = async (configuration: Configuration): Promise<() => Promise<void>> => {
     const guardPath = join(configuration.root, `${stagingPrefix}writer-recovery`),
@@ -52,10 +50,18 @@ const { digest, encode, filesystemErrorCode, synchronize, writeAtomic } = filesy
     const lockPath = join(configuration.root, "writer.lock"),
       // oxlint-disable-next-line effecttsgo/crypto-random-uuid -- lock acquisition is a synchronous token-generation step around Bun file operations.
       lockToken = crypto.randomUUID(),
-      immediateLock = await tryCreateWriterLock(configuration, lockPath, lockToken);
-    if (immediateLock !== undefined) {
-      return immediateLock;
+      writerLock = await tryCreateWriterLock(configuration, lockPath, lockToken);
+    if (writerLock !== undefined) {
+      return writerLock;
     }
+    return acquireWriterLockWithRecovery(configuration, lockPath, lockToken);
+  },
+  // oxlint-disable-next-line effecttsgo/async-function -- Stale lock recovery coordinates sequential Bun filesystem operations.
+  acquireWriterLockWithRecovery = async (
+    configuration: Configuration,
+    lockPath: string,
+    lockToken: string,
+  ): Promise<{ readonly lockPath: string; readonly lockToken: string }> => {
     const releaseRecoveryGuard = await acquireRecoveryGuard(configuration);
     try {
       const recoveredLock = await tryCreateWriterLock(configuration, lockPath, lockToken);
@@ -66,12 +72,6 @@ const { digest, encode, filesystemErrorCode, synchronize, writeAtomic } = filesy
     } finally {
       await releaseRecoveryGuard();
     }
-  },
-  catalogGenerationFields = (catalog: CatalogState | undefined): { readonly catalog?: DiskCatalog } => {
-    if (catalog === undefined) {
-      return {};
-    }
-    return { catalog: encodeCatalog(catalog) };
   },
   // oxlint-disable-next-line effecttsgo/async-function -- Guard creation requires sequential Bun filesystem operations.
   createRecoveryGuard = async (guardPath: string, guardToken: string): Promise<void> => {
@@ -111,76 +111,6 @@ const { digest, encode, filesystemErrorCode, synchronize, writeAtomic } = filesy
       await rm(lockPath, { force: true }).catch(() => {});
       throw error;
     }
-  },
-  decodeCatalog = (catalog: DiskCatalog, compileOptions: CompileOptions): CatalogState => {
-    const activeInputSnapshotId = catalog.active.input.snapshotId,
-      snapshots = catalog.snapshots.map((snapshot) => ({
-        ...snapshot,
-        compiled: compile(snapshot.input, compileOptions),
-      })),
-      active = snapshots.find((snapshot) => snapshot.input.snapshotId === activeInputSnapshotId);
-    if (active === undefined) {
-      throw new Error("Committed Definition Catalog active Snapshot is missing");
-    }
-    return {
-      active,
-      events: structuredClone(catalog.events),
-      migrationManifests: structuredClone(catalog.migrationManifests),
-      migrationPreparations: structuredClone(catalog.migrationPreparations),
-      retiredDefinitionIds: new Set(catalog.retiredDefinitionIds),
-      revisions: structuredClone(catalog.revisions),
-      snapshots,
-      version: catalog.version,
-    };
-  },
-  encodeCatalog = (catalog: CatalogState): DiskCatalog => ({
-    active: { activatedAt: catalog.active.activatedAt, input: catalog.active.input },
-    events: catalog.events,
-    migrationManifests: catalog.migrationManifests,
-    migrationPreparations: catalog.migrationPreparations,
-    retiredDefinitionIds: [...catalog.retiredDefinitionIds],
-    revisions: catalog.revisions,
-    snapshots: catalog.snapshots.map((snapshot) => ({
-      activatedAt: snapshot.activatedAt,
-      input: snapshot.input,
-    })),
-    version: catalog.version,
-  }),
-  initialCatalog = (snapshot: CompiledSnapshot, activatedAt: string): CatalogState => {
-    const {input} = snapshot,
-      revisions = input.definitions.map((definition) => {
-        const revision = {
-          definition,
-          definitionId: definition.id,
-          revision: definition.revision ?? initialVersion,
-        };
-        if (definition.parentRevision === undefined) {
-          return revision;
-        }
-        return { ...revision, parentRevision: definition.parentRevision };
-      }),
-      snapshotRecord: DefinitionSnapshotRecord = {
-        activatedAt,
-        compiled: snapshot,
-        input,
-      };
-    return {
-      active: snapshotRecord,
-      events: [
-        {
-          eventType: "snapshotActivated",
-          recordedAt: activatedAt,
-          snapshotId: snapshot.snapshotId,
-          source: "initialization",
-        },
-      ],
-      migrationManifests: [],
-      migrationPreparations: [],
-      retiredDefinitionIds: new Set(),
-      revisions,
-      snapshots: [snapshotRecord],
-      version: initialVersion,
-    };
   },
   parseWriterLock = (parsed: object): WriterLock => {
     const processIdValue: unknown = Reflect.get(parsed, "processId"),
@@ -240,6 +170,14 @@ const { digest, encode, filesystemErrorCode, synchronize, writeAtomic } = filesy
       return filesystemErrorCode(error) !== "ESRCH";
     }
   },
+  // oxlint-disable-next-line effecttsgo/async-function -- Lock records are read through Bun's filesystem Promise API.
+  readWriterLock = async (lockPath: string): Promise<WriterLock> => {
+    const parsed: unknown = JSON.parse(await Bun.file(lockPath).text());
+    if (typeof parsed !== "object" || parsed === null) {
+      throw new Error("Writer lock is corrupt");
+    }
+    return parseWriterLock(parsed);
+  },
   // oxlint-disable-next-line effecttsgo/async-function -- Stale guard recovery reads and reclaims a Bun filesystem record.
   reclaimStaleRecoveryGuard = async (guardPath: string): Promise<void> => {
     let guardIsActive = false;
@@ -253,14 +191,6 @@ const { digest, encode, filesystemErrorCode, synchronize, writeAtomic } = filesy
       throw new Error("Filesystem writer recovery is already in progress");
     }
     await rm(guardPath, { force: true });
-  },
-  // oxlint-disable-next-line effecttsgo/async-function -- Lock records are read through Bun's filesystem Promise API.
-  readWriterLock = async (lockPath: string): Promise<WriterLock> => {
-    const parsed: unknown = JSON.parse(await Bun.file(lockPath).text());
-    if (typeof parsed !== "object" || parsed === null) {
-      throw new Error("Writer lock is corrupt");
-    }
-    return parseWriterLock(parsed);
   },
   // oxlint-disable-next-line effecttsgo/async-function -- Stale lock recovery coordinates sequential Bun filesystem operations.
   recoverStaleWriterLock = async (
@@ -309,4 +239,10 @@ const { digest, encode, filesystemErrorCode, synchronize, writeAtomic } = filesy
     return undefined;
   };
 
-export default { acquireWriterLock, decodeCatalog, initialCatalog, persistState, removeOwnedWriterLock };
+export default {
+  acquireWriterLock,
+  decodeCatalog,
+  initialCatalog,
+  persistState,
+  removeOwnedWriterLock,
+};
