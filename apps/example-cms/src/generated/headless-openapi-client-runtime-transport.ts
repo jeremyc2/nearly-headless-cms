@@ -13,64 +13,9 @@ import type { OperationSpecification } from "./headless-openapi-client-specifica
 import { ProtocolFailure } from "./protocol-failure.ts";
 import { TransportFailure } from "./transport-failure.ts";
 import { operationSpecifications } from "./headless-openapi-client-runtime-specifications.ts";
+import transportRequestSupport from "./headless-openapi-client-runtime-transport-request-support.ts";
 
-
-const toAbortSignal = (
-    signal: Pick<
-      AbortSignal,
-      "aborted" | "addEventListener" | "reason" | "removeEventListener" | "throwIfAborted"
-    >,
-  ): AbortSignal =>
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-141] fetch requires AbortSignal; generated clients pass the runtime signal.
-    signal as unknown as AbortSignal,
-  // oxlint-disable-next-line eslint/sort-vars -- [EH-130] generated runtime helpers are ordered for readability.
-  appendQueryParameters = (
-    requestUrl: Pick<URL, "pathname" | "searchParams">,
-    queryParameters: Readonly<Record<string, unknown>>,
-  ): void => {
-    for (const [name, value] of Object.entries(queryParameters)) {
-      if (value !== undefined) {
-        if (
-          typeof value === "string" ||
-          typeof value === "number" ||
-          typeof value === "boolean" ||
-          typeof value === "bigint"
-        ) {
-          requestUrl.searchParams.set(name, String(value));
-        } else {
-          requestUrl.searchParams.set(name, JSON.stringify(value));
-        }
-      }
-    }
-  },
-  buildRequestBody = (
-    input: Readonly<OperationInputs[keyof OperationInputs]>,
-    headers: Headers,
-    specification: Readonly<OperationSpecification>,
-  ): BodyInit | undefined => {
-    if (!("body" in input) || input.body === undefined) {
-      return undefined;
-    }
-    const { body: requestBody } = input;
-    if (requestBody instanceof FormData) {
-      return requestBody;
-    }
-    headers.set("content-type", specification.requestMediaType ?? "application/json");
-    // oxlint-disable-next-line effecttsgo/prefer-schema-over-json -- [EH-107] request bodies are OpenAPI-generated unknown shapes and must be serialized using the browser JSON boundary.
-    return JSON.stringify(requestBody);
-  },
-  buildRequestHeaders = (input: Readonly<OperationInputs[keyof OperationInputs]>): Headers => {
-    if ("headers" in input) {
-      return new Headers(input.headers);
-    }
-    return new Headers();
-  },
-  buildRequestUrl = (baseAddress: string, path: string): URL =>
-    new URL(
-      `${baseAddress}${path}`,
-      baseAddress || globalThis.location?.origin || "http://localhost",
-    ),
-  connectionFailureMessage = (cause: unknown): string => {
+const connectionFailureMessage = (cause: unknown): string => {
     if (cause instanceof Error) {
       return cause.message;
     }
@@ -101,17 +46,24 @@ const toAbortSignal = (
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-196] OperationFetchRequest carries optional readonly abort signal bridge fields.
     request: Readonly<OperationFetchRequest>,
   ): Promise<Response> =>
-    // oxlint-disable-next-line effecttsgo/global-fetch -- [EH-081] generated clients intentionally use the platform fetch boundary so callers can supply the browser or server runtime.
+    // oxlint-disable-next-line effecttsgo/global-fetch, effecttsgo/global-fetch-in-effect -- [EH-235, EH-236] generated clients intentionally use the platform fetch boundary so callers can supply the browser or server runtime.
     fetch(request.requestUrl, {
       body: request.body,
       headers: request.headers,
       method: request.method,
-      // oxlint-disable-next-line eslint/no-ternary -- [EH-123] generated fetch bridge keeps compact signal fallback.
+      // oxlint-disable-next-line eslint/no-ternary -- [EH-237] generated fetch bridge keeps compact signal fallback.
       signal: request.signal === undefined ? undefined : toAbortSignal(request.signal),
     }).catch((error) => {
       throw TransportFailure.make({ message: connectionFailureMessage(error) });
     }),
-  /* oxlint-enable effecttsgo/global-fetch, effecttsgo/global-fetch-in-effect */
+  toAbortSignal = (
+    signal: Pick<
+      AbortSignal,
+      "aborted" | "addEventListener" | "reason" | "removeEventListener" | "throwIfAborted"
+    >,
+  ): AbortSignal =>
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-141] fetch requires AbortSignal; generated clients pass the runtime signal.
+    signal as unknown as AbortSignal,
   generatorFormatVersion = 3,
   httpStatusNoContent = 204,
   isDeclaredFailurePayload = (
@@ -182,13 +134,17 @@ const toAbortSignal = (
     if ("path" in input && input.path !== undefined) {
       path = substitutePathParameters(path, input.path);
     }
-    const requestUrl = buildRequestUrl(baseAddress, path);
+    const requestUrl = transportRequestSupport.buildRequestUrl(baseAddress, path);
     if ("query" in input && input.query !== undefined) {
-      appendQueryParameters(requestUrl, input.query);
+      transportRequestSupport.appendQueryParameters(requestUrl, input.query);
     }
     return {
-      body: buildRequestBody(input, buildRequestHeaders(input), specification),
-      headers: buildRequestHeaders(input),
+      body: transportRequestSupport.buildRequestBody(
+        input,
+        transportRequestSupport.buildRequestHeaders(input),
+        specification,
+      ),
+      headers: transportRequestSupport.buildRequestHeaders(input),
       requestUrl,
     };
   },
@@ -287,5 +243,10 @@ function requestOperation({
       undertakeOperationRequest({ baseAddress, input, signal, specification }),
   });
 }
-
-export { generatorFormatVersion, makeGeneratedClient };
+export {
+  connectionFailureMessage,
+  generatorFormatVersion,
+  isKnownFailure,
+  makeGeneratedClient,
+  undertakeOperationRequest,
+};

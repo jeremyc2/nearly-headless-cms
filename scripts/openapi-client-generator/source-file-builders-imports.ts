@@ -4,5 +4,6 @@ export {
   runtimeBeforeSpecifications,
   runtimeConstChainMiddle,
   runtimeRequestOperation,
+  runtimeTransportRequestSupport,
   runtimeTypes,
 } from "./runtime-template.ts";

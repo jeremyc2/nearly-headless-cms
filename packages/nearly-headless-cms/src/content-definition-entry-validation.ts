@@ -1,15 +1,4 @@
 import type {
-  CustomFieldRegistration,
-  JsonObject,
-  JsonValue,
-  ResolvedField,
-  ValidateEntryOptions,
-} from "./content-definition-types.ts";
-import { cloneJson, isJsonObject } from "./internal/json.ts";
-import type { ValidationIssue } from "./cms-error.ts";
-import validationSupport from "./content-definition-validation-support.ts";
-import valueValidation from "./content-definition-value-validation.ts";
-import type {
   AppendUnknownFieldIssuesInput,
   ValidateFieldsInput,
   ValidateListBoundsInput,
@@ -19,6 +8,12 @@ import type {
   ValidatePresentFieldValueInput,
   ValidateUndefinedFieldValueInput,
 } from "./content-definition-entry-validation-types.ts";
+import { cloneJson, isJsonObject } from "./internal/json.ts";
+// oxlint-disable-next-line eslint/sort-imports -- [EH-238] multi-specifier type imports precede single-specifier imports in this validation module.
+import type { JsonObject, JsonValue } from "./content-definition-types.ts";
+import type { ValidationIssue } from "./cms-error.ts";
+import validationSupport from "./content-definition-validation-support.ts";
+import valueValidation from "./content-definition-value-validation.ts";
 
 const { createValidationIssue } = validationSupport,
  { validateValue } = valueValidation,

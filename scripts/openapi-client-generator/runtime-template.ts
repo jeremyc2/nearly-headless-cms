@@ -33,13 +33,17 @@ const runtimeAfterMakeGeneratedClient = `
     if ("path" in input && input.path !== undefined) {
       path = substitutePathParameters(path, input.path);
     }
-    const requestUrl = buildRequestUrl(baseAddress, path);
+    const requestUrl = transportRequestSupport.buildRequestUrl(baseAddress, path);
     if ("query" in input && input.query !== undefined) {
-      appendQueryParameters(requestUrl, input.query);
+      transportRequestSupport.appendQueryParameters(requestUrl, input.query);
     }
     return {
-      body: buildRequestBody(input, buildRequestHeaders(input), specification),
-      headers: buildRequestHeaders(input),
+      body: transportRequestSupport.buildRequestBody(
+        input,
+        transportRequestSupport.buildRequestHeaders(input),
+        specification,
+      ),
+      headers: transportRequestSupport.buildRequestHeaders(input),
       requestUrl,
     };
   },
@@ -107,12 +111,89 @@ const runtimeAfterMakeGeneratedClient = `
     });
   }
   `,
-  runtimeBeforeSpecifications = `const toAbortSignal = (
+  runtimeBeforeSpecifications = `const connectionFailureMessage = (cause: unknown): string => {
+    if (cause instanceof Error) {
+      return cause.message;
+    }
+    return "Connection failed";
+  },
+  createOperationMethod = <Identifier extends keyof OperationInputs>(
+    baseAddress: string,
+    identifier: Identifier,
+  ): ((
+    input: OperationInputs[Identifier],
+    signal?: Pick<AbortSignal, "aborted" | "addEventListener" | "reason" | "removeEventListener" | "throwIfAborted">,
+  ) => Effect.Effect<
+    OperationResponses[Identifier],
+    TransportFailure | ProtocolFailure | DeclaredFailure
+  >) =>
+    (input, signal) =>
+      requestOperation({
+        baseAddress,
+        input,
+        signal,
+        specification: operationSpecifications[identifier],
+      }),
+  fetchOperationResponse = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-196] OperationFetchRequest carries optional readonly abort signal bridge fields.
+    request: Readonly<OperationFetchRequest>,
+  ): Promise<Response> =>
+    // oxlint-disable-next-line effecttsgo/global-fetch, effecttsgo/global-fetch-in-effect -- [EH-235, EH-236] generated clients intentionally use the platform fetch boundary so callers can supply the browser or server runtime.
+    fetch(request.requestUrl, {
+      body: request.body,
+      headers: request.headers,
+      method: request.method,
+      // oxlint-disable-next-line eslint/no-ternary -- [EH-237] generated fetch bridge keeps compact signal fallback.
+      signal: request.signal === undefined ? undefined : toAbortSignal(request.signal),
+    }).catch((error) => {
+      throw TransportFailure.make({ message: connectionFailureMessage(error) });
+    }),
+  toAbortSignal = (
     signal: Pick<AbortSignal, "aborted" | "addEventListener" | "reason" | "removeEventListener" | "throwIfAborted">,
   ): AbortSignal =>
     // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-141] fetch requires AbortSignal; generated clients pass the runtime signal.
     signal as unknown as AbortSignal,
-  appendQueryParameters = (
+  `,
+  runtimeConstChainMiddle = `
+  isDeclaredFailurePayload = (
+    value: unknown,
+  ): value is { readonly code: unknown; readonly details?: unknown; readonly message: unknown } =>
+    value !== null && typeof value === "object" && "code" in value && "message" in value,
+  isKnownFailure = (
+    cause: unknown,
+  ): cause is TransportFailure | ProtocolFailure | DeclaredFailure =>
+    Schema.is(TransportFailure)(cause) ||
+    Schema.is(ProtocolFailure)(cause) ||
+    Schema.is(DeclaredFailure)(cause),
+  `,
+  runtimeRequestOperation = `function requestOperation<Identifier extends keyof OperationInputs>(
+  request: Readonly<RequestOperationInput<Identifier>>,
+): Effect.Effect<
+  OperationResponses[Identifier],
+  TransportFailure | ProtocolFailure | DeclaredFailure
+>;
+function requestOperation({
+  baseAddress,
+  input,
+  signal,
+  specification,
+}: Readonly<RequestOperationInput<keyof OperationInputs>>): Effect.Effect<
+  unknown,
+  TransportFailure | ProtocolFailure | DeclaredFailure
+> {
+  return Effect.tryPromise({
+    catch: (cause) => {
+      if (isKnownFailure(cause)) {
+        return cause;
+      }
+      return TransportFailure.make({ message: connectionFailureMessage(cause) });
+    },
+    try: (): Promise<unknown> =>
+      undertakeOperationRequest({ baseAddress, input, signal, specification }),
+  });
+}
+`,
+  runtimeTransportRequestSupport = `const appendQueryParameters = (
     requestUrl: Pick<URL, "pathname" | "searchParams">,
     queryParameters: Readonly<Record<string, unknown>>,
   ): void => {
@@ -157,82 +238,9 @@ const runtimeAfterMakeGeneratedClient = `
     new URL(
       \`\${baseAddress}\${path}\`,
       baseAddress || globalThis.location?.origin || "http://localhost",
-    ),
-  connectionFailureMessage = (cause: unknown): string => {
-    if (cause instanceof Error) {
-      return cause.message;
-    }
-    return "Connection failed";
-  },
-  createOperationMethod = <Identifier extends keyof OperationInputs>(
-    baseAddress: string,
-    identifier: Identifier,
-  ): ((
-    input: OperationInputs[Identifier],
-    signal?: Pick<AbortSignal, "aborted" | "addEventListener" | "reason" | "removeEventListener" | "throwIfAborted">,
-  ) => Effect.Effect<
-    OperationResponses[Identifier],
-    TransportFailure | ProtocolFailure | DeclaredFailure
-  >) =>
-    (input, signal) =>
-      requestOperation({
-        baseAddress,
-        input,
-        signal,
-        specification: operationSpecifications[identifier],
-      }),
-  fetchOperationResponse = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-196] OperationFetchRequest carries optional readonly abort signal bridge fields.
-    request: Readonly<OperationFetchRequest>,
-  ): Promise<Response> =>
-    fetch(request.requestUrl, {
-      body: request.body,
-      headers: request.headers,
-      method: request.method,
-      signal: request.signal === undefined ? undefined : toAbortSignal(request.signal),
-    }).catch((error) => {
-      throw TransportFailure.make({ message: connectionFailureMessage(error) });
-    }),
-  /* oxlint-enable effecttsgo/global-fetch, effecttsgo/global-fetch-in-effect */
-  `,
-  runtimeConstChainMiddle = `
-  isDeclaredFailurePayload = (
-    value: unknown,
-  ): value is { readonly code: unknown; readonly details?: unknown; readonly message: unknown } =>
-    value !== null && typeof value === "object" && "code" in value && "message" in value,
-  isKnownFailure = (
-    cause: unknown,
-  ): cause is TransportFailure | ProtocolFailure | DeclaredFailure =>
-    Schema.is(TransportFailure)(cause) ||
-    Schema.is(ProtocolFailure)(cause) ||
-    Schema.is(DeclaredFailure)(cause),
-  `,
-  runtimeRequestOperation = `function requestOperation<Identifier extends keyof OperationInputs>(
-  request: Readonly<RequestOperationInput<Identifier>>,
-): Effect.Effect<
-  OperationResponses[Identifier],
-  TransportFailure | ProtocolFailure | DeclaredFailure
->;
-function requestOperation({
-  baseAddress,
-  input,
-  signal,
-  specification,
-}: Readonly<RequestOperationInput<keyof OperationInputs>>): Effect.Effect<
-  unknown,
-  TransportFailure | ProtocolFailure | DeclaredFailure
-> {
-  return Effect.tryPromise({
-    catch: (cause) => {
-      if (isKnownFailure(cause)) {
-        return cause;
-      }
-      return TransportFailure.make({ message: connectionFailureMessage(cause) });
-    },
-    try: (): Promise<unknown> =>
-      undertakeOperationRequest({ baseAddress, input, signal, specification }),
-  });
-}
+    );
+
+export default { appendQueryParameters, buildRequestBody, buildRequestHeaders, buildRequestUrl };
 `,
   runtimeTypes = `export interface RequestOperationInput<Identifier extends keyof OperationInputs> {
   readonly baseAddress: string;
@@ -270,5 +278,6 @@ export {
   runtimeBeforeSpecifications,
   runtimeConstChainMiddle,
   runtimeRequestOperation,
+  runtimeTransportRequestSupport,
   runtimeTypes,
 };

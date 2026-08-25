@@ -19,6 +19,7 @@ const {
     buildMergedTypeFile,
     buildRuntimeSpecificationsFile,
     buildRuntimeTransportFile,
+    buildRuntimeTransportRequestSupportFile,
     buildRuntimeTypesFile,
     buildSpecificationTypesFile,
   } = sourceFileBuilders,
@@ -54,6 +55,10 @@ const {
     {
       content: buildRuntimeTypesFile(clientBasename),
       filename: `${clientBasename}-runtime-types`,
+    },
+    {
+      content: buildRuntimeTransportRequestSupportFile(clientBasename),
+      filename: `${clientBasename}-runtime-transport-request-support`,
     },
     {
       content: buildRuntimeTransportFile(clientBasename, formatVersion, operationMethods),

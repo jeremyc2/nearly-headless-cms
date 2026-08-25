@@ -4,6 +4,7 @@ import {
   runtimeBeforeSpecifications,
   runtimeConstChainMiddle,
   runtimeRequestOperation,
+  runtimeTransportRequestSupport,
   runtimeTypes,
 } from "./source-file-builders-imports.ts";
 
@@ -66,6 +67,7 @@ import type { OperationSpecification } from "./${clientBasename}-specification-t
 import { ProtocolFailure } from "./protocol-failure.ts";
 import { TransportFailure } from "./transport-failure.ts";
 import { operationSpecifications } from "./${clientBasename}-runtime-specifications.ts";
+import transportRequestSupport from "./${clientBasename}-runtime-transport-request-support.ts";
 
 
 ${runtimeBeforeSpecifications}  generatorFormatVersion = ${formatVersion},
@@ -75,9 +77,19 @@ ${operationMethods}
   }),
 ${runtimeAfterMakeGeneratedClient}
 
-${runtimeRequestOperation}
-export { generatorFormatVersion, makeGeneratedClient };
+${runtimeRequestOperation}export {
+  connectionFailureMessage,
+  generatorFormatVersion,
+  isKnownFailure,
+  makeGeneratedClient,
+  undertakeOperationRequest,
+};
 `,
+  buildRuntimeTransportRequestSupportFile = (clientBasename: string): string =>
+    `${generatedFileBanner}import type { OperationInputs } from "./${clientBasename}-operation-inputs.ts";
+import type { OperationSpecification } from "./${clientBasename}-specification-types.ts";
+
+${runtimeTransportRequestSupport}`,
   buildRuntimeTypesFile = (clientBasename: string): string =>
     `${generatedFileBanner}import type { OperationInputs } from "./${clientBasename}-operation-inputs.ts";
 import type { OperationSpecification } from "./${clientBasename}-specification-types.ts";
@@ -99,6 +111,7 @@ ${runtimeTypes}`,
     buildMergedTypeFile,
     buildRuntimeSpecificationsFile,
     buildRuntimeTransportFile,
+    buildRuntimeTransportRequestSupportFile,
     buildRuntimeTypesFile,
     buildSpecificationTypesFile,
   };

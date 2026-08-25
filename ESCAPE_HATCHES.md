@@ -207,18 +207,18 @@ When you must disable a rule:
 
 **Locations:**
 
-- `apps/example-cms/src/generated/headless-openapi-client-runtime-transport.ts:147`
-- `apps/example-cms/src/generated/headless-openapi-client-runtime-transport.ts:195`
-- `apps/example-cms/src/generated/headless-openapi-client-runtime-transport.ts:233`
-- `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:177`
-- `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:225`
-- `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:263`
-- `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:147`
-- `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:195`
-- `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:233`
+- `apps/example-cms/src/generated/headless-openapi-client-runtime-transport.ts:99`
+- `apps/example-cms/src/generated/headless-openapi-client-runtime-transport.ts:151`
+- `apps/example-cms/src/generated/headless-openapi-client-runtime-transport.ts:189`
+- `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:129`
+- `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:181`
+- `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:219`
+- `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:99`
+- `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:151`
+- `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:189`
 - `scripts/openapi-client-generator/runtime-template.ts:2`
-- `scripts/openapi-client-generator/runtime-template.ts:46`
-- `scripts/openapi-client-generator/runtime-template.ts:81`
+- `scripts/openapi-client-generator/runtime-template.ts:50`
+- `scripts/openapi-client-generator/runtime-template.ts:85`
 
 #### EH-027: Guard creation requires sequential Bun filesystem operations.
 
@@ -632,13 +632,25 @@ When you must disable a rule:
 
 - `scripts/run-acceptance.ts:50`
 
-#### EH-081: generated clients intentionally use the platform fetch boundary so callers can supply the browser or server runtime.
+#### EH-235: generated clients intentionally use the platform fetch boundary so callers can supply the browser or server runtime.
 
 **Locations:**
 
-- `apps/example-cms/src/generated/headless-openapi-client-runtime-transport.ts:104`
-- `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:104`
-- `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:104`
+- `apps/example-cms/src/generated/headless-openapi-client-runtime-transport.ts:49`
+- `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:49`
+- `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:49`
+- `scripts/openapi-client-generator/runtime-template.ts:141`
+
+### `effecttsgo/global-fetch-in-effect`
+
+#### EH-236: generated clients intentionally use the platform fetch boundary so callers can supply the browser or server runtime.
+
+**Locations:**
+
+- `apps/example-cms/src/generated/headless-openapi-client-runtime-transport.ts:49`
+- `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:49`
+- `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:49`
+- `scripts/openapi-client-generator/runtime-template.ts:141`
 
 ### `effecttsgo/missing-pipeable-signature`
 
@@ -843,11 +855,10 @@ When you must disable a rule:
 
 **Locations:**
 
-- `apps/example-cms/src/generated/headless-openapi-client-runtime-transport.ts:59`
-- `apps/example-cms/src/generated/management-openapi-client-runtime-transport-request-support.ts:36`
-- `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:59`
-- `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:59`
-- `scripts/openapi-client-generator/runtime-template.ts:147`
+- `apps/example-cms/src/generated/headless-openapi-client-runtime-transport-request-support.ts:37`
+- `apps/example-cms/src/generated/management-openapi-client-runtime-transport-request-support.ts:37`
+- `apps/public-blog/src/generated/headless-openapi-client-runtime-transport-request-support.ts:37`
+- `scripts/openapi-client-generator/runtime-template.ts:228`
 
 ### `effecttsgo/run-effect-inside-effect`
 
@@ -910,20 +921,6 @@ When you must disable a rule:
 - `packages/nearly-headless-cms/src/http/http-transport-response.ts:115`
 - `packages/nearly-headless-cms/src/http/http-transport-response.ts:126`
 - `packages/nearly-headless-cms/src/http/http-transport-response.ts:145`
-
-### `eslint/max-lines`
-
-#### EH-115: generated transport runtime exceeds local module line budget.
-
-**Locations:**
-
-- `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:321`
-
-#### EH-116: reference and projection helpers are intentionally colocated.
-
-**Locations:**
-
-- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:332`
 
 ### `eslint/max-lines-per-function`
 
@@ -1007,13 +1004,14 @@ When you must disable a rule:
 
 ### `eslint/no-ternary`
 
-#### EH-123: generated fetch bridge keeps compact signal fallback.
+#### EH-237: generated fetch bridge keeps compact signal fallback.
 
 **Locations:**
 
-- `apps/example-cms/src/generated/headless-openapi-client-runtime-transport.ts:109`
-- `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:109`
-- `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:109`
+- `apps/example-cms/src/generated/headless-openapi-client-runtime-transport.ts:54`
+- `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:54`
+- `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:54`
+- `scripts/openapi-client-generator/runtime-template.ts:146`
 
 #### EH-124: registry formatting keeps compact comment labels.
 
@@ -1110,6 +1108,12 @@ When you must disable a rule:
 - `apps/example-cms/src/ui/entry-editor-history-panel-body.tsx:9`
 - `apps/example-cms/src/ui/entry-editor-history-panel-body.tsx:11`
 
+#### EH-238: multi-specifier type imports precede single-specifier imports in this validation module.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:12`
+
 ### `eslint/sort-vars`
 
 #### EH-224: escape hatch parsing and rendering are intentionally colocated.
@@ -1132,28 +1136,21 @@ When you must disable a rule:
 
 - `scripts/escape-hatches-registry-support.ts:211`
 
-#### EH-130: generated runtime helpers are ordered for readability.
-
-**Locations:**
-
-- `apps/example-cms/src/generated/headless-openapi-client-runtime-transport.ts:26`
-- `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:26`
-- `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:26`
-
 #### EH-131: helper declaration order follows dependency order.
 
 **Locations:**
 
 - `packages/nearly-headless-cms/src/cms-entry-expansion-field-group-support.ts:78`
 - `packages/nearly-headless-cms/src/cms-entry-expansion-relationship-support.ts:76`
-- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:73`
-- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:106`
-- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:149`
-- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:170`
-- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:191`
-- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:208`
-- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:243`
-- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:273`
+- `packages/nearly-headless-cms/src/cms-entry-references-path-support.ts:27`
+- `packages/nearly-headless-cms/src/cms-entry-references-path-support.ts:47`
+- `packages/nearly-headless-cms/src/cms-entry-references-path-support.ts:63`
+- `packages/nearly-headless-cms/src/cms-entry-references-path-support.ts:81`
+- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:71`
+- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:104`
+- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:147`
+- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:190`
+- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:220`
 
 #### EH-232: registry formatting keeps comment rendering colocated.
 
@@ -1386,10 +1383,10 @@ When you must disable a rule:
 
 **Locations:**
 
-- `apps/example-cms/src/generated/headless-openapi-client-runtime-transport.ts:24`
-- `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:24`
-- `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:24`
-- `scripts/openapi-client-generator/runtime-template.ts:113`
+- `apps/example-cms/src/generated/headless-openapi-client-runtime-transport.ts:65`
+- `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:65`
+- `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:65`
+- `scripts/openapi-client-generator/runtime-template.ts:154`
 
 #### EH-142: list item filtering preserves list-item node shapes within the editor document.
 
@@ -1664,41 +1661,41 @@ When you must disable a rule:
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:75`
+- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:73`
 
 #### EH-185: mutable issues and result out-params are bundled in input interface.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:165`
-- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:189`
-- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:217`
-- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:229`
-- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:245`
-- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:260`
+- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:112`
+- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:136`
+- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:164`
+- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:176`
+- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:192`
+- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:207`
 
 #### EH-186: mutable issues out-param is bundled in input interface.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:75`
-- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:94`
+- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:22`
+- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:41`
 
 #### EH-187: mutable listResult out-param is bundled in input interface.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:130`
-- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:156`
+- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:77`
+- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:103`
 
 #### EH-188: mutable out-params are bundled in input interface.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:108`
-- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:121`
-- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:136`
-- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:151`
+- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:106`
+- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:119`
+- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:134`
+- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:149`
 
 #### EH-189: mutable projected out-param is bundled in input interface.
 
@@ -1710,7 +1707,7 @@ When you must disable a rule:
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:86`
+- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:84`
 
 #### EH-191: mutable values out-param is bundled in input interface.
 
@@ -1719,7 +1716,7 @@ When you must disable a rule:
 - `packages/nearly-headless-cms/src/cms-entry-expansion-field-group-support.ts:44`
 - `packages/nearly-headless-cms/src/cms-entry-expansion-field-group-support.ts:80`
 - `packages/nearly-headless-cms/src/cms-entry-expansion-relationship-support.ts:118`
-- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:172`
+- `packages/nearly-headless-cms/src/cms-entry-references-path-support.ts:29`
 
 #### EH-192: mutation receipts use discriminated union shapes from CMS operations.
 
@@ -1757,10 +1754,10 @@ When you must disable a rule:
 
 **Locations:**
 
-- `apps/example-cms/src/generated/headless-openapi-client-runtime-transport.ts:101`
-- `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:101`
-- `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:101`
-- `scripts/openapi-client-generator/runtime-template.ts:185`
+- `apps/example-cms/src/generated/headless-openapi-client-runtime-transport.ts:46`
+- `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:46`
+- `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:46`
+- `scripts/openapi-client-generator/runtime-template.ts:138`
 
 #### EH-197: OperationSchema values include Effect Schema classes that are not deeply readonly.
 
@@ -1955,7 +1952,8 @@ When you must disable a rule:
 - **EH-078** (`effecttsgo/global-console`): this script's contract is machine-readable CLI stdout.
 - **EH-079** (`effecttsgo/global-fetch`): Browser mutation boundary is owned by the UI query client.
 - **EH-080** (`effecttsgo/global-fetch`): CLI acceptance polling intentionally uses the platform fetch boundary.
-- **EH-081** (`effecttsgo/global-fetch`): generated clients intentionally use the platform fetch boundary so callers can supply the browser or server runtime.
+- **EH-235** (`effecttsgo/global-fetch`): generated clients intentionally use the platform fetch boundary so callers can supply the browser or server runtime.
+- **EH-236** (`effecttsgo/global-fetch-in-effect`): generated clients intentionally use the platform fetch boundary so callers can supply the browser or server runtime.
 - **EH-083** (`effecttsgo/missing-pipeable-signature`): compileSnapshot is exported for typed internal call sites.
 - **EH-084** (`effecttsgo/missing-pipeable-signature`): content list helper is intentionally a direct three-argument operation.
 - **EH-085** (`effecttsgo/missing-pipeable-signature`): content list helper is intentionally a direct two-argument operation.
@@ -1991,8 +1989,6 @@ When you must disable a rule:
 - **EH-111** (`effecttsgo/strict-effect-provide`): test entry point needs a fresh isolated layer per run.
 - **EH-112** (`effecttsgo/strict-effect-provide`): test entry point needs a fresh isolated layer.
 - **EH-113** (`eslint/func-style`): error status helpers are function declarations to keep CmsError Schema narrowing readable.
-- **EH-115** (`eslint/max-lines`): generated transport runtime exceeds local module line budget.
-- **EH-116** (`eslint/max-lines`): reference and projection helpers are intentionally colocated.
 - **EH-118** (`eslint/max-lines-per-function`): escape hatch parsing and rendering are intentionally colocated.
 - **EH-216** (`eslint/max-lines-per-function`): escape hatch registry CLI uses async filesystem IO.
 - **EH-217** (`eslint/max-lines-per-function`): React panel helpers exceed function line budget after typed prop alias escape hatches.
@@ -2002,7 +1998,7 @@ When you must disable a rule:
 - **EH-229** (`eslint/max-statements`): registry formatting keeps comment rendering colocated.
 - **EH-120** (`eslint/no-await-in-loop`): file scans and updates must preserve source order.
 - **EH-121** (`eslint/no-continue`): registry assignment skips unresolved rule and code pairs.
-- **EH-123** (`eslint/no-ternary`): generated fetch bridge keeps compact signal fallback.
+- **EH-237** (`eslint/no-ternary`): generated fetch bridge keeps compact signal fallback.
 - **EH-124** (`eslint/no-ternary`): registry formatting keeps compact comment labels.
 - **EH-230** (`eslint/no-ternary`): registry helpers keep related declarations grouped.
 - **EH-125** (`eslint/one-var`): helpers with readonly disables must stay as separate const declarations.
@@ -2013,10 +2009,10 @@ When you must disable a rule:
 - **EH-127** (`eslint/require-unicode-regexp`): registry parsing uses ASCII comment markers only.
 - **EH-128** (`eslint/sort-imports`): export route imports follow dependency grouping.
 - **EH-129** (`eslint/sort-imports`): history panel imports follow UI dependency grouping.
+- **EH-238** (`eslint/sort-imports`): multi-specifier type imports precede single-specifier imports in this validation module.
 - **EH-224** (`eslint/sort-vars`): escape hatch parsing and rendering are intentionally colocated.
 - **EH-225** (`eslint/sort-vars`): escape hatch registry CLI uses async filesystem IO.
 - **EH-231** (`eslint/sort-vars`): escape hatch registry helpers are intentionally direct-call only.
-- **EH-130** (`eslint/sort-vars`): generated runtime helpers are ordered for readability.
 - **EH-131** (`eslint/sort-vars`): helper declaration order follows dependency order.
 - **EH-232** (`eslint/sort-vars`): registry formatting keeps comment rendering colocated.
 - **EH-226** (`eslint/sort-vars`): registry formatting keeps compact comment labels.
