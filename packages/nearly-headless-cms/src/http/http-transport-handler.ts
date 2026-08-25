@@ -49,9 +49,9 @@ const { jsonResponse } = transportResponse,
   { buildRouteContext, resolveActiveSnapshot, resolveHandlerOptions } = handlerSupport,
   dispatchManagementAndDeliveryRoutes = (
     routeContext: Readonly<RouteHandlerContext>,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- route handlers inspect operation metadata without mutating configured operations.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-202] route handlers inspect operation metadata without mutating configured operations.
     managementOperations: readonly ManagementOperation[],
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- route handlers inspect operation metadata without mutating configured operations.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-202] route handlers inspect operation metadata without mutating configured operations.
     operationMatchers: ResolvedHandlerOptions["operationMatchers"],
   ): Promise<Response | undefined> =>
     dispatchRouteHandlers(
@@ -100,7 +100,7 @@ const { jsonResponse } = transportResponse,
       }),
     );
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- request handling awaits route dispatch before returning a final response.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-055] request handling awaits route dispatch before returning a final response.
   handleResolvedRequest = async <Input extends HandleResolvedRequestInput>(
     input: Readonly<Input>,
   ): Promise<Response> => {
@@ -128,14 +128,14 @@ const { jsonResponse } = transportResponse,
     });
   },
   makeHandler = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- handler Options includes requestIdentifier callbacks.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-177] handler Options includes requestIdentifier callbacks.
     options?: Options,
   ): Effect.Effect<Handler, never, CmsService> =>
     Effect.gen(function* createHandler() {
       const cms = yield* CmsService,
         resolved = resolveHandlerOptions(options ?? {});
       return wrapHandlerWithTimeout(
-        // oxlint-disable-next-line effecttsgo/async-function -- request handling awaits body parsing and Effect execution.
+        // oxlint-disable-next-line effecttsgo/async-function -- [EH-054] request handling awaits body parsing and Effect execution.
         async (
           request: ReadonlyTransportHandlerRequest,
           signal: ReadonlyTransportAbortSignal,

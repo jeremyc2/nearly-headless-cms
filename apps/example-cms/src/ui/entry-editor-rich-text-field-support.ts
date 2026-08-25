@@ -15,7 +15,7 @@ import {
   useState,
 } from "./entry-editor-rich-text-field-imports.ts";
 import type { EntryRepresentation, QueryPage } from "../generated/management-client.ts";
-/* oxlint-disable typescript/no-unnecessary-type-parameters -- React panel helpers preserve local prop aliases for component call sites. */
+/* oxlint-disable typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites. */
 
 const applyRichTextFieldAdapterEffect = <
     AdapterRef extends { current: BrowserAdapter | null },
@@ -121,4 +121,3 @@ const applyRichTextFieldAdapterEffect = <
   };
 
 export default { useEntryEditorRichTextFieldState };
-

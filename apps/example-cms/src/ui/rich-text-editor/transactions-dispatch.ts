@@ -60,7 +60,7 @@ const commandHandlers = {
     }
     return commandHandlers.applySplitBlock(state);
   },
-  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- editor transaction API is intentionally a direct two-argument operation.
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-087] editor transaction API is intentionally a direct two-argument operation.
   transact = (state: State, command: Command): State => {
     switch (command.type) {
       case "composition": {

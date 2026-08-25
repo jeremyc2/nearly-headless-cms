@@ -11,7 +11,7 @@ import {
   type ReadonlyTransportRequest,
   type ReadonlyTransportUrl,
 } from "./http-transport-readonly-types.ts";
-/* oxlint-disable eslint/one-var -- helpers with readonly disables must stay as separate const declarations. */
+/* oxlint-disable eslint/one-var -- [EH-125] helpers with readonly disables must stay as separate const declarations. */
 import {
   defaultMaximumHeaderByteLength,
   defaultMaximumJsonBodyByteLength,
@@ -116,7 +116,7 @@ const { errorResponse, respondWithOutcome, runOperationInterruptibly } = transpo
     const compiled = compilePath(`${headlessPrefix}${operation.path}`);
     return { expression: compiled.expression, names: compiled.names, operation };
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- fingerprint validation awaits interruptible Effect execution.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-022] fingerprint validation awaits interruptible Effect execution.
   ensureSnapshotFingerprint = async <Input extends EnsureSnapshotFingerprintInput>(
     input: Readonly<Input>,
   ): Promise<Response | undefined> => {
@@ -133,9 +133,9 @@ const { errorResponse, respondWithOutcome, runOperationInterruptibly } = transpo
     }
     return undefined;
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- interruptible outcomes are awaited before routing continues.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-033] interruptible outcomes are awaited before routing continues.
   readInterruptibleValue = async <Value>(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- Effect programs are executed by runOperationInterruptibly without mutation.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-172] Effect programs are executed by runOperationInterruptibly without mutation.
     {
     effect,
     missingValueMessage,
@@ -155,7 +155,7 @@ const { errorResponse, respondWithOutcome, runOperationInterruptibly } = transpo
     }
     return outcome.value;
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- snapshot resolution awaits interruptible Effect execution before routing.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-062] snapshot resolution awaits interruptible Effect execution before routing.
   resolveActiveSnapshot = async (
     input: Readonly<ResolveActiveSnapshotInput>,
   ): Promise<CompiledSnapshot | Response> => {
@@ -200,7 +200,7 @@ const { errorResponse, respondWithOutcome, runOperationInterruptibly } = transpo
       maximumHeaderByteLength: options.maximumHeaderByteLength ?? defaultMaximumHeaderByteLength,
       maximumUrlLength: options.maximumUrlLength ?? defaultMaximumUrlLength,
       operationMatchers: deliveryOperations.map((operation) => compileOperationMatcher(operation)),
-      // oxlint-disable-next-line effecttsgo/crypto-random-uuid -- default request IDs are generated synchronously before Effect execution.
+      // oxlint-disable-next-line effecttsgo/crypto-random-uuid -- [EH-069] default request IDs are generated synchronously before Effect execution.
       requestIdentifier: options.requestIdentifier ?? (() => crypto.randomUUID()),
       requestTimeoutMilliseconds:
         options.requestTimeoutMilliseconds ?? defaultRequestTimeoutMilliseconds,

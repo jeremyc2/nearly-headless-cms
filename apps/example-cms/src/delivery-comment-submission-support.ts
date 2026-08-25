@@ -98,7 +98,7 @@ const { canonicalizeJsonValue, parseBody, requiredParameter } = deliverySupport,
         });
       }),
   pendingCommentReceipt = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- mutation receipts use discriminated union shapes from CMS operations.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-192] mutation receipts use discriminated union shapes from CMS operations.
     result: { id: string } | { entry: { id: string }; writeToken: string },
   ): { status: "pending"; submissionId: string } => ({
     status: "pending",
@@ -175,7 +175,7 @@ const { canonicalizeJsonValue, parseBody, requiredParameter } = deliverySupport,
       });
     }),
   validateCommentFields = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- comment submission bodies are validated as loosely typed JSON records.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-160] comment submission bodies are validated as loosely typed JSON records.
     body: Record<string, unknown>,
   ): Effect.Effect<
     { commentBody: string; displayName: string; websiteUrl: string | null | undefined },

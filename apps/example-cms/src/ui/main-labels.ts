@@ -12,7 +12,7 @@ const activeStatusClass = (value: unknown): string => {
     }
     return {};
   },
-  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- UI label helper is intentionally a direct two-argument operation.
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-097] UI label helper is intentionally a direct two-argument operation.
   assetDimensions = (width: number | undefined, height: number | undefined): string => {
     if (width === undefined) {
       return "";
@@ -85,7 +85,7 @@ const activeStatusClass = (value: unknown): string => {
     }
     return "this Entry";
   },
-  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- UI label helper is intentionally a direct two-argument operation.
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-097] UI label helper is intentionally a direct two-argument operation.
   entryOptionLabel = <Values extends Record<string, unknown>>(
     values: Readonly<Values>,
     identifier: string,
@@ -182,7 +182,7 @@ const activeStatusClass = (value: unknown): string => {
     }
     return "descending";
   },
-  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- UI label helper is intentionally a direct two-argument operation.
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-097] UI label helper is intentionally a direct two-argument operation.
   sortLabel = (contentTypeId: string, newest: boolean): string => {
     if (contentTypeId === "post" || contentTypeId === "comment") {
       if (newest) {

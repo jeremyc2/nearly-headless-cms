@@ -1,5 +1,5 @@
 import { type RefObject, type UseMutationResult, deleteImageLabel } from "./assets-page-imports.ts";
-/* oxlint-disable typescript/no-unnecessary-type-parameters -- React panel helpers preserve local prop aliases for component call sites. */
+/* oxlint-disable typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites. */
 
 const AssetsPageDeleteDialog = <
     DeleteImage extends UseMutationResult<
@@ -154,4 +154,3 @@ export default {
   AssetsPageDeleteDialog,
   AssetsPageReplaceDialog,
 };
-

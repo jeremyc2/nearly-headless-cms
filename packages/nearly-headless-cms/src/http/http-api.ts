@@ -117,21 +117,21 @@ const firstPathCharacterIndex = 0,
       .add(zGroupFromDocument(groupIdentifier, document))
       .annotate(EffectOpenApi.Transform, (): ContractOpenApi.Document => ({ ...document })),
   zMakeHeadless = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- OpenAPI operation descriptors are read while building Effect HTTP API declarations.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-193] OpenAPI operation descriptors are read while building Effect HTTP API declarations.
     operations: readonly DeliveryOperation[],
   ): ContractApi<"headlessApi", "headless"> =>
     zMakeApi("headlessApi", "headless", ContractOpenApi.headless(operations)),
   zMakeHeadlessDocument = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- OpenAPI operation descriptors are read while building Effect HTTP API declarations.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-193] OpenAPI operation descriptors are read while building Effect HTTP API declarations.
     operations: readonly DeliveryOperation[],
   ): EffectOpenApi.OpenAPISpec => EffectOpenApi.fromApi(zMakeHeadless(operations)),
   zMakeManagement = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- OpenAPI operation descriptors are read while building Effect HTTP API declarations.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-193] OpenAPI operation descriptors are read while building Effect HTTP API declarations.
     operations: readonly ManagementOperation[],
   ): ContractApi<"managementApi", "management"> =>
     zMakeApi("managementApi", "management", ContractOpenApi.management(operations)),
   zMakeManagementDocument = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- OpenAPI operation descriptors are read while building Effect HTTP API declarations.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-193] OpenAPI operation descriptors are read while building Effect HTTP API declarations.
     operations: readonly ManagementOperation[],
   ): EffectOpenApi.OpenAPISpec => EffectOpenApi.fromApi(zMakeManagement(operations));
 

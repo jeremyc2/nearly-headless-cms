@@ -2,7 +2,7 @@ import type { RichText } from "nearly-headless-cms";
 import { emptyIndex } from "./transactions-constants.ts";
 import transactionsEditorAdapterSupport from "./transactions-editor-adapter-support.ts";
 import transactionsSupport from "./transactions-support.ts";
-/* oxlint-disable typescript/no-unnecessary-type-parameters -- React panel helpers preserve local prop aliases for component call sites. */
+/* oxlint-disable typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites. */
 
 type RenderBlock = (
   block: RichText.BlockNode,
@@ -14,7 +14,7 @@ const { blockElementName } = transactionsEditorAdapterSupport,
   { conditionalValue } = transactionsSupport,
   applyTextMarks = (
     marks: readonly RichText.Mark[] | undefined,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- DOM spans are mutated while applying rich-text marks.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-166] DOM spans are mutated while applying rich-text marks.
     text: HTMLSpanElement,
   ): void => {
     if (marks?.includes("bold") === true) {
@@ -28,7 +28,7 @@ const { blockElementName } = transactionsEditorAdapterSupport,
     }
   },
   assignTextSpanIndices = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- DOM spans are mutated while assigning editor selection indices.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-167] DOM spans are mutated while assigning editor selection indices.
     input: {
     readonly blockIndex: number;
     readonly inlineIndex: number;
@@ -190,4 +190,3 @@ const { blockElementName } = transactionsEditorAdapterSupport,
 export default {
   renderBlockElement,
 };
-

@@ -31,7 +31,7 @@ const makeReplacementForm = (): FormData => {
     return replacementForm;
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- helper intentionally awaits native HTTP promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-031] helper intentionally awaits native HTTP promises.
   readCascadeDeletionResults = async (
     system: ExampleSystem,
     postId: string,
@@ -66,7 +66,7 @@ const makeReplacementForm = (): FormData => {
     return readStringField(categories[firstItemIndex], "id");
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- helper intentionally awaits native HTTP promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-031] helper intentionally awaits native HTTP promises.
   readCategoryWriteToken = async (
     handler: HeadlessApiHandler,
     exportBefore: Readonly<Record<string, unknown>>,
@@ -79,7 +79,7 @@ const makeReplacementForm = (): FormData => {
     return { categoryId, categoryWriteToken };
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- helper intentionally awaits native HTTP promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-031] helper intentionally awaits native HTTP promises.
   readDraftState = async (
     handler: HeadlessApiHandler,
     postId: string,
@@ -98,7 +98,7 @@ const makeReplacementForm = (): FormData => {
     return jsonRecord(returnedToDraft);
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- helper intentionally awaits native HTTP promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-031] helper intentionally awaits native HTTP promises.
   readEditorialContext = async (
     system: ExampleSystem,
   ): Promise<{
@@ -128,7 +128,7 @@ const makeReplacementForm = (): FormData => {
     return readStringField(assets[firstItemIndex], "id");
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- helper intentionally awaits native HTTP promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-031] helper intentionally awaits native HTTP promises.
   readPostState = async (
     handler: HeadlessApiHandler,
     postId: string,
@@ -144,7 +144,7 @@ const makeReplacementForm = (): FormData => {
     return value;
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
   verifyCategoryDetachment = async (
     handler: HeadlessApiHandler,
     exportBefore: Readonly<Record<string, unknown>>,
@@ -164,7 +164,7 @@ const makeReplacementForm = (): FormData => {
     expect(detachedBody["detachedPostCount"]).toBe(oneItem);
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
   verifyDetachmentAndCascadeCommands = async (system: ExampleSystem): Promise<void> => {
     const exportBefore = await readExport(system.handler);
     await verifyCategoryDetachment(system.handler, exportBefore);
@@ -172,7 +172,7 @@ const makeReplacementForm = (): FormData => {
     await verifyPostCascadeDeletion(system);
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
   verifyEditorialManagementCommands = async (system: ExampleSystem): Promise<void> => {
     const editorialContext = await readEditorialContext(system);
     if (
@@ -194,7 +194,7 @@ const makeReplacementForm = (): FormData => {
     );
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
   verifyImageReplacement = async (
     handler: HeadlessApiHandler,
     exportBefore: Readonly<Record<string, unknown>>,
@@ -217,7 +217,7 @@ const makeReplacementForm = (): FormData => {
     expect(replacementReceipt["oldAssetDeleted"]).toBeTrue();
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
   verifyPostCascadeDeletion = async (system: ExampleSystem): Promise<void> => {
     const postId = requirePublishedPostId(system),
       postWriteToken = requireWriteToken(await readPostState(system.handler, postId)),
@@ -227,7 +227,7 @@ const makeReplacementForm = (): FormData => {
     expect(resultsCascade.deletedPostResponse.status).toBe(httpNotFound);
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
   verifyPublishWithFreshToken = async (
     handler: HeadlessApiHandler,
     postId: string,
@@ -251,7 +251,7 @@ const makeReplacementForm = (): FormData => {
     expect(publishedEntry["values"]["status"]).toBe("published");
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
   verifyStalePublishRejected = async (
     handler: HeadlessApiHandler,
     postId: string,

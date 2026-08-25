@@ -16,13 +16,13 @@ type DeletionHandler = <RequestType extends Request>(
 
 const makeDeletionHandler = (): Promise<DeletionHandler> => {
     const handlerEffect = HttpTransport.makeHandler({}).pipe(
-      // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer.
+      // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-112] test entry point needs a fresh isolated layer.
       Effect.provide(DevelopmentCms.layer({ snapshot: deletionSnapshot })),
     );
     return Effect.runPromise(handlerEffect);
   },
   // The helper awaits the native Response body before returning its validated payload.
-  // oxlint-disable-next-line effecttsgo/async-function -- helper intentionally awaits a native HTTP promise.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-029] helper intentionally awaits a native HTTP promise.
   readCreatedEntry = async (
     handler: DeletionHandler,
     contentTypeId: string,
@@ -43,7 +43,7 @@ const makeDeletionHandler = (): Promise<DeletionHandler> => {
     return resultCreationEntry;
   },
   // The helper awaits the native Response body before returning validated historical deletion inputs.
-  // oxlint-disable-next-line effecttsgo/async-function -- helper intentionally awaits a native HTTP promise.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-029] helper intentionally awaits a native HTTP promise.
   readHistoricalDeletionContext = async (
     handler: DeletionHandler,
   ): Promise<{ readonly entryId: string; readonly writeToken: string }> => {
@@ -60,7 +60,7 @@ const makeDeletionHandler = (): Promise<DeletionHandler> => {
     return { entryId: entryHistoricalRecord["id"], writeToken: writeTokenHistorical };
   },
   // The helper awaits the native Response body before returning validated temporary deletion inputs.
-  // oxlint-disable-next-line effecttsgo/async-function -- helper intentionally awaits a native HTTP promise.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-029] helper intentionally awaits a native HTTP promise.
   readTemporaryDeletionContext = async (
     handler: DeletionHandler,
   ): Promise<{ readonly entryId: string }> => {
@@ -72,7 +72,7 @@ const makeDeletionHandler = (): Promise<DeletionHandler> => {
     return { entryId: entryTemporaryIdentifier };
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
   runDeletionContract = async (): Promise<void> => {
     const handler = await makeDeletionHandler();
     await verifyHistoricalDeletion(handler);
@@ -80,7 +80,7 @@ const makeDeletionHandler = (): Promise<DeletionHandler> => {
   },
   verifyDeletionReceipt = (): Promise<void> => runDeletionContract(),
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
   verifyHistoricalDeletion = async (handler: DeletionHandler): Promise<void> => {
     const contextHistoricalDeletion = await readHistoricalDeletionContext(handler),
       deletionRequest = new Request(
@@ -100,7 +100,7 @@ const makeDeletionHandler = (): Promise<DeletionHandler> => {
     });
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
   verifyTemporaryDeletion = async (handler: DeletionHandler): Promise<void> => {
     const contextTemporaryDeletion = await readTemporaryDeletionContext(handler),
       requestTemporaryDeletion = new Request(

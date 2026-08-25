@@ -4,7 +4,7 @@ import {
 } from "./entry-editor-story-canvas-imports.ts";
 import storyCanvasAssetsSupport from "./entry-editor-story-canvas-assets-support.tsx";
 import storyCanvasFieldsSupport from "./entry-editor-story-canvas-fields-support.tsx";
-/* oxlint-disable typescript/no-unnecessary-type-parameters -- React panel helpers preserve local prop aliases for component call sites. */
+/* oxlint-disable typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites. */
 
 const { EntryEditorContentTypeAssetFields } = storyCanvasAssetsSupport,
   {
@@ -84,4 +84,3 @@ const { EntryEditorContentTypeAssetFields } = storyCanvasAssetsSupport,
   };
 
 export { EntryEditorStoryCanvas };
-

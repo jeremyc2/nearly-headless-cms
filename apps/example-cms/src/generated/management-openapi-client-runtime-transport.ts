@@ -14,11 +14,11 @@ import { ProtocolFailure } from "./protocol-failure.ts";
 import { TransportFailure } from "./transport-failure.ts";
 import { operationSpecifications } from "./management-openapi-client-runtime-specifications.ts";
 
-/* oxlint-disable effecttsgo/async-function -- generated clients expose a Promise-backed transport boundary. */
-/* oxlint-disable typescript/prefer-readonly-parameter-types -- generated operation inputs include platform types that cannot satisfy deep readonly. */
-/* oxlint-disable eslint/sort-vars -- generated runtime helpers are ordered for readability. */
-/* oxlint-disable eslint/max-lines -- generated transport runtime exceeds local module line budget. */
-/* oxlint-disable eslint/no-ternary -- generated fetch bridge keeps compact signal fallback. */
+/* oxlint-disable effecttsgo/async-function -- [EH-026] generated clients expose a Promise-backed transport boundary. */
+/* oxlint-disable typescript/prefer-readonly-parameter-types -- [EH-176] generated operation inputs include platform types that cannot satisfy deep readonly. */
+/* oxlint-disable eslint/sort-vars -- [EH-130] generated runtime helpers are ordered for readability. */
+/* oxlint-disable eslint/max-lines -- [EH-115] generated transport runtime exceeds local module line budget. */
+/* oxlint-disable eslint/no-ternary -- [EH-123] generated fetch bridge keeps compact signal fallback. */
 
 const toAbortSignal = (
     signal: Pick<
@@ -26,7 +26,7 @@ const toAbortSignal = (
       "aborted" | "addEventListener" | "reason" | "removeEventListener" | "throwIfAborted"
     >,
   ): AbortSignal =>
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- fetch requires AbortSignal; generated clients pass the runtime signal.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-141] fetch requires AbortSignal; generated clients pass the runtime signal.
     signal as unknown as AbortSignal,
   appendQueryParameters = (
     requestUrl: Pick<URL, "pathname" | "searchParams">,
@@ -60,7 +60,7 @@ const toAbortSignal = (
       return requestBody;
     }
     headers.set("content-type", specification.requestMediaType ?? "application/json");
-    // oxlint-disable-next-line effecttsgo/prefer-schema-over-json -- request bodies are OpenAPI-generated unknown shapes and must be serialized using the browser JSON boundary.
+    // oxlint-disable-next-line effecttsgo/prefer-schema-over-json -- [EH-107] request bodies are OpenAPI-generated unknown shapes and must be serialized using the browser JSON boundary.
     return JSON.stringify(requestBody);
   },
   buildRequestHeaders = (input: Readonly<OperationInputs[keyof OperationInputs]>): Headers => {
@@ -101,9 +101,9 @@ const toAbortSignal = (
         signal,
         specification: operationSpecifications[identifier],
       }),
-  /* oxlint-disable effecttsgo/global-fetch, effecttsgo/global-fetch-in-effect -- generated clients intentionally use the platform fetch boundary so callers can supply the browser or server runtime. */
+  /* oxlint-disable effecttsgo/global-fetch, effecttsgo/global-fetch-in-effect -- [EH-081, EH-082] generated clients intentionally use the platform fetch boundary so callers can supply the browser or server runtime. */
   fetchOperationResponse = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- OperationFetchRequest carries optional readonly abort signal bridge fields.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-196] OperationFetchRequest carries optional readonly abort signal bridge fields.
     request: Readonly<OperationFetchRequest>,
   ): Promise<Response> =>
     fetch(request.requestUrl, {
@@ -177,7 +177,7 @@ const toAbortSignal = (
     retireDefinition: createOperationMethod(baseAddress, "retireDefinition"),
     returnPostToDraft: createOperationMethod(baseAddress, "returnPostToDraft"),
   }),
-  // oxlint-disable-next-line effecttsgo/async-function -- generated clients expose a Promise-backed transport boundary; converting this callback to Effect would change the generated public client contract.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-025] generated clients expose a Promise-backed transport boundary; converting this callback to Effect would change the generated public client contract.
   parseOperationSuccessResponse = async (
     input: Readonly<OperationSuccessParseInput>,
   ): Promise<unknown> => {
@@ -225,7 +225,7 @@ const toAbortSignal = (
       requestUrl,
     };
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- generated clients expose a Promise-backed transport boundary; converting this callback to Effect would change the generated public client contract.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-025] generated clients expose a Promise-backed transport boundary; converting this callback to Effect would change the generated public client contract.
   resolveOperationFailure = async (
     response: Readonly<Response>,
     mediaType: string,
@@ -263,7 +263,7 @@ const toAbortSignal = (
       status: response.status,
     });
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- generated clients expose a Promise-backed transport boundary; converting this callback to Effect would change the generated public client contract.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-025] generated clients expose a Promise-backed transport boundary; converting this callback to Effect would change the generated public client contract.
   undertakeOperationRequest = async (
     request: Readonly<OperationRequestInput>,
   ): Promise<unknown> => {

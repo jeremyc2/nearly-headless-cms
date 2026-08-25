@@ -67,11 +67,11 @@ import { ProtocolFailure } from "./protocol-failure.ts";
 import { TransportFailure } from "./transport-failure.ts";
 import { operationSpecifications } from "./${clientBasename}-runtime-specifications.ts";
 
-/* oxlint-disable effecttsgo/async-function -- generated clients expose a Promise-backed transport boundary. */
-/* oxlint-disable typescript/prefer-readonly-parameter-types -- generated operation inputs include platform types that cannot satisfy deep readonly. */
-/* oxlint-disable eslint/sort-vars -- generated runtime helpers are ordered for readability. */
-/* oxlint-disable eslint/max-lines -- generated transport runtime exceeds local module line budget. */
-/* oxlint-disable eslint/no-ternary -- generated fetch bridge keeps compact signal fallback. */
+/* oxlint-disable effecttsgo/async-function -- [EH-026] generated clients expose a Promise-backed transport boundary. */
+/* oxlint-disable typescript/prefer-readonly-parameter-types -- [EH-176] generated operation inputs include platform types that cannot satisfy deep readonly. */
+/* oxlint-disable eslint/sort-vars -- [EH-130] generated runtime helpers are ordered for readability. */
+/* oxlint-disable eslint/max-lines -- [EH-115] generated transport runtime exceeds local module line budget. */
+/* oxlint-disable eslint/no-ternary -- [EH-123] generated fetch bridge keeps compact signal fallback. */
 
 ${runtimeBeforeSpecifications}  generatorFormatVersion = ${formatVersion},
   httpStatusNoContent = 204,

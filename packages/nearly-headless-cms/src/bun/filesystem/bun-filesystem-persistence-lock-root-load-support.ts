@@ -26,7 +26,7 @@ const { generationStateFromBytes, readCommittedGeneration } = filesystemLockRoot
       throw new Error("Filesystem Persistence Definition Space does not match configuration");
     }
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- Root initialization coordinates ordered filesystem operations.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-057] Root initialization coordinates ordered filesystem operations.
   loadExistingRoot = async (
     configuration: Configuration,
     definitionSnapshot: CompiledSnapshot | undefined,
@@ -55,7 +55,7 @@ const { generationStateFromBytes, readCommittedGeneration } = filesystemLockRoot
     }
     return loadedState;
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- JSON loading uses Bun's asynchronous file API.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-036] JSON loading uses Bun's asynchronous file API.
   readJson = async (path: string): Promise<unknown> => {
     const file = Bun.file(path);
     if (!(await file.exists())) {

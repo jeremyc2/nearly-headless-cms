@@ -43,7 +43,7 @@ const makeLimitsHandler = (): Promise<TransportHandler> => {
       maximumJsonBodyByteLength,
       maximumUrlLength: headerLengthLimit,
     }).pipe(
-      // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer.
+      // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-112] test entry point needs a fresh isolated layer.
       Effect.provide(DevelopmentCms.layer({ snapshot })),
     );
     return Effect.runPromise(handlerEffect);
@@ -63,13 +63,13 @@ const makeLimitsHandler = (): Promise<TransportHandler> => {
       ],
       requestTimeoutMilliseconds,
     }).pipe(
-      // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer.
+      // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-112] test entry point needs a fresh isolated layer.
       Effect.provide(DevelopmentCms.layer({ snapshot })),
     );
     return Effect.runPromise(handlerEffect);
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
   runTransportLimitsContract = async (): Promise<void> => {
     const limitsHandler = await makeLimitsHandler();
     await verifyPayloadTooLarge(limitsHandler);
@@ -81,7 +81,7 @@ const makeLimitsHandler = (): Promise<TransportHandler> => {
     await verifyRequestTimeout(await makeTimeoutHandler());
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
   verifyLargeHeaders = async (handler: TransportHandler): Promise<void> => {
     const largeHeaders = await handler(
       new Request("http://cms.test/api/v1/headless/schema", {
@@ -91,7 +91,7 @@ const makeLimitsHandler = (): Promise<TransportHandler> => {
     expect(largeHeaders.status).toBe(headerTooLargeStatus);
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
   verifyLongUrl = async (handler: TransportHandler): Promise<void> => {
     const longUrl = await handler(
       new Request(`http://cms.test/api/v1/headless/${"x".repeat(urlLengthLimit)}`),
@@ -99,7 +99,7 @@ const makeLimitsHandler = (): Promise<TransportHandler> => {
     expect(longUrl.status).toBe(uriTooLongStatus);
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
   verifyNotAcceptable = async (handler: TransportHandler): Promise<void> => {
     const unacceptable = await handler(
       new Request("http://cms.test/api/v1/headless/schema", {
@@ -110,7 +110,7 @@ const makeLimitsHandler = (): Promise<TransportHandler> => {
     expect(await readJsonCode(unacceptable)).toBe("NotAcceptable");
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
   verifyPayloadTooLarge = async (handler: TransportHandler): Promise<void> => {
     const oversizedBody = await handler(
       new Request(
@@ -126,7 +126,7 @@ const makeLimitsHandler = (): Promise<TransportHandler> => {
     expect(await readJsonCode(oversizedBody)).toBe("PayloadTooLarge");
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
   verifyRequestTimeout = async (handler: TransportHandler): Promise<void> => {
     const timeoutResponse = await handler(
       new Request("http://cms.test/api/v1/headless/wait-forever"),
@@ -136,7 +136,7 @@ const makeLimitsHandler = (): Promise<TransportHandler> => {
   },
   verifyTransportLimits = (): Promise<void> => runTransportLimitsContract(),
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
   verifyUnsupportedMedia = async (handler: TransportHandler): Promise<void> => {
     const unsupportedMedia = await handler(
       new Request("http://cms.test/api/v1/headless/submissions", {
@@ -148,7 +148,7 @@ const makeLimitsHandler = (): Promise<TransportHandler> => {
     expect(unsupportedMedia.status).toBe(unsupportedMediaTypeStatus);
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
   verifyWrongMethod = async (handler: TransportHandler): Promise<void> => {
     const wrongMethod = await handler(new Request("http://cms.test/api/v1/headless/submissions"));
     expect(wrongMethod.status).toBe(methodNotAllowedStatus);

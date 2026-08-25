@@ -4,7 +4,7 @@ import {
 } from "./entry-editor-publication-panel-imports.ts";
 import publicationPanelFieldsSupport from "./entry-editor-publication-panel-fields-support.tsx";
 import publicationPanelSectionsSupport from "./entry-editor-publication-panel-sections-support.tsx";
-/* oxlint-disable typescript/no-unnecessary-type-parameters -- React panel helpers preserve local prop aliases for component call sites. */
+/* oxlint-disable typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites. */
 
 const { EntryEditorPublicationHeader } = publicationPanelFieldsSupport,
   { EntryEditorPublicationPanelSections } = publicationPanelSectionsSupport,
@@ -34,4 +34,3 @@ const { EntryEditorPublicationHeader } = publicationPanelFieldsSupport,
   );
 
 export { EntryEditorPublicationPanel };
-

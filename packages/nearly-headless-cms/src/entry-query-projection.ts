@@ -1,6 +1,6 @@
 import { type JsonObject, type JsonValue, cloneJson, isJsonObject } from "./internal/json.ts";
 import type { Representation } from "./entry.ts";
-/* oxlint-disable eslint/one-var -- helpers with readonly disables must stay as separate const declarations. */
+/* oxlint-disable eslint/one-var -- [EH-125] helpers with readonly disables must stay as separate const declarations. */
 import entryQuerySupport from "./entry-query-support.ts";
 
 const { ONE, valueAtPath } = entryQuerySupport;
@@ -19,7 +19,7 @@ const aNestedProjectedRecord = (existing: JsonValue | undefined): Record<string,
 },
 
  bAssignProjectedSegment = (
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- mutable projected out-param is bundled in input interface.
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-189] mutable projected out-param is bundled in input interface.
   input: Readonly<AssignProjectedSegmentInput>,
 ): void => {
   let current = input.projected;

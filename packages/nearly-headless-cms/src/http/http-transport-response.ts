@@ -37,8 +37,8 @@ import responseSupport from "./http-transport-response-support.ts";
 
 export { httpStatusNotFound } from "./http-status-codes.ts";
 
-/* oxlint-disable typescript/prefer-readonly-parameter-types -- CmsError and Effect parameters cannot satisfy deep readonly while preserving Schema narrowing in this module. */
-/* oxlint-disable eslint/func-style -- error status helpers are function declarations to keep CmsError Schema narrowing readable. */
+/* oxlint-disable typescript/prefer-readonly-parameter-types -- [EH-158] CmsError and Effect parameters cannot satisfy deep readonly while preserving Schema narrowing in this module. */
+/* oxlint-disable eslint/func-style -- [EH-113] error status helpers are function declarations to keep CmsError Schema narrowing readable. */
 
 function readConflictStatus(
   error: Readonly<CmsError>,
@@ -64,7 +64,7 @@ function readDefinitionSnapshotChangedStatus(
 }
 
 function readForbiddenStatus(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- CmsError tagged unions are inspected via Schema.is without mutation.
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-159] CmsError tagged unions are inspected via Schema.is without mutation.
   error: Readonly<CmsError>,
 ): number | undefined {
   if (Schema.is(Forbidden)(error)) {
@@ -74,7 +74,7 @@ function readForbiddenStatus(
 }
 
 function readInfrastructureFailureStatus(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- CmsError tagged unions are inspected via Schema.is without mutation.
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-159] CmsError tagged unions are inspected via Schema.is without mutation.
   error: Readonly<CmsError>,
 ): number | undefined {
   if (!Schema.is(InfrastructureFailure)(error)) {
@@ -87,7 +87,7 @@ function readInfrastructureFailureStatus(
 }
 
 function readInvalidInputStatus(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- CmsError tagged unions are inspected via Schema.is without mutation.
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-159] CmsError tagged unions are inspected via Schema.is without mutation.
   error: Readonly<CmsError>,
 ): number | undefined {
   if (Schema.is(InvalidInput)(error)) {
@@ -97,7 +97,7 @@ function readInvalidInputStatus(
 }
 
 function readNotFoundStatus(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- CmsError tagged unions are inspected via Schema.is without mutation.
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-159] CmsError tagged unions are inspected via Schema.is without mutation.
   error: Readonly<CmsError>,
 ): number | undefined {
   if (Schema.is(NotFound)(error)) {
@@ -107,7 +107,7 @@ function readNotFoundStatus(
 }
 
 function readUnsupportedQueryStatus(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- CmsError tagged unions are inspected via Schema.is without mutation.
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-159] CmsError tagged unions are inspected via Schema.is without mutation.
   error: Readonly<CmsError>,
 ): number | undefined {
   if (Schema.is(UnsupportedQueryCapability)(error) || Schema.is(ExportTooLarge)(error)) {
@@ -117,7 +117,7 @@ function readUnsupportedQueryStatus(
 }
 
 function errorStatus(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- CmsError tagged unions are inspected via Schema.is without mutation.
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-159] CmsError tagged unions are inspected via Schema.is without mutation.
   error: Readonly<CmsError>,
 ): number {
   const knownStatus =
@@ -135,7 +135,7 @@ function errorStatus(
 }
 
 function errorResponse(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- CmsError tagged unions are inspected via Schema.is without mutation.
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-159] CmsError tagged unions are inspected via Schema.is without mutation.
   error: Readonly<CmsError>,
   requestId: string,
 ): Response {
@@ -154,7 +154,7 @@ const { assetContentResponse, buildErrorDocument, responseHeaders } = responseSu
   new Response(null, { headers: responseHeaders(requestId, fingerprint), status }),
 
  encodeChunk = (
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- Uint8Array chunks are returned without mutation.
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-208] Uint8Array chunks are returned without mutation.
   chunk: Uint8Array | string,
 ): Uint8Array => {
   if (typeof chunk === "string") {
@@ -201,7 +201,7 @@ const { assetContentResponse, buildErrorDocument, responseHeaders } = responseSu
   );
 },
 
-// oxlint-disable-next-line effecttsgo/async-function -- the public Web handler contract returns a Promise<Response>.
+// oxlint-disable-next-line effecttsgo/async-function -- [EH-065] the public Web handler contract returns a Promise<Response>.
  respondWithOutcome = async <Value>({
   effect,
   requestId,
@@ -216,7 +216,7 @@ const { assetContentResponse, buildErrorDocument, responseHeaders } = responseSu
 },
 
  runOperationInterruptibly = <Value>(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- Effect programs are executed, not mutated, by runPromise.
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-174] Effect programs are executed, not mutated, by runPromise.
   effect: Readonly<Effect.Effect<Value, CmsError>>,
   signal?: ReadonlyTransportAbortSignal,
 ): Promise<OperationOutcome<Value>> => {

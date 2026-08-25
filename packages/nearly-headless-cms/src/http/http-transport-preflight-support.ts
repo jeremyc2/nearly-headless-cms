@@ -43,7 +43,7 @@ const { bodylessResponse, jsonResponse, requestFailureResponse } = transportResp
   },
   handleDiscoveryRoute = (
     context: Readonly<RouteHandlerContext>,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- discovery routes read configured operations without mutation.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-164] discovery routes read configured operations without mutation.
     operations: Readonly<NonNullable<Options["deliveryOperations"]>>,
   ): Response | undefined => {
     if (
@@ -69,9 +69,9 @@ const { bodylessResponse, jsonResponse, requestFailureResponse } = transportResp
   },
   handleOpenApiRoutes = (
     context: Readonly<RouteHandlerContext>,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- OpenAPI routes read configured operations without mutation.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-195] OpenAPI routes read configured operations without mutation.
     operations: Readonly<NonNullable<Options["deliveryOperations"]>>,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- OpenAPI routes read configured operations without mutation.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-195] OpenAPI routes read configured operations without mutation.
     managementOperations: Readonly<NonNullable<Options["managementOperations"]>>,
   ): Response | undefined => {
     if (

@@ -3,7 +3,7 @@ import {
   type EntryRepresentation,
 } from "./entry-editor-publication-panel-imports.ts";
 import publicationPanelFieldsSupport from "./entry-editor-publication-panel-fields-support.tsx";
-/* oxlint-disable typescript/no-unnecessary-type-parameters -- React panel helpers preserve local prop aliases for component call sites. */
+/* oxlint-disable typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites. */
 
 const {
   EntryEditorCommentActions,
@@ -99,4 +99,3 @@ const {
   );
 
 export default { EntryEditorPublicationPanelSections };
-

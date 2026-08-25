@@ -43,7 +43,7 @@ const { bodylessResponse, invalidRequestResponse } = transportResponse,
       requestId: context.requestId,
     });
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- route handlers await JSON body parsing before Effect execution.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-059] route handlers await JSON body parsing before Effect execution.
   handleEntryCreateRoute = async (
     context: Readonly<RouteHandlerContext>,
   ): Promise<RouteHandlerResult> => {
@@ -69,7 +69,7 @@ const { bodylessResponse, invalidRequestResponse } = transportResponse,
       return invalidRequestResponse(error, "Invalid Entry create request", context.requestId);
     }
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- route handlers await JSON body parsing before Effect execution.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-059] route handlers await JSON body parsing before Effect execution.
   handleEntryPurgeRoute = async (
     context: Readonly<RouteHandlerContext>,
   ): Promise<RouteHandlerResult> => {
@@ -99,7 +99,7 @@ const { bodylessResponse, invalidRequestResponse } = transportResponse,
       return invalidRequestResponse(error, "Invalid Permanent Purge request", context.requestId);
     }
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- route handlers await JSON body parsing before Effect execution.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-059] route handlers await JSON body parsing before Effect execution.
   handleEntryQueryRoute = async (
     context: Readonly<RouteHandlerContext>,
   ): Promise<RouteHandlerResult> => {
@@ -152,7 +152,7 @@ const { bodylessResponse, invalidRequestResponse } = transportResponse,
       context.requestId,
       (entry) => entryJsonResponse(context, httpStatusOk, entry),
     ),
-  // oxlint-disable-next-line effecttsgo/async-function -- route handlers await JSON body parsing before Effect execution.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-059] route handlers await JSON body parsing before Effect execution.
   handleEntryResourcePutRoute = async (
     context: Readonly<RouteHandlerContext>,
     contentTypeId: string,
@@ -191,7 +191,7 @@ const { bodylessResponse, invalidRequestResponse } = transportResponse,
       requiredPathParameter(entryMatch, "entryId"),
     );
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- route handlers await JSON body parsing before Effect execution.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-059] route handlers await JSON body parsing before Effect execution.
   handleEntryRestorationRoute = async (
     context: Readonly<RouteHandlerContext>,
   ): Promise<RouteHandlerResult> => {
@@ -240,7 +240,7 @@ const { bodylessResponse, invalidRequestResponse } = transportResponse,
       ],
       context,
     ),
-  // oxlint-disable-next-line effecttsgo/async-function -- route handlers await JSON body parsing before Effect execution.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-059] route handlers await JSON body parsing before Effect execution.
   handleStructuredEntryReadRoute = async (
     context: Readonly<RouteHandlerContext>,
   ): Promise<RouteHandlerResult> => {

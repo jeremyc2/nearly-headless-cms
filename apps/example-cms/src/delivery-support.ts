@@ -151,11 +151,11 @@ const requestUrlSearchParameter = (
       .queryEntries({ contentTypeId, cursor, pageSize, sort, where })
       .pipe(Effect.map(mapQueryPage));
   },
-  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- local schema adapter is intentionally direct-call only.
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-089] local schema adapter is intentionally direct-call only.
   readSchemas = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- OperationSchema values include Effect Schema classes that are not deeply readonly.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-197] OperationSchema values include Effect Schema classes that are not deeply readonly.
     response: HttpContract.OperationSchema,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- path parameter schemas include Effect Schema classes that are not deeply readonly.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-198] path parameter schemas include Effect Schema classes that are not deeply readonly.
     pathParameters: Record<string, HttpContract.OperationSchema> = {},
     includePagination = false,
   ): HttpContract.OperationSchemas => {

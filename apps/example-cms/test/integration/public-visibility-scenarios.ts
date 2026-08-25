@@ -91,7 +91,7 @@ const buildPostRequest = (authorIdentifier: string, postNumber: number): Request
       })),
     ),
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- fixture setup intentionally awaits native filesystem and CMS startup.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-023] fixture setup intentionally awaits native filesystem and CMS startup.
   createPublicVisibilityFixture = async (
     testDirectory: string,
   ): Promise<PublicVisibilityFixture> => {
@@ -99,7 +99,7 @@ const buildPostRequest = (authorIdentifier: string, postNumber: number): Request
       system = await createExampleSystem({ seed: true, storageRoot });
     return {
       // Bun lifecycle hooks require a Promise-returning dispose callback.
-      // oxlint-disable-next-line effecttsgo/async-function -- fixture teardown awaits native filesystem cleanup.
+      // oxlint-disable-next-line effecttsgo/async-function -- [EH-024] fixture teardown awaits native filesystem cleanup.
       dispose: async () => {
         await system.dispose();
         await Bun.$`rm -rf ${storageRoot}`;
@@ -190,14 +190,14 @@ const buildPostRequest = (authorIdentifier: string, postNumber: number): Request
       }),
     ),
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
   verifyCompleteExportPagination = async (handler: PublicVisibilityHandler): Promise<void> => {
     const { authorIdentifier, initialPosts } = await readInitialExportState(handler),
       completePosts = await readCompleteExportPosts(handler, authorIdentifier);
     expect(completePosts).toHaveLength(initialPosts.length + postsToCreate);
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
   verifyExportExcludesPrivateEntries = async (
     handler: PublicVisibilityHandler,
     categoryIdentifier: string,
@@ -212,7 +212,7 @@ const buildPostRequest = (authorIdentifier: string, postNumber: number): Request
     ).toBeFalse();
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
   verifyHiddenUnpublishedReachability = async (system: ExampleSystem): Promise<void> => {
     const { commentResponse, draftPostId, handler, privateCategory } =
       await readHiddenReachabilityEntries(system);
@@ -230,7 +230,7 @@ const buildPostRequest = (authorIdentifier: string, postNumber: number): Request
     );
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
   verifyUnpublishedEndpointsHidden = async (
     handler: PublicVisibilityHandler,
     categoryIdentifier: string,

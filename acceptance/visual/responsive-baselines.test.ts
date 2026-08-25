@@ -1,7 +1,6 @@
 import { afterAll, describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
-// Baseline paths are test-runner setup paths; there is no Effect runtime involved in this Bun test.
-// oxlint-disable-next-line effecttsgo/node-builtin-import
+// oxlint-disable-next-line effecttsgo/node-builtin-import -- [EH-210] Baseline paths are test-runner setup paths; there is no Effect runtime involved in this Bun test.
 import { join } from "node:path";
 
 let acceptanceTest = test.skip;
@@ -9,7 +8,7 @@ if (Bun.env["ACCEPTANCE_SERVERS_READY"] === "1") {
   acceptanceTest = test;
 }
 const baselineDirectory = join(import.meta.dir, "baselines"),
-  // oxlint-disable-next-line effecttsgo/async-function -- screenshot and filesystem APIs are Promise-based Bun platform operations.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-061] screenshot and filesystem APIs are Promise-based Bun platform operations.
   captureAndCheckBaseline = async <View extends Bun.WebView>(
     view: Readonly<View>,
     pageName: string,
@@ -30,7 +29,7 @@ const baselineDirectory = join(import.meta.dir, "baselines"),
     }
     await compareToBaseline(screenshotBytes, baselinePath);
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- baseline bytes are read through Promise-based Bun filesystem APIs.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-004] baseline bytes are read through Promise-based Bun filesystem APIs.
   compareToBaseline = async <Bytes extends Uint8Array>(
     screenshotBytes: Readonly<Bytes>,
     baselinePath: string,
@@ -68,7 +67,7 @@ const baselineDirectory = join(import.meta.dir, "baselines"),
     expression: string,
   ): Promise<void> => {
     const deadline = performance.now() + settleTimeoutMilliseconds,
-      // oxlint-disable-next-line effecttsgo/async-function -- Bun WebView evaluation and sleep are Promise-based platform lifecycle operations.
+      // oxlint-disable-next-line effecttsgo/async-function -- [EH-008] Bun WebView evaluation and sleep are Promise-based platform lifecycle operations.
       poll = async (): Promise<void> => {
         if (performance.now() >= deadline) {
           throw new Error(`Visual page did not settle: ${expression}`);
@@ -94,7 +93,7 @@ describe("responsive visual baselines", () => {
     for (const viewport of viewports) {
       acceptanceTest(
         `${page.name} at ${viewport.width}×${viewport.height}`,
-        // oxlint-disable-next-line effecttsgo/async-function -- Bun's test runner requires a Promise-returning lifecycle callback.
+        // oxlint-disable-next-line effecttsgo/async-function -- [EH-009] Bun's test runner requires a Promise-returning lifecycle callback.
         async () => {
           const view = new Bun.WebView({ height: viewport.height, width: viewport.width });
           try {

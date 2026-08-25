@@ -24,9 +24,9 @@ interface EntryAssignmentState {
 const { conditionalProperty, queryAllEntries } = managementSupport,
   { replaceRichTextAsset, usesAsset } = managementImageUploadSupport,
   buildImageClearingMutations = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- assignment states include mutable entry value maps.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-154] assignment states include mutable entry value maps.
     authorStates: Readonly<readonly EntryAssignmentState[]>,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- assignment states include mutable entry value maps.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-154] assignment states include mutable entry value maps.
     postStates: Readonly<readonly EntryAssignmentState[]>,
   ): Cms.EntryBatchMutation[] => [
     ...postStates.map(

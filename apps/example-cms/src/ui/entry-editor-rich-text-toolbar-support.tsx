@@ -2,7 +2,7 @@ import type { ReactNode, RefObject } from "react";
 import type { BrowserAdapter } from "./rich-text-editor/index.ts";
 import { headingLevel } from "./main-labels.ts";
 import { preserveSelection } from "./main-shared.ts";
-/* oxlint-disable typescript/no-unnecessary-type-parameters -- React panel helpers preserve local prop aliases for component call sites. */
+/* oxlint-disable typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites. */
 
 const RichTextBlockPicker = <Adapter extends RefObject<BrowserAdapter | null>>({
     adapter,
@@ -122,4 +122,3 @@ export {
   RichTextToolbarHistoryButtons,
   RichTextToolbarListButtons,
 };
-

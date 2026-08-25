@@ -21,12 +21,12 @@ const publicVisibilityContext: { fixture: PublicVisibilityFixture | undefined } 
   };
 
 describe("Example CMS public visibility", () => {
-  // oxlint-disable-next-line effecttsgo/async-function -- Bun lifecycle hook performs async system setup.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-007] Bun lifecycle hook performs async system setup.
   beforeAll(async () => {
     publicVisibilityContext.fixture = await createPublicVisibilityFixture(import.meta.dir);
   });
 
-  // oxlint-disable-next-line effecttsgo/async-function -- Bun lifecycle hook performs async cleanup.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-006] Bun lifecycle hook performs async cleanup.
   afterAll(async () => {
     const { fixture } = publicVisibilityContext;
     if (fixture !== undefined) {

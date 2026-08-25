@@ -71,7 +71,7 @@ const { assetContentResponse, bodylessResponse, invalidRequestResponse, jsonResp
       [handleAssetContentRoute, handleAssetResourceRoute, handleAssetUploadRoute],
       context,
     ),
-  // oxlint-disable-next-line effecttsgo/async-function -- route handlers await JSON body parsing before Effect execution.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-059] route handlers await JSON body parsing before Effect execution.
   handleAssetUploadRoute = async (
     context: Readonly<RouteHandlerContext>,
   ): Promise<RouteHandlerResult> => {

@@ -54,7 +54,7 @@ const { parseByteRange } = deliveryPublicAssetByteRangeSupport,
   },
   rangeNotModifiedResponse = (
     request: Readonly<ReadonlyTransportRequest>,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- stored asset bytes are read without mutation when serving range requests.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-206] stored asset bytes are read without mutation when serving range requests.
     asset: Readonly<Asset.StoredAsset>,
     headers: Readonly<Headers>,
   ): Response | undefined => {

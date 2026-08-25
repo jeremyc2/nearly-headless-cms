@@ -13,7 +13,7 @@ const EntryEditorConflictActions = ({
   readonly contentTypeId: string;
   readonly entryId: string;
   readonly isSaving: boolean;
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- conflict resolution callbacks receive mutable draft value maps.
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-161] conflict resolution callbacks receive mutable draft value maps.
   readonly onDiscard: (latestValues: Record<string, unknown>) => void;
   readonly onReapply: () => void;
 }) => (
@@ -66,7 +66,7 @@ const EntryEditorConflictActions = ({
   readonly contentTypeId: string;
   readonly entryId: string;
   readonly isSaving: boolean;
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- conflict resolution callbacks receive mutable draft value maps.
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-161] conflict resolution callbacks receive mutable draft value maps.
   readonly onDiscard: (latestValues: Record<string, unknown>) => void;
   readonly onReapply: () => void;
   readonly values: Readonly<Record<string, unknown>>;

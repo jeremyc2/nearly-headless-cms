@@ -1,5 +1,5 @@
 import { type RefObject, type UseMutationResult } from "./assets-page-imports.ts";
-/* oxlint-disable typescript/no-unnecessary-type-parameters -- React panel helpers preserve local prop aliases for component call sites. */
+/* oxlint-disable typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites. */
 
 const AssetsPageFileInputs = <
     InputRef extends RefObject<HTMLInputElement | null>,
@@ -144,4 +144,3 @@ const AssetsPageFileInputs = <
   );
 
 export { AssetsPageHeader, AssetsPageStatus };
-

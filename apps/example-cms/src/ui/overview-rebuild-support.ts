@@ -2,9 +2,9 @@ import { useMutation } from "./overview-imports.ts";
 
 const useOverviewRebuildMutation = () =>
   useMutation({
-    // oxlint-disable-next-line effecttsgo/async-function -- React query mutation is an intentional browser async boundary.
+    // oxlint-disable-next-line effecttsgo/async-function -- [EH-049] React query mutation is an intentional browser async boundary.
     mutationFn: async () => {
-      // oxlint-disable-next-line effecttsgo/global-fetch -- Browser mutation boundary is owned by the UI query client.
+      // oxlint-disable-next-line effecttsgo/global-fetch -- [EH-079] Browser mutation boundary is owned by the UI query client.
       const response = await fetch("/development/rebuild", { method: "POST" });
       if (!response.ok) {
         throw new Error("The demonstration build could not be started");

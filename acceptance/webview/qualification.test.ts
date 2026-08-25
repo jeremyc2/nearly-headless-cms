@@ -7,7 +7,7 @@ const ACCEPTANCE_RUN_COUNT = 10,
   POLLING_INTERVAL_MILLISECONDS = 50,
   RUN_NUMBER_INCREMENT = 1,
   WAIT_TIMEOUT_MILLISECONDS = 15_000,
-  // oxlint-disable-next-line effecttsgo/async-function -- qualification assertions compose awaited WebView navigation and evaluation.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-044] qualification assertions compose awaited WebView navigation and evaluation.
   assertQualificationPage = async <
     View extends Bun.WebView,
     ConsoleErrors extends readonly unknown[],
@@ -41,7 +41,7 @@ const ACCEPTANCE_RUN_COUNT = 10,
     predicate: (value: Value) => boolean,
   ): Promise<Value> => {
     const deadline = performance.now() + WAIT_TIMEOUT_MILLISECONDS,
-      // oxlint-disable-next-line effecttsgo/async-function -- Bun WebView evaluation and sleep are Promise-based platform lifecycle operations.
+      // oxlint-disable-next-line effecttsgo/async-function -- [EH-008] Bun WebView evaluation and sleep are Promise-based platform lifecycle operations.
       poll = async (): Promise<Value> => {
         if (performance.now() >= deadline) {
           throw new Error(`WebView condition timed out: ${expression}`);
@@ -63,9 +63,9 @@ afterAll(() => {
 describe("Bun WebView qualification", () => {
   selectAcceptanceTest(enabled)(
     "completes ten consecutive native WebKit lifecycle runs without a retry",
-    // oxlint-disable-next-line effecttsgo/async-function -- Bun's test runner requires a Promise-returning lifecycle callback.
+    // oxlint-disable-next-line effecttsgo/async-function -- [EH-009] Bun's test runner requires a Promise-returning lifecycle callback.
     async () => {
-      // oxlint-disable-next-line effecttsgo/async-function -- recursive acceptance retries compose native WebView Promise operations.
+      // oxlint-disable-next-line effecttsgo/async-function -- [EH-052] recursive acceptance retries compose native WebView Promise operations.
       const runQualification = async (runNumber: number): Promise<void> => {
         const consoleErrors: unknown[] = [],
           view = new Bun.WebView({

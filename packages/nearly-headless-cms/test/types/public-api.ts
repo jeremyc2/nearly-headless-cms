@@ -25,7 +25,7 @@ import {
 } from "nearly-headless-cms";
 import { HttpContract, HttpTransport, OpenApi } from "nearly-headless-cms/http";
 import { BunFilesystemPersistence } from "nearly-headless-cms/bun/filesystem";
-// @ts-expect-error Arbitrary private subpaths are not public package exports.
+// @ts-expect-error [EH-001] Arbitrary private subpaths are not public package exports.
 import { Service as DeepService } from "nearly-headless-cms/private";
 import { DevelopmentCms } from "nearly-headless-cms/testing";
 import type { Layer } from "effect";

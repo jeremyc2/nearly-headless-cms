@@ -33,7 +33,7 @@ const appendQueryParameters = (
       return requestBody;
     }
     headers.set("content-type", specification.requestMediaType ?? "application/json");
-    // oxlint-disable-next-line effecttsgo/prefer-schema-over-json -- request bodies are OpenAPI-generated unknown shapes and must be serialized using the browser JSON boundary.
+    // oxlint-disable-next-line effecttsgo/prefer-schema-over-json -- [EH-107] request bodies are OpenAPI-generated unknown shapes and must be serialized using the browser JSON boundary.
     return JSON.stringify(requestBody);
   },
   buildRequestHeaders = (input: Readonly<OperationInputs[keyof OperationInputs]>): Headers => {

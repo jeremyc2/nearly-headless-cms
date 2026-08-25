@@ -5,7 +5,7 @@ import {
   type RichTextInsertDialog,
   assetCaption,
 } from "./entry-editor-rich-text-insert-dialog-imports.ts";
-/* oxlint-disable typescript/no-unnecessary-type-parameters -- React panel helpers preserve local prop aliases for component call sites. */
+/* oxlint-disable typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites. */
 
 const InsertDialogActions = <
     AdapterRef extends RefObject<BrowserAdapter | null>,
@@ -193,4 +193,3 @@ export default {
   RichTextEntryFields,
   RichTextLinkFields,
 };
-

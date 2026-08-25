@@ -7,8 +7,8 @@ import {
   type ResolvedField,
   isJsonObject,
 } from "./cms-entry-expansion-field-group-imports.ts";
-/* oxlint-disable eslint/one-var -- helpers with readonly disables must stay as separate const declarations. */
-/* oxlint-disable eslint/sort-vars -- helper declaration order follows dependency order. */
+/* oxlint-disable eslint/one-var -- [EH-125] helpers with readonly disables must stay as separate const declarations. */
+/* oxlint-disable eslint/sort-vars -- [EH-131] helper declaration order follows dependency order. */
 
 interface ExpandObjectInput {
   readonly ancestorEntryIds: ReadonlySet<string>;
@@ -43,7 +43,7 @@ interface ExpandFieldGroupListInput {
 }
 
 const expandFieldGroupList = (
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- mutable values out-param is bundled in input interface.
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-191] mutable values out-param is bundled in input interface.
   input: Readonly<ExpandFieldGroupListInput>,
 ): void => {
   const {
@@ -78,7 +78,7 @@ const expandFieldGroupList = (
 },
 
  expandFieldGroup = (
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- mutable values out-param is bundled in input interface.
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-191] mutable values out-param is bundled in input interface.
   input: Readonly<ExpandFieldGroupInput>,
 ): void => {
   const { expandObject, expandObjectInput, field, fieldKey, fieldPath, nestedPaths, value, values } =

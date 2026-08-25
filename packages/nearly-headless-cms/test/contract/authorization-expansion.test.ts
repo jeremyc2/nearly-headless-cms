@@ -1,13 +1,13 @@
 import { Cms, type Operation } from "../../src/index.ts";
-/* oxlint-disable eslint/sort-vars -- test constants follow scenario narrative order. */
+/* oxlint-disable eslint/sort-vars -- [EH-133] test constants follow scenario narrative order. */
 import { Effect, Exit } from "effect";
 import { describe, expect, test } from "bun:test";
 import { runAuthorizationExpansion } from "./authorization-expansion-support.ts";
 
 const createVerifyDeniedExpansion = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- action log must remain mutable for assertions.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-153] action log must remain mutable for assertions.
     actions: Operation.Action[],
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- deniedAction.current is mutated to simulate authorization denial.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-163] deniedAction.current is mutated to simulate authorization denial.
     deniedAction: { current?: Operation.Action },
   ) =>
     Effect.gen(function* verifyDeniedExpansion() {
@@ -35,7 +35,7 @@ const createVerifyDeniedExpansion = (
       return { adaEntry, cms, graceEntry };
     }),
   createVerifyExpandedPerson = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- action log must remain mutable for assertions.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-153] action log must remain mutable for assertions.
     actions: Operation.Action[],
   ) =>
     Effect.gen(function* verifyExpandedPerson() {
@@ -60,7 +60,7 @@ const createVerifyDeniedExpansion = (
       return { adaEntry, cms, graceEntry };
     }),
   createVerifyListRelationshipExpansion = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- action log must remain mutable for assertions.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-153] action log must remain mutable for assertions.
     actions: Operation.Action[],
   ) =>
     Effect.gen(function* verifyListRelationshipExpansion() {
@@ -95,7 +95,7 @@ const createVerifyDeniedExpansion = (
       return { adaEntry, cms, graceEntry };
     }),
   createVerifyNestedRelationshipExpansion = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- action log must remain mutable for assertions.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-153] action log must remain mutable for assertions.
     actions: Operation.Action[],
   ) =>
     Effect.gen(function* verifyNestedRelationshipExpansion() {

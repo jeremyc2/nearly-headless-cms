@@ -20,10 +20,10 @@ export type ReadonlyTransportHandlerRequest = ReadonlyTransportRequest & {
 export const toAbortSignal = <SignalType extends ReadonlyTransportAbortSignal>(
   signal: Readonly<SignalType>,
 ): AbortSignal =>
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Web APIs require AbortSignal; transport callers always pass the real signal.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-151] Web APIs require AbortSignal; transport callers always pass the real signal.
   signal as unknown as AbortSignal,
   toWebRequest = <RequestType extends ReadonlyTransportRequest>(
     request: Readonly<RequestType>,
   ): Request =>
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Web APIs require Request; transport callers always pass the real request.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-152] Web APIs require Request; transport callers always pass the real request.
     request as unknown as Request;

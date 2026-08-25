@@ -8,13 +8,13 @@ export interface HeadlessApiFixture {
 }
 
 // Bun's test runner requires an async callback for the native Request and Response promises.
-// oxlint-disable-next-line effecttsgo/async-function -- fixture setup intentionally awaits native filesystem and CMS startup.
+// oxlint-disable-next-line effecttsgo/async-function -- [EH-023] fixture setup intentionally awaits native filesystem and CMS startup.
 const createHeadlessApiFixture = async (testDirectory: string): Promise<HeadlessApiFixture> => {
     const storageRoot = await createTemporaryStorageRoot(testDirectory),
       system = await createExampleSystem({ seed: true, storageRoot });
     return {
       // Bun lifecycle hooks require a Promise-returning dispose callback.
-      // oxlint-disable-next-line effecttsgo/async-function -- fixture teardown awaits native filesystem cleanup.
+      // oxlint-disable-next-line effecttsgo/async-function -- [EH-024] fixture teardown awaits native filesystem cleanup.
       dispose: async () => {
         await system.dispose();
         await removeStorageRoot(storageRoot);

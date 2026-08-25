@@ -96,7 +96,7 @@ const alternativeTextProperty = (
     }
     return parsed;
   },
-  // oxlint-disable-next-line effecttsgo/async-function, effecttsgo/missing-pipeable-signature -- Web Request.arrayBuffer is Promise-based and this helper is not a pipeable Effect API.
+  // oxlint-disable-next-line effecttsgo/async-function, effecttsgo/missing-pipeable-signature -- [EH-066, EH-100] Web Request.arrayBuffer is Promise-based and this helper is not a pipeable Effect API.
   parseJson = async (
     request: Pick<Request, "arrayBuffer" | "headers" | "json" | "method">,
     maximumByteLength: number,
@@ -167,7 +167,7 @@ const alternativeTextProperty = (
     }
     return value;
   },
-  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- multipart parsing is Promise-based and this helper is not a pipeable Effect API.
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-090] multipart parsing is Promise-based and this helper is not a pipeable Effect API.
   stageMultipartAsset = (
     request: ReadonlyTransportRequest,
     signal: ReadonlyTransportAbortSignal,

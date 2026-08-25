@@ -91,7 +91,7 @@ const {
     return contentTypes;
   },
   compileDualInputMinimumArity = 2,
-  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- compileSnapshot is exported for typed internal call sites.
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-083] compileSnapshot is exported for typed internal call sites.
   compileSnapshot = (input: SnapshotInput, options: CompileOptions = {}): CompiledSnapshot => {
     const acceptedDefinitions = acceptSnapshotDefinitions(input),
       compilerFormatVersion = input.compilerFormatVersion ?? defaultCompilerFormatVersion,
@@ -121,7 +121,7 @@ const {
       validateEntry,
     };
   },
-  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- dual's generic overload is not inferred by the linter for this public helper.
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-086] dual's generic overload is not inferred by the linter for this public helper.
   pipeableCompile = Function.dual((arguments_) => {
     if (arguments_.length >= compileDualInputMinimumArity) {
       return true;

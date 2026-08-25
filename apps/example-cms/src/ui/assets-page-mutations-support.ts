@@ -7,7 +7,7 @@ export const useAssetsPageMutations = (input: {
   const deleteImage = useMutation({
       mutationFn: (assetId: string) =>
         Effect.runPromise(
-          // oxlint-disable-next-line effecttsgo/crypto-random-uuid -- the management client accepts a synchronous idempotency key.
+          // oxlint-disable-next-line effecttsgo/crypto-random-uuid -- [EH-073] the management client accepts a synchronous idempotency key.
           managementClient.deleteImageAndClearAssignments(assetId, `delete-${crypto.randomUUID()}`),
         ),
       onSuccess: () => {
@@ -21,10 +21,10 @@ export const useAssetsPageMutations = (input: {
     replace = useMutation({
       mutationFn: ({ assetId, file }: { readonly assetId: string; readonly file: File }) =>
         Effect.runPromise(
-          // oxlint-disable-next-line effecttsgo/crypto-random-uuid -- the management client accepts a synchronous idempotency key.
+          // oxlint-disable-next-line effecttsgo/crypto-random-uuid -- [EH-073] the management client accepts a synchronous idempotency key.
           managementClient.replaceImage(assetId, file, `replace-${crypto.randomUUID()}`),
         ),
-      // oxlint-disable-next-line effecttsgo/async-function -- React query callback awaits cache invalidation.
+      // oxlint-disable-next-line effecttsgo/async-function -- [EH-045] React query callback awaits cache invalidation.
       onSuccess: async () => {
         input.setReplacementAssetId(undefined);
         await queryClient.invalidateQueries({ queryKey: ["assets"] });
@@ -34,7 +34,7 @@ export const useAssetsPageMutations = (input: {
     }),
     upload = useMutation({
       mutationFn: (file: File) => Effect.runPromise(managementClient.uploadAsset(file)),
-      // oxlint-disable-next-line effecttsgo/async-function -- React query callback awaits cache invalidation.
+      // oxlint-disable-next-line effecttsgo/async-function -- [EH-045] React query callback awaits cache invalidation.
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: ["assets"] });
       },

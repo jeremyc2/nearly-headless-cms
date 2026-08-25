@@ -38,7 +38,7 @@ const { listItemSelectorSuffix, selectionPositionFromNode, textLength } =
     return undefined;
   },
   readNativeSelectionPositions = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- editable hosts are queried for live native selection state.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-170] editable hosts are queried for live native selection state.
     host: HTMLElement,
   ) =>
     nativeSelectionPositions({
@@ -47,7 +47,7 @@ const { listItemSelectorSuffix, selectionPositionFromNode, textLength } =
     }),
   restoreSelectionRange = (
     state: Readonly<State>,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- editable hosts are mutated while restoring native selection ranges.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-169] editable hosts are mutated while restoring native selection ranges.
     host: HTMLElement,
   ): void => {
     if (!host.isConnected) {
@@ -81,7 +81,7 @@ const { listItemSelectorSuffix, selectionPositionFromNode, textLength } =
   },
   synchronizeSelectionState = (
     state: Readonly<State>,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- editable hosts are queried while synchronizing editor selection state.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-171] editable hosts are queried while synchronizing editor selection state.
     host: HTMLElement,
   ): State => {
     const positions = readNativeSelectionPositions(host);

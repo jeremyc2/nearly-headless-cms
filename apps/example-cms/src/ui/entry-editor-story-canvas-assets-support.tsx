@@ -3,7 +3,7 @@ import {
   assetSelectValue,
   stringValue,
 } from "./entry-editor-story-canvas-imports.ts";
-/* oxlint-disable typescript/no-unnecessary-type-parameters -- React panel helpers preserve local prop aliases for component call sites. */
+/* oxlint-disable typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites. */
 
 const EntryEditorContentTypeAssetFields = <
     Values extends Record<string, unknown>,
@@ -184,4 +184,3 @@ const EntryEditorContentTypeAssetFields = <
 export default {
   EntryEditorContentTypeAssetFields,
 };
-

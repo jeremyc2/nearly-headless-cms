@@ -1,4 +1,4 @@
-// oxlint-disable-next-line effecttsgo/node-builtin-import
+// oxlint-disable-next-line effecttsgo/node-builtin-import -- [EH-102] Standalone CLI resolves repository paths before any Effect application exists.
 import path from "node:path";
 import { readPackageManifest } from "./package-manifest.ts";
 
@@ -16,9 +16,9 @@ const argumentIndex = 2,
   releasePublishRequested = releaseArguments.includes("--publish"),
   releaseTag = releaseArguments.find((argument) => argument.startsWith("v")),
   run = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- Bun.spawn requires a mutable string command argv.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-156] Bun.spawn requires a mutable string command argv.
     command: readonly string[],
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- spawn options include mutable environment maps.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-204] spawn options include mutable environment maps.
     options?: Readonly<{
       readonly cwd?: string;
       readonly environment?: Record<string, string>;

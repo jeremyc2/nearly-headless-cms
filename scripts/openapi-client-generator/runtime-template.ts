@@ -1,5 +1,5 @@
 const runtimeAfterMakeGeneratedClient = `
-  // oxlint-disable-next-line effecttsgo/async-function -- generated clients expose a Promise-backed transport boundary; converting this callback to Effect would change the generated public client contract.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-025] generated clients expose a Promise-backed transport boundary; converting this callback to Effect would change the generated public client contract.
   parseOperationSuccessResponse = async (
     input: Readonly<OperationSuccessParseInput>,
   ): Promise<unknown> => {
@@ -43,7 +43,7 @@ const runtimeAfterMakeGeneratedClient = `
       requestUrl,
     };
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- generated clients expose a Promise-backed transport boundary; converting this callback to Effect would change the generated public client contract.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-025] generated clients expose a Promise-backed transport boundary; converting this callback to Effect would change the generated public client contract.
   resolveOperationFailure = async (response: Readonly<Response>, mediaType: string): Promise<never> => {
     if (mediaType.includes("application/json")) {
       throwDeclaredFailure(response, await response.json());
@@ -78,7 +78,7 @@ const runtimeAfterMakeGeneratedClient = `
       status: response.status,
     });
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- generated clients expose a Promise-backed transport boundary; converting this callback to Effect would change the generated public client contract.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-025] generated clients expose a Promise-backed transport boundary; converting this callback to Effect would change the generated public client contract.
   undertakeOperationRequest = async (request: Readonly<OperationRequestInput>): Promise<unknown> => {
     const { body, headers, requestUrl } = prepareOperationRequest(
       request.baseAddress,
@@ -110,7 +110,7 @@ const runtimeAfterMakeGeneratedClient = `
   runtimeBeforeSpecifications = `const toAbortSignal = (
     signal: Pick<AbortSignal, "aborted" | "addEventListener" | "reason" | "removeEventListener" | "throwIfAborted">,
   ): AbortSignal =>
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- fetch requires AbortSignal; generated clients pass the runtime signal.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-141] fetch requires AbortSignal; generated clients pass the runtime signal.
     signal as unknown as AbortSignal,
   appendQueryParameters = (
     requestUrl: Pick<URL, "pathname" | "searchParams">,
@@ -144,7 +144,7 @@ const runtimeAfterMakeGeneratedClient = `
       return requestBody;
     }
     headers.set("content-type", specification.requestMediaType ?? "application/json");
-    // oxlint-disable-next-line effecttsgo/prefer-schema-over-json -- request bodies are OpenAPI-generated unknown shapes and must be serialized using the browser JSON boundary.
+    // oxlint-disable-next-line effecttsgo/prefer-schema-over-json -- [EH-107] request bodies are OpenAPI-generated unknown shapes and must be serialized using the browser JSON boundary.
     return JSON.stringify(requestBody);
   },
   buildRequestHeaders = (input: Readonly<OperationInputs[keyof OperationInputs]>): Headers => {
@@ -181,9 +181,9 @@ const runtimeAfterMakeGeneratedClient = `
         signal,
         specification: operationSpecifications[identifier],
       }),
-  /* oxlint-disable effecttsgo/global-fetch, effecttsgo/global-fetch-in-effect -- generated clients intentionally use the platform fetch boundary so callers can supply the browser or server runtime. */
+  /* oxlint-disable effecttsgo/global-fetch, effecttsgo/global-fetch-in-effect -- [EH-081, EH-082] generated clients intentionally use the platform fetch boundary so callers can supply the browser or server runtime. */
   fetchOperationResponse = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- OperationFetchRequest carries optional readonly abort signal bridge fields.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-196] OperationFetchRequest carries optional readonly abort signal bridge fields.
     request: Readonly<OperationFetchRequest>,
   ): Promise<Response> =>
     fetch(request.requestUrl, {

@@ -86,7 +86,7 @@ export const deletionConsequence = (contentTypeId: string): string => {
   },
   isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
     value !== null && typeof value === "object" && !Array.isArray(value),
-  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- UI value helper is intentionally a direct two-argument operation.
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-098] UI value helper is intentionally a direct two-argument operation.
   stringValue = (value: unknown, fallback: string): string => {
     if (typeof value === "string") {
       return value;

@@ -18,7 +18,7 @@ const CMS_VIEWPORT_HEIGHT = 1000,
     }
     return test.skip;
   })(),
-  // oxlint-disable-next-line effecttsgo/async-function -- journey assertions compose awaited WebView navigation and evaluation.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-034] journey assertions compose awaited WebView navigation and evaluation.
   assertCmsHomePage = async <View extends Bun.WebView>(view: Readonly<View>): Promise<void> => {
     await view.navigate("http://localhost:3000/");
     await waitFor(
@@ -32,7 +32,7 @@ const CMS_VIEWPORT_HEIGHT = 1000,
       ),
     ).toEqual({ heading: 1, main: 1, navigation: 1 });
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- journey assertions compose awaited WebView navigation and evaluation.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-034] journey assertions compose awaited WebView navigation and evaluation.
   assertContentListAndFilter = async <View extends Bun.WebView>(
     view: Readonly<View>,
   ): Promise<void> => {
@@ -54,7 +54,7 @@ const CMS_VIEWPORT_HEIGHT = 1000,
       ),
     ).toBe("lighthouse");
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- journey assertions compose awaited WebView navigation and evaluation.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-034] journey assertions compose awaited WebView navigation and evaluation.
   assertEditorHistoryNavigation = async <View extends Bun.WebView>(
     view: Readonly<View>,
   ): Promise<string> => {
@@ -75,7 +75,7 @@ const CMS_VIEWPORT_HEIGHT = 1000,
     );
     return editorPath;
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- journey assertions compose awaited WebView navigation and evaluation.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-034] journey assertions compose awaited WebView navigation and evaluation.
   assertPublicBlogPage = async <View extends Bun.WebView>(view: Readonly<View>): Promise<void> => {
     await view.navigate("http://localhost:4321/posts/a-lighthouse-for-content/");
     expect(
@@ -103,7 +103,7 @@ const CMS_VIEWPORT_HEIGHT = 1000,
     await view.type("WebView Reader");
     expect(await view.evaluate<boolean>("window.__commentInputWasTrusted")).toBeTrue();
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- journey assertions compose awaited WebView navigation and evaluation.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-034] journey assertions compose awaited WebView navigation and evaluation.
   assertResponsiveEditor = async <View extends Bun.WebView>(
     view: Readonly<View>,
     editorPath: string,
@@ -133,7 +133,7 @@ const CMS_VIEWPORT_HEIGHT = 1000,
       height,
       width,
     }),
-  // oxlint-disable-next-line effecttsgo/async-function -- journey orchestration composes native WebView Promise operations.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-035] journey orchestration composes native WebView Promise operations.
   runCmsJourneyPhase = async <Input extends { readonly errors: unknown[] }>(
     consoleErrors: Readonly<Input>,
   ): Promise<{ editorPath: string; view: Bun.WebView }> => {
@@ -146,7 +146,7 @@ const CMS_VIEWPORT_HEIGHT = 1000,
     await assertResponsiveEditor(view, editorPath);
     return { editorPath, view };
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- journey orchestration composes native WebView Promise operations.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-035] journey orchestration composes native WebView Promise operations.
   runCompleteSystemJourney = async (): Promise<void> => {
     const accumulatedErrors = { errors: [] as unknown[] },
       cmsJourney = await runCmsJourneyPhase(accumulatedErrors);
@@ -166,7 +166,7 @@ const CMS_VIEWPORT_HEIGHT = 1000,
     predicate: (value: Value) => boolean,
   ): Promise<Value> => {
     const deadline = performance.now() + WAIT_TIMEOUT_MILLISECONDS,
-      // oxlint-disable-next-line effecttsgo/async-function -- Bun WebView evaluation and sleep are Promise-based platform lifecycle operations.
+      // oxlint-disable-next-line effecttsgo/async-function -- [EH-008] Bun WebView evaluation and sleep are Promise-based platform lifecycle operations.
       poll = async (): Promise<Value> => {
         if (performance.now() >= deadline) {
           throw new Error(`WebView condition timed out: ${expression}`);
@@ -188,7 +188,7 @@ afterAll(() => {
 describe("complete-system WebView journey", () => {
   acceptanceTest(
     "uses trusted input, responsive layout, history navigation, and semantic page structure",
-    // oxlint-disable-next-line effecttsgo/async-function -- Bun's test runner requires a Promise-returning lifecycle callback.
+    // oxlint-disable-next-line effecttsgo/async-function -- [EH-009] Bun's test runner requires a Promise-returning lifecycle callback.
     async () => {
       await runCompleteSystemJourney();
     },

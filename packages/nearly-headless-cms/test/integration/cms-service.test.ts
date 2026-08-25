@@ -35,13 +35,13 @@ const createVerifiedAuthor = Effect.gen(function* createVerifiedAuthor() {
   }),
   firstRevisionNumber = 1,
   run = <Value, Failure>(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- Effect programs are executed by runPromise without mutation.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-173] Effect programs are executed by runPromise without mutation.
     effect: Readonly<Effect.Effect<Value, Failure, Cms.Service>>,
   ): Promise<Value> => {
     const layer = DevelopmentCms.layer({ snapshot }),
       // This test helper is the application entry point for each isolated test run.
       // The layer must be provided here so every run gets a fresh in-memory CMS.
-      // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer per run.
+      // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-111] test entry point needs a fresh isolated layer per run.
       providedEffect = effect.pipe(Effect.provide(layer));
     return Effect.runPromise(providedEffect);
   },

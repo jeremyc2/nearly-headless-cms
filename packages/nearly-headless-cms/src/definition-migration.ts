@@ -22,7 +22,7 @@ export type {
 const arityForMigrationFreshnessDual = 2,
   arityForMigrationPathDual = 3,
   /** Rejects a preparation whose source Entry generation has changed. */
-  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- dual's generic overload is not inferred by the linter for this public helper.
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-086] dual's generic overload is not inferred by the linter for this public helper.
   assertFresh = dual(
     arityForMigrationFreshnessDual,
     (preparation: Preparation, currentGeneration: number): void => {
@@ -58,7 +58,7 @@ const arityForMigrationFreshnessDual = 2,
     return { issues, transformedEntries };
   },
   /** Resolves the unique ordered migration path between two snapshots. */
-  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- dual's generic overload is not inferred by the linter for this public helper.
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-086] dual's generic overload is not inferred by the linter for this public helper.
   path = dual(
     arityForMigrationPathDual,
     (

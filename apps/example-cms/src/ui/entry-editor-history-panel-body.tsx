@@ -1,4 +1,4 @@
-/* oxlint-disable eslint/sort-imports -- history panel imports follow UI dependency grouping. */
+/* oxlint-disable eslint/sort-imports -- [EH-129] history panel imports follow UI dependency grouping. */
 import { useMutation, useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { DateTime, Effect } from "effect";
 import { useState } from "react";
@@ -6,7 +6,7 @@ import type { RevisionPage } from "../generated/management-openapi-client-compon
 import { EntryEditorRevisionInspection } from "./entry-editor-revision-inspection.tsx";
 import { revisionClass, revisionLabel } from "./main-labels.ts";
 import { managementClient, queryClient } from "./main-shared.ts";
-/* oxlint-disable typescript/no-unnecessary-type-parameters -- React panel helpers preserve local prop aliases for component call sites. */
+/* oxlint-disable typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites. */
 
 interface EntryEditorRevisionSummary {
   readonly recordedAt: string;
@@ -47,7 +47,7 @@ const EntryEditorHistoryPanelBody = ({
       />
     );
   },
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- React Query mutation and query objects expose mutable status while rendering history.
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-200] React Query mutation and query objects expose mutable status while rendering history.
   EntryEditorHistoryPanelView = ({
     contentTypeId,
     entryId,
@@ -175,7 +175,7 @@ const EntryEditorHistoryPanelBody = ({
           }),
         );
       },
-      // oxlint-disable-next-line effecttsgo/async-function -- React query callback awaits cache invalidation.
+      // oxlint-disable-next-line effecttsgo/async-function -- [EH-045] React query callback awaits cache invalidation.
       onSuccess: async () => {
         onRestored();
         await queryClient.invalidateQueries({ queryKey: ["entry-state", contentTypeId, entryId] });
@@ -184,4 +184,3 @@ const EntryEditorHistoryPanelBody = ({
     });
 
 export { EntryEditorHistoryPanelBody as EntryEditorHistoryPanel };
-

@@ -24,7 +24,7 @@ const readExport = (handler: HeadlessApiHandler): Promise<Readonly<Record<string
     return readStringField(assets[firstItemIndex], "id");
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- helper intentionally awaits native HTTP promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-031] helper intentionally awaits native HTTP promises.
   readFirstPostId = async (handler: HeadlessApiHandler): Promise<string> => {
     const exported = await readExport(handler),
       { posts } = exported;
@@ -41,7 +41,7 @@ const readExport = (handler: HeadlessApiHandler): Promise<Readonly<Record<string
     return value;
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- helper intentionally awaits native HTTP promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-031] helper intentionally awaits native HTTP promises.
   submitCommentTwice = async (
     handler: HeadlessApiHandler,
     postId: string,
@@ -69,7 +69,7 @@ const readExport = (handler: HeadlessApiHandler): Promise<Readonly<Record<string
     };
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
   verifyAssetByteRanges = async (handler: HeadlessApiHandler): Promise<void> => {
     const assetId = readFirstAssetId(await readExport(handler)),
       assetUrl = `http://cms.test/api/v1/headless/assets/${assetId}`,
@@ -86,7 +86,7 @@ const readExport = (handler: HeadlessApiHandler): Promise<Readonly<Record<string
     expect(partialBody.byteLength).toBe(tenBytes);
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
   verifyBoundedListingsAndAssets = async (handler: HeadlessApiHandler): Promise<void> => {
     await verifyInvalidPageSize(handler);
     await verifyConditionalExport(handler);
@@ -94,7 +94,7 @@ const readExport = (handler: HeadlessApiHandler): Promise<Readonly<Record<string
     await verifyDraftPostNotFound(handler);
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
   verifyCommentIdempotency = async (handler: HeadlessApiHandler): Promise<void> => {
     const postId = await readFirstPostId(handler),
       submission = await submitCommentTwice(handler, postId);
@@ -102,7 +102,7 @@ const readExport = (handler: HeadlessApiHandler): Promise<Readonly<Record<string
     expect(submission.receiptSecond).toEqual(submission.receiptFirst);
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
   verifyConditionalExport = async (handler: HeadlessApiHandler): Promise<void> => {
     const responseExport = await handler(new Request(exportUrl)),
       responseExportCached = await handler(
@@ -114,7 +114,7 @@ const readExport = (handler: HeadlessApiHandler): Promise<Readonly<Record<string
     expect(responseExportCached.status).toBe(httpNotModified);
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
   verifyDraftPostNotFound = async (handler: HeadlessApiHandler): Promise<void> => {
     const draft = await handler(
       new Request("http://cms.test/api/v1/headless/posts/the-unfinished-map"),
@@ -122,7 +122,7 @@ const readExport = (handler: HeadlessApiHandler): Promise<Readonly<Record<string
     expect(draft.status).toBe(httpNotFound);
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
   verifyInvalidPageSize = async (handler: HeadlessApiHandler): Promise<void> => {
     const invalidPage = await handler(
       new Request("http://cms.test/api/v1/headless/posts?pageSize=0"),
@@ -130,7 +130,7 @@ const readExport = (handler: HeadlessApiHandler): Promise<Readonly<Record<string
     expect(invalidPage.status).toBe(httpBadRequest);
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
   verifyPublicExportEligibility = async (handler: HeadlessApiHandler): Promise<void> => {
     const exported = await readExport(handler),
       { comments, posts } = exported;

@@ -68,7 +68,7 @@ const assetStageEndPromise = (stage: {
   },
   commitAssetBlob = (
     configuration: Readonly<Configuration>,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- ingest content may be a Uint8Array or Effect Stream consumed during commit.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-178] ingest content may be a Uint8Array or Effect Stream consumed during commit.
     content: IngestInput["content"],
   ): Effect.Effect<
     { readonly byteLength: number; readonly digest: string },
@@ -77,7 +77,7 @@ const assetStageEndPromise = (stage: {
     const blobsDirectory = join(configuration.root, "blobs"),
       contentStream = contentStreamFromInput(content),
       maximumByteLength = configuration.maximumAssetByteLength ?? defaultAssetMaximumByteLength,
-      // oxlint-disable-next-line effecttsgo/crypto-random-uuid -- staging paths are computed before the Effect stream starts and must remain synchronous.
+      // oxlint-disable-next-line effecttsgo/crypto-random-uuid -- [EH-072] staging paths are computed before the Effect stream starts and must remain synchronous.
       stagePath = join(blobsDirectory, `${stagingPrefix}blob-${crypto.randomUUID()}`);
     return Effect.acquireUseRelease(
       fromPromise(
@@ -118,7 +118,7 @@ const assetStageEndPromise = (stage: {
           return rm(input.stagePath, { force: true });
         }
         return rename(input.stagePath, blobPath).then(
-          // oxlint-disable-next-line effecttsgo/async-function -- durable blob commits use Promise-based filesystem synchronization.
+          // oxlint-disable-next-line effecttsgo/async-function -- [EH-018] durable blob commits use Promise-based filesystem synchronization.
           async () => {
             if (input.configuration.acknowledgement === "durable") {
               await synchronize(input.blobsDirectory);
@@ -128,7 +128,7 @@ const assetStageEndPromise = (stage: {
       });
   },
   contentStreamFromInput = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- ingest content may be a Uint8Array or Effect Stream consumed during commit.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-178] ingest content may be a Uint8Array or Effect Stream consumed during commit.
     content: IngestInput["content"],
   ): Stream.Stream<Uint8Array, InfrastructureFailure> => {
     if (content instanceof Uint8Array) {
@@ -156,10 +156,10 @@ const assetStageEndPromise = (stage: {
   finalizeAssetStaging = (
     configuration: Readonly<Configuration>,
     stagePath: string,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- staging writer state is mutated while finalizing blob writes.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-205] staging writer state is mutated while finalizing blob writes.
     stage: { ended: boolean; writer: ReturnType<ReturnType<typeof Bun.file>["writer"]> },
   ): Promise<void> =>
-    // oxlint-disable-next-line effecttsgo/async-function -- Asset staging finalization coordinates Bun writer flush and fsync boundaries.
+    // oxlint-disable-next-line effecttsgo/async-function -- [EH-002] Asset staging finalization coordinates Bun writer flush and fsync boundaries.
     Promise.resolve(stage.writer.end()).then(async () => {
       stage.ended = true;
       if (configuration.acknowledgement === "durable") {
@@ -174,7 +174,7 @@ const assetStageEndPromise = (stage: {
       catch: (cause) => failure(message, cause),
       try: operation,
     }),
-  // oxlint-disable-next-line effecttsgo/async-function -- Bun filesystem handles expose Promise-based synchronization boundaries.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-005] Bun filesystem handles expose Promise-based synchronization boundaries.
   synchronize = async (path: string): Promise<void> => {
     const handle = await open(path, "r");
     try {
@@ -258,15 +258,15 @@ const assetStageEndPromise = (stage: {
       "Filesystem Asset staging write failed",
     );
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- Atomic persistence coordinates Bun and node filesystem promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-003] Atomic persistence coordinates Bun and node filesystem promises.
   writeAtomic = async (
     path: string,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- byte buffers are passed to Bun.write without retaining references.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-157] byte buffers are passed to Bun.write without retaining references.
     bytes: Uint8Array,
     acknowledgement: Configuration["acknowledgement"],
   ): Promise<void> => {
     const parentDirectory = path.slice(0, Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"))),
-      // oxlint-disable-next-line effecttsgo/crypto-random-uuid -- staging paths are built synchronously in Bun's filesystem bridge.
+      // oxlint-disable-next-line effecttsgo/crypto-random-uuid -- [EH-071] staging paths are built synchronously in Bun's filesystem bridge.
       stagePath = join(parentDirectory, `${stagingPrefix}${basename(path)}-${crypto.randomUUID()}`);
     try {
       await Bun.write(stagePath, bytes);

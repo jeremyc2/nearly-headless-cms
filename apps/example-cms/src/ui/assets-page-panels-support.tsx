@@ -5,7 +5,7 @@ import {
   assetDimensions,
 } from "./assets-page-imports.ts";
 import assetsPageDialogsSupport from "./assets-page-dialogs-support.tsx";
-/* oxlint-disable typescript/no-unnecessary-type-parameters -- React panel helpers preserve local prop aliases for component call sites. */
+/* oxlint-disable typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites. */
 
 const { AssetsPageDeleteDialog, AssetsPageReplaceDialog } = assetsPageDialogsSupport, AssetsPageAssetCard = <
     Asset extends AssetRepresentation,
@@ -154,4 +154,3 @@ export default {
   AssetsPageGrid,
   AssetsPageReplaceDialog,
 };
-

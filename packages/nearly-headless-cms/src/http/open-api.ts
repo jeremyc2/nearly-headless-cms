@@ -25,7 +25,7 @@ const { managementPaths } = openApiManagementPaths,
     );
   },
   cHeadlessPaths = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- OpenAPI operation descriptors are read while building path maps.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-194] OpenAPI operation descriptors are read while building path maps.
     operations: readonly DeliveryOperation[],
   ): Readonly<Record<string, Readonly<Record<string, OperationDescriptor>>>> =>
     operations.reduce<Record<string, Record<string, OperationDescriptor>>>(
@@ -45,7 +45,7 @@ const { managementPaths } = openApiManagementPaths,
     ),
   /** Builds an OpenAPI document containing only declared Headless Delivery Operations. */
   headless = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- OpenAPI operation descriptors are read while building path maps.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-194] OpenAPI operation descriptors are read while building path maps.
     operations: readonly DeliveryOperation[],
   ): Document => ({
     components: { schemas },
@@ -55,7 +55,7 @@ const { managementPaths } = openApiManagementPaths,
   }),
   /** Builds the complete generic plus Builder-defined Management OpenAPI document. */
   management = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- OpenAPI operation descriptors are read while building path maps.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-194] OpenAPI operation descriptors are read while building path maps.
     operations: readonly ManagementOperation[],
   ): Document => ({
     components: { schemas },

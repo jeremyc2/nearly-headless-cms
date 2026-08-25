@@ -24,7 +24,7 @@ const authorIndex = 0,
     `http://cms.test/api/v1/management/definition-spaces/example-blog/content-types/${contentTypeIdentifier}/entries`,
   notFoundStatus = 404,
   postsToCreate = 101,
-  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- test JSON field helper is intentionally a direct two-argument operation.
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-095] test JSON field helper is intentionally a direct two-argument operation.
   readRecordArray = (
     record: Readonly<Record<string, unknown>>,
     key: string,
@@ -35,7 +35,7 @@ const authorIndex = 0,
     }
     return value;
   },
-  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- test JSON field helper is intentionally a direct two-argument operation.
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-095] test JSON field helper is intentionally a direct two-argument operation.
   readStringField = (record: Readonly<Record<string, unknown>>, key: string): string => {
     const value = record[key];
     if (typeof value !== "string") {

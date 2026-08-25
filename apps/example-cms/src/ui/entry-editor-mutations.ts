@@ -20,7 +20,7 @@ export const useEntryEditorDeleteMutation = ({
   readonly writeToken?: string;
 }) =>
   useMutation({
-    // oxlint-disable-next-line effecttsgo/async-function -- deletion sequence requires awaited server state.
+    // oxlint-disable-next-line effecttsgo/async-function -- [EH-016] deletion sequence requires awaited server state.
     mutationFn: async () => {
       if (
         writeToken === undefined ||
@@ -58,7 +58,7 @@ useEntryEditorEditorialMutation = ({
 }: {
   readonly contentTypeId: string;
   readonly entryId: string;
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- React callbacks receive mutable draft value maps from the editor.
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-199] React callbacks receive mutable draft value maps from the editor.
   readonly onUpdated: (values: Record<string, unknown>) => void;
   readonly writeToken?: string;
 }) =>
@@ -106,7 +106,7 @@ useEntryEditorPurgeMutation = ({
         ),
       );
     },
-    // oxlint-disable-next-line effecttsgo/async-function -- React query callback awaits navigation.
+    // oxlint-disable-next-line effecttsgo/async-function -- [EH-046] React query callback awaits navigation.
     onSuccess: async () => {
       await navigate({ params: { contentTypeId }, to: "/content/$contentTypeId" });
     },
@@ -126,7 +126,7 @@ useEntryEditorSaveMutation = ({
     readonly revisionNumber: number;
     readonly writeToken: string;
   }) => void;
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- React callbacks receive mutable draft value maps from the editor.
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-199] React callbacks receive mutable draft value maps from the editor.
   readonly onSaved: (values: Record<string, unknown>) => void;
 }) =>
   useMutation({
@@ -145,7 +145,7 @@ useEntryEditorSaveMutation = ({
           writeToken,
         }),
       ),
-    // oxlint-disable-next-line effecttsgo/async-function -- React query error callback awaits the latest server state.
+    // oxlint-disable-next-line effecttsgo/async-function -- [EH-048] React query error callback awaits the latest server state.
     onError: async (error) => {
       if (Schema.is(ManagementClientFailure)(error) && error.status === httpStatusConflict) {
         const latest = await Effect.runPromise(

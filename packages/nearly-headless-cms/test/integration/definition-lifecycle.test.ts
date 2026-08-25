@@ -13,22 +13,22 @@ import {
 import { Cms } from "../../src/index.ts";
 
 const runNoteSlugMigration = <Value, Failure>(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- Effect programs are executed by runPromise without mutation.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-173] Effect programs are executed by runPromise without mutation.
     effect: Readonly<Effect.Effect<Value, Failure, Cms.Service>>,
   ): Promise<Value> =>
-    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer per run.
+    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-111] test entry point needs a fresh isolated layer per run.
     Effect.runPromise(effect.pipe(Effect.provide(noteSlugMigrationLayer))),
   runOperationContracts = <Value, Failure>(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- Effect programs are executed by runPromise without mutation.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-173] Effect programs are executed by runPromise without mutation.
     effect: Readonly<Effect.Effect<Value, Failure, Cms.Service>>,
   ): Promise<Value> =>
-    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer per run.
+    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-111] test entry point needs a fresh isolated layer per run.
     Effect.runPromise(effect.pipe(Effect.provide(operationContractsLayer))),
   runRatedNotes = <Value, Failure>(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- Effect programs are executed by runPromise without mutation.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-173] Effect programs are executed by runPromise without mutation.
     effect: Readonly<Effect.Effect<Value, Failure, Cms.Service>>,
   ): Promise<Value> =>
-    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer per run.
+    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-111] test entry point needs a fresh isolated layer per run.
     Effect.runPromise(effect.pipe(Effect.provide(ratedNotesLayer))),
   secondCatalogVersion = 2,
   verifyCatalogEvents = Effect.gen(function* verifyCatalogEvents() {

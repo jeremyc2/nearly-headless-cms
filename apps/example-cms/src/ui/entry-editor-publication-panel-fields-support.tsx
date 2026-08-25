@@ -11,7 +11,7 @@ import {
   stringArrayValue,
   stringValue,
 } from "./entry-editor-publication-panel-imports.ts";
-/* oxlint-disable typescript/no-unnecessary-type-parameters -- React panel helpers preserve local prop aliases for component call sites. */
+/* oxlint-disable typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites. */
 
 const EntryEditorAuthorField = <
     Values extends Record<string, unknown>,
@@ -260,4 +260,3 @@ export default {
   EntryEditorPublicationHeader,
   EntryEditorPublicationStatusField,
 };
-

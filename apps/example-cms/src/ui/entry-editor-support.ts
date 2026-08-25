@@ -19,7 +19,7 @@ export const createFieldUpdater =
       });
     },
   normalizeSaveResult = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- save results may return entry values directly or nested under entry.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-203] save results may return entry values directly or nested under entry.
     result:
       | { readonly entry: { readonly values: Record<string, unknown> } }
       | { readonly values: Record<string, unknown> },

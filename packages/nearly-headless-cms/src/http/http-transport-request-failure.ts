@@ -1,4 +1,4 @@
-// oxlint-disable-next-line effecttsgo/extends-native-error -- This transport-only error is converted to a CmsError before entering an Effect failure channel.
+// oxlint-disable-next-line effecttsgo/extends-native-error -- [EH-074] This transport-only error is converted to a CmsError before entering an Effect failure channel.
 export class RequestFailureError extends Error {
   readonly code: string;
   readonly status: number;

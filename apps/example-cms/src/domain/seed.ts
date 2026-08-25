@@ -28,7 +28,7 @@ const paragraph = (text: string): RichText.ParagraphNode => ({
     type: "paragraph",
   }),
   richTextJsonObject = (document: RichText.Document): ContentDefinition.JsonObject =>
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- RichText.toJson returns a JSON-compatible object validated by the CMS schema boundary.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-149] RichText.toJson returns a JSON-compatible object validated by the CMS schema boundary.
     RichText.toJson(document) as ContentDefinition.JsonObject,
   seedAuthorProfile = (): RichText.Document => ({
     children: [paragraph("Ada writes about durable knowledge, small tools, and the coast.")],

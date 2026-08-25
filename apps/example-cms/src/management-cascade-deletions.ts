@@ -6,7 +6,7 @@ import managementSupport from "./management-support.ts";
 const { queryAllEntries, requireDeletionRecord, requiredParameter, requiredWriteToken } =
     managementSupport,
   buildCommentDeletionMutations = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- batch mutations are built from mutable entry write tokens.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-155] batch mutations are built from mutable entry write tokens.
     commentStates: Readonly<readonly { entry: { id: string }; writeToken: string }[]>,
   ): Cms.EntryBatchMutation[] =>
     commentStates.map(
@@ -20,7 +20,7 @@ const { queryAllEntries, requireDeletionRecord, requiredParameter, requiredWrite
       }),
     ),
   buildPostDeletionMutations = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- batch mutations are built from mutable entry write tokens.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-155] batch mutations are built from mutable entry write tokens.
     postStates: Readonly<readonly { entry: { id: string }; writeToken: string }[]>,
   ): Cms.EntryBatchMutation[] =>
     postStates.map(

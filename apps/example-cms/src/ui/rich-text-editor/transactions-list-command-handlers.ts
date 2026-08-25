@@ -62,11 +62,11 @@ const { commit, replaceBlock } = transactionsState,
           emptyIndex,
         [] as readonly RichText.BlockNode[],
         [
-          // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- list replacement preserves list node shape after item removal.
+          // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-143] list replacement preserves list node shape after item removal.
           {
             ...listBlock,
             children:
-              // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- list item filtering preserves list-item node shapes within the editor document.
+              // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-142] list item filtering preserves list-item node shapes within the editor document.
               listBlock.children.filter(
                 (_listItem, index) => index !== listItemIndex,
               ) as RichText.ListItemNode[],
@@ -226,7 +226,7 @@ const { commit, replaceBlock } = transactionsState,
             children: [
               {
                 children:
-                  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- paragraph children inherit inline nodes from the lifted block root.
+                  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-146] paragraph children inherit inline nodes from the lifted block root.
                   rootBlock.children as RichText.InlineNode[],
                 type: "paragraph",
               },

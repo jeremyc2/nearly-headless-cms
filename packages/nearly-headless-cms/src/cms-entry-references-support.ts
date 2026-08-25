@@ -20,9 +20,9 @@ import {
   cloneJson,
   isJsonObject,
 } from "./cms-entry-references-imports.ts";
-/* oxlint-disable eslint/one-var -- helpers with readonly disables must stay as separate const declarations. */
-/* oxlint-disable eslint/sort-vars -- helper declaration order follows dependency order. */
-/* oxlint-disable eslint/max-lines -- reference and projection helpers are intentionally colocated. */
+/* oxlint-disable eslint/one-var -- [EH-125] helpers with readonly disables must stay as separate const declarations. */
+/* oxlint-disable eslint/sort-vars -- [EH-131] helper declaration order follows dependency order. */
+/* oxlint-disable eslint/max-lines -- [EH-116] reference and projection helpers are intentionally colocated. */
 import cmsEntryReferencesRichTextSupport from "./cms-entry-references-rich-text-support.ts";
 
 export interface References {
@@ -74,7 +74,7 @@ const { collectRichTextReferences, validateRichTextDocument } = cmsEntryReferenc
 },
 
  appendAssetIdentifiers = (
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- mutable assetIds out-param is bundled in input interface.
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-184] mutable assetIds out-param is bundled in input interface.
   input: Readonly<AppendAssetIdentifiersInput>,
 ): void => {
   for (const assetId of oneOrMany(input.value)) {
@@ -85,7 +85,7 @@ const { collectRichTextReferences, validateRichTextDocument } = cmsEntryReferenc
 },
 
  appendRelationshipTargets = (
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- mutable relationships out-param is bundled in input interface.
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-190] mutable relationships out-param is bundled in input interface.
   input: Readonly<AppendRelationshipTargetsInput>,
 ): void => {
   for (const entryId of oneOrMany(input.value)) {
@@ -106,7 +106,7 @@ const { collectRichTextReferences, validateRichTextDocument } = cmsEntryReferenc
 },
 
  collectAssetFieldReferences = (
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- mutable out-params are bundled in input interface.
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-188] mutable out-params are bundled in input interface.
   input: Readonly<CollectFieldReferencesInput>,
 ): void => {
   const { assetIds, field, value } = input,
@@ -119,7 +119,7 @@ const { collectRichTextReferences, validateRichTextDocument } = cmsEntryReferenc
 },
 
  collectRelationshipFieldReferences = (
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- mutable out-params are bundled in input interface.
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-188] mutable out-params are bundled in input interface.
   input: Readonly<CollectFieldReferencesInput>,
 ): void => {
   const { field, relationships, value } = input,
@@ -134,7 +134,7 @@ const { collectRichTextReferences, validateRichTextDocument } = cmsEntryReferenc
 },
 
  collectRichTextFieldReferences = (
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- mutable out-params are bundled in input interface.
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-188] mutable out-params are bundled in input interface.
   input: Readonly<CollectFieldReferencesInput>,
 ): void => {
   const { assetIds, field, relationships, value } = input;
@@ -148,7 +148,7 @@ const { collectRichTextReferences, validateRichTextDocument } = cmsEntryReferenc
 },
 
  collectFieldReferences = (
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- mutable out-params are bundled in input interface.
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-188] mutable out-params are bundled in input interface.
   input: Readonly<CollectFieldReferencesInput>,
 ): void => {
   collectRelationshipFieldReferences(input);
@@ -168,7 +168,7 @@ const { collectRichTextReferences, validateRichTextDocument } = cmsEntryReferenc
 },
 
  setProjectedValue = (
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- mutable values out-param is bundled in input interface.
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-191] mutable values out-param is bundled in input interface.
   input: Readonly<SetProjectedValueInput>,
 ): void => {
   let current = input.values;
