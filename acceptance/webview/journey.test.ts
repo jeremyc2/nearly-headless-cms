@@ -48,10 +48,12 @@ const CMS_VIEWPORT_HEIGHT = 1000,
       (value: string) => value.split("/").length >= MINIMUM_EDITOR_PATH_SEGMENTS,
     );
     const editorPath = await view.evaluate<string>("location.pathname"),
-      editorTitle = await waitFor(
-        view,
-        "document.querySelector('h1')?.textContent",
-        (value: string | undefined) => value !== undefined && value.length > 0,
+      editorTitle = requireNonEmptyString(
+        await waitFor(
+          view,
+          "document.querySelector('h1')?.textContent",
+          (value: string | undefined) => value !== undefined && value.length > 0,
+        ),
       );
     await view.evaluate("(() => { history.back(); return true })()");
     expect(
@@ -116,21 +118,42 @@ const CMS_VIEWPORT_HEIGHT = 1000,
       height,
       width,
     }),
+  requireNonEmptyString = (value: string | undefined): string => {
+    if (value === undefined || value.length === 0) {
+      throw new Error("Expected a non-empty string from WebView evaluation");
+    }
+    return value;
+  },
   // oxlint-disable-next-line effecttsgo/async-function -- [EH-035] journey orchestration composes native WebView Promise operations.
-  runCmsJourneyPhase = async <Input extends { readonly errors: unknown[] }>(
+  runCmsContentPhase = async <Input extends { readonly errors: unknown[] }>(
     consoleErrors: Readonly<Input>,
-  ): Promise<{ editorPath: string; view: Bun.WebView }> => {
+  ): Promise<{ editorPath: string; editorTitle: string }> => {
+    const contentListView = createWebView(consoleErrors, CMS_VIEWPORT_HEIGHT, CMS_VIEWPORT_WIDTH);
+    try {
+      await assertContentList(contentListView);
+      return await assertEditorHistoryNavigation(contentListView);
+    } finally {
+      contentListView.close();
+    }
+  },
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-035] journey orchestration composes native WebView Promise operations.
+  runCmsOverviewPhase = async <Input extends { readonly errors: unknown[] }>(
+    consoleErrors: Readonly<Input>,
+  ): Promise<void> => {
     const overviewView = createWebView(consoleErrors, CMS_VIEWPORT_HEIGHT, CMS_VIEWPORT_WIDTH);
     try {
       await assertCmsHomePage(overviewView);
     } finally {
       overviewView.close();
     }
-    const contentListView = createWebView(consoleErrors, CMS_VIEWPORT_HEIGHT, CMS_VIEWPORT_WIDTH);
-    await assertContentList(contentListView);
-    const { editorPath, editorTitle } = await assertEditorHistoryNavigation(contentListView);
-    contentListView.close();
-    const responsiveView = createWebView(consoleErrors, CMS_VIEWPORT_HEIGHT, CMS_VIEWPORT_WIDTH);
+  },
+  // oxlint-disable-next-line effecttsgo/async-function, eslint/sort-vars -- [EH-348, EH-349] journey orchestration follows helper dependency order despite alphabetical ordering.
+  runCmsJourneyPhase = async <Input extends { readonly errors: unknown[] }>(
+    consoleErrors: Readonly<Input>,
+  ): Promise<{ editorPath: string; view: Bun.WebView }> => {
+    await runCmsOverviewPhase(consoleErrors);
+    const { editorPath, editorTitle } = await runCmsContentPhase(consoleErrors),
+      responsiveView = createWebView(consoleErrors, CMS_VIEWPORT_HEIGHT, CMS_VIEWPORT_WIDTH);
     await assertResponsiveEditor(responsiveView, editorPath, editorTitle);
     return { editorPath, view: responsiveView };
   },

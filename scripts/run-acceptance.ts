@@ -77,13 +77,16 @@ acceptanceServers.exampleCms = Bun.spawn(["bun", "run", "--cwd", "apps/example-c
 });
 try {
   await waitFor("http://localhost:3000/health");
-  await run(["bun", "run", "--cwd", "apps/public-blog", "build"]);
+  await run(["bun", "run", "--cwd", "apps/public-blog", "build"], {
+    PUBLIC_BLOG_USE_FIXTURE: "1",
+  });
   acceptanceServers.publicBlog = Bun.spawn(["bun", "run", "--cwd", "apps/public-blog", "start"], {
     cwd: monorepoRoot,
     stderr: "inherit",
     stdout: "inherit",
   });
   await waitFor("http://localhost:4321/");
+  await waitFor("http://localhost:4321/posts/a-lighthouse-for-content/");
   await run(["bun", "run", "test:webview"], { ACCEPTANCE_SERVERS_READY: "1" });
   await run(["bun", "run", "test:a11y"], { ACCEPTANCE_SERVERS_READY: "1" });
   await run(["bun", "run", "test:visual"], { ACCEPTANCE_SERVERS_READY: "1" });

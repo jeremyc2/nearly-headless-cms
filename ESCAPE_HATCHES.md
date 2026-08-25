@@ -347,6 +347,8 @@ Sorted by escape-hatch code (`EH-###`).
 - **EH-345** (`eslint/sort-vars`): conflict preparation follows controlled input setup despite alphabetical ordering.
 - **EH-346** (`effecttsgo/async-function`): controlled input updates precede conflict preparation despite alphabetical ordering.
 - **EH-347** (`eslint/sort-vars`): controlled input updates precede conflict preparation despite alphabetical ordering.
+- **EH-348** (`effecttsgo/async-function`): journey orchestration follows helper dependency order despite alphabetical ordering.
+- **EH-349** (`eslint/sort-vars`): journey orchestration follows helper dependency order despite alphabetical ordering.
 
 ## Justification Registry
 
@@ -1095,7 +1097,8 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 **Locations:**
 
 - `acceptance/visual/responsive-baselines.test.ts:59`
-- `acceptance/webview/journey.test.ts:169`
+- `acceptance/webview/journey.test.ts:180`
+- `acceptance/webview/journey.test.ts:199`
 - `acceptance/webview/qualification.test.ts:44`
 
 #### EH-009: Bun's test runner requires a Promise-returning lifecycle callback.
@@ -1105,7 +1108,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 - `acceptance/accessibility/axe-webview.test.ts:61`
 - `acceptance/accessibility/axe-webview.test.ts:69`
 - `acceptance/visual/responsive-baselines.test.ts:85`
-- `acceptance/webview/journey.test.ts:191`
+- `acceptance/webview/journey.test.ts:223`
 - `acceptance/webview/qualification.test.ts:66`
 
 #### EH-010: cache invalidation must remain sequential.
@@ -1328,18 +1331,19 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `acceptance/webview/journey.test.ts:21`
-- `acceptance/webview/journey.test.ts:35`
-- `acceptance/webview/journey.test.ts:57`
-- `acceptance/webview/journey.test.ts:78`
-- `acceptance/webview/journey.test.ts:106`
+- `acceptance/webview/journey.test.ts:23`
+- `acceptance/webview/journey.test.ts:33`
+- `acceptance/webview/journey.test.ts:38`
+- `acceptance/webview/journey.test.ts:68`
+- `acceptance/webview/journey.test.ts:93`
 
 #### EH-035: journey orchestration composes native WebView Promise operations.
 
 **Locations:**
 
-- `acceptance/webview/journey.test.ts:136`
-- `acceptance/webview/journey.test.ts:149`
+- `acceptance/webview/journey.test.ts:127`
+- `acceptance/webview/journey.test.ts:139`
+- `acceptance/webview/journey.test.ts:160`
 
 #### EH-036: JSON loading uses Bun's asynchronous file API.
 
@@ -1654,6 +1658,12 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 - `acceptance/visual/visual-baseline-scenarios.ts:128`
 
+#### EH-348: journey orchestration follows helper dependency order despite alphabetical ordering.
+
+**Locations:**
+
+- `acceptance/webview/journey.test.ts:150`
+
 ### Effect · `effecttsgo/crypto-random-uuid`
 
 #### EH-068: browser UI labels need a synchronous local identifier.
@@ -1708,14 +1718,13 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `scripts/run-acceptance.ts:111`
+- `scripts/run-acceptance.ts:106`
 
 #### EH-076: acceptance progress is intentionally emitted to CLI stdout.
 
 **Locations:**
 
 - `scripts/run-acceptance.ts:27`
-- `scripts/run-acceptance.ts:92`
 
 #### EH-077: escape hatch registry CLI reports to stdout and stderr.
 
@@ -2799,6 +2808,12 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 **Locations:**
 
 - `acceptance/visual/visual-baseline-scenarios.ts:128`
+
+#### EH-349: journey orchestration follows helper dependency order despite alphabetical ordering.
+
+**Locations:**
+
+- `acceptance/webview/journey.test.ts:150`
 
 ### ESLint · `no-await-in-loop`
 
