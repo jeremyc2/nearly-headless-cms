@@ -10,6 +10,10 @@ This Bun monorepo contains exactly three workspaces:
 - [`apps/example-cms`](apps/example-cms) — a polished open-access React/Effect/Bun reference CMS; and
 - [`apps/public-blog`](apps/public-blog) — an Astro static Content Client that imports neither the CMS nor the library and consumes only the Headless API.
 
+## Library
+
+The publishable npm package is [`nearly-headless-cms`](packages/nearly-headless-cms). See its [README](packages/nearly-headless-cms/README.md) for installation, every public import path, runtime compatibility, and the v0.1 stability policy.
+
 ## Development
 
 ```sh

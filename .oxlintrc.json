@@ -41,9 +41,22 @@
   ],
   "rules": {
     "eslint/new-cap": "off",
-    "no-magic-numbers": "off",
+    "no-magic-numbers": [
+      "error",
+      {
+        "ignore": [-1, 0, 1],
+        "ignoreArrayIndexes": true,
+        "ignoreDefaultValues": true,
+        "ignoreNumericLiteralTypes": true,
+        "ignoreTypeIndexes": true,
+        "ignoreEnums": true,
+        "ignoreClassFieldInitialValues": true,
+        "ignoreReadonlyClassProperties": true,
+        "enforceConst": true
+      }
+    ],
     "typescript/prefer-readonly-parameter-types": [
-      "off",
+      "error",
       {
         "checkParameterProperties": false,
         "ignoreInferredTypes": true,
