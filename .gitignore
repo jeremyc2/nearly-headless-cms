@@ -10,6 +10,8 @@ dist
 # local app runtime data
 apps/example-cms/.data/
 apps/public-blog/.generated/
+acceptance/journeys/.complete-system-journey-*/
+acceptance/journeys/nearly-headless-cms-journey-*/
 
 # code coverage
 coverage

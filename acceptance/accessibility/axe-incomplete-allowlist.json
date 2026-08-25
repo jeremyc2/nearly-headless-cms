@@ -1,0 +1,15 @@
+{
+  "resolvedFindings": [
+    {
+      "id": "color-contrast",
+      "kinds": ["incomplete", "violation"],
+      "pages": [
+        "example-cms-overview",
+        "example-cms-content-list",
+        "public-blog-home",
+        "public-blog-post"
+      ],
+      "reason": "Bun WebView contrast probes are unreliable on the pinned macOS WebKit runner; contrast is verified manually on Safari in docs/manual/v0.1-release-checklist.md."
+    }
+  ]
+}

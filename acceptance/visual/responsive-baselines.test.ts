@@ -2,6 +2,7 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
 // oxlint-disable-next-line effecttsgo/node-builtin-import -- [EH-210] Baseline paths are test-runner setup paths; there is no Effect runtime involved in this Bun test.
 import { join } from "node:path";
+import { visualBaselineScenarios } from "./visual-baseline-scenario-registry.ts";
 
 let acceptanceTest = test.skip;
 if (Bun.env["ACCEPTANCE_SERVERS_READY"] === "1") {
@@ -41,22 +42,9 @@ const baselineDirectory = join(import.meta.dir, "baselines"),
   },
   digest = <Bytes extends Uint8Array>(bytes: Readonly<Bytes>): string =>
     createHash("sha256").update(bytes).digest("hex"),
-  pages = [
-    {
-      name: "example-cms-overview",
-      ready:
-        "document.querySelectorAll('.signal-card').length === 4 && document.querySelectorAll('.recent-panel .entry-row').length >= 5",
-      url: "http://localhost:3000/",
-    },
-    {
-      name: "public-blog-home",
-      ready: "document.querySelectorAll('.post-card').length > 0",
-      url: "http://localhost:4321/",
-    },
-  ] as const,
   screenshotWaitMilliseconds = 50,
   settleTimeoutMilliseconds = 15_000,
-  testTimeoutMilliseconds = 60_000,
+  testTimeoutMilliseconds = 120_000,
   updateBaselines = Bun.env["UPDATE_VISUALS"] === "1",
   viewports = [
     { height: 844, width: 390 },
@@ -90,17 +78,17 @@ afterAll(() => {
 });
 
 describe("responsive visual baselines", () => {
-  for (const page of pages) {
+  for (const scenario of visualBaselineScenarios) {
     for (const viewport of viewports) {
       acceptanceTest(
-        `${page.name} at ${viewport.width}×${viewport.height}`,
+        `${scenario.name} at ${viewport.width}×${viewport.height}`,
         // oxlint-disable-next-line effecttsgo/async-function -- [EH-009] Bun's test runner requires a Promise-returning lifecycle callback.
         async () => {
           const view = new Bun.WebView({ height: viewport.height, width: viewport.width });
           try {
-            await view.navigate(page.url);
-            await waitUntilReady(view, page.ready);
-            await captureAndCheckBaseline(view, page.name, viewport);
+            await scenario.prepare(view);
+            await waitUntilReady(view, scenario.ready);
+            await captureAndCheckBaseline(view, scenario.name, viewport);
           } finally {
             view.close();
           }

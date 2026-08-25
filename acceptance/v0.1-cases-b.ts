@@ -118,7 +118,7 @@ export const acceptanceCasesB: readonly AcceptanceCase[] = [
   automated({
     claim:
       "Critical pages expose semantic landmarks, headings, names, linked validation errors, focus visibility, and live status.",
-    command: "bun run test:webview",
+    command: "bun run test:a11y && bun run test:webview",
     id: "A11Y-001",
     level: "journey",
     owner: "cross-system",

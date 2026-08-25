@@ -51,6 +51,11 @@
       "import": "./dist/bun/filesystem/index.js",
       "default": "./dist/bun/filesystem/index.js"
     },
+    "./bun/http": {
+      "types": "./dist/bun/http/index.d.ts",
+      "import": "./dist/bun/http/index.js",
+      "default": "./dist/bun/http/index.js"
+    },
     "./testing": {
       "types": "./dist/testing/index.d.ts",
       "import": "./dist/testing/index.js",

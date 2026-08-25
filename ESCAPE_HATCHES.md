@@ -254,6 +254,99 @@ Sorted by escape-hatch code (`EH-###`).
 - **EH-240** (`eslint/max-lines-per-function`): escape hatch document rendering is intentionally colocated.
 - **EH-241** (`eslint/max-statements`): escape hatch document rendering is intentionally colocated.
 - **EH-242** (`eslint/max-statements`): registry rendering keeps family grouping colocated.
+- **EH-243** (`effecttsgo/abort-controller-in-effect`): transport shutdown keeps one shared AbortController for in-flight Web requests.
+- **EH-244** (`effecttsgo/async-function`): lifecycle wrapper is a Web-standard Promise<Response> callback.
+- **EH-245** (`effecttsgo/global-fetch`): integration test exercises an in-flight request during shutdown drain.
+- **EH-246** (`effecttsgo/global-fetch`): integration test exercises rejection during shutdown drain.
+- **EH-247** (`effecttsgo/global-fetch`): integration test exercises the live HTTP listener through the platform fetch boundary.
+- **EH-248** (`effecttsgo/global-fetch`): integration test starts a request that outlives the drain window.
+- **EH-249** (`effecttsgo/global-timers`): pre-shutdown delay starts drain while the slow request remains active.
+- **EH-250** (`effecttsgo/global-timers`): slow handler delay mirrors a peer that keeps the connection open.
+- **EH-251** (`effecttsgo/new-promise`): hanging handler keeps the socket open until forced shutdown.
+- **EH-252** (`effecttsgo/new-promise`): shutdown timing is coordinated through Promise composition in the socket test.
+- **EH-253** (`effecttsgo/new-promise`): slow handler simulates an in-flight socket request outside Effect.
+- **EH-254** (`eslint/max-lines-per-function`): shutdown scenario keeps orchestration in one place for readability.
+- **EH-255** (`eslint/one-var`): transport startup keeps separate statements so lint autofix does not merge dependency-ordered locals.
+- **EH-256** (`eslint/sort-imports`): Bun transport layer imports follow handler, Effect, and transport dependency order.
+- **EH-257** (`eslint/sort-imports`): Bun transport startup imports follow Effect, failure mapping, and lifecycle dependency order.
+- **EH-258** (`eslint/sort-vars`): archive path depends on the resolved package manifest version.
+- **EH-259** (`eslint/sort-vars`): branch text is trimmed immediately into the release evidence artifact field.
+- **EH-260** (`eslint/sort-vars`): commit text is trimmed immediately into the release evidence artifact field.
+- **EH-261** (`eslint/sort-vars`): evidence object aggregates the resolved release metadata fields.
+- **EH-262** (`eslint/sort-vars`): export programs are declared before the runtime that executes them.
+- **EH-263** (`eslint/sort-vars`): fixture install helpers are declared before the export programs that call them.
+- **EH-264** (`eslint/sort-vars`): forced shutdown locals follow lifecycle, handler, and server order.
+- **EH-265** (`eslint/sort-vars`): generated-at text is trimmed immediately into the release evidence artifact field.
+- **EH-266** (`eslint/sort-vars`): handler effect is declared before the form factory it configures.
+- **EH-267** (`eslint/sort-vars`): hanging handler follows lifecycle construction.
+- **EH-268** (`eslint/sort-vars`): inspection report parsing follows the resolved archive and git metadata fields.
+- **EH-269** (`eslint/sort-vars`): lifecycle construction follows slow handler setup.
+- **EH-270** (`eslint/sort-vars`): lifecycle helpers follow drain, force-stop, hook, wrap, and factory order.
+- **EH-271** (`eslint/sort-vars`): live server follows hanging handler construction.
+- **EH-272** (`eslint/sort-vars`): response verifiers follow the HTTP scenario narrative order.
+- **EH-273** (`eslint/sort-vars`): server startup follows lifecycle construction.
+- **EH-274** (`eslint/sort-vars`): shutdown scenario locals follow handler, server, and request order.
+- **EH-275** (`eslint/sort-vars`): slow handler factory precedes lifecycle and server setup.
+- **EH-276** (`typescript/prefer-readonly-parameter-types`): drain polling reads shared active-request counters without mutating them.
+- **EH-277** (`typescript/prefer-readonly-parameter-types`): HttpTransport handler mirrors the Web Request callback contract.
+- **EH-278** (`typescript/prefer-readonly-parameter-types`): Layer factory accepts optional builder configuration without mutation.
+- **EH-279** (`typescript/prefer-readonly-parameter-types`): RequestInit is passed directly into the Web Request constructor.
+- **EH-280** (`typescript/prefer-readonly-parameter-types`): shutdown mutates shared lifecycle counters and abort controllers.
+- **EH-281** (`typescript/prefer-readonly-parameter-types`): wrapped handlers mutate shared active-request counters.
+- **EH-282** (`effecttsgo/global-fetch`): integration test exercises multipart upload through the live HTTP listener.
+- **EH-283** (`effecttsgo/node-builtin-import`): Journey setup creates an isolated filesystem root before the CMS layer starts.
+- **EH-284** (`effecttsgo/node-builtin-import`): Path joining is host-path setup for this acceptance journey, outside the Effect service graph.
+- **EH-285** (`effecttsgo/strict-effect-provide`): acceptance journey entry point needs a fresh isolated layer.
+- **EH-286** (`eslint/one-var`): commit exit must follow the chmod yield before assertions.
+- **EH-287** (`eslint/one-var`): read-back must follow the restore-chmod yield before assertions.
+- **EH-288** (`effecttsgo/global-fetch`): integration test aborts an in-flight request against the live HTTP listener.
+- **EH-289** (`effecttsgo/global-fetch`): integration test exercises request timeout through the live HTTP listener.
+- **EH-293** (`eslint/max-lines-per-function`): child spawn script must stay in one function for eval readability.
+- **EH-296** (`eslint/sort-imports`): child spawn imports follow bun, node, and support dependency order.
+- **EH-299** (`eslint/one-var`): commit exit must follow the manifest obstruction yield before assertions.
+- **EH-300** (`eslint/one-var`): read-back must follow manifest obstruction cleanup before assertions.
+- **EH-301** (`eslint/sort-vars`): commit helper closes over firstEntryIdentifier declared above.
+- **EH-302** (`effecttsgo/async-function`): slow consumer reads intentionally await Bun.sleep between stream chunks; readNextChunk closes over reader.
+- **EH-303** (`effecttsgo/global-fetch`): integration test exercises JSON body limits through the live HTTP listener.
+- **EH-304** (`effecttsgo/global-fetch`): integration test streams an Asset download through the live HTTP listener.
+- **EH-305** (`effecttsgo/global-fetch`): integration test uploads an Asset through the live HTTP listener.
+- **EH-306** (`eslint/sort-vars`): slow consumer reads intentionally await Bun.sleep between stream chunks; readNextChunk closes over reader.
+- **EH-307** (`eslint/sort-vars`): submissions path follows handler construction in this socket scenario.
+- **EH-308** (`eslint/sort-vars`): upload path follows handler construction in this socket scenario.
+- **EH-309** (`effecttsgo/global-fetch`): integration test uploads a paced multipart Asset body through the live HTTP listener.
+- **EH-310** (`eslint/sort-vars`): paced multipart body closes over header and footer bytes declared above.
+- **EH-311** (`effecttsgo/async-function`): axe acceptance scans compose awaited WebView navigation and evaluation.
+- **EH-312** (`effecttsgo/async-function`): WebView readiness polling composes awaited evaluation and sleep.
+- **EH-313** (`effecttsgo/node-builtin-import`): Accessibility test setup resolves axe-core from node_modules before any Effect application exists.
+- **EH-314** (`eslint/init-declarations`): axe script server starts lazily when acceptance servers are ready.
+- **EH-315** (`eslint/one-var`): exported bindings follow private fixture resolution in the same module.
+- **EH-316** (`typescript/no-unsafe-type-assertion`): allowlist JSON is versioned repository fixture data validated at acceptance runtime.
+- **EH-317** (`effecttsgo/node-builtin-import`): fileURLToPath converts Bun module resolution URLs into filesystem paths for axe-core serving.
+- **EH-318** (`effecttsgo/async-function`): visual baseline preparation composes awaited WebView navigation and evaluation.
+- **EH-319** (`effecttsgo/async-function`): visual baseline setup queries the live Example CMS management API.
+- **EH-320** (`effecttsgo/async-function`): visual baseline setup reads the live Example CMS management API.
+- **EH-321** (`effecttsgo/async-function`): visual baseline setup writes through the live Example CMS management API.
+- **EH-322** (`effecttsgo/global-fetch`): visual baseline setup queries the live Example CMS management API.
+- **EH-323** (`effecttsgo/global-fetch`): visual baseline setup reads the live Example CMS management API.
+- **EH-324** (`effecttsgo/global-fetch`): visual baseline setup writes through the live Example CMS management API.
+- **EH-325** (`eslint/one-var`): query response body and first item are parsed together after the status guard.
+- **EH-326** (`effecttsgo/async-function`): interactive visual scenarios reset mutated Example CMS fixture entries.
+- **EH-328** (`effecttsgo/async-function`): visual baseline polling composes sequential WebView evaluation and sleep.
+- **EH-329** (`effecttsgo/missing-pipeable-signature`): interactive visual scenarios reset mutated Example CMS fixture entries.
+- **EH-330** (`effecttsgo/missing-pipeable-signature`): visual baseline setup queries the live Example CMS management API.
+- **EH-331** (`effecttsgo/missing-pipeable-signature`): visual baseline setup reads the live Example CMS management API.
+- **EH-332** (`effecttsgo/missing-pipeable-signature`): visual baseline setup writes through the live Example CMS management API.
+- **EH-334** (`effecttsgo/async-function`): visual baseline setup prepares invalid draft publication state through the management API.
+- **EH-335** (`eslint/one-var`): conflict setup reads entry state after the editor finishes loading.
+- **EH-336** (`eslint/one-var`): CORS header mutation follows the origin allowlist guard.
+- **EH-337** (`eslint/sort-vars`): draft identifiers are resolved before lighthouse fixture values are copied.
+- **EH-339** (`effecttsgo/async-function`): editor navigation depends on waitUntilExpression despite alphabetical ordering.
+- **EH-341** (`eslint/sort-vars`): editor navigation depends on waitUntilExpression despite alphabetical ordering.
+- **EH-342** (`eslint/sort-vars`): featured asset selection follows lighthouse fixture lookup.
+- **EH-344** (`effecttsgo/async-function`): conflict preparation follows controlled input setup despite alphabetical ordering.
+- **EH-345** (`eslint/sort-vars`): conflict preparation follows controlled input setup despite alphabetical ordering.
+- **EH-346** (`effecttsgo/async-function`): controlled input updates precede conflict preparation despite alphabetical ordering.
+- **EH-347** (`eslint/sort-vars`): controlled input updates precede conflict preparation despite alphabetical ordering.
 
 ## Justification Registry
 
@@ -292,21 +385,21 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 - `apps/example-cms/src/ui/assets-page-header-support.tsx:105`
 - `apps/example-cms/src/ui/assets-page-header-support.tsx:114`
 - `apps/example-cms/src/ui/assets-page-header-support.tsx:120`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:10`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:12`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:14`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:20`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:22`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:55`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:57`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:59`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:65`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:67`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:121`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:123`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:125`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:131`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:133`
+- `apps/example-cms/src/ui/assets-page-panels-support.tsx:11`
+- `apps/example-cms/src/ui/assets-page-panels-support.tsx:13`
+- `apps/example-cms/src/ui/assets-page-panels-support.tsx:15`
+- `apps/example-cms/src/ui/assets-page-panels-support.tsx:21`
+- `apps/example-cms/src/ui/assets-page-panels-support.tsx:23`
+- `apps/example-cms/src/ui/assets-page-panels-support.tsx:56`
+- `apps/example-cms/src/ui/assets-page-panels-support.tsx:58`
+- `apps/example-cms/src/ui/assets-page-panels-support.tsx:60`
+- `apps/example-cms/src/ui/assets-page-panels-support.tsx:66`
+- `apps/example-cms/src/ui/assets-page-panels-support.tsx:68`
+- `apps/example-cms/src/ui/assets-page-panels-support.tsx:122`
+- `apps/example-cms/src/ui/assets-page-panels-support.tsx:124`
+- `apps/example-cms/src/ui/assets-page-panels-support.tsx:126`
+- `apps/example-cms/src/ui/assets-page-panels-support.tsx:132`
+- `apps/example-cms/src/ui/assets-page-panels-support.tsx:134`
 - `apps/example-cms/src/ui/entry-editor-controller-local-state-support.ts:18`
 - `apps/example-cms/src/ui/entry-editor-controller-local-state-support.ts:20`
 - `apps/example-cms/src/ui/entry-editor-controller-local-state-support.ts:67`
@@ -390,17 +483,17 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 - `apps/example-cms/src/ui/entry-editor-story-canvas-support.tsx:16`
 - `apps/example-cms/src/ui/entry-editor-story-canvas-support.tsx:18`
 - `apps/example-cms/src/ui/entry-editor-story-canvas-support.tsx:20`
+- `apps/example-cms/src/ui/entry-editor-story-canvas-support.tsx:37`
 - `apps/example-cms/src/ui/entry-editor-story-canvas-support.tsx:39`
 - `apps/example-cms/src/ui/entry-editor-story-canvas-support.tsx:41`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-support.tsx:43`
-- `apps/example-cms/src/ui/overview-panels-support.tsx:11`
+- `apps/example-cms/src/ui/overview-panels-support.tsx:10`
 - `apps/example-cms/src/ui/rich-text-editor/transactions-editor-adapter-render.ts:68`
 - `apps/example-cms/src/ui/rich-text-editor/transactions-editor-adapter-render.ts:70`
 - `apps/example-cms/src/ui/rich-text-editor/transactions-editor-adapter-selection.ts:10`
-- `apps/example-cms/src/ui/rich-text-editor/transactions-list-command-handlers.ts:97`
-- `apps/example-cms/src/ui/rich-text-editor/transactions-list-command-handlers.ts:117`
-- `apps/example-cms/src/ui/rich-text-editor/transactions-list-command-handlers.ts:141`
-- `apps/example-cms/src/ui/rich-text-editor/transactions-list-command-handlers.ts:211`
+- `apps/example-cms/src/ui/rich-text-editor/transactions-list-command-handlers.ts:94`
+- `apps/example-cms/src/ui/rich-text-editor/transactions-list-command-handlers.ts:114`
+- `apps/example-cms/src/ui/rich-text-editor/transactions-list-command-handlers.ts:138`
+- `apps/example-cms/src/ui/rich-text-editor/transactions-list-command-handlers.ts:204`
 - `apps/example-cms/src/ui/rich-text-editor/transactions-mutations.ts:80`
 - `apps/example-cms/src/ui/rich-text-editor/transactions-mutations.ts:120`
 - `apps/example-cms/src/ui/rich-text-editor/transactions-selection.ts:8`
@@ -422,19 +515,19 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 - `apps/example-cms/src/generated/headless-openapi-client-runtime-transport.ts:65`
 - `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:65`
 - `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:65`
-- `scripts/openapi-client-generator/runtime-template.ts:154`
+- `scripts/openapi-client-generator/runtime-template.ts:155`
 
 #### EH-142: list item filtering preserves list-item node shapes within the editor document.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/rich-text-editor/transactions-list-command-handlers.ts:69`
+- `apps/example-cms/src/ui/rich-text-editor/transactions-list-command-handlers.ts:66`
 
 #### EH-143: list replacement preserves list node shape after item removal.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/rich-text-editor/transactions-list-command-handlers.ts:65`
+- `apps/example-cms/src/ui/rich-text-editor/transactions-list-command-handlers.ts:62`
 
 #### EH-144: MutationObserver.observe requires Node; the editable host is a runtime HTMLElement.
 
@@ -452,7 +545,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/rich-text-editor/transactions-list-command-handlers.ts:233`
+- `apps/example-cms/src/ui/rich-text-editor/transactions-list-command-handlers.ts:226`
 
 #### EH-147: ReadonlyEditableHost is a Pick view of the editable div passed at runtime.
 
@@ -470,7 +563,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/domain/seed.ts:31`
+- `apps/example-cms/src/domain/seed.ts:26`
 
 #### EH-150: synchronizeSelectionState queries the runtime editable host for the current DOM selection.
 
@@ -490,13 +583,19 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 - `packages/nearly-headless-cms/src/http/http-transport-readonly-types.ts:28`
 
+#### EH-316: allowlist JSON is versioned repository fixture data validated at acceptance runtime.
+
+**Locations:**
+
+- `acceptance/accessibility/axe-webview-support.ts:29`
+
 ### TypeScript · `typescript/prefer-readonly-parameter-types`
 
 #### EH-153: action log must remain mutable for assertions.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/test/contract/authorization-expansion-support.ts:60`
+- `packages/nearly-headless-cms/test/contract/authorization-expansion-support.ts:59`
 - `packages/nearly-headless-cms/test/contract/authorization-expansion.test.ts:7`
 - `packages/nearly-headless-cms/test/contract/authorization-expansion.test.ts:37`
 - `packages/nearly-headless-cms/test/contract/authorization-expansion.test.ts:62`
@@ -526,34 +625,34 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/bun/filesystem/bun-filesystem-persistence-support.ts:264`
+- `packages/nearly-headless-cms/src/bun/filesystem/bun-filesystem-persistence-support.ts:263`
 
 #### EH-159: CmsError tagged unions are inspected via Schema.is without mutation.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/http-transport-response.ts:43`
-- `packages/nearly-headless-cms/src/http/http-transport-response.ts:59`
-- `packages/nearly-headless-cms/src/http/http-transport-response.ts:70`
-- `packages/nearly-headless-cms/src/http/http-transport-response.ts:81`
-- `packages/nearly-headless-cms/src/http/http-transport-response.ts:95`
-- `packages/nearly-headless-cms/src/http/http-transport-response.ts:106`
-- `packages/nearly-headless-cms/src/http/http-transport-response.ts:117`
-- `packages/nearly-headless-cms/src/http/http-transport-response.ts:128`
-- `packages/nearly-headless-cms/src/http/http-transport-response.ts:147`
+- `packages/nearly-headless-cms/src/http/http-transport-response.ts:42`
+- `packages/nearly-headless-cms/src/http/http-transport-response.ts:58`
+- `packages/nearly-headless-cms/src/http/http-transport-response.ts:69`
+- `packages/nearly-headless-cms/src/http/http-transport-response.ts:80`
+- `packages/nearly-headless-cms/src/http/http-transport-response.ts:94`
+- `packages/nearly-headless-cms/src/http/http-transport-response.ts:105`
+- `packages/nearly-headless-cms/src/http/http-transport-response.ts:116`
+- `packages/nearly-headless-cms/src/http/http-transport-response.ts:127`
+- `packages/nearly-headless-cms/src/http/http-transport-response.ts:146`
 
 #### EH-160: comment submission bodies are validated as loosely typed JSON records.
 
 **Locations:**
 
-- `apps/example-cms/src/delivery-comment-submission-support.ts:178`
+- `apps/example-cms/src/delivery-comment-submission-support.ts:181`
 
 #### EH-161: conflict resolution callbacks receive mutable draft value maps.
 
 **Locations:**
 
 - `apps/example-cms/src/ui/entry-editor-conflict-panel.tsx:16`
-- `apps/example-cms/src/ui/entry-editor-conflict-panel.tsx:69`
+- `apps/example-cms/src/ui/entry-editor-conflict-panel.tsx:67`
 
 #### EH-162: create results use CMS mutation response union shapes.
 
@@ -571,7 +670,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/http-transport-preflight-support.ts:46`
+- `packages/nearly-headless-cms/src/http/http-transport-preflight-support.ts:68`
 
 #### EH-165: DOM selection nodes are inspected without retaining references.
 
@@ -626,21 +725,33 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/test/contract/authorization-expansion-support.ts:58`
-- `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-scenarios.ts:192`
+- `packages/nearly-headless-cms/test/contract/authorization-expansion-support.ts:57`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-commit-boundary-child-scenarios.ts:19`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-commit-boundary-scenarios.ts:17`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-concurrency-fault-scenarios.ts:37`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-fault-injection-manifest-scenarios.ts:45`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-fault-injection-scenarios.ts:23`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-fault-injection-scenarios.ts:31`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-corruption-scenarios.ts:29`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-scenarios.ts:203`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-writer-scenarios.ts:20`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-writer-scenarios.ts:30`
+- `packages/nearly-headless-cms/test/integration/asset-http-delivery.test.ts:52`
+- `packages/nearly-headless-cms/test/integration/asset-http-delivery.test.ts:60`
+- `packages/nearly-headless-cms/test/integration/asset-http-delivery.test.ts:79`
+- `packages/nearly-headless-cms/test/integration/asset-http-delivery.test.ts:106`
 - `packages/nearly-headless-cms/test/integration/cms-service.test.ts:38`
 - `packages/nearly-headless-cms/test/integration/definition-lifecycle.test.ts:16`
 - `packages/nearly-headless-cms/test/integration/definition-lifecycle.test.ts:22`
 - `packages/nearly-headless-cms/test/integration/definition-lifecycle.test.ts:28`
+- `packages/nearly-headless-cms/test/integration/definition-migration-journey-scenarios.ts:67`
 - `packages/nearly-headless-cms/test/integration/entry-history.test.ts:11`
 
 #### EH-174: Effect programs are executed, not mutated, by runPromise.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/http-transport-response.ts:228`
+- `packages/nearly-headless-cms/src/http/http-transport-response.ts:220`
 
 #### EH-175: Effect programs are mapped without mutation.
 
@@ -652,107 +763,115 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/http-transport-handler.ts:131`
+- `packages/nearly-headless-cms/src/http/http-transport-handler.ts:135`
 
 #### EH-178: ingest content may be a Uint8Array or Effect Stream consumed during commit.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/bun/filesystem/bun-filesystem-persistence-support.ts:71`
-- `packages/nearly-headless-cms/src/bun/filesystem/bun-filesystem-persistence-support.ts:131`
+- `packages/nearly-headless-cms/src/bun/filesystem/bun-filesystem-persistence-support.ts:74`
+- `packages/nearly-headless-cms/src/bun/filesystem/bun-filesystem-persistence-support.ts:134`
 
 #### EH-179: Layer values are provided to runPromise without mutation.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-scenarios.ts:190`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-commit-boundary-child-scenarios.ts:17`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-commit-boundary-scenarios.ts:15`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-concurrency-fault-scenarios.ts:35`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-fault-injection-manifest-scenarios.ts:43`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-fault-injection-scenarios.ts:21`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-fault-injection-scenarios.ts:29`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-corruption-scenarios.ts:27`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-scenarios.ts:201`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-writer-scenarios.ts:18`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-writer-scenarios.ts:28`
+- `packages/nearly-headless-cms/test/integration/definition-migration-journey-scenarios.ts:65`
 
 #### EH-180: multipart errors are inspected via instanceof and Predicate.isTagged without mutation.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:145`
+- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:146`
 
 #### EH-181: multipart errors are inspected via Predicate.isTagged without mutation.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:154`
+- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:155`
 
 #### EH-182: multipart file parts expose mutable content streams for staging writes.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:179`
+- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:180`
 
 #### EH-183: multipart state is mutated while parsing asset parts.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:119`
+- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:120`
 
 #### EH-184: mutable assetIds out-param is bundled in input interface.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:73`
+- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:66`
 
 #### EH-185: mutable issues and result out-params are bundled in input interface.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:112`
-- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:136`
-- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:164`
-- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:176`
-- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:192`
-- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:207`
+- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:107`
+- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:134`
+- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:161`
+- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:172`
+- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:187`
+- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:201`
 
 #### EH-186: mutable issues out-param is bundled in input interface.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:22`
-- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:41`
+- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:21`
+- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:39`
 
 #### EH-187: mutable listResult out-param is bundled in input interface.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:77`
-- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:103`
+- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:74`
+- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:99`
 
 #### EH-188: mutable out-params are bundled in input interface.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:106`
-- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:119`
-- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:134`
-- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:149`
+- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:96`
+- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:108`
+- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:122`
+- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:136`
 
 #### EH-189: mutable projected out-param is bundled in input interface.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/entry-query-projection.ts:22`
+- `packages/nearly-headless-cms/src/entry-query-projection.ts:21`
 
 #### EH-190: mutable relationships out-param is bundled in input interface.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:84`
+- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:76`
 
 #### EH-191: mutable values out-param is bundled in input interface.
 
 **Locations:**
 
 - `packages/nearly-headless-cms/src/cms-entry-expansion-field-group-support.ts:44`
-- `packages/nearly-headless-cms/src/cms-entry-expansion-field-group-support.ts:80`
-- `packages/nearly-headless-cms/src/cms-entry-expansion-relationship-support.ts:118`
-- `packages/nearly-headless-cms/src/cms-entry-references-path-support.ts:29`
+- `packages/nearly-headless-cms/src/cms-entry-expansion-field-group-support.ts:79`
+- `packages/nearly-headless-cms/src/cms-entry-expansion-relationship-support.ts:113`
+- `packages/nearly-headless-cms/src/cms-entry-references-path-support.ts:37`
 
 #### EH-192: mutation receipts use discriminated union shapes from CMS operations.
 
@@ -777,14 +896,14 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 - `packages/nearly-headless-cms/src/http/open-api-management-paths.ts:100`
 - `packages/nearly-headless-cms/src/http/open-api.ts:28`
 - `packages/nearly-headless-cms/src/http/open-api.ts:48`
-- `packages/nearly-headless-cms/src/http/open-api.ts:58`
+- `packages/nearly-headless-cms/src/http/open-api.ts:59`
 
 #### EH-195: OpenAPI routes read configured operations without mutation.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/http-transport-preflight-support.ts:72`
-- `packages/nearly-headless-cms/src/http/http-transport-preflight-support.ts:74`
+- `packages/nearly-headless-cms/src/http/http-transport-preflight-support.ts:94`
+- `packages/nearly-headless-cms/src/http/http-transport-preflight-support.ts:96`
 
 #### EH-196: OperationFetchRequest carries optional readonly abort signal bridge fields.
 
@@ -793,19 +912,19 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 - `apps/example-cms/src/generated/headless-openapi-client-runtime-transport.ts:46`
 - `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:46`
 - `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:46`
-- `scripts/openapi-client-generator/runtime-template.ts:138`
+- `scripts/openapi-client-generator/runtime-template.ts:139`
 
 #### EH-197: OperationSchema values include Effect Schema classes that are not deeply readonly.
 
 **Locations:**
 
-- `apps/example-cms/src/delivery-support.ts:156`
+- `apps/example-cms/src/delivery-support.ts:160`
 
 #### EH-198: path parameter schemas include Effect Schema classes that are not deeply readonly.
 
 **Locations:**
 
-- `apps/example-cms/src/delivery-support.ts:158`
+- `apps/example-cms/src/delivery-support.ts:162`
 
 #### EH-199: React callbacks receive mutable draft value maps from the editor.
 
@@ -853,13 +972,13 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/bun/filesystem/bun-filesystem-persistence-support.ts:159`
+- `packages/nearly-headless-cms/src/bun/filesystem/bun-filesystem-persistence-support.ts:158`
 
 #### EH-206: stored asset bytes are read without mutation when serving range requests.
 
 **Locations:**
 
-- `apps/example-cms/src/delivery-public-asset-response-support.ts:57`
+- `apps/example-cms/src/delivery-public-asset-response-support.ts:58`
 
 #### EH-207: SynchronizedRef state is mutated while persisting ingested assets.
 
@@ -871,7 +990,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/http-transport-response.ts:166`
+- `packages/nearly-headless-cms/src/http/http-transport-response.ts:163`
 
 #### EH-239: document line buffer is mutated while rendering the registry.
 
@@ -880,36 +999,82 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 - `scripts/escape-hatches-render-support.ts:29`
 - `scripts/escape-hatches-render-support.ts:75`
 
+#### EH-276: drain polling reads shared active-request counters without mutating them.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/http/http-transport-lifecycle-support.ts:52`
+
+#### EH-277: HttpTransport handler mirrors the Web Request callback contract.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/http/http-transport-lifecycle-support.ts:92`
+- `packages/nearly-headless-cms/test/integration/asset-http-delivery.test.ts:47`
+
+#### EH-278: Layer factory accepts optional builder configuration without mutation.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/bun/http/bun-http-transport.ts:19`
+
+#### EH-279: RequestInit is passed directly into the Web Request constructor.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/integration/asset-http-delivery.test.ts:55`
+
+#### EH-280: shutdown mutates shared lifecycle counters and abort controllers.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/http/http-transport-lifecycle-support.ts:68`
+
+#### EH-281: wrapped handlers mutate shared active-request counters.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/http/http-transport-lifecycle-support.ts:94`
+
+### Effect · `effecttsgo/abort-controller-in-effect`
+
+#### EH-243: transport shutdown keeps one shared AbortController for in-flight Web requests.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/http/http-transport-lifecycle-support.ts:76`
+
 ### Effect · `effecttsgo/async-function`
 
 #### EH-002: Asset staging finalization coordinates Bun writer flush and fsync boundaries.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/bun/filesystem/bun-filesystem-persistence-support.ts:162`
+- `packages/nearly-headless-cms/src/bun/filesystem/bun-filesystem-persistence-support.ts:161`
 
 #### EH-003: Atomic persistence coordinates Bun and node filesystem promises.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/bun/filesystem/bun-filesystem-persistence-support.ts:261`
+- `packages/nearly-headless-cms/src/bun/filesystem/bun-filesystem-persistence-support.ts:260`
 
 #### EH-004: baseline bytes are read through Promise-based Bun filesystem APIs.
 
 **Locations:**
 
-- `acceptance/visual/responsive-baselines.test.ts:32`
+- `acceptance/visual/responsive-baselines.test.ts:33`
 
 #### EH-005: Bun filesystem handles expose Promise-based synchronization boundaries.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/bun/filesystem/bun-filesystem-persistence-support.ts:177`
+- `packages/nearly-headless-cms/src/bun/filesystem/bun-filesystem-persistence-support.ts:176`
 
 #### EH-006: Bun lifecycle hook performs async cleanup.
 
 **Locations:**
 
+- `acceptance/journeys/complete-system-journeys.test.ts:44`
 - `apps/example-cms/test/integration/destructive-workflows.test.ts:27`
 - `apps/example-cms/test/integration/headless-api.test.ts:30`
 - `apps/example-cms/test/integration/public-visibility.test.ts:29`
@@ -919,6 +1084,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
+- `acceptance/journeys/complete-system-journeys.test.ts:34`
 - `apps/example-cms/test/integration/destructive-workflows.test.ts:22`
 - `apps/example-cms/test/integration/headless-api.test.ts:25`
 - `apps/example-cms/test/integration/public-visibility.test.ts:24`
@@ -928,7 +1094,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `acceptance/visual/responsive-baselines.test.ts:70`
+- `acceptance/visual/responsive-baselines.test.ts:59`
 - `acceptance/webview/journey.test.ts:169`
 - `acceptance/webview/qualification.test.ts:44`
 
@@ -936,7 +1102,9 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `acceptance/visual/responsive-baselines.test.ts:96`
+- `acceptance/accessibility/axe-webview.test.ts:61`
+- `acceptance/accessibility/axe-webview.test.ts:69`
+- `acceptance/visual/responsive-baselines.test.ts:85`
 - `acceptance/webview/journey.test.ts:191`
 - `acceptance/webview/qualification.test.ts:66`
 
@@ -963,6 +1131,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
+- `scripts/compatibility-matrix.ts:17`
 - `scripts/run-acceptance.ts:22`
 
 #### EH-014: CLI readiness polling requires awaited retries.
@@ -993,7 +1162,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/bun/filesystem/bun-filesystem-persistence-support.ts:121`
+- `packages/nearly-headless-cms/src/bun/filesystem/bun-filesystem-persistence-support.ts:124`
 
 #### EH-019: entry creation sequences dependent requests.
 
@@ -1017,7 +1186,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:266`
+- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:267`
 
 #### EH-022: fingerprint validation awaits interruptible Effect execution.
 
@@ -1048,17 +1217,17 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 **Locations:**
 
 - `apps/example-cms/src/generated/headless-openapi-client-runtime-transport.ts:99`
-- `apps/example-cms/src/generated/headless-openapi-client-runtime-transport.ts:151`
-- `apps/example-cms/src/generated/headless-openapi-client-runtime-transport.ts:189`
+- `apps/example-cms/src/generated/headless-openapi-client-runtime-transport.ts:148`
+- `apps/example-cms/src/generated/headless-openapi-client-runtime-transport.ts:186`
 - `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:129`
-- `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:181`
-- `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:219`
+- `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:178`
+- `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:216`
 - `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:99`
-- `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:151`
-- `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:189`
+- `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:148`
+- `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:186`
 - `scripts/openapi-client-generator/runtime-template.ts:2`
-- `scripts/openapi-client-generator/runtime-template.ts:50`
-- `scripts/openapi-client-generator/runtime-template.ts:85`
+- `scripts/openapi-client-generator/runtime-template.ts:51`
+- `scripts/openapi-client-generator/runtime-template.ts:86`
 
 #### EH-027: Guard creation requires sequential Bun filesystem operations.
 
@@ -1131,10 +1300,15 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 - `packages/nearly-headless-cms/test/contract/http-contract-management-scenarios.ts:26`
 - `packages/nearly-headless-cms/test/contract/http-contract-management-scenarios.ts:59`
 - `packages/nearly-headless-cms/test/contract/http-contract-management-scenarios.ts:69`
-- `packages/nearly-headless-cms/test/contract/http-contract-multipart-scenarios.ts:75`
-- `packages/nearly-headless-cms/test/contract/http-contract-multipart-scenarios.ts:83`
-- `packages/nearly-headless-cms/test/contract/http-contract-multipart-scenarios.ts:100`
-- `packages/nearly-headless-cms/test/contract/http-contract-multipart-scenarios.ts:110`
+- `packages/nearly-headless-cms/test/contract/http-contract-multipart-scenarios.ts:79`
+- `packages/nearly-headless-cms/test/contract/http-contract-multipart-scenarios.ts:91`
+- `packages/nearly-headless-cms/test/contract/http-contract-multipart-scenarios.ts:99`
+- `packages/nearly-headless-cms/test/contract/http-contract-multipart-scenarios.ts:109`
+- `packages/nearly-headless-cms/test/contract/http-contract-multipart-scenarios.ts:125`
+- `packages/nearly-headless-cms/test/contract/http-contract-multipart-scenarios.ts:137`
+- `packages/nearly-headless-cms/test/contract/http-contract-multipart-scenarios.ts:160`
+- `packages/nearly-headless-cms/test/contract/http-contract-multipart-scenarios.ts:179`
+- `packages/nearly-headless-cms/test/contract/http-contract-multipart-scenarios.ts:190`
 - `packages/nearly-headless-cms/test/contract/http-contract-transport-scenarios.ts:72`
 - `packages/nearly-headless-cms/test/contract/http-contract-transport-scenarios.ts:84`
 - `packages/nearly-headless-cms/test/contract/http-contract-transport-scenarios.ts:94`
@@ -1195,19 +1369,19 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:212`
+- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:213`
 
 #### EH-041: parallel architecture scans use async file reads.
 
 **Locations:**
 
-- `scripts/check-architecture.ts:193`
+- `scripts/check-architecture.ts:194`
 
 #### EH-042: parallel portability scans use async file reads.
 
 **Locations:**
 
-- `scripts/check-architecture.ts:207`
+- `scripts/check-architecture.ts:211`
 
 #### EH-043: Persistence spans ordered atomic filesystem writes.
 
@@ -1281,7 +1455,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/http-transport-handler.ts:138`
+- `packages/nearly-headless-cms/src/http/http-transport-handler.ts:142`
 
 #### EH-055: request handling awaits route dispatch before returning a final response.
 
@@ -1340,13 +1514,13 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `acceptance/visual/responsive-baselines.test.ts:11`
+- `acceptance/visual/responsive-baselines.test.ts:12`
 
 #### EH-062: snapshot resolution awaits interruptible Effect execution before routing.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/http-transport-handler-support.ts:157`
+- `packages/nearly-headless-cms/src/http/http-transport-handler-support.ts:158`
 
 #### EH-063: Stale guard recovery reads and reclaims a Bun filesystem record.
 
@@ -1365,13 +1539,13 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/http-transport-response.ts:213`
+- `packages/nearly-headless-cms/src/http/http-transport-response.ts:206`
 
 #### EH-066: Web Request.arrayBuffer is Promise-based and this helper is not a pipeable Effect API.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/http-transport-request-parsing.ts:99`
+- `packages/nearly-headless-cms/src/http/http-transport-request-parsing.ts:96`
 
 #### EH-067: Writer lock creation is a sequential Bun filesystem boundary.
 
@@ -1386,6 +1560,100 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 - `scripts/escape-hatches-registry-support.ts:211`
 
+#### EH-244: lifecycle wrapper is a Web-standard Promise<Response> callback.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/http/http-transport-lifecycle-support.ts:97`
+
+#### EH-302: slow consumer reads intentionally await Bun.sleep between stream chunks; readNextChunk closes over reader.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-backpressure-scenarios.ts:55`
+
+#### EH-311: axe acceptance scans compose awaited WebView navigation and evaluation.
+
+**Locations:**
+
+- `acceptance/accessibility/axe-webview.test.ts:38`
+- `acceptance/accessibility/axe-webview.test.ts:76`
+- `acceptance/accessibility/axe-webview.test.ts:115`
+
+#### EH-312: WebView readiness polling composes awaited evaluation and sleep.
+
+**Locations:**
+
+- `acceptance/accessibility/axe-webview.test.ts:138`
+
+#### EH-318: visual baseline preparation composes awaited WebView navigation and evaluation.
+
+**Locations:**
+
+- `acceptance/visual/visual-baseline-scenarios.ts:75`
+- `acceptance/visual/visual-baseline-scenarios.ts:119`
+- `acceptance/visual/visual-baseline-scenarios.ts:172`
+- `acceptance/visual/visual-baseline-scenarios.ts:181`
+- `acceptance/visual/visual-baseline-scenarios.ts:185`
+- `acceptance/visual/visual-baseline-scenarios.ts:189`
+- `acceptance/visual/visual-baseline-scenarios.ts:194`
+- `acceptance/visual/visual-baseline-scenarios.ts:199`
+- `acceptance/visual/visual-baseline-scenarios.ts:203`
+
+#### EH-319: visual baseline setup queries the live Example CMS management API.
+
+**Locations:**
+
+- `acceptance/visual/visual-baseline-management-support.ts:18`
+
+#### EH-320: visual baseline setup reads the live Example CMS management API.
+
+**Locations:**
+
+- `acceptance/visual/visual-baseline-management-support.ts:43`
+
+#### EH-321: visual baseline setup writes through the live Example CMS management API.
+
+**Locations:**
+
+- `acceptance/visual/visual-baseline-management-support.ts:83`
+
+#### EH-326: interactive visual scenarios reset mutated Example CMS fixture entries.
+
+**Locations:**
+
+- `acceptance/visual/visual-baseline-management-support.ts:106`
+
+#### EH-328: visual baseline polling composes sequential WebView evaluation and sleep.
+
+**Locations:**
+
+- `acceptance/visual/visual-baseline-scenarios.ts:50`
+
+#### EH-334: visual baseline setup prepares invalid draft publication state through the management API.
+
+**Locations:**
+
+- `acceptance/visual/visual-baseline-scenarios.ts:16`
+
+#### EH-339: editor navigation depends on waitUntilExpression despite alphabetical ordering.
+
+**Locations:**
+
+- `acceptance/visual/visual-baseline-scenarios.ts:63`
+
+#### EH-344: conflict preparation follows controlled input setup despite alphabetical ordering.
+
+**Locations:**
+
+- `acceptance/visual/visual-baseline-scenarios.ts:148`
+
+#### EH-346: controlled input updates precede conflict preparation despite alphabetical ordering.
+
+**Locations:**
+
+- `acceptance/visual/visual-baseline-scenarios.ts:128`
+
 ### Effect · `effecttsgo/crypto-random-uuid`
 
 #### EH-068: browser UI labels need a synchronous local identifier.
@@ -1398,7 +1666,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/http-transport-handler-support.ts:202`
+- `packages/nearly-headless-cms/src/http/http-transport-handler-support.ts:203`
 
 #### EH-070: lock acquisition is a synchronous token-generation step around Bun file operations.
 
@@ -1411,13 +1679,13 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/bun/filesystem/bun-filesystem-persistence-support.ts:269`
+- `packages/nearly-headless-cms/src/bun/filesystem/bun-filesystem-persistence-support.ts:268`
 
 #### EH-072: staging paths are computed before the Effect stream starts and must remain synchronous.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/bun/filesystem/bun-filesystem-persistence-support.ts:80`
+- `packages/nearly-headless-cms/src/bun/filesystem/bun-filesystem-persistence-support.ts:83`
 
 #### EH-073: the management client accepts a synchronous idempotency key.
 
@@ -1440,14 +1708,14 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `scripts/run-acceptance.ts:109`
+- `scripts/run-acceptance.ts:111`
 
 #### EH-076: acceptance progress is intentionally emitted to CLI stdout.
 
 **Locations:**
 
 - `scripts/run-acceptance.ts:27`
-- `scripts/run-acceptance.ts:90`
+- `scripts/run-acceptance.ts:92`
 
 #### EH-077: escape hatch registry CLI reports to stdout and stderr.
 
@@ -1462,7 +1730,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `scripts/check-architecture.ts:237`
+- `scripts/check-architecture.ts:241`
 
 ### Effect · `effecttsgo/global-fetch`
 
@@ -1485,7 +1753,91 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 - `apps/example-cms/src/generated/headless-openapi-client-runtime-transport.ts:49`
 - `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:49`
 - `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:49`
-- `scripts/openapi-client-generator/runtime-template.ts:141`
+- `scripts/openapi-client-generator/runtime-template.ts:142`
+
+#### EH-245: integration test exercises an in-flight request during shutdown drain.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-shutdown-scenarios.ts:33`
+
+#### EH-246: integration test exercises rejection during shutdown drain.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-shutdown-scenarios.ts:46`
+
+#### EH-247: integration test exercises the live HTTP listener through the platform fetch boundary.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-scenarios.ts:32`
+
+#### EH-248: integration test starts a request that outlives the drain window.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-forced-shutdown-scenarios.ts:22`
+
+#### EH-282: integration test exercises multipart upload through the live HTTP listener.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-multipart-scenarios.ts:54`
+
+#### EH-288: integration test aborts an in-flight request against the live HTTP listener.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-disconnect-scenarios.ts:39`
+
+#### EH-289: integration test exercises request timeout through the live HTTP listener.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-timeout-scenarios.ts:36`
+
+#### EH-303: integration test exercises JSON body limits through the live HTTP listener.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-body-limit-scenarios.ts:42`
+
+#### EH-304: integration test streams an Asset download through the live HTTP listener.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-backpressure-scenarios.ts:89`
+
+#### EH-305: integration test uploads an Asset through the live HTTP listener.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-backpressure-scenarios.ts:74`
+
+#### EH-309: integration test uploads a paced multipart Asset body through the live HTTP listener.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-slow-producer-scenarios.ts:68`
+
+#### EH-322: visual baseline setup queries the live Example CMS management API.
+
+**Locations:**
+
+- `acceptance/visual/visual-baseline-management-support.ts:23`
+
+#### EH-323: visual baseline setup reads the live Example CMS management API.
+
+**Locations:**
+
+- `acceptance/visual/visual-baseline-management-support.ts:48`
+
+#### EH-324: visual baseline setup writes through the live Example CMS management API.
+
+**Locations:**
+
+- `acceptance/visual/visual-baseline-management-support.ts:90`
 
 ### Effect · `effecttsgo/global-fetch-in-effect`
 
@@ -1496,7 +1848,21 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 - `apps/example-cms/src/generated/headless-openapi-client-runtime-transport.ts:49`
 - `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:49`
 - `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:49`
-- `scripts/openapi-client-generator/runtime-template.ts:141`
+- `scripts/openapi-client-generator/runtime-template.ts:142`
+
+### Effect · `effecttsgo/global-timers`
+
+#### EH-249: pre-shutdown delay starts drain while the slow request remains active.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-shutdown-scenarios.ts:37`
+
+#### EH-250: slow handler delay mirrors a peer that keeps the connection open.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-shutdown-scenarios.ts:19`
 
 ### Effect · `effecttsgo/missing-pipeable-signature`
 
@@ -1525,11 +1891,11 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 - `packages/nearly-headless-cms/src/content-definition-compatibility.ts:10`
 - `packages/nearly-headless-cms/src/content-definition-compile.ts:124`
-- `packages/nearly-headless-cms/src/definition-migration.ts:25`
-- `packages/nearly-headless-cms/src/definition-migration.ts:61`
-- `packages/nearly-headless-cms/src/rich-text.ts:63`
-- `packages/nearly-headless-cms/src/rich-text.ts:71`
-- `packages/nearly-headless-cms/src/rich-text.ts:77`
+- `packages/nearly-headless-cms/src/definition-migration.ts:26`
+- `packages/nearly-headless-cms/src/definition-migration.ts:62`
+- `packages/nearly-headless-cms/src/rich-text.ts:62`
+- `packages/nearly-headless-cms/src/rich-text.ts:70`
+- `packages/nearly-headless-cms/src/rich-text.ts:75`
 
 #### EH-087: editor transaction API is intentionally a direct two-argument operation.
 
@@ -1547,26 +1913,26 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/delivery-support.ts:154`
+- `apps/example-cms/src/delivery-support.ts:158`
 
 #### EH-090: multipart parsing is Promise-based and this helper is not a pipeable Effect API.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:212`
-- `packages/nearly-headless-cms/src/http/http-transport-request-parsing.ts:170`
+- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:213`
+- `packages/nearly-headless-cms/src/http/http-transport-request-parsing.ts:167`
 
 #### EH-091: public serialize helper is not a pipeable Effect API.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/rich-text.ts:69`
+- `packages/nearly-headless-cms/src/rich-text.ts:68`
 
 #### EH-092: Rich Text helpers are not pipeable Effect APIs.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/rich-text.ts:58`
+- `packages/nearly-headless-cms/src/rich-text.ts:57`
 
 #### EH-093: route dispatch is a plain async helper, not a pipeable Effect API.
 
@@ -1578,7 +1944,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/test/contract/authorization-expansion-support.ts:56`
+- `packages/nearly-headless-cms/test/contract/authorization-expansion-support.ts:55`
 
 #### EH-095: test JSON field helper is intentionally a direct two-argument operation.
 
@@ -1601,7 +1967,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 - `apps/example-cms/src/ui/main-labels.ts:15`
 - `apps/example-cms/src/ui/main-labels.ts:88`
-- `apps/example-cms/src/ui/main-labels.ts:185`
+- `apps/example-cms/src/ui/main-labels.ts:182`
 
 #### EH-098: UI value helper is intentionally a direct two-argument operation.
 
@@ -1619,13 +1985,57 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/http-transport-request-parsing.ts:99`
+- `packages/nearly-headless-cms/src/http/http-transport-request-parsing.ts:96`
 
 #### EH-228: escape hatch registry helpers are intentionally direct-call only.
 
 **Locations:**
 
 - `scripts/escape-hatches-registry-support.ts:211`
+
+#### EH-329: interactive visual scenarios reset mutated Example CMS fixture entries.
+
+**Locations:**
+
+- `acceptance/visual/visual-baseline-management-support.ts:106`
+
+#### EH-330: visual baseline setup queries the live Example CMS management API.
+
+**Locations:**
+
+- `acceptance/visual/visual-baseline-management-support.ts:18`
+
+#### EH-331: visual baseline setup reads the live Example CMS management API.
+
+**Locations:**
+
+- `acceptance/visual/visual-baseline-management-support.ts:43`
+
+#### EH-332: visual baseline setup writes through the live Example CMS management API.
+
+**Locations:**
+
+- `acceptance/visual/visual-baseline-management-support.ts:83`
+
+### Effect · `effecttsgo/new-promise`
+
+#### EH-251: hanging handler keeps the socket open until forced shutdown.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-forced-shutdown-scenarios.ts:14`
+
+#### EH-252: shutdown timing is coordinated through Promise composition in the socket test.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-shutdown-scenarios.ts:35`
+
+#### EH-253: slow handler simulates an in-flight socket request outside Effect.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-shutdown-scenarios.ts:17`
 
 ### Effect · `effecttsgo/node-builtin-import`
 
@@ -1636,15 +2046,17 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 - `packages/nearly-headless-cms/src/bun/filesystem/bun-filesystem-persistence-lock-io.ts:19`
 - `packages/nearly-headless-cms/src/bun/filesystem/bun-filesystem-persistence-lock-root-imports.ts:14`
 - `packages/nearly-headless-cms/src/bun/filesystem/bun-filesystem-persistence-lock-root-load-imports.ts:4`
-- `packages/nearly-headless-cms/src/bun/filesystem/bun-filesystem-persistence-services-imports.ts:23`
-- `packages/nearly-headless-cms/src/bun/filesystem/bun-filesystem-persistence-support-imports.ts:16`
+- `packages/nearly-headless-cms/src/bun/filesystem/bun-filesystem-persistence-services-imports.ts:29`
+- `packages/nearly-headless-cms/src/bun/filesystem/bun-filesystem-persistence-support-imports.ts:17`
 
 #### EH-102: Standalone CLI resolves repository paths before any Effect application exists.
 
 **Locations:**
 
 - `scripts/check-architecture.ts:2`
+- `scripts/compatibility-matrix.ts:1`
 - `scripts/escape-hatches-parse-support.ts:2`
+- `scripts/record-release-evidence.ts:1`
 - `scripts/release.ts:1`
 - `scripts/run-acceptance.ts:2`
 
@@ -1652,19 +2064,20 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:14`
+- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:11`
+- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:15`
 
 #### EH-104: Temporary upload staging requires node os primitives unavailable in the HTTP FileSystem abstraction.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:20`
+- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:19`
 
 #### EH-105: Temporary upload staging requires node path primitives unavailable in the HTTP FileSystem abstraction.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:18`
+- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:17`
 
 #### EH-106: This Bun adapter needs durable fsync/open and directory primitives unavailable in Effect's portable FileSystem layer.
 
@@ -1673,7 +2086,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 - `packages/nearly-headless-cms/src/bun/filesystem/bun-filesystem-persistence-lock-io.ts:14`
 - `packages/nearly-headless-cms/src/bun/filesystem/bun-filesystem-persistence-lock-root-imports.ts:12`
 - `packages/nearly-headless-cms/src/bun/filesystem/bun-filesystem-persistence-lock-root-load-imports.ts:6`
-- `packages/nearly-headless-cms/src/bun/filesystem/bun-filesystem-persistence-support-imports.ts:14`
+- `packages/nearly-headless-cms/src/bun/filesystem/bun-filesystem-persistence-support-imports.ts:15`
 
 #### EH-210: Baseline paths are test-runner setup paths; there is no Effect runtime involved in this Bun test.
 
@@ -1685,6 +2098,16 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
+- `packages/nearly-headless-cms/test/filesystem/filesystem-commit-boundary-child-scenarios-imports.ts:11`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-commit-boundary-child-spawn.ts:1`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-commit-boundary-child-spawn.ts:3`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-commit-boundary-scenarios-imports.ts:7`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-commit-boundary-scenarios-imports.ts:9`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-concurrency-fault-scenarios-imports.ts:7`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-concurrency-fault-scenarios-imports.ts:9`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-fault-injection-manifest-scenarios-imports.ts:7`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-fault-injection-scenarios-imports.ts:7`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-corruption-scenarios.ts:6`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-scenarios.ts:35`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-writer-scenarios.ts:10`
 
@@ -1692,8 +2115,40 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
+- `packages/nearly-headless-cms/test/filesystem/filesystem-commit-boundary-child-scenarios-imports.ts:9`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-commit-boundary-scenarios-imports.ts:5`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-concurrency-fault-scenarios-imports.ts:5`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-fault-injection-manifest-scenarios-imports.ts:5`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-fault-injection-scenarios-imports.ts:5`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-corruption-scenarios.ts:8`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-scenarios.ts:32`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-writer-scenarios.ts:12`
+
+#### EH-283: Journey setup creates an isolated filesystem root before the CMS layer starts.
+
+**Locations:**
+
+- `acceptance/journeys/complete-system-journeys-scenarios-imports.ts:12`
+- `packages/nearly-headless-cms/test/integration/definition-migration-journey-scenarios-imports.ts:17`
+
+#### EH-284: Path joining is host-path setup for this acceptance journey, outside the Effect service graph.
+
+**Locations:**
+
+- `acceptance/journeys/complete-system-journeys-scenarios-imports.ts:14`
+- `packages/nearly-headless-cms/test/integration/definition-migration-journey-scenarios-imports.ts:19`
+
+#### EH-313: Accessibility test setup resolves axe-core from node_modules before any Effect application exists.
+
+**Locations:**
+
+- `acceptance/accessibility/axe-webview-support.ts:3`
+
+#### EH-317: fileURLToPath converts Bun module resolution URLs into filesystem paths for axe-core serving.
+
+**Locations:**
+
+- `acceptance/accessibility/axe-webview-support.ts:1`
 
 ### Effect · `effecttsgo/prefer-schema-over-json`
 
@@ -1704,7 +2159,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 - `apps/example-cms/src/generated/headless-openapi-client-runtime-transport-request-support.ts:37`
 - `apps/example-cms/src/generated/management-openapi-client-runtime-transport-request-support.ts:37`
 - `apps/public-blog/src/generated/headless-openapi-client-runtime-transport-request-support.ts:37`
-- `scripts/openapi-client-generator/runtime-template.ts:228`
+- `scripts/openapi-client-generator/runtime-template.ts:229`
 
 ### Effect · `effecttsgo/run-effect-inside-effect`
 
@@ -1732,7 +2187,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/test/contract/authorization-expansion-support.ts:66`
+- `packages/nearly-headless-cms/test/contract/authorization-expansion-support.ts:65`
 - `packages/nearly-headless-cms/test/integration/cms-service.test.ts:44`
 - `packages/nearly-headless-cms/test/integration/definition-lifecycle.test.ts:19`
 - `packages/nearly-headless-cms/test/integration/definition-lifecycle.test.ts:25`
@@ -1745,12 +2200,33 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 - `packages/nearly-headless-cms/test/contract/http-contract-deletion-scenarios.ts:19`
 - `packages/nearly-headless-cms/test/contract/http-contract-management-scenarios.ts:20`
-- `packages/nearly-headless-cms/test/contract/http-contract-multipart-scenarios.ts:44`
+- `packages/nearly-headless-cms/test/contract/http-contract-multipart-scenarios.ts:48`
 - `packages/nearly-headless-cms/test/contract/http-contract-transport-scenarios.ts:46`
 - `packages/nearly-headless-cms/test/contract/http-contract-transport-scenarios.ts:66`
-- `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-scenarios.ts:196`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-commit-boundary-child-scenarios.ts:22`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-commit-boundary-scenarios.ts:20`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-concurrency-fault-scenarios.ts:40`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-fault-injection-manifest-scenarios.ts:48`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-fault-injection-scenarios.ts:26`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-fault-injection-scenarios.ts:34`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-corruption-scenarios.ts:32`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-scenarios.ts:207`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-writer-scenarios.ts:24`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-writer-scenarios.ts:34`
+- `packages/nearly-headless-cms/test/integration/asset-http-delivery.test.ts:25`
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-backpressure-scenarios.ts:20`
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-body-limit-scenarios.ts:31`
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-disconnect-scenarios.ts:26`
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-multipart-scenarios.ts:45`
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-scenarios.ts:12`
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-slow-producer-scenarios.ts:20`
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-timeout-scenarios.ts:27`
+
+#### EH-285: acceptance journey entry point needs a fresh isolated layer.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/integration/definition-migration-journey-scenarios.ts:70`
 
 ### ESLint · `eslint/func-style`
 
@@ -1758,15 +2234,23 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/http-transport-response.ts:41`
-- `packages/nearly-headless-cms/src/http/http-transport-response.ts:57`
-- `packages/nearly-headless-cms/src/http/http-transport-response.ts:68`
-- `packages/nearly-headless-cms/src/http/http-transport-response.ts:79`
-- `packages/nearly-headless-cms/src/http/http-transport-response.ts:93`
-- `packages/nearly-headless-cms/src/http/http-transport-response.ts:104`
-- `packages/nearly-headless-cms/src/http/http-transport-response.ts:115`
-- `packages/nearly-headless-cms/src/http/http-transport-response.ts:126`
-- `packages/nearly-headless-cms/src/http/http-transport-response.ts:145`
+- `packages/nearly-headless-cms/src/http/http-transport-response.ts:40`
+- `packages/nearly-headless-cms/src/http/http-transport-response.ts:56`
+- `packages/nearly-headless-cms/src/http/http-transport-response.ts:67`
+- `packages/nearly-headless-cms/src/http/http-transport-response.ts:78`
+- `packages/nearly-headless-cms/src/http/http-transport-response.ts:92`
+- `packages/nearly-headless-cms/src/http/http-transport-response.ts:103`
+- `packages/nearly-headless-cms/src/http/http-transport-response.ts:114`
+- `packages/nearly-headless-cms/src/http/http-transport-response.ts:125`
+- `packages/nearly-headless-cms/src/http/http-transport-response.ts:144`
+
+### ESLint · `eslint/init-declarations`
+
+#### EH-314: axe script server starts lazily when acceptance servers are ready.
+
+**Locations:**
+
+- `acceptance/accessibility/axe-webview.test.ts:10`
 
 ### ESLint · `eslint/max-lines-per-function`
 
@@ -1790,16 +2274,28 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 - `apps/example-cms/src/ui/assets-page-dialogs-support.tsx:108`
 - `apps/example-cms/src/ui/assets-page-header-support.tsx:3`
 - `apps/example-cms/src/ui/assets-page-header-support.tsx:103`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:53`
+- `apps/example-cms/src/ui/assets-page-panels-support.tsx:54`
 - `apps/example-cms/src/ui/entry-editor-publication-panel-sections-support.tsx:52`
 - `apps/example-cms/src/ui/entry-editor-story-canvas-fields-support.tsx:64`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-support.tsx:37`
+- `apps/example-cms/src/ui/entry-editor-story-canvas-support.tsx:35`
 
 #### EH-240: escape hatch document rendering is intentionally colocated.
 
 **Locations:**
 
 - `scripts/escape-hatches-render-support.ts:38`
+
+#### EH-254: shutdown scenario keeps orchestration in one place for readability.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-shutdown-scenarios.ts:9`
+
+#### EH-293: child spawn script must stay in one function for eval readability.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/filesystem/filesystem-commit-boundary-child-spawn.ts:11`
 
 ### ESLint · `eslint/max-params`
 
@@ -1888,7 +2384,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 - `apps/example-cms/src/generated/headless-openapi-client-runtime-transport.ts:54`
 - `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:54`
 - `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:54`
-- `scripts/openapi-client-generator/runtime-template.ts:146`
+- `scripts/openapi-client-generator/runtime-template.ts:147`
 
 ### ESLint · `eslint/one-var`
 
@@ -1896,8 +2392,8 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/cms-entry-expansion-relationship-support.ts:98`
-- `packages/nearly-headless-cms/src/cms-entry-expansion-relationship-support.ts:144`
+- `packages/nearly-headless-cms/src/cms-entry-expansion-relationship-support.ts:94`
+- `packages/nearly-headless-cms/src/cms-entry-expansion-relationship-support.ts:139`
 - `packages/nearly-headless-cms/src/entry-query-projection.ts:13`
 
 #### EH-126: registry helpers keep related declarations grouped.
@@ -1929,6 +2425,64 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 - `scripts/escape-hatches-parse-support.ts:78`
 - `scripts/escape-hatches-parse-support.ts:100`
+
+#### EH-255: transport startup keeps separate statements so lint autofix does not merge dependency-ordered locals.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/bun/http/bun-http-transport-support.ts:24`
+- `packages/nearly-headless-cms/src/bun/http/bun-http-transport-support.ts:26`
+- `packages/nearly-headless-cms/src/bun/http/bun-http-transport-support.ts:41`
+- `packages/nearly-headless-cms/src/bun/http/bun-http-transport-support.ts:43`
+
+#### EH-286: commit exit must follow the chmod yield before assertions.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/filesystem/filesystem-fault-injection-scenarios.ts:89`
+
+#### EH-287: read-back must follow the restore-chmod yield before assertions.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/filesystem/filesystem-fault-injection-scenarios.ts:109`
+
+#### EH-299: commit exit must follow the manifest obstruction yield before assertions.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/filesystem/filesystem-fault-injection-manifest-scenarios.ts:62`
+
+#### EH-300: read-back must follow manifest obstruction cleanup before assertions.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/filesystem/filesystem-fault-injection-manifest-scenarios.ts:82`
+
+#### EH-315: exported bindings follow private fixture resolution in the same module.
+
+**Locations:**
+
+- `acceptance/accessibility/axe-webview-support.ts:57`
+
+#### EH-325: query response body and first item are parsed together after the status guard.
+
+**Locations:**
+
+- `acceptance/visual/visual-baseline-management-support.ts:35`
+
+#### EH-335: conflict setup reads entry state after the editor finishes loading.
+
+**Locations:**
+
+- `acceptance/visual/visual-baseline-scenarios.ts:151`
+- `acceptance/visual/visual-baseline-scenarios.ts:158`
+
+#### EH-336: CORS header mutation follows the origin allowlist guard.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/http/http-transport-preflight-support.ts:33`
 
 ### ESLint · `eslint/require-unicode-regexp`
 
@@ -1971,23 +2525,46 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 - `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:12`
 
+#### EH-256: Bun transport layer imports follow handler, Effect, and transport dependency order.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/bun/http/bun-http-transport.ts:1`
+- `packages/nearly-headless-cms/src/bun/http/bun-http-transport.ts:3`
+- `packages/nearly-headless-cms/src/bun/http/bun-http-transport.ts:5`
+- `packages/nearly-headless-cms/src/bun/http/bun-http-transport.ts:7`
+
+#### EH-257: Bun transport startup imports follow Effect, failure mapping, and lifecycle dependency order.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/bun/http/bun-http-transport-support.ts:1`
+- `packages/nearly-headless-cms/src/bun/http/bun-http-transport-support.ts:3`
+- `packages/nearly-headless-cms/src/bun/http/bun-http-transport-support.ts:5`
+
+#### EH-296: child spawn imports follow bun, node, and support dependency order.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/filesystem/filesystem-commit-boundary-child-spawn.ts:5`
+
 ### ESLint · `eslint/sort-vars`
 
 #### EH-131: helper declaration order follows dependency order.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/cms-entry-expansion-field-group-support.ts:78`
-- `packages/nearly-headless-cms/src/cms-entry-expansion-relationship-support.ts:76`
-- `packages/nearly-headless-cms/src/cms-entry-references-path-support.ts:27`
-- `packages/nearly-headless-cms/src/cms-entry-references-path-support.ts:47`
-- `packages/nearly-headless-cms/src/cms-entry-references-path-support.ts:63`
-- `packages/nearly-headless-cms/src/cms-entry-references-path-support.ts:81`
-- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:71`
-- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:104`
-- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:147`
-- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:190`
-- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:220`
+- `packages/nearly-headless-cms/src/cms-entry-expansion-field-group-support.ts:77`
+- `packages/nearly-headless-cms/src/cms-entry-expansion-relationship-support.ts:74`
+- `packages/nearly-headless-cms/src/cms-entry-references-path-support.ts:35`
+- `packages/nearly-headless-cms/src/cms-entry-references-path-support.ts:55`
+- `packages/nearly-headless-cms/src/cms-entry-references-path-support.ts:71`
+- `packages/nearly-headless-cms/src/cms-entry-references-path-support.ts:89`
+- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:64`
+- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:94`
+- `packages/nearly-headless-cms/src/cms-entry-references-support.ts:134`
+- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:185`
+- `packages/nearly-headless-cms/src/content-definition-entry-validation.ts:213`
 
 #### EH-132: registry helpers follow parse, assign, and render order.
 
@@ -2049,13 +2626,187 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 - `scripts/escape-hatches-parse-support.ts:125`
 - `scripts/escape-hatches-parse-support.ts:129`
 
+#### EH-258: archive path depends on the resolved package manifest version.
+
+**Locations:**
+
+- `scripts/compatibility-matrix.ts:10`
+- `scripts/record-release-evidence.ts:11`
+
+#### EH-259: branch text is trimmed immediately into the release evidence artifact field.
+
+**Locations:**
+
+- `scripts/record-release-evidence.ts:14`
+
+#### EH-260: commit text is trimmed immediately into the release evidence artifact field.
+
+**Locations:**
+
+- `scripts/record-release-evidence.ts:18`
+
+#### EH-261: evidence object aggregates the resolved release metadata fields.
+
+**Locations:**
+
+- `scripts/record-release-evidence.ts:28`
+
+#### EH-262: export programs are declared before the runtime that executes them.
+
+**Locations:**
+
+- `apps/public-blog/src/fetch-export.ts:123`
+
+#### EH-263: fixture install helpers are declared before the export programs that call them.
+
+**Locations:**
+
+- `apps/public-blog/src/fetch-export.ts:76`
+
+#### EH-264: forced shutdown locals follow lifecycle, handler, and server order.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-forced-shutdown-scenarios.ts:8`
+
+#### EH-265: generated-at text is trimmed immediately into the release evidence artifact field.
+
+**Locations:**
+
+- `scripts/record-release-evidence.ts:22`
+
+#### EH-266: handler effect is declared before the form factory it configures.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/integration/asset-http-delivery.test.ts:20`
+
+#### EH-267: hanging handler follows lifecycle construction.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-forced-shutdown-scenarios.ts:12`
+
+#### EH-268: inspection report parsing follows the resolved archive and git metadata fields.
+
+**Locations:**
+
+- `scripts/record-release-evidence.ts:25`
+
+#### EH-269: lifecycle construction follows slow handler setup.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-shutdown-scenarios.ts:24`
+
+#### EH-270: lifecycle helpers follow drain, force-stop, hook, wrap, and factory order.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/http/http-transport-lifecycle-support.ts:41`
+- `packages/nearly-headless-cms/src/http/http-transport-lifecycle-support.ts:50`
+- `packages/nearly-headless-cms/src/http/http-transport-lifecycle-support.ts:66`
+- `packages/nearly-headless-cms/src/http/http-transport-lifecycle-support.ts:90`
+- `packages/nearly-headless-cms/src/http/http-transport-lifecycle-support.ts:119`
+
+#### EH-271: live server follows hanging handler construction.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-forced-shutdown-scenarios.ts:17`
+
+#### EH-272: response verifiers follow the HTTP scenario narrative order.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/integration/asset-http-delivery.test.ts:102`
+
+#### EH-273: server startup follows lifecycle construction.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-shutdown-scenarios.ts:28`
+
+#### EH-274: shutdown scenario locals follow handler, server, and request order.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-shutdown-scenarios.ts:11`
+
+#### EH-275: slow handler factory precedes lifecycle and server setup.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-shutdown-scenarios.ts:15`
+
+#### EH-301: commit helper closes over firstEntryIdentifier declared above.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/filesystem/filesystem-fault-injection-manifest-scenarios.ts:16`
+
+#### EH-306: slow consumer reads intentionally await Bun.sleep between stream chunks; readNextChunk closes over reader.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-backpressure-scenarios.ts:55`
+
+#### EH-307: submissions path follows handler construction in this socket scenario.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-body-limit-scenarios.ts:34`
+
+#### EH-308: upload path follows handler construction in this socket scenario.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-backpressure-scenarios.ts:23`
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-slow-producer-scenarios.ts:30`
+
+#### EH-310: paced multipart body closes over header and footer bytes declared above.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-slow-producer-scenarios.ts:37`
+
+#### EH-337: draft identifiers are resolved before lighthouse fixture values are copied.
+
+**Locations:**
+
+- `acceptance/visual/visual-baseline-scenarios.ts:18`
+
+#### EH-341: editor navigation depends on waitUntilExpression despite alphabetical ordering.
+
+**Locations:**
+
+- `acceptance/visual/visual-baseline-scenarios.ts:63`
+
+#### EH-342: featured asset selection follows lighthouse fixture lookup.
+
+**Locations:**
+
+- `acceptance/visual/visual-baseline-scenarios.ts:24`
+
+#### EH-345: conflict preparation follows controlled input setup despite alphabetical ordering.
+
+**Locations:**
+
+- `acceptance/visual/visual-baseline-scenarios.ts:148`
+
+#### EH-347: controlled input updates precede conflict preparation despite alphabetical ordering.
+
+**Locations:**
+
+- `acceptance/visual/visual-baseline-scenarios.ts:128`
+
 ### ESLint · `no-await-in-loop`
 
 #### EH-134: checks intentionally run sequentially.
 
 **Locations:**
 
-- `scripts/check-architecture.ts:218`
+- `scripts/check-architecture.ts:222`
 
 #### EH-135: cleanup must remain sequential.
 
@@ -2073,7 +2824,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:270`
+- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:271`
 
 #### EH-138: recursive cleanup must remain sequential.
 

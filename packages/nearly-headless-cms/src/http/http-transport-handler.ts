@@ -43,7 +43,7 @@ interface HandleResolvedRequestInput {
 }
 
 const { jsonResponse } = transportResponse,
-  { handleCorsPreflight, handleDiscoveryRoute, handleOpenApiRoutes, validateTransportLimits } =
+  { applyCorsHeaders, handleCorsPreflight, handleDiscoveryRoute, handleOpenApiRoutes, validateTransportLimits } =
     transportPreflight,
   { handleCustomManagementOperations, handleDeliveryOperations } = transportDeliveryRoutes,
   { buildRouteContext, resolveActiveSnapshot, resolveHandlerOptions } = handlerSupport,
@@ -119,13 +119,17 @@ const { jsonResponse } = transportResponse,
         snapshot,
       });
     if (matchedResponse !== undefined) {
-      return matchedResponse;
+      return applyCorsHeaders(request, matchedResponse, options);
     }
-    return jsonResponse({
-      requestId,
-      status: httpStatusNotFound,
-      value: { code: "NotFound", message: "Route not found", requestId },
-    });
+    return applyCorsHeaders(
+      request,
+      jsonResponse({
+        requestId,
+        status: httpStatusNotFound,
+        value: { code: "NotFound", message: "Route not found", requestId },
+      }),
+      options,
+    );
   },
   makeHandler = (
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-177] handler Options includes requestIdentifier callbacks.
@@ -148,10 +152,10 @@ const { jsonResponse } = transportResponse,
             }),
             snapshot = await resolveActiveSnapshot({ cms, request, requestId, signal });
           if (limitResponse !== undefined) {
-            return limitResponse;
+            return applyCorsHeaders(request, limitResponse, options ?? {});
           }
           if (snapshot instanceof Response) {
-            return snapshot;
+            return applyCorsHeaders(request, snapshot, options ?? {});
           }
           return handleResolvedRequest({
             cms,

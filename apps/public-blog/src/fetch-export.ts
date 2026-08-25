@@ -73,7 +73,7 @@ const assetExtension = (mediaType: string): string => {
   generatedDirectory = new URL("../.generated/", import.meta.url).pathname,
   generatedSnapshotPath = `${generatedDirectory}public-export.json`,
   generatedStageSnapshotPath = `${generatedDirectory}.public-export.stage.json`,
-  // oxlint-disable-next-line eslint/sort-vars -- [EH-133] fixture install helpers are declared before the export programs that call them.
+  // oxlint-disable-next-line eslint/sort-vars -- [EH-263] fixture install helpers are declared before the export programs that call them.
   installFixtureExport = (): Effect.Effect<void, FetchExportFailure> =>
     Effect.gen(function* installFixtureExportEffect() {
       const fixtureSnapshot = yield* Effect.tryPromise({
@@ -120,7 +120,7 @@ const assetExtension = (mediaType: string): string => {
     }
   }),
   useCommittedFixture = Bun.env.PUBLIC_BLOG_USE_FIXTURE === "1",
-  // oxlint-disable-next-line eslint/sort-vars -- [EH-133] export programs are declared before the runtime that executes them.
+  // oxlint-disable-next-line eslint/sort-vars -- [EH-262] export programs are declared before the runtime that executes them.
   fetchPublicExportProgram = Effect.gen(function* fetchPublicExport() {
     const exported = yield* readPublicExport;
     yield* Effect.promise(() => Bun.$`mkdir -p ${generatedDirectory} ${assetsDirectory}`.quiet());

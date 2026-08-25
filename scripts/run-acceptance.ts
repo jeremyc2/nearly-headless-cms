@@ -84,13 +84,9 @@ try {
     stdout: "inherit",
   });
   await waitFor("http://localhost:4321/");
-  if (process.platform === "darwin") {
-    await run(["bun", "run", "test:webview"], { ACCEPTANCE_SERVERS_READY: "1" });
-    await run(["bun", "run", "test:visual"], { ACCEPTANCE_SERVERS_READY: "1" });
-  } else {
-    // oxlint-disable-next-line effecttsgo/global-console -- [EH-076] acceptance progress is intentionally emitted to CLI stdout.
-    console.log("\n→ Skipping WebView acceptance on non-macOS platforms");
-  }
+  await run(["bun", "run", "test:webview"], { ACCEPTANCE_SERVERS_READY: "1" });
+  await run(["bun", "run", "test:a11y"], { ACCEPTANCE_SERVERS_READY: "1" });
+  await run(["bun", "run", "test:visual"], { ACCEPTANCE_SERVERS_READY: "1" });
 } finally {
   acceptanceServers.publicBlog?.kill();
   acceptanceServers.exampleCms.kill();

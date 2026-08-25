@@ -16,6 +16,7 @@ const architectureRepository = path.join(import.meta.dir, ".."),
     "./http",
     "./adapters",
     "./bun/filesystem",
+    "./bun/http",
     "./testing",
     "./package.json",
   ],
@@ -203,7 +204,10 @@ await Promise.all(
 );
 await Promise.all(
   portableDistributionPaths
-    .filter((relativePath) => !relativePath.includes("/bun/filesystem/"))
+    .filter(
+      (relativePath) =>
+        !relativePath.includes("/bun/filesystem/") && !relativePath.includes("/bun/http/"),
+    )
     // oxlint-disable-next-line effecttsgo/async-function -- [EH-042] parallel portability scans use async file reads.
     .map(async (relativePath) => {
       const source = await Bun.file(path.join(architectureRepository, relativePath)).text();

@@ -18,6 +18,28 @@ interface TransportLimits {
 }
 
 const { bodylessResponse, jsonResponse, requestFailureResponse } = transportResponse,
+  applyCorsHeaders = <RequestType extends ReadonlyTransportRequest, OptionsType extends Options>(
+    request: Readonly<RequestType>,
+    response: Response,
+    options: Readonly<OptionsType>,
+  ): Response => {
+    if (options.cors === undefined) {
+      return response;
+    }
+    const origin = request.headers.get("origin");
+    if (origin === null || !options.cors.origins.includes(origin)) {
+      return response;
+    }
+    // oxlint-disable-next-line eslint/one-var -- [EH-336] CORS header mutation follows the origin allowlist guard.
+    const headers = new Headers(response.headers);
+    headers.set("access-control-allow-origin", origin);
+    headers.append("vary", "Origin");
+    return new Response(response.body, {
+      headers,
+      status: response.status,
+      statusText: response.statusText,
+    });
+  },
   handleCorsPreflight = <RequestType extends ReadonlyTransportRequest, OptionsType extends Options>(
     request: Readonly<RequestType>,
     requestId: string,
@@ -127,6 +149,7 @@ const { bodylessResponse, jsonResponse, requestFailureResponse } = transportResp
   };
 
 export default {
+  applyCorsHeaders,
   handleCorsPreflight,
   handleDiscoveryRoute,
   handleOpenApiRoutes,

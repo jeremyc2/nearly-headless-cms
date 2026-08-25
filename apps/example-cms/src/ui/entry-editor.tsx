@@ -11,7 +11,9 @@ export const EntryEditor = () => {
         <EntryEditorHeader
           contentTypeId={controller.contentTypeId}
           isSaving={controller.save.isPending}
-          onSave={controller.saveValues}
+          onSave={() => {
+            controller.saveValues();
+          }}
           revisionNumber={controller.state.data?.revisionNumber}
           saveDisabled={controller.save.isPending || controller.state.data === undefined}
           title={controller.title}

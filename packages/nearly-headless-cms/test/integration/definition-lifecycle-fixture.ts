@@ -4,6 +4,7 @@ import {
   compileSnapshot,
 } from "../../src/content-definition.ts";
 import { DevelopmentCms } from "../../src/testing/index.ts";
+import type { HandlerInput } from "../../src/definition-migration.ts";
 import { type Operation } from "../../src/index.ts";
 
 const incompatibleNoteDefinition = {
@@ -30,14 +31,13 @@ const incompatibleNoteDefinition = {
     snapshotId: "initial",
   }),
   maxRatingValue = 5,
+  noteSlugMigrationHandler = {
+    identifier: "note-slug",
+    transform: (input: Readonly<HandlerInput>) => ({ ...input.values, slug: "a-durable-note" }),
+    version: 1,
+  },
   noteSlugMigrationLayer = DevelopmentCms.layer({
-    migrationHandlers: [
-      {
-        identifier: "note-slug",
-        transform: ({ values }) => ({ ...values, slug: "a-durable-note" }),
-        version: 1,
-      },
-    ],
+    migrationHandlers: [noteSlugMigrationHandler],
     snapshot: initialSnapshot,
   }),
   noteSlugMigrationManifest = {
@@ -131,8 +131,10 @@ const incompatibleNoteDefinition = {
 
 export {
   incompatibleNoteDefinition,
+  initialSnapshot,
   noteSlugMigrationLayer,
   noteSlugMigrationManifest,
+  noteSlugMigrationHandler,
   operationContractsLayer,
   optionalSummaryDefinition,
   ratedNoteDefinition,

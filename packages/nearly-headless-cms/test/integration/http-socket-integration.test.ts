@@ -1,40 +1,38 @@
-import {
-  DevelopmentCms,
-  Effect,
-  HttpTransport,
-  describe,
-  expect,
-  snapshot,
-  successStatus,
-  test,
-} from "./http-socket-integration-scenarios-imports.ts";
-
-// oxlint-disable-next-line eslint/sort-vars -- [EH-133] discovery handler effect is declared before the socket scenario uses it.
-const discoveryHandlerEffect = HttpTransport.makeHandler({}).pipe(
-  // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-112] test entry point needs a fresh isolated layer.
-  Effect.provide(DevelopmentCms.layer({ snapshot })),
-);
+import { describe, test } from "./http-socket-integration-scenarios-imports.ts";
+import { verifyClientDisconnectReleasesLiveSocket } from "./http-socket-integration-disconnect-scenarios.ts";
+import { verifyDiscoveryShutdown } from "./http-socket-integration-scenarios.ts";
+import { verifyForcedShutdownAfterDrainTimeout } from "./http-socket-integration-forced-shutdown-scenarios.ts";
+import { verifyMultipartUploadOverLiveSocket } from "./http-socket-integration-multipart-scenarios.ts";
+import { verifyPayloadTooLargeOverLiveSocket } from "./http-socket-integration-body-limit-scenarios.ts";
+import { verifyRequestTimeoutOverLiveSocket } from "./http-socket-integration-timeout-scenarios.ts";
+import { verifyShutdownRejectsNewRequests } from "./http-socket-integration-shutdown-scenarios.ts";
+import { verifySlowConsumerBackpressureOverLiveSocket } from "./http-socket-integration-backpressure-scenarios.ts";
+import { verifySlowProducerBackpressureOverLiveSocket } from "./http-socket-integration-slow-producer-scenarios.ts";
 
 describe("HTTP real-socket integration", () => {
+  test("accepts bounded multipart Asset uploads over a live socket", () =>
+    verifyMultipartUploadOverLiveSocket());
+
+  test("rejects oversized JSON bodies over a live socket", () =>
+    verifyPayloadTooLargeOverLiveSocket());
+
+  test("accepts multipart Asset uploads from a slow producer over a live socket", () =>
+    verifySlowProducerBackpressureOverLiveSocket());
+
+  test("streams Asset downloads to a slow consumer over a live socket", () =>
+    verifySlowConsumerBackpressureOverLiveSocket());
+
+  test("returns request timeouts over a live socket", () => verifyRequestTimeoutOverLiveSocket());
+
+  test("releases a live socket after the client disconnects an in-flight request", () =>
+    verifyClientDisconnectReleasesLiveSocket());
+
   test("serves discovery over a live socket and releases the listener on shutdown", () =>
-    Effect.runPromise(discoveryHandlerEffect).then((handler) => {
-      // oxlint-disable-next-line eslint/sort-vars -- [EH-133] discovery URL is derived from the live server under test.
-      const server = Bun.serve({
-        fetch: (request) => handler(request),
-        port: 0,
-      }),
-        // oxlint-disable-next-line eslint/sort-vars -- [EH-133] discovery URL is derived from the live server under test.
-        discoveryUrl = `${server.url.href}api/v1/headless/discovery`;
-      return (
-        // oxlint-disable-next-line effecttsgo/global-fetch -- [EH-080] integration test exercises the live HTTP listener through the platform fetch boundary.
-        fetch(discoveryUrl)
-      )
-        .then((response) => {
-          expect(response.status).toBe(successStatus);
-          return server.stop(true);
-        })
-        .then(() => {
-          expect(server.pendingRequests).toBe(0);
-        });
-    }));
+    verifyDiscoveryShutdown());
+
+  test("stops accepting new requests during bounded shutdown drain", () =>
+    verifyShutdownRejectsNewRequests());
+
+  test("forces interruption when the shutdown drain window expires", () =>
+    verifyForcedShutdownAfterDrainTimeout());
 });

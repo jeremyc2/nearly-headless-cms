@@ -17,7 +17,7 @@ import {
 } from "./asset-http-delivery-scenarios-imports.ts";
 
 const assetUrl = "http://cms.test/api/v1/management/definition-spaces/example-blog/assets",
-  // oxlint-disable-next-line eslint/sort-vars -- [EH-133] handler effect is declared before the form factory it configures.
+  // oxlint-disable-next-line eslint/sort-vars -- [EH-266] handler effect is declared before the form factory it configures.
   assetHandlerEffect = HttpTransport.makeHandler({
     maximumMultipartFileByteLength: payloadByteFive,
     maximumMultipartMetadataByteLength: 256,
@@ -44,7 +44,7 @@ const assetUrl = "http://cms.test/api/v1/management/definition-spaces/example-bl
     );
     return form;
   },
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-173] HttpTransport handler mirrors the Web Request callback contract.
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-277] HttpTransport handler mirrors the Web Request callback contract.
   makeHandler = (): Promise<(request: Request) => Response | Promise<Response>> =>
     Effect.runPromise(assetHandlerEffect),
   rangeNotSatisfiableStatus = 416,
@@ -52,7 +52,7 @@ const assetUrl = "http://cms.test/api/v1/management/definition-spaces/example-bl
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-173] Effect programs are executed by runPromise without mutation.
     handler: (request: Request) => Response | Promise<Response>,
     contentUrl: string,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-173] RequestInit is passed directly into the Web Request constructor.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-279] RequestInit is passed directly into the Web Request constructor.
     requestInit?: RequestInit,
   ): Promise<Response> =>
     Promise.resolve(handler(new Request(contentUrl, requestInit))),
@@ -99,7 +99,7 @@ const assetUrl = "http://cms.test/api/v1/management/definition-spaces/example-bl
         return etag;
       });
     }),
-  // oxlint-disable-next-line eslint/sort-vars -- [EH-133] response verifiers follow the HTTP scenario narrative order.
+  // oxlint-disable-next-line eslint/sort-vars -- [EH-272] response verifiers follow the HTTP scenario narrative order.
   verifyConditionalAndRangeResponses = (
     contentUrl: string,
     etag: string,

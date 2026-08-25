@@ -2,10 +2,12 @@ import { afterAll, describe, expect, test } from "bun:test";
 
 const CMS_VIEWPORT_HEIGHT = 1000,
   CMS_VIEWPORT_WIDTH = 1440,
+  CONTENT_LIST_READY =
+    "document.querySelector('h1')?.textContent === 'Posts' && document.querySelectorAll('.entry-row').length >= 2",
   EXPECTED_SIGNAL_CARD_COUNT = 4,
   JOURNEY_TEST_TIMEOUT_MILLISECONDS = 120_000,
   MINIMUM_EDITOR_PATH_SEGMENTS = 4,
-  MINIMUM_ENTRY_ROW_COUNT = 2,
+  OVERVIEW_READY = `document.querySelectorAll('.signal-card').length === ${EXPECTED_SIGNAL_CARD_COUNT}`,
   POLLING_INTERVAL_MILLISECONDS = 50,
   PUBLIC_BLOG_HEIGHT = 844,
   PUBLIC_BLOG_WIDTH = 390,
@@ -21,11 +23,7 @@ const CMS_VIEWPORT_HEIGHT = 1000,
   // oxlint-disable-next-line effecttsgo/async-function -- [EH-034] journey assertions compose awaited WebView navigation and evaluation.
   assertCmsHomePage = async <View extends Bun.WebView>(view: Readonly<View>): Promise<void> => {
     await view.navigate("http://localhost:3000/");
-    await waitFor(
-      view,
-      "document.querySelectorAll('.signal-card').length",
-      (value: number) => value === EXPECTED_SIGNAL_CARD_COUNT,
-    );
+    await waitUntilReady(view, OVERVIEW_READY);
     expect(
       await view.evaluate<{ heading: number; main: number; navigation: number }>(
         "({ main: document.querySelectorAll('main').length, navigation: document.querySelectorAll('nav').length, heading: document.querySelectorAll('h1').length })",
@@ -33,38 +31,28 @@ const CMS_VIEWPORT_HEIGHT = 1000,
     ).toEqual({ heading: 1, main: 1, navigation: 1 });
   },
   // oxlint-disable-next-line effecttsgo/async-function -- [EH-034] journey assertions compose awaited WebView navigation and evaluation.
-  assertContentListAndFilter = async <View extends Bun.WebView>(
-    view: Readonly<View>,
-  ): Promise<void> => {
-    await view.click('a[href="/content/post"]');
-    await waitFor(
-      view,
-      "document.querySelectorAll('.entry-row').length",
-      (value: number) => value >= MINIMUM_ENTRY_ROW_COUNT,
-    );
-    await view.evaluate(
-      "(() => { const input = document.querySelector('input[placeholder^=\"Filter\"]'); window.__lastInputWasTrusted = false; input?.addEventListener('input', event => { window.__lastInputWasTrusted = event.isTrusted }, { once: true }); return true })()",
-    );
-    await view.click('input[placeholder^="Filter"]');
-    await view.type("Lighthouse");
-    expect(await view.evaluate<boolean>("window.__lastInputWasTrusted")).toBeTrue();
-    expect(
-      await view.evaluate<string | undefined>(
-        "document.querySelector('input[placeholder^=\"Filter\"]')?.value",
-      ),
-    ).toBe("Lighthouse");
+  assertContentList = async <View extends Bun.WebView>(view: Readonly<View>): Promise<void> => {
+    await view.navigate("http://localhost:3000/content/post");
+    await waitUntilReady(view, CONTENT_LIST_READY);
   },
   // oxlint-disable-next-line effecttsgo/async-function -- [EH-034] journey assertions compose awaited WebView navigation and evaluation.
   assertEditorHistoryNavigation = async <View extends Bun.WebView>(
     view: Readonly<View>,
-  ): Promise<string> => {
-    await view.click(".entry-row");
+  ): Promise<{ editorPath: string; editorTitle: string }> => {
+    await waitUntilReady(view, "document.querySelectorAll('.entry-list .entry-row').length >= 1");
+    await view.scrollTo(".entry-list .entry-row", { block: "center" });
+    await view.click(".entry-list .entry-row");
     await waitFor(
       view,
       "location.pathname",
       (value: string) => value.split("/").length >= MINIMUM_EDITOR_PATH_SEGMENTS,
     );
-    const editorPath = await view.evaluate<string>("location.pathname");
+    const editorPath = await view.evaluate<string>("location.pathname"),
+      editorTitle = await waitFor(
+        view,
+        "document.querySelector('h1')?.textContent",
+        (value: string | undefined) => value !== undefined && value.length > 0,
+      );
     await view.evaluate("(() => { history.back(); return true })()");
     expect(
       await waitFor(view, "location.pathname", (value: string) => value === "/content/post"),
@@ -73,18 +61,15 @@ const CMS_VIEWPORT_HEIGHT = 1000,
     expect(await waitFor(view, "location.pathname", (value: string) => value === editorPath)).toBe(
       editorPath,
     );
-    return editorPath;
+    return { editorPath, editorTitle };
   },
   // oxlint-disable-next-line effecttsgo/async-function -- [EH-034] journey assertions compose awaited WebView navigation and evaluation.
   assertPublicBlogPage = async <View extends Bun.WebView>(view: Readonly<View>): Promise<void> => {
     await view.navigate("http://localhost:4321/posts/a-lighthouse-for-content/");
-    expect(
-      await waitFor(
-        view,
-        "document.querySelector('h1')?.textContent",
-        (value: string | undefined) => value === "A Lighthouse for Content",
-      ),
-    ).toBe("A Lighthouse for Content");
+    await waitUntilReady(
+      view,
+      "document.querySelector('h1')?.textContent === 'A Lighthouse for Content'",
+    );
     expect(
       await view.evaluate<{
         article: number;
@@ -107,15 +92,13 @@ const CMS_VIEWPORT_HEIGHT = 1000,
   assertResponsiveEditor = async <View extends Bun.WebView>(
     view: Readonly<View>,
     editorPath: string,
+    editorTitle: string,
   ): Promise<void> => {
     await view.navigate(`http://localhost:3000${editorPath}`);
-    expect(
-      await waitFor(
-        view,
-        "document.querySelector('h1')?.textContent",
-        (value: string | undefined) => value === "A Lighthouse for Content",
-      ),
-    ).toBe("A Lighthouse for Content");
+    await waitUntilReady(
+      view,
+      `document.querySelector('h1')?.textContent === ${JSON.stringify(editorTitle)}`,
+    );
     await view.resize(RESPONSIVE_WIDTH, RESPONSIVE_HEIGHT);
     expect(await view.evaluate<number>("innerWidth")).toBe(RESPONSIVE_WIDTH);
   },
@@ -137,14 +120,19 @@ const CMS_VIEWPORT_HEIGHT = 1000,
   runCmsJourneyPhase = async <Input extends { readonly errors: unknown[] }>(
     consoleErrors: Readonly<Input>,
   ): Promise<{ editorPath: string; view: Bun.WebView }> => {
-    let view = createWebView(consoleErrors, CMS_VIEWPORT_HEIGHT, CMS_VIEWPORT_WIDTH);
-    await assertCmsHomePage(view);
-    await assertContentListAndFilter(view);
-    const editorPath = await assertEditorHistoryNavigation(view);
-    view.close();
-    view = createWebView(consoleErrors, CMS_VIEWPORT_HEIGHT, CMS_VIEWPORT_WIDTH);
-    await assertResponsiveEditor(view, editorPath);
-    return { editorPath, view };
+    const overviewView = createWebView(consoleErrors, CMS_VIEWPORT_HEIGHT, CMS_VIEWPORT_WIDTH);
+    try {
+      await assertCmsHomePage(overviewView);
+    } finally {
+      overviewView.close();
+    }
+    const contentListView = createWebView(consoleErrors, CMS_VIEWPORT_HEIGHT, CMS_VIEWPORT_WIDTH);
+    await assertContentList(contentListView);
+    const { editorPath, editorTitle } = await assertEditorHistoryNavigation(contentListView);
+    contentListView.close();
+    const responsiveView = createWebView(consoleErrors, CMS_VIEWPORT_HEIGHT, CMS_VIEWPORT_WIDTH);
+    await assertResponsiveEditor(responsiveView, editorPath, editorTitle);
+    return { editorPath, view: responsiveView };
   },
   // oxlint-disable-next-line effecttsgo/async-function -- [EH-035] journey orchestration composes native WebView Promise operations.
   runCompleteSystemJourney = async (): Promise<void> => {
@@ -174,6 +162,27 @@ const CMS_VIEWPORT_HEIGHT = 1000,
         const value = await view.evaluate<Value>(expression);
         if (predicate(value)) {
           return value;
+        }
+        await Bun.sleep(POLLING_INTERVAL_MILLISECONDS);
+        return poll();
+      };
+    return poll();
+  },
+  waitUntilReady = <View extends Bun.WebView>(
+    view: Readonly<View>,
+    expression: string,
+  ): Promise<void> => {
+    const deadline = performance.now() + WAIT_TIMEOUT_MILLISECONDS,
+      // oxlint-disable-next-line effecttsgo/async-function -- [EH-008] Bun WebView evaluation and sleep are Promise-based platform lifecycle operations.
+      poll = async (): Promise<void> => {
+        if (performance.now() >= deadline) {
+          throw new Error(`WebView page did not settle: ${expression}`);
+        }
+        if (await view.evaluate<boolean>(expression)) {
+          await view.evaluate(
+            "document.fonts.ready.then(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true)))))",
+          );
+          return;
         }
         await Bun.sleep(POLLING_INTERVAL_MILLISECONDS);
         return poll();

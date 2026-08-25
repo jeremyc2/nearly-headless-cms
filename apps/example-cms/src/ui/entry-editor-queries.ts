@@ -24,6 +24,7 @@ export const useEntryEditorQueries = () => {
     state = useQuery({
       queryFn: () => Effect.runPromise(managementClient.getCurrentState(contentTypeId, entryId)),
       queryKey: ["entry-state", contentTypeId, entryId],
+      refetchOnWindowFocus: false,
     }),
     tags = useQuery({
       enabled: contentTypeId === "post",

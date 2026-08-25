@@ -9,12 +9,23 @@ import {
   verifyWriterLockRecovery,
 } from "./filesystem-persistence-scenarios.ts";
 import {
+  verifyCommittedCorruptionPreservedOnRestart,
+  verifyGenerationCommitPermissionFailure,
+} from "./filesystem-fault-injection-scenarios.ts";
+import {
   verifyConcurrentAssetReads,
   verifyReadOnlyBlobDirectorySurfacesPermissionFailure,
   verifySymlinkedBlobIsNotServedAsContent,
 } from "./filesystem-concurrency-fault-scenarios.ts";
+import {
+  verifyOldOrNewEntryVisibility,
+  verifySerializedEntryMutations,
+  verifyStaleEntryGenerationConflict,
+} from "./filesystem-commit-boundary-scenarios.ts";
+import { verifyChildTerminationDuringEntryCommit } from "./filesystem-commit-boundary-child-scenarios.ts";
+import { verifyManifestPublicationPermissionFailure } from "./filesystem-fault-injection-manifest-scenarios.ts";
 
-describe("BunFilesystemPersistence", () => {
+describe("BunFilesystemPersistence recovery and streaming", () => {
   test("durably commits the Definition Catalog and Entry generation in one cutover", () =>
     verifyDurableCatalogCutover());
 
@@ -35,7 +46,9 @@ describe("BunFilesystemPersistence", () => {
 
   test("recovers the writer lock after its owning process terminates", () =>
     verifyWriterLockRecovery());
+});
 
+describe("BunFilesystemPersistence concurrency and commit boundaries", () => {
   test("serves concurrent Asset reads without cross-talk", () => verifyConcurrentAssetReads());
 
   test("classifies read-only blob directory failures during ingest", () =>
@@ -43,4 +56,26 @@ describe("BunFilesystemPersistence", () => {
 
   test("rejects symlinked committed blobs that would escape the private layout", () =>
     verifySymlinkedBlobIsNotServedAsContent());
+
+  test("rejects stale Entry generation commits", () => verifyStaleEntryGenerationConflict());
+
+  test("serializes Entry mutations and preserves the latest committed generation", () =>
+    verifySerializedEntryMutations());
+
+  test("exposes old-or-new Entry visibility across generation commits", () =>
+    verifyOldOrNewEntryVisibility());
+
+  test("recovers readable Entry state when a committing child is terminated mid-commit", () =>
+    verifyChildTerminationDuringEntryCommit());
+});
+
+describe("BunFilesystemPersistence fault injection", () => {
+  test("preserves committed corruption across restart instead of silently repairing it", () =>
+    verifyCommittedCorruptionPreservedOnRestart());
+
+  test("rejects generation commits when the generations directory is read-only", () =>
+    verifyGenerationCommitPermissionFailure());
+
+  test("rejects generation commits when manifest publication is obstructed", () =>
+    verifyManifestPublicationPermissionFailure());
 });
