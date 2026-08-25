@@ -5,3 +5,4 @@ export type { EntryRepresentation } from "../generated/management-client.ts";
 export { draftPluralSuffix, pendingCommentClass, rebuildLabel } from "./main-labels.ts";
 export { displayName } from "./main-entry-support.ts";
 export { contentTypes, managementClient } from "./main-shared.ts";
+

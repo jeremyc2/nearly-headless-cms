@@ -20,9 +20,6 @@ import {
   cloneJson,
   isJsonObject,
 } from "./cms-entry-references-imports.ts";
-/* oxlint-disable eslint/one-var -- [EH-125] helpers with readonly disables must stay as separate const declarations. */
-/* oxlint-disable eslint/sort-vars -- [EH-131] helper declaration order follows dependency order. */
-/* oxlint-disable eslint/max-lines -- [EH-116] reference and projection helpers are intentionally colocated. */
 import cmsEntryReferencesRichTextSupport from "./cms-entry-references-rich-text-support.ts";
 
 export interface References {
@@ -73,6 +70,7 @@ const { collectRichTextReferences, validateRichTextDocument } = cmsEntryReferenc
   return [value];
 },
 
+ // oxlint-disable-next-line eslint/sort-vars -- [EH-131] helper declaration order follows dependency order.
  appendAssetIdentifiers = (
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-184] mutable assetIds out-param is bundled in input interface.
   input: Readonly<AppendAssetIdentifiersInput>,
@@ -105,6 +103,7 @@ const { collectRichTextReferences, validateRichTextDocument } = cmsEntryReferenc
   return undefined;
 },
 
+ // oxlint-disable-next-line eslint/sort-vars -- [EH-131] helper declaration order follows dependency order.
  collectAssetFieldReferences = (
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-188] mutable out-params are bundled in input interface.
   input: Readonly<CollectFieldReferencesInput>,
@@ -147,6 +146,7 @@ const { collectRichTextReferences, validateRichTextDocument } = cmsEntryReferenc
   }
 },
 
+ // oxlint-disable-next-line eslint/sort-vars -- [EH-131] helper declaration order follows dependency order.
  collectFieldReferences = (
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-188] mutable out-params are bundled in input interface.
   input: Readonly<CollectFieldReferencesInput>,
@@ -167,6 +167,7 @@ const { collectRichTextReferences, validateRichTextDocument } = cmsEntryReferenc
   return current;
 },
 
+ // oxlint-disable-next-line eslint/sort-vars -- [EH-131] helper declaration order follows dependency order.
  setProjectedValue = (
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-191] mutable values out-param is bundled in input interface.
   input: Readonly<SetProjectedValueInput>,
@@ -187,6 +188,7 @@ const { collectRichTextReferences, validateRichTextDocument } = cmsEntryReferenc
   }
 },
 
+ // oxlint-disable-next-line eslint/sort-vars -- [EH-131] helper declaration order follows dependency order.
  fieldsAtPaths = (
   fields: readonly ResolvedField[],
   parentPath: readonly string[] = [],
@@ -203,6 +205,7 @@ const { collectRichTextReferences, validateRichTextDocument } = cmsEntryReferenc
     return [{ field, path }, ...descendants];
   }),
 
+ // oxlint-disable-next-line eslint/sort-vars -- [EH-131] helper declaration order follows dependency order.
  collectReferences = (
   contentType: Readonly<CompiledContentType>,
   values: Readonly<JsonObject>,
@@ -326,6 +329,7 @@ const { collectRichTextReferences, validateRichTextDocument } = cmsEntryReferenc
   return { contentTypeId: entry.contentTypeId, id: entry.id, values };
 };
 
+// oxlint-disable-next-line eslint/max-lines -- [EH-116] reference and projection helpers are intentionally colocated.
 export default {
   collectReferences,
   ensureReferences,

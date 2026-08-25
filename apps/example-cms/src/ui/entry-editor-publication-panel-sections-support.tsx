@@ -3,7 +3,6 @@ import {
   type EntryRepresentation,
 } from "./entry-editor-publication-panel-imports.ts";
 import publicationPanelFieldsSupport from "./entry-editor-publication-panel-fields-support.tsx";
-/* oxlint-disable typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites. */
 
 const {
   EntryEditorCommentActions,
@@ -14,8 +13,11 @@ const {
   EntryEditorPublicationStatusField,
 } = publicationPanelFieldsSupport,
   EntryEditorPublicationPanelEditorial = <
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     Values extends Record<string, unknown>,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     RequestConfirmation extends (status: EditorialConfirmationStatus) => void,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     ErrorType extends Error,
   >({
     contentTypeId,
@@ -47,13 +49,21 @@ const {
       )}
     </>
   ),
+  // oxlint-disable-next-line eslint/max-lines-per-function -- [EH-217] React panel helpers exceed function line budget after typed prop alias escape hatches.
   EntryEditorPublicationPanelSections = <
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     Values extends Record<string, unknown>,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     Author extends EntryRepresentation,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     Category extends EntryRepresentation,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     Tag extends EntryRepresentation,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     UpdateField extends (key: string, value: unknown) => void,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     RequestConfirmation extends (status: EditorialConfirmationStatus) => void,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     ErrorType extends Error,
   >({
     authors,

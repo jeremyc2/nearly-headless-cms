@@ -4,7 +4,6 @@ import {
   stringValue,
   suggestedSlug,
 } from "./entry-editor-story-canvas-imports.ts";
-/* oxlint-disable typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites. */
 
 const EntryEditorAuthorProfileField = ({
     onUpdateField,
@@ -25,7 +24,9 @@ const EntryEditorAuthorProfileField = ({
     </div>
   ),
   EntryEditorBodyFields = <
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     Values extends Record<string, unknown>,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     UpdateField extends (key: string, value: unknown) => void,
   >({
     bodyDocument,
@@ -60,8 +61,11 @@ const EntryEditorAuthorProfileField = ({
       )}
     </>
   ),
+  // oxlint-disable-next-line eslint/max-lines-per-function -- [EH-217] React panel helpers exceed function line budget after typed prop alias escape hatches.
   EntryEditorTextAreaFields = <
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     Values extends Record<string, unknown>,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     UpdateField extends (key: string, value: unknown) => void,
   >({
     onUpdateField,
@@ -110,7 +114,9 @@ const EntryEditorAuthorProfileField = ({
     </>
   ),
   EntryEditorTitleField = <
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     Values extends Record<string, unknown>,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     UpdateField extends (key: string, value: unknown) => void,
   >({
     onUpdateField,

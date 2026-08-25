@@ -37,3 +37,4 @@ export interface EntryEditorControllerViewInput {
   readonly updateField: ReturnType<typeof createFieldUpdater>;
   readonly values: Record<string, unknown>;
 }
+

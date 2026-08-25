@@ -9,7 +9,9 @@ import {
 } from "./entry-editor-rich-text-toolbar-imports.ts";
 
 export const EntryEditorRichTextToolbar = <
+  // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
   AdapterRef extends RefObject<BrowserAdapter | null>,
+  // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
   ToolbarRef extends RefObject<HTMLDivElement | null>,
 >({
   adapter,

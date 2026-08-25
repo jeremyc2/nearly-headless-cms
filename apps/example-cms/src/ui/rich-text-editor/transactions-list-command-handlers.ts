@@ -94,6 +94,7 @@ const { commit, replaceBlock } = transactionsState,
     );
   },
   toggleExistingList = <
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     Input extends {
       blockIndex: number;
       listBlock: RichText.ListNode;
@@ -113,6 +114,7 @@ const { commit, replaceBlock } = transactionsState,
     return unwrapListItem({ blockIndex, listBlock, state });
   },
   unwrapListItem = <
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     Input extends {
       blockIndex: number;
       listBlock: RichText.ListNode;
@@ -136,6 +138,7 @@ const { commit, replaceBlock } = transactionsState,
     });
   },
   unwrapListItemParagraph = <
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     Input extends {
       blockIndex: number;
       listBlock: RichText.ListNode;
@@ -205,6 +208,7 @@ const { commit, replaceBlock } = transactionsState,
     return insertText({ ...state, selection }, "");
   },
   wrapBlockInList = <
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     Input extends {
       blockIndex: number;
       listType: "ordered-list" | "unordered-list";

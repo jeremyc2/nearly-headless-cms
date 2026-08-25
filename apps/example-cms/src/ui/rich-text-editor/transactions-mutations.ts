@@ -77,6 +77,7 @@ const { commit, replaceBlock } = transactionsState,
     return workSplitBlockForSelection(state, selected);
   },
   splitListBlock = <
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     Input extends {
       before: RichText.TextNode;
       listBlock: RichText.ListNode;
@@ -116,6 +117,7 @@ const { commit, replaceBlock } = transactionsState,
     );
   },
   splitRootBlock = <
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     Input extends {
       firstBlock: RichText.ParagraphNode | RichText.HeadingNode;
       secondBlock: RichText.ParagraphNode;

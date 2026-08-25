@@ -181,7 +181,6 @@ const runtimeAfterMakeGeneratedClient = `
         signal,
         specification: operationSpecifications[identifier],
       }),
-  /* oxlint-disable effecttsgo/global-fetch, effecttsgo/global-fetch-in-effect -- [EH-081, EH-082] generated clients intentionally use the platform fetch boundary so callers can supply the browser or server runtime. */
   fetchOperationResponse = (
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-196] OperationFetchRequest carries optional readonly abort signal bridge fields.
     request: Readonly<OperationFetchRequest>,

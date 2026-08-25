@@ -1,4 +1,3 @@
-/* oxlint-disable effecttsgo/missing-pipeable-signature -- [EH-092] Rich Text helpers are not pipeable Effect APIs. */
 import * as Function from "effect/Function";
 import { InvalidInput, type ValidationIssue } from "./cms-error.ts";
 import { type JsonObject, type JsonValue, isJsonObject } from "./internal/json.ts";
@@ -56,6 +55,7 @@ const emptyLength = 0,
   headingLevelThree = 3,
   headingLevelTwo = 2,
   headingLevels = [headingLevelTwo, headingLevelThree, headingLevelFour] as const,
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-092] Rich Text helpers are not pipeable Effect APIs.
   parseRichTextDocument = validateDocumentImpl,
   /** Collects live references in linear time over the Rich Text tree. */
   references = (document: Document): References => rendering.collectReferences(document),

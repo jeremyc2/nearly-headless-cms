@@ -3,11 +3,13 @@ import {
   assetSelectValue,
   stringValue,
 } from "./entry-editor-story-canvas-imports.ts";
-/* oxlint-disable typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites. */
 
 const EntryEditorContentTypeAssetFields = <
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     Values extends Record<string, unknown>,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     Asset extends AssetRepresentation,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     UpdateField extends (key: string, value: unknown) => void,
   >({
     assets,
@@ -30,8 +32,11 @@ const EntryEditorContentTypeAssetFields = <
     </>
   ),
   EntryEditorFeaturedImage = <
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     Values extends Record<string, unknown>,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     Asset extends AssetRepresentation,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     UpdateField extends (key: string, value: unknown) => void,
   >({
     assets,
@@ -59,7 +64,9 @@ const EntryEditorContentTypeAssetFields = <
     </fieldset>
   ),
   EntryEditorFeaturedImageAlternativeText = <
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     Values extends Record<string, unknown>,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     UpdateField extends (key: string, value: unknown) => void,
   >({
     onUpdateField,
@@ -80,8 +87,11 @@ const EntryEditorContentTypeAssetFields = <
     </label>
   ),
   EntryEditorFeaturedImageSelect = <
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     Values extends Record<string, unknown>,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     Asset extends AssetRepresentation,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     UpdateField extends (key: string, value: unknown) => void,
   >({
     assets,
@@ -115,8 +125,11 @@ const EntryEditorContentTypeAssetFields = <
     </label>
   ),
   EntryEditorPortrait = <
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     Values extends Record<string, unknown>,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     Asset extends AssetRepresentation,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     UpdateField extends (key: string, value: unknown) => void,
   >({
     assets,
@@ -157,6 +170,7 @@ const EntryEditorContentTypeAssetFields = <
     </fieldset>
   ),
   applyFeaturedAssetSelection = <
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     Input extends {
       assetIdentifier: string;
       assets: readonly AssetRepresentation[] | undefined;

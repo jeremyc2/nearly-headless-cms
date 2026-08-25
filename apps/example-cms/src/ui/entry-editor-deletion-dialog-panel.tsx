@@ -61,3 +61,4 @@ export const EntryEditorDeletionDialogPanel = ({
 );
 
 export type { EntryEditorDeletionDialogPanelProperties };
+

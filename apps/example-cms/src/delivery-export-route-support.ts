@@ -1,6 +1,6 @@
-/* oxlint-disable eslint/sort-imports -- [EH-128] export route imports follow dependency grouping. */
 import { type Cms, CmsError } from "nearly-headless-cms";
 import type { HttpContract, ReadonlyTransportRequest } from "nearly-headless-cms/http";
+// oxlint-disable-next-line eslint/sort-imports -- [EH-128] export route imports follow dependency grouping.
 import { Effect, Schema } from "effect";
 import {
   authorDefinitionRequirement,
@@ -9,6 +9,7 @@ import {
   taxonomyDefinitionRequirement,
 } from "./delivery-definition-requirements.ts";
 import deliveryPublicContent from "./delivery-public-content.ts";
+// oxlint-disable-next-line eslint/sort-imports -- [EH-128] export route imports follow dependency grouping.
 import deliverySupport, { MAX_PUBLIC_EXPORT_BYTES } from "./delivery-support.ts";
 import { PublicBlogExport } from "./wire-schemas.ts";
 

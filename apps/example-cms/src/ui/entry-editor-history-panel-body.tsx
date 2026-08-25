@@ -1,12 +1,15 @@
-/* oxlint-disable eslint/sort-imports -- [EH-129] history panel imports follow UI dependency grouping. */
-import { useMutation, useQuery, type UseQueryResult } from "@tanstack/react-query";
+import { type UseQueryResult, useMutation, useQuery } from "@tanstack/react-query";
+// oxlint-disable-next-line eslint/sort-imports -- [EH-129] history panel imports follow UI dependency grouping.
 import { DateTime, Effect } from "effect";
 import { useState } from "react";
+// oxlint-disable-next-line eslint/sort-imports -- [EH-129] history panel imports follow UI dependency grouping.
 import type { RevisionPage } from "../generated/management-openapi-client-component-types.ts";
+// oxlint-disable-next-line eslint/sort-imports -- [EH-129] history panel imports follow UI dependency grouping.
 import { EntryEditorRevisionInspection } from "./entry-editor-revision-inspection.tsx";
+// oxlint-disable-next-line eslint/sort-imports -- [EH-129] history panel imports follow UI dependency grouping.
 import { revisionClass, revisionLabel } from "./main-labels.ts";
+// oxlint-disable-next-line eslint/sort-imports -- [EH-129] history panel imports follow UI dependency grouping.
 import { managementClient, queryClient } from "./main-shared.ts";
-/* oxlint-disable typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites. */
 
 interface EntryEditorRevisionSummary {
   readonly recordedAt: string;
@@ -88,6 +91,7 @@ const EntryEditorHistoryPanelBody = ({
     </section>
   ),
   EntryEditorHistorySelectedRevision = <
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     Restore extends ReturnType<typeof useEntryEditorRestoreMutation>,
   >({
     contentTypeId,

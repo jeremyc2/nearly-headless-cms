@@ -1,5 +1,4 @@
 import { Cms, type Operation } from "../../src/index.ts";
-/* oxlint-disable eslint/sort-vars -- [EH-133] test constants follow scenario narrative order. */
 import { Effect, Exit } from "effect";
 import { describe, expect, test } from "bun:test";
 import { runAuthorizationExpansion } from "./authorization-expansion-support.ts";
@@ -132,6 +131,7 @@ const createVerifyDeniedExpansion = (
     }),
   emptyCollectionLength = 0,
   expectedDeniedExpansionActionCount = 2,
+  // oxlint-disable-next-line eslint/sort-vars -- [EH-133] test constants follow scenario narrative order.
   entryFromCreateResult = <Entry extends { id: string }>(
     result: Readonly<{ entry: Entry } | Entry>,
   ): Entry => {

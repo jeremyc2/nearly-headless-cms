@@ -3,6 +3,7 @@ import { EntryEditorEditorialDialog } from "./entry-editor-editorial-dialog.tsx"
 import type { useEntryEditorController } from "./entry-editor-controller.ts";
 
 export const EntryEditorOverlays = <
+  // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
   Controller extends ReturnType<typeof useEntryEditorController>,
 >({
   controller,

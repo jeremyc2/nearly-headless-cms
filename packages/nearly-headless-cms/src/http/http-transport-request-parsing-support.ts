@@ -7,7 +7,6 @@ import {
   toAbortSignal,
   toWebRequest,
 } from "./http-transport-readonly-types.ts";
-/* oxlint-disable eslint/one-var -- [EH-125] helpers with readonly disables must stay as separate const declarations. */
 import {
   httpStatusInternalServerError,
   httpStatusPayloadTooLarge,

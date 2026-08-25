@@ -4,7 +4,6 @@ import {
 } from "./entry-editor-story-canvas-imports.ts";
 import storyCanvasAssetsSupport from "./entry-editor-story-canvas-assets-support.tsx";
 import storyCanvasFieldsSupport from "./entry-editor-story-canvas-fields-support.tsx";
-/* oxlint-disable typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites. */
 
 const { EntryEditorContentTypeAssetFields } = storyCanvasAssetsSupport,
   {
@@ -14,8 +13,11 @@ const { EntryEditorContentTypeAssetFields } = storyCanvasAssetsSupport,
     EntryEditorTitleField,
   } = storyCanvasFieldsSupport,
   EntryEditorStoryCanvas = <
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     Values extends Record<string, unknown>,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     Asset extends AssetRepresentation,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     UpdateField extends (key: string, value: unknown) => void,
   >(
     props: {
@@ -32,9 +34,13 @@ const { EntryEditorContentTypeAssetFields } = storyCanvasAssetsSupport,
       <EntryEditorStoryCanvasFields {...props} />
     </section>
   ),
+  // oxlint-disable-next-line eslint/max-lines-per-function -- [EH-217] React panel helpers exceed function line budget after typed prop alias escape hatches.
   EntryEditorStoryCanvasFields = <
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     Values extends Record<string, unknown>,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     Asset extends AssetRepresentation,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     UpdateField extends (key: string, value: unknown) => void,
   >({
     assets,

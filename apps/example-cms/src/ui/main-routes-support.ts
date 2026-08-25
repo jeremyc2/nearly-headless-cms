@@ -32,3 +32,4 @@ const assetsRoute = createRoute({
   });
 
 export default router;
+

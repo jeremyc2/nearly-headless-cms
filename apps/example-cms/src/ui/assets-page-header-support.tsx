@@ -1,14 +1,18 @@
 import { type RefObject, type UseMutationResult } from "./assets-page-imports.ts";
-/* oxlint-disable typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites. */
 
+// oxlint-disable-next-line eslint/max-lines-per-function -- [EH-217] React panel helpers exceed function line budget after typed prop alias escape hatches.
 const AssetsPageFileInputs = <
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     InputRef extends RefObject<HTMLInputElement | null>,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     ReplacementInputRef extends RefObject<HTMLInputElement | null>,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     ReplaceMutation extends UseMutationResult<
       { readonly reassignedEntryCount: number },
       Error,
       { readonly assetId: string; readonly file: File }
     >,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     UploadMutation extends UseMutationResult<unknown, Error, File>,
   >({
     input,
@@ -51,13 +55,17 @@ const AssetsPageFileInputs = <
     </>
   ),
   AssetsPageHeader = <
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     InputRef extends RefObject<HTMLInputElement | null>,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     ReplacementInputRef extends RefObject<HTMLInputElement | null>,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     ReplaceMutation extends UseMutationResult<
       { readonly reassignedEntryCount: number },
       Error,
       { readonly assetId: string; readonly file: File }
     >,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     UploadMutation extends UseMutationResult<unknown, Error, File>,
   >({
     chooseFile,
@@ -92,7 +100,9 @@ const AssetsPageFileInputs = <
       />
     </header>
   ),
+  // oxlint-disable-next-line eslint/max-lines-per-function -- [EH-217] React panel helpers exceed function line budget after typed prop alias escape hatches.
   AssetsPageStatus = <
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     DeleteMutation extends UseMutationResult<
       {
         readonly clearedAuthorCount: number;
@@ -101,11 +111,13 @@ const AssetsPageFileInputs = <
       Error,
       string
     >,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     ReplaceMutation extends UseMutationResult<
       { readonly reassignedEntryCount: number },
       Error,
       { readonly assetId: string; readonly file: File }
     >,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     UploadMutation extends UseMutationResult<unknown, Error, File>,
   >({
     deleteImage,

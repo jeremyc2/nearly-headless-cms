@@ -26,3 +26,4 @@ const { conditionalValue, emptyParagraph, normalizeHeadingLevel, normalizeInline
   };
 
 export { normalize };
+

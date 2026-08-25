@@ -1,7 +1,7 @@
 import { type RefObject, type UseMutationResult, deleteImageLabel } from "./assets-page-imports.ts";
-/* oxlint-disable typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites. */
 
 const AssetsPageDeleteDialog = <
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     DeleteImage extends UseMutationResult<
       {
         readonly clearedAuthorCount: number;
@@ -10,6 +10,7 @@ const AssetsPageDeleteDialog = <
       Error,
       string
     >,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     SetDeletionAssetId extends (assetId: string | undefined) => void,
   >({
     deleteImage,
@@ -37,6 +38,7 @@ const AssetsPageDeleteDialog = <
     </AssetsPageDestructiveDialog>
   ),
   AssetsPageDeleteDialogActions = <
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     DeleteImage extends UseMutationResult<
       {
         readonly clearedAuthorCount: number;
@@ -45,6 +47,7 @@ const AssetsPageDeleteDialog = <
       Error,
       string
     >,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     SetDeletionAssetId extends (assetId: string | undefined) => void,
   >({
     deleteImage,
@@ -77,6 +80,7 @@ const AssetsPageDeleteDialog = <
       </button>
     </div>
   ),
+  // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
   AssetsPageDestructiveDialog = <Children extends React.ReactNode>({
     children,
     eyebrow,
@@ -101,9 +105,13 @@ const AssetsPageDeleteDialog = <
       </div>
     </div>
   ),
+  // oxlint-disable-next-line eslint/max-lines-per-function -- [EH-217] React panel helpers exceed function line budget after typed prop alias escape hatches.
   AssetsPageReplaceDialog = <
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     ReplacementInput extends RefObject<HTMLInputElement | null>,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     SetReplacementAssetId extends (assetId: string | undefined) => void,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     SetReplacementConfirmationAssetId extends (assetId: string | undefined) => void,
   >({
     replacementConfirmationAssetId,

@@ -2,7 +2,6 @@ import type { RichText } from "nearly-headless-cms";
 import { emptyIndex } from "./transactions-constants.ts";
 import transactionsEditorAdapterSupport from "./transactions-editor-adapter-support.ts";
 import transactionsSupport from "./transactions-support.ts";
-/* oxlint-disable typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites. */
 
 type RenderBlock = (
   block: RichText.BlockNode,
@@ -66,7 +65,9 @@ const { blockElementName } = transactionsEditorAdapterSupport,
     return element;
   },
   renderBlockChildren = <
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     RenderBlockType extends RenderBlock,
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     Input extends {
       readonly block: RichText.BlockNode;
       readonly blockIndex: number | undefined;

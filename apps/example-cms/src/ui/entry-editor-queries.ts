@@ -32,3 +32,4 @@ export const useEntryEditorQueries = () => {
     });
   return { assets, authors, categories, contentTypeId, entryId, state, tags };
 };
+

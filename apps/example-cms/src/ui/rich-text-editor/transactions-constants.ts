@@ -11,3 +11,4 @@ export const emptyDocument = (): RichText.Document => ({
   markOrder: readonly RichText.Mark[] = ["bold", "code", "italic", "strikethrough"],
   negativeOne = -1,
   signature = (document: RichText.Document): string => JSON.stringify(document);
+

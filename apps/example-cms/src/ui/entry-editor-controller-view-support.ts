@@ -72,3 +72,4 @@ export type { EntryEditorControllerViewInput } from "./entry-editor-controller-v
 export default {
   entryEditorControllerViewModel,
 };
+

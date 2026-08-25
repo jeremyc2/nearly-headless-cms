@@ -18,3 +18,4 @@ const { useEntryEditorControllerView } = entryEditorControllerViewSupport,
 export default {
   useEntryEditorController,
 };
+

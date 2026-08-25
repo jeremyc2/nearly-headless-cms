@@ -7,8 +7,8 @@ import {
   rebuildLabel,
 } from "./overview-imports.ts";
 import type { OverviewState } from "./overview-data-support.ts";
-/* oxlint-disable typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites. */
 
+// oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
 const OverviewBuildPanel = <Rebuild extends OverviewState["rebuild"]>({
     rebuild,
   }: {

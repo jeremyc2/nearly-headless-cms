@@ -1,6 +1,5 @@
 import { type JsonObject, type JsonValue, cloneJson, isJsonObject } from "./internal/json.ts";
 import type { Representation } from "./entry.ts";
-/* oxlint-disable eslint/one-var -- [EH-125] helpers with readonly disables must stay as separate const declarations. */
 import entryQuerySupport from "./entry-query-support.ts";
 
 const { ONE, valueAtPath } = entryQuerySupport;
@@ -11,6 +10,7 @@ interface AssignProjectedSegmentInput {
   value: JsonValue;
 }
 
+// oxlint-disable-next-line eslint/one-var -- [EH-125] helpers with readonly disables must stay as separate const declarations.
 const aNestedProjectedRecord = (existing: JsonValue | undefined): Record<string, JsonValue> => {
   if (isJsonObject(existing)) {
     return { ...existing };

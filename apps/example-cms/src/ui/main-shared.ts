@@ -45,3 +45,4 @@ export const contentTypes = [
       version: value.version,
     };
   };
+

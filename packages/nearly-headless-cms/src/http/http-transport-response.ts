@@ -37,10 +37,10 @@ import responseSupport from "./http-transport-response-support.ts";
 
 export { httpStatusNotFound } from "./http-status-codes.ts";
 
-/* oxlint-disable typescript/prefer-readonly-parameter-types -- [EH-158] CmsError and Effect parameters cannot satisfy deep readonly while preserving Schema narrowing in this module. */
-/* oxlint-disable eslint/func-style -- [EH-113] error status helpers are function declarations to keep CmsError Schema narrowing readable. */
 
+// oxlint-disable-next-line eslint/func-style -- [EH-113] error status helpers are function declarations to keep CmsError Schema narrowing readable.
 function readConflictStatus(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-159] CmsError tagged unions are inspected via Schema.is without mutation.
   error: Readonly<CmsError>,
 ): number | undefined {
   if (
@@ -54,7 +54,9 @@ function readConflictStatus(
   return undefined;
 }
 
+// oxlint-disable-next-line eslint/func-style -- [EH-113] error status helpers are function declarations to keep CmsError Schema narrowing readable.
 function readDefinitionSnapshotChangedStatus(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-159] CmsError tagged unions are inspected via Schema.is without mutation.
   error: Readonly<CmsError>,
 ): number | undefined {
   if (Schema.is(DefinitionSnapshotChanged)(error)) {
@@ -63,6 +65,7 @@ function readDefinitionSnapshotChangedStatus(
   return undefined;
 }
 
+// oxlint-disable-next-line eslint/func-style -- [EH-113] error status helpers are function declarations to keep CmsError Schema narrowing readable.
 function readForbiddenStatus(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-159] CmsError tagged unions are inspected via Schema.is without mutation.
   error: Readonly<CmsError>,
@@ -73,6 +76,7 @@ function readForbiddenStatus(
   return undefined;
 }
 
+// oxlint-disable-next-line eslint/func-style -- [EH-113] error status helpers are function declarations to keep CmsError Schema narrowing readable.
 function readInfrastructureFailureStatus(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-159] CmsError tagged unions are inspected via Schema.is without mutation.
   error: Readonly<CmsError>,
@@ -86,6 +90,7 @@ function readInfrastructureFailureStatus(
   return httpStatusInternalServerError;
 }
 
+// oxlint-disable-next-line eslint/func-style -- [EH-113] error status helpers are function declarations to keep CmsError Schema narrowing readable.
 function readInvalidInputStatus(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-159] CmsError tagged unions are inspected via Schema.is without mutation.
   error: Readonly<CmsError>,
@@ -96,6 +101,7 @@ function readInvalidInputStatus(
   return undefined;
 }
 
+// oxlint-disable-next-line eslint/func-style -- [EH-113] error status helpers are function declarations to keep CmsError Schema narrowing readable.
 function readNotFoundStatus(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-159] CmsError tagged unions are inspected via Schema.is without mutation.
   error: Readonly<CmsError>,
@@ -106,6 +112,7 @@ function readNotFoundStatus(
   return undefined;
 }
 
+// oxlint-disable-next-line eslint/func-style -- [EH-113] error status helpers are function declarations to keep CmsError Schema narrowing readable.
 function readUnsupportedQueryStatus(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-159] CmsError tagged unions are inspected via Schema.is without mutation.
   error: Readonly<CmsError>,
@@ -116,6 +123,7 @@ function readUnsupportedQueryStatus(
   return undefined;
 }
 
+// oxlint-disable-next-line eslint/func-style -- [EH-113] error status helpers are function declarations to keep CmsError Schema narrowing readable.
 function errorStatus(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-159] CmsError tagged unions are inspected via Schema.is without mutation.
   error: Readonly<CmsError>,
@@ -134,6 +142,7 @@ function errorStatus(
   return httpStatusInternalServerError;
 }
 
+// oxlint-disable-next-line eslint/func-style -- [EH-113] error status helpers are function declarations to keep CmsError Schema narrowing readable.
 function errorResponse(
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-159] CmsError tagged unions are inspected via Schema.is without mutation.
   error: Readonly<CmsError>,

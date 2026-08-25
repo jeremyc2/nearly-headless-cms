@@ -7,69 +7,18 @@ import type {
 } from "./content-definition-types.ts";
 import { cloneJson, isJsonObject } from "./internal/json.ts";
 import type { ValidationIssue } from "./cms-error.ts";
-/* oxlint-disable eslint/one-var -- [EH-125] helpers with readonly disables must stay as separate const declarations. */
-/* oxlint-disable eslint/sort-vars -- [EH-131] helper declaration order follows dependency order. */
-/* oxlint-disable eslint/max-lines -- [EH-117] validation helpers are intentionally colocated. */
 import validationSupport from "./content-definition-validation-support.ts";
 import valueValidation from "./content-definition-value-validation.ts";
-
-interface ValidateFieldsInput {
-  readonly customRegistrations: ReadonlyMap<string, CustomFieldRegistration>;
-  readonly fields: readonly ResolvedField[];
-  readonly parentPath: readonly (string | number)[];
-  readonly validateOptions: Readonly<ValidateEntryOptions>;
-  readonly values: Readonly<JsonObject>;
-}
-
-interface ValidateListBoundsInput {
-  readonly field: Readonly<ResolvedField>;
-  readonly fieldPath: readonly (string | number)[];
-  readonly fieldValue: readonly JsonValue[];
-  readonly issues: ValidationIssue[];
-}
-
-interface ValidatePresentFieldValueInput {
-  readonly customRegistrations: ReadonlyMap<string, CustomFieldRegistration>;
-  readonly field: Readonly<ResolvedField>;
-  readonly fieldPath: readonly (string | number)[];
-  readonly fieldValue: Readonly<JsonValue>;
-  readonly issues: ValidationIssue[];
-  readonly result: Record<string, JsonValue>;
-  readonly validateOptions: Readonly<ValidateEntryOptions>;
-}
-
-interface ValidateUndefinedFieldValueInput {
-  readonly field: Readonly<ResolvedField>;
-  readonly fieldPath: readonly (string | number)[];
-  readonly issues: ValidationIssue[];
-  readonly result: Record<string, JsonValue>;
-  readonly validateOptions: Readonly<ValidateEntryOptions>;
-}
-
-interface ValidateNullFieldValueInput {
-  readonly field: Readonly<ResolvedField>;
-  readonly fieldPath: readonly (string | number)[];
-  readonly issues: ValidationIssue[];
-  readonly result: Record<string, JsonValue>;
-}
-
-interface ValidateListItemInput {
-  readonly input: Readonly<ValidatePresentFieldValueInput>;
-  readonly item: Readonly<JsonValue>;
-  readonly itemIndex: number;
-  readonly listResult: JsonValue[];
-}
-
-interface AppendUnknownFieldIssuesInput {
-  issues: ValidationIssue[];
-  readonly input: Readonly<ValidateFieldsInput>;
-}
-
-interface ValidateListItemsInput {
-  readonly input: Readonly<ValidatePresentFieldValueInput>;
-  readonly listItems: readonly JsonValue[];
-  listResult: JsonValue[];
-}
+import type {
+  AppendUnknownFieldIssuesInput,
+  ValidateFieldsInput,
+  ValidateListBoundsInput,
+  ValidateListItemInput,
+  ValidateListItemsInput,
+  ValidateNullFieldValueInput,
+  ValidatePresentFieldValueInput,
+  ValidateUndefinedFieldValueInput,
+} from "./content-definition-entry-validation-types.ts";
 
 const { createValidationIssue } = validationSupport,
  { validateValue } = valueValidation,
@@ -243,6 +192,7 @@ const { createValidationIssue } = validationSupport,
   input.result[input.field.key] = cloneJson(input.fieldValue);
 },
 
+ // oxlint-disable-next-line eslint/sort-vars -- [EH-131] helper declaration order follows dependency order.
  validatePresentFieldValue = (
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-185] mutable issues and result out-params are bundled in input interface.
   input: Readonly<ValidatePresentFieldValueInput>,
@@ -272,6 +222,7 @@ const { createValidationIssue } = validationSupport,
   }
 },
 
+ // oxlint-disable-next-line eslint/sort-vars -- [EH-131] helper declaration order follows dependency order.
  validateFields = (
   input: Readonly<ValidateFieldsInput>,
 ): {

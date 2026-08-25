@@ -45,3 +45,4 @@ export type ReadonlyMutationObserverHost = Pick<
 >;
 
 export type ReadonlySelectionHost = Pick<HTMLElement, "contains" | "isConnected" | "querySelector">;
+

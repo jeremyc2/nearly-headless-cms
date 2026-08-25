@@ -7,6 +7,7 @@ import transactionsEditorAdapterSupport from "./transactions-editor-adapter-supp
 const { listItemSelectorSuffix, selectionPositionFromNode, textLength } =
     transactionsEditorAdapterSupport,
   nativeSelectionPositions = <
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     Input extends {
       readonly host: ReadonlyEditableHost;
       readonly nativeSelection: ReadonlyNativeSelection | null;

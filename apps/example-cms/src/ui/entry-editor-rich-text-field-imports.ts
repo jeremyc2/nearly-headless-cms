@@ -9,3 +9,4 @@ export type { RichTextInsertDialog } from "./entry-editor-types.ts";
 export { entryOptionLabel } from "./main-labels.ts";
 export { contentTypes, managementClient } from "./main-shared.ts";
 export { BrowserAdapter, RichTextEditor } from "./rich-text-editor/index.ts";
+

@@ -11,7 +11,7 @@ can bring their own UI and provide their own storage backend, authentication/aut
 ## Linting
 
 DO NOT use `eslint` or `prettier`. Exclusively use our `package.json` scripts for linting and formatting, or the oxlint CLI.
-We have setup very strict linting rules. Don't ever use `// oxlint-disable`, and use `// oxlint-disable-next-line` only as an escape hatch (avoid when possible) and document the reason for doing so inline with the code every time. Don't loosen type-checking or linting rules in our config files without explicit permission.
+We have setup very strict linting rules. Never use file-wide `// oxlint-disable` or `/* oxlint-disable */`; use `// oxlint-disable-next-line` only as an escape hatch on the specific line (avoid when possible) and document the reason for doing so inline with the code every time. Don't loosen type-checking or linting rules in our config files without explicit permission.
 
 Every escape hatch must include a stable code and justification, for example `// oxlint-disable-next-line <rule> -- [EH-042] <justification>`. Track all escape hatches in [`ESCAPE_HATCHES.md`](./ESCAPE_HATCHES.md) and regenerate that file with `bun run scripts/escape-hatches.ts sync` when adding or changing one.
 

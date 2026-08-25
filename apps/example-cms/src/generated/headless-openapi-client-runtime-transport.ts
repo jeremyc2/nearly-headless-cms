@@ -14,11 +14,6 @@ import { ProtocolFailure } from "./protocol-failure.ts";
 import { TransportFailure } from "./transport-failure.ts";
 import { operationSpecifications } from "./headless-openapi-client-runtime-specifications.ts";
 
-/* oxlint-disable effecttsgo/async-function -- [EH-026] generated clients expose a Promise-backed transport boundary. */
-/* oxlint-disable typescript/prefer-readonly-parameter-types -- [EH-176] generated operation inputs include platform types that cannot satisfy deep readonly. */
-/* oxlint-disable eslint/sort-vars -- [EH-130] generated runtime helpers are ordered for readability. */
-/* oxlint-disable eslint/max-lines -- [EH-115] generated transport runtime exceeds local module line budget. */
-/* oxlint-disable eslint/no-ternary -- [EH-123] generated fetch bridge keeps compact signal fallback. */
 
 const toAbortSignal = (
     signal: Pick<
@@ -28,6 +23,7 @@ const toAbortSignal = (
   ): AbortSignal =>
     // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-141] fetch requires AbortSignal; generated clients pass the runtime signal.
     signal as unknown as AbortSignal,
+  // oxlint-disable-next-line eslint/sort-vars -- [EH-130] generated runtime helpers are ordered for readability.
   appendQueryParameters = (
     requestUrl: Pick<URL, "pathname" | "searchParams">,
     queryParameters: Readonly<Record<string, unknown>>,
@@ -101,15 +97,16 @@ const toAbortSignal = (
         signal,
         specification: operationSpecifications[identifier],
       }),
-  /* oxlint-disable effecttsgo/global-fetch, effecttsgo/global-fetch-in-effect -- [EH-081, EH-082] generated clients intentionally use the platform fetch boundary so callers can supply the browser or server runtime. */
   fetchOperationResponse = (
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-196] OperationFetchRequest carries optional readonly abort signal bridge fields.
     request: Readonly<OperationFetchRequest>,
   ): Promise<Response> =>
+    // oxlint-disable-next-line effecttsgo/global-fetch -- [EH-081] generated clients intentionally use the platform fetch boundary so callers can supply the browser or server runtime.
     fetch(request.requestUrl, {
       body: request.body,
       headers: request.headers,
       method: request.method,
+      // oxlint-disable-next-line eslint/no-ternary -- [EH-123] generated fetch bridge keeps compact signal fallback.
       signal: request.signal === undefined ? undefined : toAbortSignal(request.signal),
     }).catch((error) => {
       throw TransportFailure.make({ message: connectionFailureMessage(error) });

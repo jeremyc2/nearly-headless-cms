@@ -61,3 +61,4 @@ export type Command =
   | { readonly type: "undo" }
   | { readonly type: "redo" }
   | { readonly type: "composition"; readonly active: boolean };
+
