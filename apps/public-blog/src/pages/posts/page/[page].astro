@@ -1,14 +1,10 @@
 ---
-import type { GetStaticPaths } from "astro"
 import Pagination from "../../../components/pagination.astro"
 import PostCard from "../../../components/post-card.astro"
 import SiteLayout from "../../../layouts/site-layout.astro"
-import { paginate } from "../../../domain/public-model.ts"
-import { publicExport } from "../../../data/public-export.ts"
 
-const archivePageSize = 6,
- getStaticPaths: GetStaticPaths = () => paginate({ items: publicExport.posts, pageSize: archivePageSize }).map((page) => ({ params: { page: String(page.pageNumber) }, props: { page } })),
- { page } = Astro.props
-export { getStaticPaths }
+export { postArchivePaths as getStaticPaths } from "../../../domain/archive-pages.ts"
+
+const { page } = Astro.props
 ---
 <SiteLayout title={`Archive · Page ${page.pageNumber}`}><header class="listing-header"><div class="shell"><p class="eyebrow">Every field note</p><h1>The archive</h1><p>Published Posts, newest first.</p></div></header><section class="shell content-stack"><div class="post-grid">{page.items.map((post) => <PostCard post={post} />)}</div><Pagination basePath="/posts" previousPage={page.previousPage} nextPage={page.nextPage} /></section></SiteLayout>

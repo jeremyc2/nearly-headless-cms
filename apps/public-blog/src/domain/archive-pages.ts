@@ -23,6 +23,14 @@ const archivePageSize = 6,
         props: { category, page },
       })),
     ),
+  postArchivePaths: GetStaticPaths = () =>
+    paginate({
+      items: publicExport.posts,
+      pageSize: archivePageSize,
+    }).map((page) => ({
+      params: { page: String(page.pageNumber) },
+      props: { page },
+    })),
   tagArchivePaths: GetStaticPaths = () =>
     publicExport.tags.flatMap((tag) =>
       paginate({
@@ -34,4 +42,4 @@ const archivePageSize = 6,
       })),
     );
 
-export { authorArchivePaths, categoryArchivePaths, tagArchivePaths };
+export { authorArchivePaths, categoryArchivePaths, postArchivePaths, tagArchivePaths };

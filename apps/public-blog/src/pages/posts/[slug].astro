@@ -4,17 +4,22 @@ import CommentForm from "../../components/comment-form.astro"
 import type { GetStaticPaths } from "astro"
 import RichText from "../../components/rich-text.astro"
 import SiteLayout from "../../layouts/site-layout.astro"
-const getStaticPaths: GetStaticPaths = () => publicExport.posts.map((generatedPost) => ({ params: { slug: generatedPost.slug }, props: { post: generatedPost } })),
- { post } = Astro.props,
- postAsset = assetById.get(post.featuredAsset ?? ""),
- postAuthor = authorById.get(post.author),
- postComments = publicExport.comments.filter((comment) => comment.post === post.id),
- singleCommentCount = 1
+
+export const getStaticPaths: GetStaticPaths = () =>
+  publicExport.posts.map((generatedPost) => ({
+    params: { slug: generatedPost.slug },
+    props: { post: generatedPost },
+  }))
+
+const { post } = Astro.props,
+  postAsset = assetById.get(post.featuredAsset ?? ""),
+  postAuthor = authorById.get(post.author),
+  postComments = publicExport.comments.filter((comment) => comment.post === post.id),
+  singleCommentCount = 1
 let commentNoun = "comments"
 if (postComments.length === singleCommentCount) {
   commentNoun = "comment"
 }
-export { getStaticPaths }
 ---
 <SiteLayout title={post.title} description={post.excerpt}>
   <article><header class="article-header shell narrow"><p class="post-meta"><time datetime={post.publishedAt}>{new Date(post.publishedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</time>{postAuthor && <> · By <a href={`/authors/${postAuthor.slug}/`}>{postAuthor.name}</a></>}</p><h1>{post.title}</h1><p class="article-deck">{post.excerpt}</p><div class="taxonomy-links">{post.categories.map((identifier) => { const category = categoryById.get(identifier); return category && <a href={`/categories/${category.slug}/`}>{category.name}</a> })}{post.tags.map((identifier) => { const tag = tagById.get(identifier); return tag && <a href={`/tags/${tag.slug}/`}>#{tag.name}</a> })}</div></header>

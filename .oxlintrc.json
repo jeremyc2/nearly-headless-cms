@@ -36,7 +36,10 @@
       },
       "files": [
         "apps/public-blog/**/*.astro"
-      ]
+      ],
+      "rules": {
+        "eslint/one-var": "off"
+      }
     }
   ],
   "rules": {

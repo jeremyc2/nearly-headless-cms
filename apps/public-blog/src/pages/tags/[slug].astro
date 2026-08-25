@@ -3,9 +3,11 @@ import type { GetStaticPaths } from "astro"
 import PostCard from "../../components/post-card.astro"
 import SiteLayout from "../../layouts/site-layout.astro"
 import { publicExport } from "../../data/public-export.ts"
+
+export const getStaticPaths: GetStaticPaths = () =>
+  publicExport.tags.map((tag) => ({ params: { slug: tag.slug }, props: { tag } }))
+
 const { tag: archiveTag } = Astro.props,
- getStaticPaths: GetStaticPaths = () => publicExport.tags.map((tag) => ({ params: { slug: tag.slug }, props: { tag } })),
- posts = publicExport.posts.filter((post) => post.tags.includes(archiveTag.id))
-export { getStaticPaths }
+  posts = publicExport.posts.filter((post) => post.tags.includes(archiveTag.id))
 ---
 <SiteLayout title={archiveTag.name}><header class="listing-header"><div class="shell"><p class="eyebrow">Tag</p><h1>#{archiveTag.name}</h1><p>{archiveTag.description}</p></div></header><section class="shell content-stack"><div class="post-grid">{posts.map((post) => <PostCard post={post} />)}</div></section></SiteLayout>
