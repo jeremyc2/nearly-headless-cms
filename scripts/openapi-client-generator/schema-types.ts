@@ -267,8 +267,10 @@ const emptyFieldCount = 0,
     },
   },
   zRenderComponentTypes = (document: Readonly<Record<string, unknown>>): string => {
-    const components = requireRecord(document["components"], "components"),
-      componentsSchemas = requireRecord(components["schemas"], "component schemas");
+    const componentsSchemas = requireRecord(
+      requireRecord(document["components"], "components")["schemas"],
+      "component schemas",
+    );
     return Object.entries(componentsSchemas)
       .toSorted(([leftName], [rightName]) => leftName.localeCompare(rightName))
       .map(([name, schema]) => {
@@ -288,6 +290,7 @@ const emptyFieldCount = 0,
   zRenderTypeProperty = (name: string): string => schemaRenderer.propertyName(name);
 
 /** Renders validated OpenAPI schemas into stable TypeScript type source. */
+export { listComponentSchemaNames } from "./component-schema-names.ts";
 export {
   zRenderComponentTypes as renderComponentTypes,
   zRenderSchemaType as renderSchemaType,

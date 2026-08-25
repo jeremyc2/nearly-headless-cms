@@ -1,12 +1,14 @@
-import { type Cms, CmsError } from "nearly-headless-cms";
-import { Effect } from "effect";
 import {
+  type Cms,
+  CmsError,
+  Effect,
+  PublicAuthor,
+  PublicTaxonomy,
   authorDefinitionRequirement,
+  deliveryPublicContent,
+  deliverySupport,
   taxonomyDefinitionRequirement,
-} from "./delivery-definition-requirements.ts";
-import deliveryPublicContent from "./delivery-public-content.ts";
-import deliverySupport from "./delivery-support.ts";
-import { PublicAuthor, PublicTaxonomy } from "./wire-schemas.ts";
+} from "./delivery-public-owner-support-imports.ts";
 
 const { publicContent } = deliveryPublicContent,
   { publicValue } = deliverySupport,
@@ -17,14 +19,9 @@ const { publicContent } = deliveryPublicContent,
   ) =>
     cms.readConsistentSnapshot.pipe(
       Effect.flatMap((consistentSnapshot) => {
-        const content = publicContent(consistentSnapshot);
-        let entries = content.tags;
-        if (contentTypeId === "author") {
-          entries = content.authors;
-        } else if (contentTypeId === "category") {
-          entries = content.categories;
-        }
-        const entry = entries.find((candidate) => candidate.values["slug"] === slug);
+        const content = publicContent(consistentSnapshot),
+          entries = publicOwnerEntries(content, contentTypeId),
+          entry = entries.find((candidate) => candidate.values["slug"] === slug);
         if (entry === undefined) {
           return Effect.fail(CmsError.NotFound.make({ message: `${contentTypeId} was not found` }));
         }
@@ -36,6 +33,18 @@ const { publicContent } = deliveryPublicContent,
       return authorDefinitionRequirement;
     }
     return taxonomyDefinitionRequirement(contentTypeId);
+  },
+  publicOwnerEntries = (
+    content: ReturnType<typeof publicContent>,
+    contentTypeId: "author" | "category" | "tag",
+  ) => {
+    if (contentTypeId === "author") {
+      return content.authors;
+    }
+    if (contentTypeId === "category") {
+      return content.categories;
+    }
+    return content.tags;
   },
   publicOwnerPath = (contentTypeId: "author" | "category" | "tag"): string => {
     if (contentTypeId === "category") {

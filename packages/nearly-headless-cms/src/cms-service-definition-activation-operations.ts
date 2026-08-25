@@ -1,10 +1,10 @@
-import { type CmsError } from "./cms-error.ts";
-import { type CmsServiceOperationContext } from "./cms-service-operation-context.ts";
-import { Effect } from "effect";
 import {
   type ActivateDefinitionSnapshotInput,
   type ActivateDefinitionSnapshotResult,
 } from "./cms-types.ts";
+import { type CmsError } from "./cms-error.ts";
+import type { CmsServiceOperationContext } from "./cms-service-operation-context.ts";
+import { Effect } from "effect";
 import activationSupport from "./cms-service-definition-activation-support.ts";
 
 const { applyMigrationRecords, commitDefinitionActivation, prepareActivationRecords } = activationSupport,

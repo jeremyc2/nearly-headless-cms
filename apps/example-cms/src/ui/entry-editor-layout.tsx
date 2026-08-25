@@ -1,14 +1,15 @@
-import type { AssetRepresentation, EntryRepresentation } from "../generated/management-client.ts";
-import type {
-  useEntryEditorDeleteMutation,
-  useEntryEditorEditorialMutation,
-} from "./entry-editor-mutations.ts";
-import type { useEntryEditorQueries } from "./entry-editor-queries.ts";
-import type { EditorialConfirmationStatus } from "./entry-editor-types.ts";
-import { EntryEditorDangerPanel } from "./entry-editor-danger-panel.tsx";
-import { EntryEditorHistoryPanel } from "./entry-editor-history-panel.tsx";
-import { EntryEditorPublicationPanel } from "./entry-editor-publication-panel.tsx";
-import { EntryEditorStoryCanvas } from "./entry-editor-story-canvas.tsx";
+import {
+  type AssetRepresentation,
+  type EditorialConfirmationStatus,
+  EntryEditorDangerPanel,
+  EntryEditorHistoryPanel,
+  EntryEditorPublicationPanel,
+  EntryEditorStoryCanvas,
+  type EntryRepresentation,
+  type useEntryEditorDeleteMutation,
+  type useEntryEditorEditorialMutation,
+  type useEntryEditorQueries,
+} from "./entry-editor-layout-imports.ts";
 
 export const EntryEditorLayout = ({
   assets,

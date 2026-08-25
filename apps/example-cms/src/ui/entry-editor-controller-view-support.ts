@@ -1,88 +1,40 @@
-import type { useNavigate } from "@tanstack/react-router";
-import type { useEntryEditorControllerMutations } from "./entry-editor-controller-mutations.ts";
-import type { createFieldUpdater } from "./entry-editor-support.ts";
-import type { useEntryEditorQueries } from "./entry-editor-queries.ts";
-import type { DeletionRecord, EditorialConfirmationStatus, EntryConflict } from "./entry-editor-types.ts";
+import type { EditorialConfirmationStatus } from "./entry-editor-controller-view-imports.ts";
+import type { EntryEditorControllerViewInput } from "./entry-editor-controller-view-types.ts";
+import entryEditorControllerViewActionsSupport from "./entry-editor-controller-view-actions-support.ts";
 
-interface EntryEditorControllerViewInput {
-  readonly assets: ReturnType<typeof useEntryEditorQueries>["assets"];
-  readonly authors: ReturnType<typeof useEntryEditorQueries>["authors"];
-  readonly categories: ReturnType<typeof useEntryEditorQueries>["categories"];
-  readonly confirmPurge: boolean;
-  readonly conflict: EntryConflict | undefined;
-  readonly contentTypeId: string;
-  readonly deletionDialogOpen: boolean;
-  readonly deletionRecord: DeletionRecord | undefined;
-  readonly editorialConfirmation: EditorialConfirmationStatus | undefined;
-  readonly entryId: string;
-  readonly mutations: ReturnType<typeof useEntryEditorControllerMutations>;
-  readonly navigate: ReturnType<typeof useNavigate>;
-  readonly saveValues: (replacementValues?: Record<string, unknown>, writeToken?: string) => void;
-  readonly setConfirmPurge: (value: boolean) => void;
-  readonly setConflict: (value: EntryConflict | undefined) => void;
-  readonly setDeletionDialogOpen: (value: boolean) => void;
-  readonly setEditorialConfirmation: (value: EditorialConfirmationStatus | undefined) => void;
-  readonly setValues: (value: Record<string, unknown>) => void;
-  readonly state: ReturnType<typeof useEntryEditorQueries>["state"];
-  readonly tags: ReturnType<typeof useEntryEditorQueries>["tags"];
-  readonly title: string;
-  readonly titleField: string;
-  readonly updateField: ReturnType<typeof createFieldUpdater>;
-  readonly values: Record<string, unknown>;
-}
-
-const entryEditorControllerActions = ({
-  conflict,
-  contentTypeId,
-  mutations,
-  navigate,
-  saveValues,
-  setConfirmPurge,
-  setConflict,
-  setDeletionDialogOpen,
-  setEditorialConfirmation,
-  setValues,
-  values,
-}: EntryEditorControllerViewInput) => ({
-  cancelDeletion: () => {
-    setDeletionDialogOpen(false);
-  },
-  cancelEditorialConfirmation: () => {
-    setEditorialConfirmation(undefined);
-  },
-  cancelPurge: () => {
-    setConfirmPurge(false);
-  },
-  confirmEditorialChange: (status: EditorialConfirmationStatus) => {
-    mutations.editorialCommand.mutate(status);
-    setEditorialConfirmation(undefined);
-  },
-  confirmPurgeAction: () => {
-    mutations.permanentlyPurge.mutate();
-  },
-  discardConflict: (latestValues: Record<string, unknown>) => {
-    setValues(structuredClone(latestValues));
-    setConflict(undefined);
-  },
-  reapplyConflict: () => {
-    if (conflict !== undefined) {
-      saveValues(values, conflict.latest.writeToken);
-    }
-  },
-  requestDeletion: () => {
-    setDeletionDialogOpen(true);
-  },
-  requestEditorialConfirmation: setEditorialConfirmation,
-  returnToList: () => {
-    void navigate({ params: { contentTypeId }, to: "/content/$contentTypeId" });
-  },
-  startPurge: () => {
-    setConfirmPurge(true);
-  },
-  submitDeletion: () => {
-    mutations.deleteEntry.mutate();
-  },
-}),
+const { entryEditorControllerConflictActions } = entryEditorControllerViewActionsSupport,
+  entryEditorControllerActions = (input: EntryEditorControllerViewInput) => ({
+    ...entryEditorControllerConflictActions(input),
+    cancelDeletion: () => {
+      input.setDeletionDialogOpen(false);
+    },
+    cancelEditorialConfirmation: () => {
+      input.setEditorialConfirmation(undefined);
+    },
+    cancelPurge: () => {
+      input.setConfirmPurge(false);
+    },
+    confirmEditorialChange: (status: EditorialConfirmationStatus) => {
+      input.mutations.editorialCommand.mutate(status);
+      input.setEditorialConfirmation(undefined);
+    },
+    confirmPurgeAction: () => {
+      input.mutations.permanentlyPurge.mutate();
+    },
+    requestDeletion: () => {
+      input.setDeletionDialogOpen(true);
+    },
+    requestEditorialConfirmation: input.setEditorialConfirmation,
+    returnToList: () => {
+      void input.navigate({ params: { contentTypeId: input.contentTypeId }, to: "/content/$contentTypeId" });
+    },
+    startPurge: () => {
+      input.setConfirmPurge(true);
+    },
+    submitDeletion: () => {
+      input.mutations.deleteEntry.mutate();
+    },
+  }),
   entryEditorControllerViewModel = (input: EntryEditorControllerViewInput) => ({
     ...entryEditorControllerActions(input),
     assets: input.assets,
@@ -107,6 +59,8 @@ const entryEditorControllerActions = ({
     updateField: input.updateField,
     values: input.values,
   });
+
+export type { EntryEditorControllerViewInput } from "./entry-editor-controller-view-types.ts";
 
 export default {
   entryEditorControllerViewModel,

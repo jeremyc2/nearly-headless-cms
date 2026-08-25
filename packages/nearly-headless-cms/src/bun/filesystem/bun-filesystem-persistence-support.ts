@@ -1,20 +1,23 @@
-import { type IngestInput } from "../../asset.ts";
-import { InfrastructureFailure, InvalidInput } from "../../cms-error.ts";
-import { type CatalogState } from "../../persistence.ts";
 import {
+  type CatalogState,
   type Configuration,
+  Effect,
+  InfrastructureFailure,
+  type IngestInput,
+  InvalidInput,
   type State,
+  Stream,
+  basename,
   defaultAssetMaximumByteLength,
   defaultEntryMaximumByteLength,
   defaultMetadataMaximumByteLength,
   emptyLength,
+  join,
+  open,
+  rename,
+  rm,
   stagingPrefix,
-} from "./bun-filesystem-persistence-types.ts";
-import { Effect, Stream } from "effect";
-// oxlint-disable-next-line effecttsgo/node-builtin-import -- Bun does not provide a path manipulation API; these operations are platform-neutral string handling.
-import { basename, join } from "node:path";
-// oxlint-disable-next-line effecttsgo/node-builtin-import -- This Bun adapter needs durable fsync/open and directory primitives unavailable in Effect's portable FileSystem layer.
-import { open, rename, rm } from "node:fs/promises";
+} from "./bun-filesystem-persistence-support-imports.ts";
 
 const assetStageEndPromise = (stage: {
   readonly ended: boolean;

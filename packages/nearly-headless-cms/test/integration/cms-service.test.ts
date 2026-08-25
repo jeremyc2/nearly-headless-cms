@@ -1,5 +1,6 @@
-import { Cms, ContentDefinition } from "../../src/index.ts";
+import { type CompiledSnapshot, compileSnapshot } from "../../src/content-definition.ts";
 import { describe, expect, test } from "bun:test";
+import { Cms } from "../../src/index.ts";
 import { DevelopmentCms } from "../../src/testing/index.ts";
 import { Effect } from "effect";
 
@@ -40,7 +41,7 @@ const createVerifiedAuthor = Effect.gen(function* createVerifiedAuthor() {
       providedEffect = effect.pipe(Effect.provide(layer));
     return Effect.runPromise(providedEffect);
   },
-  snapshot = ContentDefinition.compile({
+  snapshot: CompiledSnapshot = compileSnapshot({
     definitionSpaceId: "example-blog",
     definitions: [
       {

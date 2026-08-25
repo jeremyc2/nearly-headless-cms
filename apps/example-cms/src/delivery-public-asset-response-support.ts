@@ -57,13 +57,6 @@ const { parseByteRange } = deliveryPublicAssetByteRangeSupport,
       status: 200,
     });
   },
-  rangedAssetSlice = (
-    asset: Asset.StoredAsset,
-    parsedRange: { readonly end: number; readonly start: number },
-  ): Uint8Array => {
-    const boundedEnd = Math.min(parsedRange.end, asset.bytes.byteLength - ONE_ITEM);
-    return asset.bytes.slice(parsedRange.start, boundedEnd + ONE_ITEM);
-  },
   rangedAssetResponse = (input: RangedAssetResponseInput): Response => {
     const { asset, headers, range, request } = input,
       parsedRange = parseByteRange(range, asset.bytes.byteLength);
@@ -72,9 +65,19 @@ const { parseByteRange } = deliveryPublicAssetByteRangeSupport,
       headers.delete("content-length");
       return new Response(null, { headers, status: 416 });
     }
-    const bytes = rangedAssetSlice(asset, parsedRange),
-      boundedEnd = parsedRange.start + bytes.byteLength - ONE_ITEM;
-    headers.set("content-range", `bytes ${parsedRange.start}-${boundedEnd}/${asset.bytes.byteLength}`);
+    return rangedAssetSuccessResponse({ asset, headers, request }, parsedRange);
+  },
+  rangedAssetSuccessResponse = (
+    input: Omit<RangedAssetResponseInput, "range">,
+    parsedRange: { readonly end: number; readonly start: number },
+  ): Response => {
+    const { asset, headers, request } = input,
+      bytes = asset.bytes.slice(
+        parsedRange.start,
+        Math.min(parsedRange.end, asset.bytes.byteLength - ONE_ITEM) + ONE_ITEM,
+      ),
+      sliceEnd = Math.min(parsedRange.end, asset.bytes.byteLength - ONE_ITEM);
+    headers.set("content-range", `bytes ${parsedRange.start}-${sliceEnd}/${asset.bytes.byteLength}`);
     headers.set("content-length", String(bytes.byteLength));
     return new Response(publicAssetBody(request, new Uint8Array(bytes)), {
       headers,

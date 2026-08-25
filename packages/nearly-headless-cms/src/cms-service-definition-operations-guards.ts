@@ -1,11 +1,11 @@
 import {
+  type AppendDefinitionRevisionInput,
+  type CatalogState,
   type CmsError,
   Conflict,
+  Effect,
   InvalidInput,
-} from "./cms-error.ts";
-import { Effect } from "effect";
-import type { CatalogState } from "./persistence.ts";
-import type { AppendDefinitionRevisionInput } from "./cms-types.ts";
+} from "./cms-service-definition-operations-guards-imports.ts";
 
 interface AppendDefinitionRevisionValidation {
   readonly revision: number;

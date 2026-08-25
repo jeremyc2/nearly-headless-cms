@@ -1,20 +1,33 @@
-import type { RichText } from "nearly-headless-cms";
-import { emptyIndex } from "./transactions-constants.ts";
+import {
+  type Command,
+  type RichText,
+  emptyIndex,
+} from "./transactions-editor-adapter-support-imports.ts";
 import transactionsSupport from "./transactions-support.ts";
-import type { Command } from "./transactions-types.ts";
 
 const { conditionalValue } = transactionsSupport,
-  listItemSelectorSuffix = (listItemIndex: number | undefined): string => {
-    if (listItemIndex === undefined) {
-      return "";
-    }
-    return `[data-list-item-index="${listItemIndex}"]`;
+  attachBrowserAdapterEventListeners = (
+    host: HTMLDivElement,
+    handlers: BrowserAdapterEventHandlers,
+  ): void => {
+    host.addEventListener("beforeinput", handlers.beforeInput);
+    host.addEventListener("keydown", handlers.keyDown);
+    host.addEventListener("compositionstart", handlers.compositionStart);
+    host.addEventListener("compositionend", handlers.compositionEnd);
+    host.addEventListener("paste", handlers.paste);
+    host.addEventListener("drop", handlers.drop);
   },
-  textLength = (text: string | null | undefined): number => {
-    if (text === "\u200B") {
-      return emptyIndex;
+  beforeInputCommand = (event: InputEvent): Command | undefined => {
+    if (event.inputType === "insertText" && event.data !== null) {
+      return { text: event.data, type: "insertText" };
     }
-    return text?.length ?? emptyIndex;
+    if (event.inputType === "deleteContentBackward") {
+      return { type: "deleteBackward" };
+    }
+    if (event.inputType === "insertParagraph") {
+      return { type: "splitBlock" };
+    }
+    return undefined;
   },
   blockElementName = (block: RichText.BlockNode): string => {
     switch (block.type) {
@@ -44,34 +57,6 @@ const { conditionalValue } = transactionsSupport,
       }
     }
   },
-  resolveElementFromNode = (node: Node | null): Element | null | undefined => {
-    if (node instanceof Element) {
-      return node;
-    }
-    return node?.parentElement;
-  },
-  selectionPositionFromNode = (
-    node: Node | null,
-    offset: number,
-    host: HTMLElement,
-  ): SelectionPosition | undefined => {
-    const element = resolveElementFromNode(node),
-      text = element?.closest<HTMLElement>("[data-block-index][data-inline-index]");
-    if (text === undefined || text === null || !host.contains(text)) {
-      return undefined;
-    }
-    const blockIndex = Number(text.dataset["blockIndex"]),
-      inlineIndex = Number(text.dataset["inlineIndex"]);
-    if (!Number.isSafeInteger(blockIndex) || !Number.isSafeInteger(inlineIndex)) {
-      return undefined;
-    }
-    const boundedOffset = Math.min(offset, textLength(text.textContent)),
-      position = { blockIndex, inlineIndex, offset: boundedOffset };
-    if (text.dataset["listItemIndex"] === undefined) {
-      return position;
-    }
-    return { ...position, listItemIndex: Number(text.dataset["listItemIndex"]) };
-  },
   browserAdapterObserverOptions = {
     characterData: true,
     childList: true,
@@ -81,28 +66,6 @@ const { conditionalValue } = transactionsSupport,
     host.contentEditable = "true";
     host.setAttribute("role", "textbox");
     host.setAttribute("aria-multiline", "true");
-  },
-  attachBrowserAdapterEventListeners = (
-    host: HTMLDivElement,
-    handlers: BrowserAdapterEventHandlers,
-  ): void => {
-    host.addEventListener("beforeinput", handlers.beforeInput);
-    host.addEventListener("keydown", handlers.keyDown);
-    host.addEventListener("compositionstart", handlers.compositionStart);
-    host.addEventListener("compositionend", handlers.compositionEnd);
-    host.addEventListener("paste", handlers.paste);
-    host.addEventListener("drop", handlers.drop);
-  },
-  detachBrowserAdapterEventListeners = (
-    host: HTMLDivElement,
-    handlers: BrowserAdapterEventHandlers,
-  ): void => {
-    host.removeEventListener("beforeinput", handlers.beforeInput);
-    host.removeEventListener("keydown", handlers.keyDown);
-    host.removeEventListener("compositionstart", handlers.compositionStart);
-    host.removeEventListener("compositionend", handlers.compositionEnd);
-    host.removeEventListener("paste", handlers.paste);
-    host.removeEventListener("drop", handlers.drop);
   },
   createRenderingObserver = (
     host: HTMLDivElement,
@@ -117,17 +80,22 @@ const { conditionalValue } = transactionsSupport,
     observer.observe(host, browserAdapterObserverOptions);
     return observer;
   },
-  beforeInputCommand = (event: InputEvent): Command | undefined => {
-    if (event.inputType === "insertText" && event.data !== null) {
-      return { text: event.data, type: "insertText" };
+  detachBrowserAdapterEventListeners = (
+    host: HTMLDivElement,
+    handlers: BrowserAdapterEventHandlers,
+  ): void => {
+    host.removeEventListener("beforeinput", handlers.beforeInput);
+    host.removeEventListener("keydown", handlers.keyDown);
+    host.removeEventListener("compositionstart", handlers.compositionStart);
+    host.removeEventListener("compositionend", handlers.compositionEnd);
+    host.removeEventListener("paste", handlers.paste);
+    host.removeEventListener("drop", handlers.drop);
+  },
+  listItemSelectorSuffix = (listItemIndex: number | undefined): string => {
+    if (listItemIndex === undefined) {
+      return "";
     }
-    if (event.inputType === "deleteContentBackward") {
-      return { type: "deleteBackward" };
-    }
-    if (event.inputType === "insertParagraph") {
-      return { type: "splitBlock" };
-    }
-    return undefined;
+    return `[data-list-item-index="${listItemIndex}"]`;
   },
   metaKeyEditorAction = (event: KeyboardEvent): MetaKeyEditorAction | undefined => {
     const key = event.key.toLowerCase();
@@ -148,6 +116,43 @@ const { conditionalValue } = transactionsSupport,
       };
     }
     return undefined;
+  },
+  resolveElementFromNode = (node: Node | null): Element | null | undefined => {
+    if (node instanceof Element) {
+      return node;
+    }
+    return node?.parentElement;
+  },
+  selectionPositionFromNode = (
+    node: Node | null,
+    offset: number,
+    host: HTMLElement,
+  ): SelectionPosition | undefined => {
+    const element = resolveElementFromNode(node),
+      text = element?.closest<HTMLElement>("[data-block-index][data-inline-index]");
+    if (text === undefined || text === null || !host.contains(text)) {
+      return undefined;
+    }
+    return selectionPositionFromResolvedText(text, offset);
+  },
+  selectionPositionFromResolvedText = (
+    text: HTMLElement,
+    offset: number,
+  ): SelectionPosition => {
+    const blockIndex = Number(text.dataset["blockIndex"]),
+      boundedOffset = Math.min(offset, textLength(text.textContent)),
+      inlineIndex = Number(text.dataset["inlineIndex"]),
+      position = { blockIndex, inlineIndex, offset: boundedOffset };
+    if (text.dataset["listItemIndex"] === undefined) {
+      return position;
+    }
+    return { ...position, listItemIndex: Number(text.dataset["listItemIndex"]) };
+  },
+  textLength = (text: string | null | undefined): number => {
+    if (text === "\u200B") {
+      return emptyIndex;
+    }
+    return text?.length ?? emptyIndex;
   };
 
 export interface BrowserAdapterEventHandlers {

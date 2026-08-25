@@ -3,12 +3,17 @@ import {
   Conflict,
   NotFound,
 } from "./cms-error.ts";
+import type {
+  CmsServiceOperationContext,
+  CompiledContentType,
+  CompiledSnapshot,
+  EntryRecord,
+  PurgeEntryInput,
+  RestoreInput,
+  Revision,
+  RevisionPage,
+} from "./cms-service-entry-history-guards-types.ts";
 import { Effect } from "effect";
-import type { CompiledContentType, CompiledSnapshot } from "./content-definition.ts";
-import type { RestoreInput, Revision, RevisionPage } from "./entry-history.ts";
-import type { CmsServiceOperationContext } from "./cms-service-operation-context.ts";
-import type { EntryRecord } from "./persistence.ts";
-import type { PurgeEntryInput } from "./cms-types.ts";
 import cmsSupport from "./cms-support.ts";
 
 const { attempt, decodeHistoryCursor, entryResource, historyCursor } = cmsSupport,

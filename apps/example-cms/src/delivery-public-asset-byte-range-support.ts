@@ -5,13 +5,13 @@ interface ParsedByteRange {
   readonly start: number;
 }
 
-const byteRangePattern = /^bytes=(?<start>\d*)-(?<end>\d*)$/u,
-  byteRangeEndFromMatch = (match: RegExpExecArray, byteLength: number): number => {
+const byteRangeEndFromMatch = (match: RegExpExecArray, byteLength: number): number => {
     if (match.groups?.["start"] === "" || match.groups?.["end"] === "") {
       return byteLength - ONE_ITEM;
     }
     return Number(match.groups?.["end"]);
   },
+  byteRangePattern = /^bytes=(?<start>\d*)-(?<end>\d*)$/u,
   byteRangeStartFromMatch = (match: RegExpExecArray, byteLength: number): number => {
     if (match.groups?.["start"] === "") {
       return Math.max(FIRST_INDEX, byteLength - Number(match.groups?.["end"]));
@@ -26,6 +26,12 @@ const byteRangePattern = /^bytes=(?<start>\d*)-(?<end>\d*)$/u,
     if (match === null || range.includes(",")) {
       return "invalid";
     }
+    return parseMatchedByteRange(match, byteLength);
+  },
+  parseMatchedByteRange = (
+    match: RegExpExecArray,
+    byteLength: number,
+  ): ParsedByteRange | "unsatisfiable" => {
     const end = byteRangeEndFromMatch(match, byteLength),
       start = byteRangeStartFromMatch(match, byteLength);
     if (

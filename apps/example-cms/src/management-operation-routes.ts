@@ -1,23 +1,21 @@
 import {
-  authorDefinitionRequirement,
-  commentDefinitionRequirement,
-  postDefinitionRequirement,
-  taxonomyDefinitionRequirement,
-} from "./delivery.ts";
-import {
   AuthorCascadeDeletionReceipt,
   CascadeDeletionReceipt,
   DetachmentReceipt,
   EditorialReceipt,
   EmptyRequest,
+  type HttpContract,
   Identifier,
   ImageDeletionReceipt,
   ImageReplacementReceipt,
   ImageReplacementRequest,
   PublicAsset,
-} from "./wire-schemas.ts";
-import { Schema } from "effect";
-import type { HttpContract } from "nearly-headless-cms/http";
+  Schema,
+  authorDefinitionRequirement,
+  commentDefinitionRequirement,
+  postDefinitionRequirement,
+  taxonomyDefinitionRequirement,
+} from "./management-operation-routes-imports.ts";
 
 interface EditorialRouteInput {
   readonly contentTypeId: "post" | "comment";

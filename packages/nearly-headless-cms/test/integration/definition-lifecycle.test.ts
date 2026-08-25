@@ -1,4 +1,5 @@
-import { Cms, ContentDefinition, type Operation } from "../../src/index.ts";
+import { Cms, type Operation } from "../../src/index.ts";
+import { type CompiledSnapshot, type CustomFieldRegistration, compileSnapshot } from "../../src/content-definition.ts";
 import { Effect, Exit } from "effect";
 import { describe, expect, test } from "bun:test";
 import { DevelopmentCms } from "../../src/testing/index.ts";
@@ -12,7 +13,7 @@ const incompatibleNoteDefinition = {
     parentRevision: 1,
     revision: 2,
   },
-  initialSnapshot = ContentDefinition.compile({
+  initialSnapshot: CompiledSnapshot = compileSnapshot({
     definitionSpaceId: "definition-lifecycle",
     definitions: [
       {
@@ -85,7 +86,7 @@ const incompatibleNoteDefinition = {
     parentRevision: 1,
     revision: 2,
   },
-  ratedNoteRegistration: ContentDefinition.CustomFieldRegistration = {
+  ratedNoteRegistration: CustomFieldRegistration = {
     capabilities: { filter: ["equals"], projectable: true, sortable: true },
     formatVersion: 1,
     identifier: "com.example.rating",

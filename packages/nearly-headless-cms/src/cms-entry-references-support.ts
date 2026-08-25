@@ -1,18 +1,26 @@
-import * as RichText from "./rich-text.ts";
-import { Effect } from "effect";
-import type { Management as AssetManagement } from "./asset.ts";
-import { type CmsError, Conflict, InvalidInput } from "./cms-error.ts";
+import type {
+  AssetManagement,
+  CompiledContentType,
+  CompiledSnapshot,
+  EntryGeneration,
+  EntryRecord,
+  Field,
+  RelationshipFieldKind,
+  Representation,
+  ResolvedField,
+  Resource,
+} from "./cms-entry-references-types.ts";
 import {
-  type CompiledContentType,
-  type CompiledSnapshot,
-  type Field,
-  type RelationshipFieldKind,
-  type ResolvedField,
-} from "./content-definition.ts";
-import type { Representation } from "./entry.ts";
-import { type JsonObject, type JsonValue, cloneJson, isJsonObject } from "./internal/json.ts";
-import type { Resource } from "./operation.ts";
-import type { EntryGeneration, EntryRecord } from "./persistence.ts";
+  type CmsError,
+  Conflict,
+  Effect,
+  InvalidInput,
+  type JsonObject,
+  type JsonValue,
+  cloneJson,
+  isJsonObject,
+} from "./cms-entry-references-imports.ts";
+import cmsEntryReferencesRichTextSupport from "./cms-entry-references-rich-text-support.ts";
 
 export interface References {
   readonly relationships: readonly {
@@ -36,43 +44,38 @@ interface CollectFieldReferencesInput {
   readonly value: JsonValue;
 }
 
-const collectFieldReferences = ({
-    assetIds,
-    field,
-    relationships,
-    value,
-  }: CollectFieldReferencesInput): void => {
+const { collectRichTextReferences, validateRichTextDocument } =
+    cmsEntryReferencesRichTextSupport,
+  appendAssetIdentifiers = (assetIds: string[], value: JsonValue): void => {
+    for (const assetId of oneOrMany(value)) {
+      if (typeof assetId === "string") {
+        assetIds.push(assetId);
+      }
+    }
+  },
+  appendRelationshipTargets = (
+    relationships: { entryId: string; targetContentTypeIds: readonly string[] }[],
+    targetContentTypeIds: readonly string[],
+    value: JsonValue,
+  ): void => {
+    for (const entryId of oneOrMany(value)) {
+      if (typeof entryId === "string") {
+        relationships.push({ entryId, targetContentTypeIds });
+      }
+    }
+  },
+  collectAssetFieldReferences = ({ assetIds, field, value }: CollectFieldReferencesInput): void => {
     const isAssetField =
-        field.kind.kind === "asset" ||
-        (field.kind.kind === "list" && field.kind.element.kind === "asset"),
-      relationship = relationshipKind(field);
-    if (relationship !== undefined) {
-      const entryIds = oneOrMany(value);
-      for (const entryId of entryIds) {
-        if (typeof entryId === "string") {
-          relationships.push({
-            entryId,
-            targetContentTypeIds: relationship.targetContentTypeIds,
-          });
-        }
-      }
-    }
+      field.kind.kind === "asset" ||
+      (field.kind.kind === "list" && field.kind.element.kind === "asset");
     if (isAssetField) {
-      const fieldAssetIds = oneOrMany(value);
-      for (const assetId of fieldAssetIds) {
-        if (typeof assetId === "string") {
-          assetIds.push(assetId);
-        }
-      }
+      appendAssetIdentifiers(assetIds, value);
     }
-    if (field.kind.kind === "rich-text") {
-      const document = RichText.validate(value),
-        richTextReferences = RichText.references(document);
-      for (const entryId of richTextReferences.entryIds) {
-        relationships.push({ entryId, targetContentTypeIds: [] });
-      }
-      assetIds.push(...richTextReferences.assetIds);
-    }
+  },
+  collectFieldReferences = (input: CollectFieldReferencesInput): void => {
+    collectRelationshipFieldReferences(input);
+    collectAssetFieldReferences(input);
+    collectRichTextFieldReferences(input);
   },
   collectReferences = (contentType: CompiledContentType, values: JsonObject): References => {
     const assetIds: string[] = [],
@@ -101,6 +104,30 @@ const collectFieldReferences = ({
       };
     visit(contentType.fields, values);
     return { assetIds, relationships };
+  },
+  collectRelationshipFieldReferences = ({
+    field,
+    relationships,
+    value,
+  }: CollectFieldReferencesInput): void => {
+    const relationship = relationshipKind(field);
+    if (relationship !== undefined) {
+      appendRelationshipTargets(relationships, relationship.targetContentTypeIds, value);
+    }
+  },
+  collectRichTextFieldReferences = ({
+    assetIds,
+    field,
+    relationships,
+    value,
+  }: CollectFieldReferencesInput): void => {
+    if (field.kind.kind === "rich-text") {
+      const richTextReferences = collectRichTextReferences(validateRichTextDocument(value));
+      for (const entryId of richTextReferences.entryIds) {
+        relationships.push({ entryId, targetContentTypeIds: [] });
+      }
+      assetIds.push(...richTextReferences.assetIds);
+    }
   },
   ensureReferences = (
     references: References,
@@ -202,12 +229,12 @@ const collectFieldReferences = ({
     }
     const values: Record<string, JsonValue> = {};
     for (const path of projection) {
-      const segments = path.split("."),
-        projectedValue = valueAtPath(entry.values, segments);
+      const pathSegments = path.split("."),
+        projectedValue = valueAtPath(entry.values, pathSegments);
       if (projectedValue === undefined) {
         // Skip absent projection paths.
       } else {
-        setProjectedValue(values, segments, projectedValue);
+        setProjectedValue(values, pathSegments, projectedValue);
       }
     }
     return { contentTypeId: entry.contentTypeId, id: entry.id, values };

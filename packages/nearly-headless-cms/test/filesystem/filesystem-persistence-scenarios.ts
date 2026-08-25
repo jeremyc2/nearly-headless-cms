@@ -1,4 +1,5 @@
-import { Asset, ContentDefinition, Persistence } from "../../src/index.ts";
+import { Asset, Persistence } from "../../src/index.ts";
+import { type CompiledSnapshot, compileSnapshot } from "../../src/content-definition.ts";
 import { DateTime, Deferred, Effect, Exit, Fiber, Layer, Stream } from "effect";
 import {
   atomicFilesystemLayer,
@@ -25,7 +26,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 
 const commitDurableCatalogCutoverEffect = (
-    targetSnapshot: ReturnType<typeof ContentDefinition.compile>,
+    targetSnapshot: CompiledSnapshot,
   ) =>
     Effect.gen(function* commitDurableCatalogCutoverStep() {
       const activatedAt = DateTime.formatIso(yield* DateTime.now),
@@ -65,7 +66,7 @@ const commitDurableCatalogCutoverEffect = (
         expectedEntryGeneration: generationWithEntry.generation,
       });
     }),
-  durableCatalogInitialSnapshot = ContentDefinition.compile({
+  durableCatalogInitialSnapshot: CompiledSnapshot = compileSnapshot({
     definitionSpaceId: "durable-catalog",
     definitions: [
       {
@@ -83,7 +84,7 @@ const commitDurableCatalogCutoverEffect = (
       definitionSnapshot: durableCatalogInitialSnapshot,
       root,
     }).pipe(Layer.provide(CryptoIdentifierGenerator.layer)),
-  durableCatalogTargetSnapshot = ContentDefinition.compile({
+  durableCatalogTargetSnapshot: CompiledSnapshot = compileSnapshot({
     definitionSpaceId: "durable-catalog",
     definitions: [
       {

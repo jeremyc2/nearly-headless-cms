@@ -1,11 +1,15 @@
-import { Effect } from "effect";
-import type { CmsError } from "./cms-error.ts";
-import type { CompiledContentType, CompiledSnapshot } from "./content-definition.ts";
-import type { EntryBatchMutation } from "./cms-types.ts";
-import type { Representation } from "./entry.ts";
-import type { EntryGeneration, EntryRecord } from "./persistence.ts";
-import type { CmsServiceOperationContext } from "./cms-service-operation-context.ts";
-import cmsSupport from "./cms-support.ts";
+import {
+  type CmsError,
+  type CmsServiceOperationContext,
+  type CompiledContentType,
+  type CompiledSnapshot,
+  Effect,
+  type EntryBatchMutation,
+  type EntryGeneration,
+  type EntryRecord,
+  type Representation,
+  cmsSupport,
+} from "./cms-service-entry-batch-operations-validate-support-imports.ts";
 
 interface ValidateBatchReplaceInput {
   readonly contentType: CompiledContentType;

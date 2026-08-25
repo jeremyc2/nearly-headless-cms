@@ -163,13 +163,12 @@ const {
         },
         records = new Map(input.prepared.generation.records);
       if (input.prepared.contentType.definition.history !== true) {
-        return yield* commitEntryWithoutHistory(
+        return yield* commitEntryWithoutHistory({
           context,
           entry,
-          entry.id,
-          input.prepared.generation.generation,
+          generation: input.prepared.generation.generation,
           records,
-        );
+        });
       }
       return yield* commitCreatedEntryWithHistory(context, {
         entry,

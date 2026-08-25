@@ -1,13 +1,3 @@
-import { generateClientSource } from "./openapi-client-generator/source.ts";
-import { parseOpenApiDocument } from "./openapi-client-generator/operations.ts";
-
-const generatorFormatVersion = 3,
-  zGenerateOpenApiClient = (documentValue: unknown): string => {
-    const parsedDocument = parseOpenApiDocument(documentValue);
-    return generateClientSource({
-      ...parsedDocument,
-      formatVersion: generatorFormatVersion,
-    });
-  };
-
-export { generatorFormatVersion, zGenerateOpenApiClient as generateOpenApiClient };
+export { generateClientSource } from "./openapi-client-generator/source.ts";
+export { generatorFormatVersion } from "./openapi-client-generator/format-version.ts";
+export { parseOpenApiDocument } from "./openapi-client-generator/operations.ts";

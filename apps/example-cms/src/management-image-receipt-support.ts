@@ -1,6 +1,4 @@
-import { CmsError } from "nearly-headless-cms";
-import { Effect } from "effect";
-import { type CommandReceiptStore } from "./command-receipt-store.ts";
+import { CmsError, type CommandReceiptStore, Effect } from "./management-image-receipt-support-imports.ts";
 
 interface CommandReceiptInput {
   readonly commandKey: string;

@@ -182,13 +182,12 @@ const { attempt, entryResource, expandRepresentation, liveRecords, project } = c
       const contextSnapshotForUpdate = yield* context.currentDefinitionSnapshot,
         prepared = yield* prepareUpdateEntry(context, contextSnapshotForUpdate, input);
       if (prepared.contentType.definition.history !== true) {
-        return yield* commitEntryWithoutHistory(
+        return yield* commitEntryWithoutHistory({
           context,
-          prepared.entry,
-          input.entryId,
-          prepared.generation.generation,
-          prepared.records,
-        );
+          entry: prepared.entry,
+          generation: prepared.generation.generation,
+          records: prepared.records,
+        });
       }
       return yield* commitEntryWithHistory(context, {
         contentType: prepared.contentType,

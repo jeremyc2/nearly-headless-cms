@@ -1,5 +1,5 @@
-import { Schema } from "effect";
 import { type EntryRepresentation, ManagementClientFailure } from "../generated/management-client.ts";
+import { Schema } from "effect";
 
 export interface EditorialIssue {
   readonly path: readonly (string | number)[];
@@ -65,7 +65,7 @@ export const deletionConsequence = (contentTypeId: string): string => {
     ) {
       return [];
     }
-    const candidates = Reflect.get(error.details, "issues");
+    const candidates: unknown = Reflect.get(error.details, "issues");
     if (!Array.isArray(candidates)) {
       return [];
     }
@@ -73,8 +73,8 @@ export const deletionConsequence = (contentTypeId: string): string => {
       if (candidate === null || typeof candidate !== "object") {
         return [];
       }
-      const path = Reflect.get(candidate, "path"),
-        reason = Reflect.get(candidate, "reason");
+      const path: unknown = Reflect.get(candidate, "path"),
+        reason: unknown = Reflect.get(candidate, "reason");
       if (Array.isArray(path) && typeof reason === "string") {
         return [{ path, reason }];
       }

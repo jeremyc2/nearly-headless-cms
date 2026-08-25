@@ -1,4 +1,5 @@
-import { Cms, ContentDefinition, type Identifier, type Operation } from "../../src/index.ts";
+import { Cms, type Identifier, type Operation } from "../../src/index.ts";
+import { type CompiledSnapshot, compileSnapshot } from "../../src/content-definition.ts";
 import {
   CryptoIdentifierGenerator,
   MemoryAssetManagement,
@@ -12,7 +13,7 @@ import { describe, expect, test } from "bun:test";
 import type { Management as AssetManagement } from "../../src/asset.ts";
 import { Service as AuthorizationService } from "../../src/authorization.ts";
 
-const authorizationContractSnapshot = ContentDefinition.compile({
+const authorizationContractSnapshot: CompiledSnapshot = compileSnapshot({
     definitionSpaceId: "authorization-contract",
     definitions: [
       {

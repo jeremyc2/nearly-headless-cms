@@ -38,21 +38,9 @@ const { conditionalProperty, isJsonValueArray, isRecord } = managementSupport,
     if (!isRecord(metadata)) {
       throw new Error("invalid replacement metadata");
     }
-    const { defaultAlternativeText, filename, height, mediaType, width } = metadata;
-    if (typeof filename !== "string" || typeof mediaType !== "string") {
-      throw new TypeError("invalid replacement metadata");
-    }
     return contentValue.arrayBuffer().then((content) => ({
       content: new Uint8Array(content),
-      filename,
-      mediaType,
-      ...conditionalProperty(
-        typeof defaultAlternativeText === "string",
-        "defaultAlternativeText",
-        defaultAlternativeText,
-      ),
-      ...conditionalProperty(typeof height === "number", "height", height),
-      ...conditionalProperty(typeof width === "number", "width", width),
+      ...readReplacementMetadataFields(metadata),
     }));
   },
   parseReplacementUpload = (request: Request) =>
@@ -66,6 +54,31 @@ const { conditionalProperty, isJsonValueArray, isRecord } = managementSupport,
           parseReplacementMetadata(form.get("metadata"), form.get("content")),
         ),
     }),
+  readReplacementMetadataFields = (
+    metadata: Record<string, unknown>,
+  ): {
+    defaultAlternativeText?: string;
+    filename: string;
+    height?: number;
+    mediaType: string;
+    width?: number;
+  } => {
+    const { defaultAlternativeText, filename, height, mediaType, width } = metadata;
+    if (typeof filename !== "string" || typeof mediaType !== "string") {
+      throw new TypeError("invalid replacement metadata");
+    }
+    return {
+      filename,
+      mediaType,
+      ...conditionalProperty(
+        typeof defaultAlternativeText === "string",
+        "defaultAlternativeText",
+        defaultAlternativeText,
+      ),
+      ...conditionalProperty(typeof height === "number", "height", height),
+      ...conditionalProperty(typeof width === "number", "width", width),
+    };
+  },
   replaceRichTextAsset = (
     value: ContentDefinition.JsonValue,
     oldAssetId: string,

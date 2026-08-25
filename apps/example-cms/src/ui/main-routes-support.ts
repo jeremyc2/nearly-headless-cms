@@ -2,12 +2,10 @@ import { createRootRoute, createRoute, createRouter } from "@tanstack/react-rout
 import { AssetsPage } from "./assets-page.tsx";
 import { ContentList } from "./content-list.tsx";
 import { EntryEditor } from "./entry-editor.tsx";
-import { queryClient } from "./main-shared.ts";
 import { Overview } from "./overview.tsx";
 import { Workbench } from "./workbench.tsx";
-
-const rootRoute = createRootRoute({ component: Workbench }),
-  assetsRoute = createRoute({
+import { queryClient } from "./main-shared.ts";
+const assetsRoute = createRoute({
     component: AssetsPage,
     getParentRoute: () => rootRoute,
     path: "/assets",
@@ -27,6 +25,7 @@ const rootRoute = createRootRoute({ component: Workbench }),
     getParentRoute: () => rootRoute,
     path: "/",
   }),
+  rootRoute = createRootRoute({ component: Workbench }),
   router = createRouter({
     context: { queryClient },
     routeTree: rootRoute.addChildren([overviewRoute, contentRoute, entryRoute, assetsRoute]),

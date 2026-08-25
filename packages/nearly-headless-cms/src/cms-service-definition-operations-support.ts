@@ -1,26 +1,24 @@
-import { DateTime, Effect } from "effect";
-import {
-  type CmsError,
-  Conflict,
-  NotFound,
-} from "./cms-error.ts";
-import {
-  type CompiledSnapshot,
-  compileSnapshot,
-} from "./content-definition.ts";
-import { type Preparation, validateGraph } from "./definition-migration.ts";
 import {
   type AppendDefinitionRevisionInput,
   type AppendMigrationManifestInput,
+  type CatalogState,
+  type CmsError,
+  type CmsServiceOperationContext,
+  type CompiledSnapshot,
+  Conflict,
   type ConsistentReadSnapshot,
+  DateTime,
+  Effect,
+  NotFound,
+  type Preparation,
   type PrepareDefinitionMigrationInput,
   type RetireDefinitionInput,
-} from "./cms-types.ts";
-import type { CmsServiceOperationContext } from "./cms-service-operation-context.ts";
-import type { CatalogState } from "./persistence.ts";
-import cmsSupport from "./cms-support.ts";
-import definitionOperationsGuards from "./cms-service-definition-operations-guards.ts";
-import definitionOperationsPreparationSupport from "./cms-service-definition-operations-preparation-support.ts";
+  cmsSupport,
+  compileSnapshot,
+  definitionOperationsGuards,
+  definitionOperationsPreparationSupport,
+  validateGraph,
+} from "./cms-service-definition-operations-support-imports.ts";
 
 type DefinitionAuthorizationAction = "definition.activate" | "definition.read" | "definition.write";
 

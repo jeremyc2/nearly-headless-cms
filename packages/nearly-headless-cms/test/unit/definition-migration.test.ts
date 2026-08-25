@@ -1,9 +1,9 @@
-import { type CompiledSnapshot, type JsonObject, compile } from "../../src/content-definition.ts";
+import { type CompiledSnapshot, type JsonObject, compileSnapshot } from "../../src/content-definition.ts";
 import { describe, expect, test } from "bun:test";
 import { DefinitionMigration } from "../../src/index.ts";
 
 const firstEntryIndex = 0,
-  source: CompiledSnapshot = compile({
+  source: CompiledSnapshot = compileSnapshot({
     definitionSpaceId: "example-blog",
     definitions: [
       {
@@ -16,7 +16,7 @@ const firstEntryIndex = 0,
     snapshotId: "source",
   }),
   staleSourceGeneration = 4,
-  target: CompiledSnapshot = compile({
+  target: CompiledSnapshot = compileSnapshot({
     definitionSpaceId: "example-blog",
     definitions: [
       {

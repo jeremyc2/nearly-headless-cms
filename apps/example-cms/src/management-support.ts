@@ -38,16 +38,14 @@ const appendQueryPage = (
   ): Effect.Effect<readonly Entry.Representation[], CmsError.CmsError> =>
     Effect.gen(function* collectAllMatchingEntries() {
       const accumulated: Entry.Representation[] = [];
-      let nextCursor;
-      for (;;) {
-        let queryWithCursor = query as EntryQuery.Query;
-        if (nextCursor !== undefined) {
-          queryWithCursor = { ...query, cursor: nextCursor };
-        }
-        nextCursor = appendQueryPage(accumulated, yield* cms.queryEntries(queryWithCursor));
+      for (let nextCursor = appendQueryPage(accumulated, yield* cms.queryEntries(query)); ; ) {
         if (nextCursor === undefined) {
           return accumulated;
         }
+        nextCursor = appendQueryPage(
+          accumulated,
+          yield* cms.queryEntries({ ...query, cursor: nextCursor }),
+        );
       }
     }),
   requireDeletionRecord = (

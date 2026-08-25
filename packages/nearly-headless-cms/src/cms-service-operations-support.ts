@@ -1,19 +1,16 @@
+import {
+  type CmsLayerOptions,
+  type Handler,
+  cmsServiceOperationsModules,
+} from "./cms-service-operations-modules.ts";
 import { DefinitionCatalog, EntryPersistence } from "./persistence.ts";
 import { Effect, Layer, Semaphore } from "effect";
 import { Management as AssetManagement } from "./asset.ts";
 import { Service as AuthorizationService } from "./authorization.ts";
-import { Generator } from "./identifier.ts";
 import { CurrentIdentity } from "./identity.ts";
-import type { CmsLayerOptions } from "./cms-types.ts";
-import type { Handler } from "./definition-migration.ts";
-import entryOperations from "./cms-service-entry-operations.ts";
-import definitionOperations from "./cms-service-definition-operations.ts";
-import entryHistoryOperations from "./cms-service-entry-history-operations.ts";
-import definitionActivationOperations from "./cms-service-definition-activation-operations.ts";
-import assetOperations from "./cms-service-asset-operations.ts";
-import entryBatchOperations from "./cms-service-entry-batch-operations.ts";
-import { createCmsServiceOperationContext } from "./cms-service-operation-context.ts";
+import { Generator } from "./identifier.ts";
 import { Service } from "./cms-service.ts";
+import { createCmsServiceOperationContext } from "./cms-service-operation-context.ts";
 
 const assembleService = (
   context: ReturnType<typeof createCmsServiceOperationContext>,
@@ -21,12 +18,8 @@ const assembleService = (
     operation: Effect.Effect<Success, Failure, Requirements>,
   ) => Effect.Effect<Success, Failure, Requirements>,
 ) => {
-  const asset = assetOperations,
-    definition = definitionOperations,
-    definitionActivation = definitionActivationOperations,
-    entries = entryOperations,
-    entryBatch = entryBatchOperations,
-    entryHistory = entryHistoryOperations;
+  const { asset, definition, definitionActivation, entries, entryBatch, entryHistory } =
+    cmsServiceOperationsModules;
   return Service.of({
     activateDefinitionSnapshot: (input) =>
       withOperationGate(definitionActivation.activateDefinitionSnapshot(context)(input)),
@@ -100,8 +93,6 @@ const assembleService = (
         withOperationGate,
       );
     }),
-  layer = makeLayerImpl(),
-  makeLayer = makeLayerImpl,
   makeLayerImpl = (options: CmsLayerOptions = {}): Layer.Layer<
     Service,
     never,
@@ -113,4 +104,4 @@ const assembleService = (
     | Generator
   > => Layer.effect(Service, createCmsService(options));
 
-export default { layer, makeLayer };
+export default { layer: makeLayerImpl(), makeLayer: makeLayerImpl };

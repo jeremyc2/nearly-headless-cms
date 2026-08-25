@@ -1,13 +1,15 @@
-import type { Context } from "effect";
-import type { Management, Metadata } from "../../asset.ts";
-import type { CompileOptions, CompiledSnapshot } from "../../content-definition.ts";
 import type {
   CatalogState,
+  CompileOptions,
+  CompiledSnapshot,
+  Context,
   DefinitionCatalog,
   DefinitionSnapshotRecord,
   EntryPersistence,
   EntryRecord,
-} from "../../persistence.ts";
+  Management,
+  Metadata,
+} from "./bun-filesystem-persistence-types-imports.ts";
 
 export const defaultAssetMaximumByteLength = 25_000_000,
   defaultEntryMaximumByteLength = 50_000_000,

@@ -1,4 +1,4 @@
-import { ContentDefinition } from "../../src/index.ts";
+import { type CompiledSnapshot, compileSnapshot } from "../../src/content-definition.ts";
 
 export const acceptedStatus = 201,
   badRequestStatus = 400,
@@ -29,7 +29,7 @@ export const acceptedStatus = 201,
     }),
   requestTimeoutMilliseconds = 5,
   requestTimeoutStatus = 408,
-  snapshot = ContentDefinition.compile({
+  snapshot: CompiledSnapshot = compileSnapshot({
     definitionSpaceId: "example-blog",
     definitions: [
       {

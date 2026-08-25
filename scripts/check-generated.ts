@@ -1,16 +1,39 @@
 import * as HttpApiContract from "../packages/nearly-headless-cms/src/http/http-api.ts";
+import { generateClientSource, parseOpenApiDocument } from "./openapi-client-generator.ts";
 import { OpenApi } from "../packages/nearly-headless-cms/src/http/index.ts";
 import { acceptanceCases } from "../acceptance/v0.1.ts";
-import { generateOpenApiClient } from "./openapi-client-generator.ts";
 import { makeDeliveryOperations } from "../apps/example-cms/src/delivery.ts";
 import { makeManagementOperations } from "../apps/example-cms/src/management.ts";
-
 interface GeneratedArtifact {
   readonly content: string;
   readonly path: string;
 }
 
-const formatExitCodeSuccess = 0,
+const buildClientArtifacts = (
+  document: ReturnType<typeof HttpApiContract.headlessDocument>,
+  clientBasename: string,
+  outputDirectory: string,
+): Promise<readonly GeneratedArtifact[]> => {
+  const generatedClient = generateClientSource({
+    ...parseOpenApiDocument(document),
+    clientBasename,
+    formatVersion: 3,
+  });
+  return formatGeneratedClient(generatedClient, outputDirectory);
+},
+  formatExitCodeSuccess = 0,
+  formatGeneratedClient = (
+    generatedClient: ReturnType<typeof generateClientSource>,
+    outputDirectory: string,
+  ): Promise<readonly GeneratedArtifact[]> =>
+    Promise.all(
+      generatedClient.files.map((generatedFile) =>
+        formatTypeScript(generatedFile.content).then((content) => ({
+          content,
+          path: `${repository}/${outputDirectory}/${generatedFile.filename}.ts`,
+        })),
+      ),
+    ),
   formatTypeScript = (source: string): Promise<string> => {
     const formatterProcess = Bun.spawn(
       ["bunx", "oxfmt", "--stdin-filepath=generated-openapi-client.ts"],
@@ -55,10 +78,21 @@ const formatExitCodeSuccess = 0,
   const headlessDocument = HttpApiContract.headlessDocument(makeDeliveryOperations()),
     managementDocument = HttpApiContract.managementDocument(makeManagementOperations());
   {
-    const [headlessClient, managementClient] = await Promise.all([
-      formatTypeScript(generateOpenApiClient(headlessDocument)),
-      formatTypeScript(generateOpenApiClient(managementDocument)),
-    ]);
+    const [headlessClientArtifacts, managementClientArtifacts] = await Promise.all([
+      buildClientArtifacts(headlessDocument, "headless-openapi-client", "apps/example-cms/src/generated"),
+      buildClientArtifacts(
+        managementDocument,
+        "management-openapi-client",
+        "apps/example-cms/src/generated",
+      ),
+    ]),
+      publicBlogHeadlessClientArtifacts = headlessClientArtifacts.map((artifact) => ({
+        ...artifact,
+        path: artifact.path.replace(
+          "/apps/example-cms/src/generated/",
+          "/apps/public-blog/src/generated/",
+        ),
+      }));
     {
       const artifacts: readonly GeneratedArtifact[] = [
         {
@@ -69,18 +103,9 @@ const formatExitCodeSuccess = 0,
           content: OpenApi.stringify(headlessDocument),
           path: `${repository}/apps/example-cms/openapi/headless.v1.json`,
         },
-        {
-          content: managementClient,
-          path: `${repository}/apps/example-cms/src/generated/management-openapi-client.ts`,
-        },
-        {
-          content: headlessClient,
-          path: `${repository}/apps/example-cms/src/generated/headless-openapi-client.ts`,
-        },
-        {
-          content: headlessClient,
-          path: `${repository}/apps/public-blog/src/generated/headless-openapi-client.ts`,
-        },
+        ...managementClientArtifacts,
+        ...headlessClientArtifacts,
+        ...publicBlogHeadlessClientArtifacts,
         {
           content: `# v0.1 acceptance manifest\n\nThis file is generated from \`acceptance/v0.1.ts\`.\n\n| ID | Claim | Level | Owner | Status | Command |\n| --- | --- | --- | --- | --- | --- |\n${acceptanceCases.map((acceptanceCase) => `| ${acceptanceCase.id} | ${acceptanceCase.claim.replaceAll("|", String.raw`\|`)} | ${acceptanceCase.level} | ${acceptanceCase.owner} | ${acceptanceCase.automation} | \`${acceptanceCase.command}\` |`).join("\n")}\n`,
           path: `${repository}/docs/acceptance/v0.1.md`,

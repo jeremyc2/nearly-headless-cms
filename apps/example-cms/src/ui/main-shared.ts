@@ -1,7 +1,9 @@
-import { QueryClient } from "@tanstack/react-query";
-import { RichText } from "nearly-headless-cms";
-import type { MouseEvent } from "react";
-import { makeManagementClient } from "../generated/management-client.ts";
+import {
+  type MouseEvent,
+  QueryClient,
+  RichText,
+  makeManagementClient,
+} from "./main-shared-imports.ts";
 
 export const contentTypes = [
     { identifier: "post", label: "Posts", symbol: "P" },

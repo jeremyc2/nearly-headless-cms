@@ -99,21 +99,20 @@ const {
   > =>
     Effect.gen(function* loadAuthorOwnedContentEntryStates() {
       const commentGroups = yield* Effect.all(
-          (yield* queryAllEntries(cms, {
-            contentTypeId: "post",
+        (yield* queryAllEntries(cms, {
+          contentTypeId: "post",
+          pageSize: 100,
+          where: { operator: "equals", path: "author", value: authorId },
+        })).map((post) =>
+          queryAllEntries(cms, {
+            contentTypeId: "comment",
             pageSize: 100,
-            where: { operator: "equals", path: "author", value: authorId },
-          })).map((post) =>
-            queryAllEntries(cms, {
-              contentTypeId: "comment",
-              pageSize: 100,
-              where: { operator: "equals", path: "post", value: post.id },
-            }),
-          ),
+            where: { operator: "equals", path: "post", value: post.id },
+          }),
         ),
-        comments = commentGroups.flat(),
-        commentStates = yield* Effect.all(
-          comments.map((comment) =>
+      ),
+       commentStates = yield* Effect.all(
+          commentGroups.flat().map((comment) =>
             cms.getCurrentEntryState({ contentTypeId: "comment", entryId: comment.id }),
           ),
         ),

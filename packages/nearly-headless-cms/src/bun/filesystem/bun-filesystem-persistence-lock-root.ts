@@ -1,18 +1,20 @@
-// oxlint-disable-next-line effecttsgo/node-builtin-import -- This Bun adapter needs durable fsync/open and directory primitives unavailable in Effect's portable FileSystem layer.
-import { mkdir, readdir, rm, stat } from "node:fs/promises";
-// oxlint-disable-next-line effecttsgo/node-builtin-import -- Bun does not provide a path manipulation API; these operations are platform-neutral string handling.
-import { join } from "node:path";
-import { type CompileOptions, type CompiledSnapshot } from "../../content-definition.ts";
 import {
+  type CompileOptions,
+  type CompiledSnapshot,
   type Configuration,
+  DateTime,
   type State,
   emptyLength,
   initialGeneration,
+  join,
+  mkdir,
+  readdir,
+  rm,
   stagingPrefix,
+  stat,
   storageFormat,
   storageFormatVersion,
-} from "./bun-filesystem-persistence-types.ts";
-import { DateTime } from "effect";
+} from "./bun-filesystem-persistence-lock-root-imports.ts";
 import filesystemLockIo from "./bun-filesystem-persistence-lock-io.ts";
 import filesystemLockRootLoadSupport from "./bun-filesystem-persistence-lock-root-load-support.ts";
 import filesystemLockRootValidation from "./bun-filesystem-persistence-lock-root-validation.ts";

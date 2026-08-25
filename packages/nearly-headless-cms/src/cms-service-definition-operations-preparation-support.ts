@@ -1,16 +1,18 @@
-import { Effect } from "effect";
-import type { CmsError } from "./cms-error.ts";
 import {
+  type CatalogState,
+  type CmsError,
+  type CmsServiceOperationContext,
   type CompiledSnapshot,
+  Effect,
+  type EntryGeneration,
+  type Manifest,
+  type Preparation,
+  type PrepareDefinitionMigrationInput,
+  type StoredAsset,
+  cmsSupport,
   compileSnapshot,
-} from "./content-definition.ts";
-import { type Manifest, type Preparation, prepare } from "./definition-migration.ts";
-import type { PrepareDefinitionMigrationInput } from "./cms-types.ts";
-import type { StoredAsset } from "./asset.ts";
-import type { CatalogState, EntryGeneration } from "./persistence.ts";
-import type { CmsServiceOperationContext } from "./cms-service-operation-context.ts";
-import cmsSupport from "./cms-support.ts";
-
+  prepare,
+} from "./cms-service-definition-operations-preparation-support-imports.ts";
 type DefinitionAuthorizationAction = "definition.activate" | "definition.read" | "definition.write";
 
 interface PrepareMigrationPreparationInput {

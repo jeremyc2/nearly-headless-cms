@@ -6,6 +6,7 @@ import type {
 } from "./http-contract.ts";
 import type { OperationDescriptor } from "./open-api-types.ts";
 import { Schema } from "effect";
+import buildCompletedOperation from "./open-api-operation-completion-support.ts";
 import openApiSchemas from "./open-api-schemas.ts";
 
 interface OperationResponsesInput {
@@ -236,27 +237,23 @@ const {
         operationIdentifier,
         operationDescriptor.schemas?.responseMediaType,
       ),
-      responseSchema = iResponseSchema(operationDescriptor, responseMediaType),
-      successStatus =
-        operationDescriptor.successStatus ?? successStatuses.get(operationIdentifier) ?? okStatus,
-     operation: Record<string, unknown> = {
-      operationId: operationIdentifier,
-      ...aConditionalValue(parameters.length === firstIndex, {}, { parameters }),
-      responses: kOperationResponses({
-        bodyless,
-        operationIdentifier,
-        responseMediaType,
-        responseSchema,
-        successStatus,
-      }),
-    };
-    if (requestBodySchema !== undefined) {
-      operation["requestBody"] = {
-        content: { [requestMediaType]: { schema: requestBodySchema } },
-        required: true,
-      };
-    }
-    return operation;
+      responseSchema = iResponseSchema(operationDescriptor, responseMediaType);
+    return buildCompletedOperation({
+      bodyless,
+      conditionalValue: aConditionalValue,
+      firstIndex,
+      operationIdentifier,
+      operationResponses: kOperationResponses,
+      parameters,
+      requestBodySchema,
+      requestMediaType,
+      responseMediaType,
+      responseSchema,
+      successStatus:
+        operationDescriptor.successStatus ??
+        successStatuses.get(operationIdentifier) ??
+        okStatus,
+    });
   },
   pCompletePaths = (
     paths: Readonly<Record<string, Readonly<Record<string, OperationDescriptor>>>>,

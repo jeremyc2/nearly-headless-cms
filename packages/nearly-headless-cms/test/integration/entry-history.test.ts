@@ -1,6 +1,7 @@
-import { Cms, ContentDefinition } from "../../src/index.ts";
+import { type CompiledSnapshot, compileSnapshot } from "../../src/content-definition.ts";
 import { Effect, Option } from "effect";
 import { describe, expect, test } from "bun:test";
+import { Cms } from "../../src/index.ts";
 import { DevelopmentCms } from "../../src/testing/index.ts";
 
 const FOURTH_REVISION_NUMBER = 4,
@@ -14,7 +15,7 @@ const FOURTH_REVISION_NUMBER = 4,
       providedEffect = effect.pipe(Effect.provide(layer));
     return Effect.runPromise(providedEffect);
   },
-  snapshot = ContentDefinition.compile({
+  snapshot: CompiledSnapshot = compileSnapshot({
     definitionSpaceId: "history-contract",
     definitions: [
       {

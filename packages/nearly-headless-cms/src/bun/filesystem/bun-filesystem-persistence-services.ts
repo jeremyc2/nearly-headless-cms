@@ -1,14 +1,6 @@
-import { Management, type Metadata } from "../../asset.ts";
-import { type CmsError, Conflict, InvalidInput, NotFound } from "../../cms-error.ts";
-import { type CatalogState, type DefinitionCatalog, DefinitionCatalog as DefinitionCatalogTag, type EntryGeneration, type EntryPersistence, EntryPersistence as EntryPersistenceTag, type EntryRecord } from "../../persistence.ts";
-import { type Configuration, type DiskAsset, type State, emptyLength, initialVersion } from "./bun-filesystem-persistence-types.ts";
-import { Context, Effect, SynchronizedRef } from "effect";
-import type { Generator } from "../../identifier.ts";
+import { type CatalogState, type CmsError, type Configuration, Conflict, Context, type DefinitionCatalog, DefinitionCatalogTag, type DiskAsset, Effect, type EntryGeneration, type EntryPersistence, EntryPersistenceTag, type EntryRecord, type Generator, InvalidInput, Management, type Metadata, NotFound, type State, SynchronizedRef, emptyLength, initialVersion, join } from "./bun-filesystem-persistence-services-imports.ts";
 import filesystemLockRoot from "./bun-filesystem-persistence-lock-root.ts";
 import filesystemSupport from "./bun-filesystem-persistence-support.ts";
-// oxlint-disable-next-line effecttsgo/node-builtin-import -- Asset blob reads resolve paths through Bun's filesystem bridge.
-import { join } from "node:path";
-
 const { persistState } = filesystemLockRoot,
   { cloneCatalog, cloneState, commitAssetBlob, defaultEntryMaximumByteLength, defaultMetadataMaximumByteLength, digest, encode, failure, fromPromise } = filesystemSupport,
   buildAssetMetadata = (

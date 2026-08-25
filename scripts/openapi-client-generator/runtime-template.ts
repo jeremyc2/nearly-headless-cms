@@ -1,4 +1,4 @@
-const runtimeAfterMakeGeneratedClient = `,
+const runtimeAfterMakeGeneratedClient = `
   // oxlint-disable-next-line effecttsgo/async-function -- generated clients expose a Promise-backed transport boundary; converting this callback to Effect would change the generated public client contract.
   parseOperationSuccessResponse = async (
     input: OperationSuccessParseInput,
@@ -29,7 +29,7 @@ const runtimeAfterMakeGeneratedClient = `,
     input: OperationInputs[keyof OperationInputs],
     specification: OperationSpecification,
   ): { readonly body: BodyInit | undefined; readonly headers: Headers; readonly requestUrl: URL } => {
-    let path = specification.path;
+    let { path } = specification;
     if ("path" in input && input.path !== undefined) {
       path = substitutePathParameters(path, input.path);
     }
@@ -107,36 +107,7 @@ const runtimeAfterMakeGeneratedClient = `,
     });
   }
   `,
-  runtimeBeforeSpecifications = `interface RequestOperationInput<Identifier extends keyof OperationInputs> {
-  readonly baseAddress: string;
-  readonly input: OperationInputs[Identifier];
-  readonly signal?: AbortSignal;
-  readonly specification: OperationSpecification;
-}
-
-interface OperationFetchRequest {
-  readonly body: BodyInit | undefined;
-  readonly headers: Headers;
-  readonly method: string;
-  readonly requestUrl: URL;
-  readonly signal: AbortSignal | undefined;
-}
-
-interface OperationSuccessParseInput {
-  readonly mediaType: string;
-  readonly response: Response;
-  readonly specification: OperationSpecification;
-  readonly successResponse: OperationSpecification["successResponses"][number];
-}
-
-interface OperationRequestInput {
-  readonly baseAddress: string;
-  readonly input: OperationInputs[keyof OperationInputs];
-  readonly signal: AbortSignal | undefined;
-  readonly specification: OperationSpecification;
-}
-
-const appendQueryParameters = (
+  runtimeBeforeSpecifications = `const appendQueryParameters = (
     requestUrl: URL,
     queryParameters: Readonly<Record<string, unknown>>,
   ): void => {
@@ -255,6 +226,35 @@ function requestOperation({
       undertakeOperationRequest({ baseAddress, input, signal, specification }),
   });
 }
+`,
+  runtimeTypes = `export interface RequestOperationInput<Identifier extends keyof OperationInputs> {
+  readonly baseAddress: string;
+  readonly input: OperationInputs[Identifier];
+  readonly signal?: AbortSignal;
+  readonly specification: OperationSpecification;
+}
+
+export interface OperationFetchRequest {
+  readonly body: BodyInit | undefined;
+  readonly headers: Headers;
+  readonly method: string;
+  readonly requestUrl: URL;
+  readonly signal: AbortSignal | undefined;
+}
+
+export interface OperationSuccessParseInput {
+  readonly mediaType: string;
+  readonly response: Response;
+  readonly specification: OperationSpecification;
+  readonly successResponse: OperationSpecification["successResponses"][number];
+}
+
+export interface OperationRequestInput {
+  readonly baseAddress: string;
+  readonly input: OperationInputs[keyof OperationInputs];
+  readonly signal: AbortSignal | undefined;
+  readonly specification: OperationSpecification;
+}
 `;
 
 /** Static runtime emitted before and after the generated operation specifications. */
@@ -263,4 +263,5 @@ export {
   runtimeBeforeSpecifications,
   runtimeConstChainMiddle,
   runtimeRequestOperation,
+  runtimeTypes,
 };

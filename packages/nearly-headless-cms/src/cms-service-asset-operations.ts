@@ -1,8 +1,8 @@
-import { Effect } from "effect";
-import type { Asset as AssetValue, IngestInput, StoredAsset } from "./asset.ts";
 import { AssetReferenced, type CmsError } from "./cms-error.ts";
-import cmsSupport from "./cms-support.ts";
+import type { Asset as AssetValue, IngestInput, StoredAsset } from "./asset.ts";
 import type { CmsServiceOperationContext } from "./cms-service-operation-context.ts";
+import { Effect } from "effect";
+import cmsSupport from "./cms-support.ts";
 
 const { collectReferences, liveRecords } = cmsSupport,
 
@@ -10,13 +10,13 @@ const { collectReferences, liveRecords } = cmsSupport,
   (context: CmsServiceOperationContext) =>
   (assetId: string): Effect.Effect<void, CmsError> =>
     Effect.gen(function* deleteAssetOperationEffect() {
-      const snapshot = yield* context.currentDefinitionSnapshot;
+      const generation = yield* context.persistence.readGeneration,
+        snapshot = yield* context.currentDefinitionSnapshot;
       yield* context.authorize("asset.delete", {
         assetId,
         definitionSpaceId: snapshot.definitionSpaceId,
         kind: "asset",
       });
-      const generation = yield* context.persistence.readGeneration;
       for (const record of liveRecords(generation)) {
         const contentType = snapshot.contentTypes.get(record.entry.contentTypeId);
         if (
@@ -28,7 +28,7 @@ const { collectReferences, liveRecords } = cmsSupport,
           });
         }
       }
-      yield* context.assets.delete(assetId);
+      return yield* context.assets.delete(assetId);
     }),
 
  getAssetOperation =

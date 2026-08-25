@@ -42,17 +42,13 @@ const {
     ): HttpContract.ManagementOperation["execute"] =>
     ({ cms, parameters, request }) =>
       Effect.gen(function* detachTaxonomyEntry() {
-        const taxonomyEntryId = requiredParameter(parameters, "entryId"),
-          postStates = yield* Effect.all(
-            (yield* cms.queryEntries({
-              contentTypeId: "post",
-              pageSize: 100,
-              where: { operator: "equals", path: relationshipField, value: taxonomyEntryId },
-            })).items.map((post) =>
-              cms.getCurrentEntryState({ contentTypeId: "post", entryId: post.id }),
-            ),
-          ),
-          deletionRecord = yield* requireDeletionRecord(
+        const { postStates, taxonomyEntryId } = yield* loadTaxonomyDetachmentState(
+          cms,
+          parameters,
+          relationshipField,
+        );
+        return {
+          deletionRecord: yield* requireDeletionRecord(
             (yield* cms.mutateEntriesAtomically([
               ...buildTaxonomyDetachmentMutations(postStates, relationshipField, taxonomyEntryId),
               {
@@ -64,13 +60,31 @@ const {
                 kind: "delete",
               },
             ])).at(-1),
-          );
-        return {
-          deletionRecord,
+          ),
           detachedPostCount: postStates.length,
           removedEntryId: taxonomyEntryId,
         };
-      });
+      }),
+  loadTaxonomyDetachmentState = (
+    cms: Cms.ServiceShape,
+    parameters: Readonly<Record<string, string | undefined>>,
+    relationshipField: "categories" | "tags",
+  ) =>
+    Effect.gen(function* loadTaxonomyDetachmentStateValues() {
+      const entryId = requiredParameter(parameters, "entryId");
+      return {
+        postStates: yield* Effect.all(
+          (yield* cms.queryEntries({
+            contentTypeId: "post",
+            pageSize: 100,
+            where: { operator: "equals", path: relationshipField, value: entryId },
+          })).items.map((post) =>
+            cms.getCurrentEntryState({ contentTypeId: "post", entryId: post.id }),
+          ),
+        ),
+        taxonomyEntryId: entryId,
+      };
+    });
 
 export default {
   detachTaxonomy,

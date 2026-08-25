@@ -1,67 +1,38 @@
-import { type CmsError, Conflict, InvalidInput, NotFound } from "./cms-error.ts";
-import type { CmsServiceOperationContext } from "./cms-service-operation-context.ts";
-import type { ActivateDefinitionSnapshotInput, ActivateDefinitionSnapshotResult } from "./cms-types.ts";
 import {
-  type Compatibility,
-  type CompiledSnapshot,
-  classifyCompatibility,
-  compile,
-} from "./content-definition.ts";
-import { type Manifest, type Preparation, assertFresh, prepare } from "./definition-migration.ts";
-import { validateDefinitionContracts } from "./operation.ts";
-import {
+  type ActivateDefinitionSnapshotInput,
+  type ActivateDefinitionSnapshotResult,
   type CatalogState,
+  type CmsError,
+  type CmsServiceOperationContext,
+  type CompiledSnapshot,
+  DateTime,
   type DefinitionSnapshotRecord,
-  type EntryGeneration,
+  Effect,
   type EntryRecord,
-} from "./persistence.ts";
-import { DateTime, Effect } from "effect";
-import cmsSupport from "./cms-support.ts";
+  InvalidInput,
+  type Manifest,
+  cmsSupport,
+  compileSnapshot,
+  validateDefinitionContracts,
+} from "./cms-service-definition-activation-imports.ts";
+import type { ActivationContext } from "./cms-service-definition-activation-types.ts";
+import definitionActivationMigrationSupport from "./cms-service-definition-activation-migration-support.ts";
+import definitionActivationValidationSupport from "./cms-service-definition-activation-validation-support.ts";
 
-interface ActivationContext {
-  readonly compatibility: Compatibility;
-  readonly generation: EntryGeneration;
-  readonly manifest: Manifest;
-  readonly preparation: Preparation;
+interface ActivationTarget {
+  readonly compatibility: ActivationContext["compatibility"];
   readonly source: CompiledSnapshot;
   readonly target: CompiledSnapshot;
 }
 
-const {
-  attempt,
-  collectReferences,
-  compatibleManifest,
-  ensureReferences,
-  ensureUniqueValues,
-  liveRecords,
-  snapshotDefinitionValidationMessage,
-  sourceProperty,
-  writeTokenProperty,
-} = cmsSupport,
-  applyMigrationRecords = (
-    context: CmsServiceOperationContext,
-    input: Pick<ActivationContext, "generation" | "preparation" | "target"> & {
-      readonly records: Map<string, EntryRecord>;
-    },
-  ): Effect.Effect<void, CmsError> =>
-    Effect.gen(function* applyMigrationRecordsEffect() {
-      for (const entry of input.preparation.entries) {
-        const current = input.records.get(entry.id);
-        if (current === undefined) {
-          return yield* Conflict.make({
-            message: "Migration Preparation no longer matches the Entry generation",
-          });
-        }
-        if (current.writeToken === undefined) {
-          input.records.set(entry.id, { ...current, entry });
-        } else {
-          const writeToken = yield* context.identifiers.generate("write-token");
-          input.records.set(entry.id, { ...current, entry, ...writeTokenProperty(writeToken) });
-        }
-      }
-      yield* validateMigratedRecords(context, input);
-      return yield* Effect.void;
-    }),
+const { attempt, snapshotDefinitionValidationMessage, sourceProperty } = cmsSupport,
+  {
+    resolveActivationPreparation,
+    resolveMigrationManifest,
+    snapshotCompatibility,
+  } = definitionActivationMigrationSupport,
+  { validateActivationCatalogState, validateActivationPreparation } =
+    definitionActivationValidationSupport,
   buildActivatedCatalogReplacement = (input: {
     readonly activatedAt: string;
     readonly activation: ActivationContext;
@@ -145,8 +116,8 @@ const {
   ): Effect.Effect<CompiledSnapshot, CmsError> =>
     Effect.gen(function* compileActivationTargetEffect() {
       const definitionValidationMessage = snapshotDefinitionValidationMessage(state, snapshot),
-        target: CompiledSnapshot = yield* attempt((): CompiledSnapshot =>
-          compile(snapshot, context.compileOptions),
+        target = yield* attempt((): CompiledSnapshot =>
+          compileSnapshot(snapshot, context.compileOptions),
         );
       yield* attempt(() => {
         validateDefinitionContracts({ contracts: context.operationContracts, snapshot: target });
@@ -156,15 +127,6 @@ const {
       }
       return target;
     }),
-  findStoredPreparation = (
-    state: CatalogState,
-    preparationId: string | undefined,
-  ): Preparation | undefined => {
-    if (preparationId === undefined) {
-      return undefined;
-    }
-    return state.migrationPreparations.find((candidate) => candidate.id === preparationId);
-  },
   persistActivatedCatalog = (
     context: CmsServiceOperationContext,
     input: {
@@ -222,31 +184,41 @@ const {
     input: { readonly input: ActivateDefinitionSnapshotInput; readonly state: CatalogState },
   ): Effect.Effect<ActivationContext, CmsError> =>
     Effect.gen(function* prepareDefinitionActivationEffect() {
-      const source: CompiledSnapshot = input.state.active.compiled,
-        target = yield* compileActivationTarget(context, input.input.snapshot, input.state),
-        compatibility = snapshotCompatibility(source, target),
+      const activationTarget = yield* resolveActivationTarget(context, input),
         generation = yield* context.persistence.readGeneration,
         manifest: Manifest = yield* resolveMigrationManifest({
-          compatibility,
+          compatibility: activationTarget.compatibility,
           migrationManifest: input.input.migration?.manifest,
-          source,
-          target,
+          source: activationTarget.source,
+          target: activationTarget.target,
         }),
         preparation = yield* resolveActivationPreparation(context, {
           generation,
           input: input.input,
           manifest,
-          source,
+          source: activationTarget.source,
           state: input.state,
-          target,
+          target: activationTarget.target,
         });
-      if (compatibility === "migrationRequired" && input.input.migration === undefined) {
+      if (activationTarget.compatibility === "migrationRequired" && input.input.migration === undefined) {
         return yield* InvalidInput.make({
           message: "This Definition change requires an explicit Migration Manifest and Handler",
         });
       }
-      yield* validateActivationPreparation(preparation, { generation, manifest, source, target });
-      return { compatibility, generation, manifest, preparation, source, target };
+      yield* validateActivationPreparation(preparation, {
+        generation,
+        manifest,
+        source: activationTarget.source,
+        target: activationTarget.target,
+      });
+      return {
+        compatibility: activationTarget.compatibility,
+        generation,
+        manifest,
+        preparation,
+        source: activationTarget.source,
+        target: activationTarget.target,
+      };
     }),
   readValidatedCatalogState = (
     context: CmsServiceOperationContext,
@@ -257,152 +229,22 @@ const {
       yield* validateActivationCatalogState(state, input);
       return state;
     }),
-  resolveActivationPreparation = (
+  resolveActivationTarget = (
     context: CmsServiceOperationContext,
-    input: {
-      readonly generation: EntryGeneration;
-      readonly input: ActivateDefinitionSnapshotInput;
-      readonly manifest: Manifest;
-      readonly source: CompiledSnapshot;
-      readonly state: CatalogState;
-      readonly target: CompiledSnapshot;
-    },
-  ): Effect.Effect<Preparation, CmsError> =>
-    Effect.gen(function* resolveActivationPreparationEffect() {
-      const storedPreparation = findStoredPreparation(
-          input.state,
-          input.input.migration?.preparationId,
-        ),
-        preparation =
-          storedPreparation ??
-          (yield* attempt(() =>
-            prepare({
-              entries: liveRecords(input.generation).map((record) => record.entry),
-              handlers: input.input.migration?.handlers ?? [...context.migrationHandlers.values()],
-              manifest: input.manifest,
-              source: input.source,
-              sourceGeneration: input.generation.generation,
-              target: input.target,
-            }),
-          ));
-      if (input.input.migration?.preparationId !== undefined && storedPreparation === undefined) {
-        return yield* NotFound.make({
-          message: `Migration Preparation ${input.input.migration.preparationId} was not found`,
-        });
-      }
-      return preparation;
-    }),
-  resolveMigrationManifest = (input: {
-    readonly compatibility: Compatibility;
-    readonly migrationManifest: Manifest | undefined;
-    readonly source: CompiledSnapshot;
-    readonly target: CompiledSnapshot;
-  }): Effect.Effect<Manifest, CmsError> => {
-    if (input.compatibility === "compatible") {
-      return Effect.succeed(compatibleManifest(input.source, input.target));
-    }
-    if (input.migrationManifest === undefined) {
-      return Effect.fail(
-        InvalidInput.make({ message: "A migration manifest is required for this Definition change" }),
-      );
-    }
-    return Effect.succeed(input.migrationManifest);
-  },
-  snapshotCompatibility = (
-    source: CompiledSnapshot,
-    target: CompiledSnapshot,
-  ): Compatibility => {
-    if (classifyCompatibility(source, target) === "compatible") {
-      return "compatible";
-    }
-    return "migrationRequired";
-  },
-  validateActivationCatalogState = (
-    state: CatalogState,
-    input: ActivateDefinitionSnapshotInput,
-  ): Effect.Effect<void, CmsError> =>
-    Effect.gen(function* validateActivationCatalogStateEffect() {
-      if (state.version !== input.expectedCatalogVersion) {
-        return yield* Conflict.make({ message: "Definition Catalog version is stale" });
-      }
-      if (input.snapshot.definitionSpaceId !== state.active.compiled.definitionSpaceId) {
-        return yield* InvalidInput.make({
-          message: "A Definition Snapshot cannot cross Definition Spaces",
-        });
-      }
-      if (
-        state.snapshots.some(
-          (snapshotRecord) => snapshotRecord.compiled.snapshotId === input.snapshot.snapshotId,
-        )
-      ) {
-        return yield* Conflict.make({
-          message: `Definition Snapshot ${input.snapshot.snapshotId} already exists`,
-        });
-      }
-      return yield* Effect.void;
-    }),
-  validateActivationPreparation = (
-    preparation: Preparation,
-    input: Pick<ActivationContext, "generation" | "manifest" | "source" | "target">,
-  ): Effect.Effect<void, CmsError> =>
-    Effect.gen(function* validateActivationPreparationEffect() {
-      if (
-        preparation.sourceSnapshotId !== input.source.snapshotId ||
-        preparation.targetSnapshotId !== input.target.snapshotId ||
-        preparation.manifest.id !== input.manifest.id
-      ) {
-        return yield* InvalidInput.make({
-          message: "Migration Preparation does not match this Definition Cutover",
-        });
-      }
-      yield* attempt(() => {
-        assertFresh(preparation, input.generation.generation);
-      });
-      if (preparation.report.status !== "ready") {
-        return yield* InvalidInput.make({
-          issues: preparation.report.issues,
-          message: "Definition Migration preparation failed",
-        });
-      }
-      return yield* Effect.void;
-    }),
-  validateMigratedRecords = (
-    context: CmsServiceOperationContext,
-    input: Pick<ActivationContext, "generation" | "target"> & {
-      readonly records: Map<string, EntryRecord>;
-    },
-  ): Effect.Effect<void, CmsError> =>
-    Effect.gen(function* validateMigratedRecordsEffect() {
-      const preparedGeneration: EntryGeneration = {
-        generation: input.generation.generation,
-        records: input.records,
+    input: { readonly input: ActivateDefinitionSnapshotInput; readonly state: CatalogState },
+  ): Effect.Effect<ActivationTarget, CmsError> =>
+    Effect.gen(function* resolveActivationTargetEffect() {
+      const source: CompiledSnapshot = input.state.active.compiled,
+        target = yield* compileActivationTarget(context, input.input.snapshot, input.state);
+      return {
+        compatibility: snapshotCompatibility(source, target),
+        source,
+        target,
       };
-      for (const record of liveRecords(preparedGeneration)) {
-        const contentType = input.target.contentTypes.get(record.entry.contentTypeId);
-        if (contentType === undefined) {
-          return yield* InvalidInput.make({
-            message: `Migration retained Entry ${record.entry.id} in a removed Content Type`,
-          });
-        }
-        yield* attempt(() => {
-          ensureUniqueValues({
-            contentType,
-            ignoredEntryId: record.entry.id,
-            records: input.records.values(),
-            values: record.entry.values,
-          });
-        });
-        yield* ensureReferences(
-          yield* attempt(() => collectReferences(contentType, record.entry.values)),
-          preparedGeneration,
-          context.assets,
-        );
-      }
-      return yield* Effect.void;
     });
 
 export default {
-  applyMigrationRecords,
+  applyMigrationRecords: definitionActivationMigrationSupport.applyMigrationRecords,
   commitDefinitionActivation,
   prepareActivationRecords,
 };

@@ -11,6 +11,13 @@ interface ApplyPublishedTimestampInput {
   readonly values: ContentDefinition.JsonObject;
 }
 
+interface LoadTransitionEntryInput {
+  readonly cms: Parameters<NonNullable<HttpContract.ManagementOperation["execute"]>>[0]["cms"];
+  readonly contentTypeId: "post" | "comment";
+  readonly entryId: string;
+  readonly status: "draft" | "published" | "approved" | "rejected";
+}
+
 const { requiredParameter } = managementSupport,
   { validatePostPublication } = managementPublicationValidation,
   applyPublishedTimestamp = ({
@@ -29,12 +36,12 @@ const { requiredParameter } = managementSupport,
       }
       return values;
     }),
-  loadTransitionEntry = (
-    cms: Parameters<NonNullable<HttpContract.ManagementOperation["execute"]>>[0]["cms"],
-    contentTypeId: "post" | "comment",
-    entryId: string,
-    status: "draft" | "published" | "approved" | "rejected",
-  ) =>
+  loadTransitionEntry = ({
+    cms,
+    contentTypeId,
+    entryId,
+    status,
+  }: LoadTransitionEntryInput) =>
     Effect.gen(function* loadTransitionEntryState() {
       const current = yield* cms.getEntry({ contentTypeId, entryId });
       if (contentTypeId === "post" && status === "published") {
@@ -54,18 +61,23 @@ const { requiredParameter } = managementSupport,
         if (writeToken === null || writeToken.length === 0) {
           return yield* CmsError.InvalidInput.make({ message: "CMS-Write-Token is required" });
         }
-        const current = yield* loadTransitionEntry(cms, contentTypeId, entryId, status);
-        return yield* cms.updateEntry({
-          contentTypeId,
-          entryId,
-          values: yield* applyPublishedTimestamp({
-            contentTypeId,
-            currentValues: current.values,
-            status,
-            values: { ...current.values, status },
-          }),
-          writeToken,
-        });
+        return yield* loadTransitionEntry({ cms, contentTypeId, entryId, status }).pipe(
+          Effect.flatMap((current) =>
+            Effect.gen(function* applyTransitionUpdate() {
+              return yield* cms.updateEntry({
+                contentTypeId,
+                entryId,
+                values: yield* applyPublishedTimestamp({
+                  contentTypeId,
+                  currentValues: current.values,
+                  status,
+                  values: { ...current.values, status },
+                }),
+                writeToken,
+              });
+            }),
+          ),
+        );
       });
 
 export default {

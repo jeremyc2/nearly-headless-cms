@@ -1,7 +1,57 @@
 import type { EntryConflict } from "./entry-editor-types.ts";
 import { queryClient } from "./main-shared.ts";
 
-export const EntryEditorConflictPanel = ({
+const EntryEditorConflictActions = ({
+  conflict,
+  contentTypeId,
+  entryId,
+  isSaving,
+  onDiscard,
+  onReapply,
+}: {
+  readonly conflict: EntryConflict;
+  readonly contentTypeId: string;
+  readonly entryId: string;
+  readonly isSaving: boolean;
+  readonly onDiscard: (latestValues: Record<string, unknown>) => void;
+  readonly onReapply: () => void;
+}) => (
+  <div className="editor-actions">
+    <button className="primary-button" disabled={isSaving} onClick={onReapply} type="button">
+      Reapply my draft
+    </button>
+    <button
+      className="secondary-button"
+      onClick={() => {
+        onDiscard(conflict.latest.entry.values);
+        queryClient.setQueryData(["entry-state", contentTypeId, entryId], conflict.latest);
+      }}
+      type="button"
+    >
+      Discard my draft
+    </button>
+  </div>
+),
+
+EntryEditorConflictComparison = ({
+  conflict,
+  values,
+}: {
+  readonly conflict: EntryConflict;
+  readonly values: Record<string, unknown>;
+}) => (
+  <div className="conflict-comparison">
+    <details>
+      <summary>Your local draft</summary>
+      <pre>{JSON.stringify(values, null, 2)}</pre>
+    </details>
+    <details>
+      <summary>Latest CMS revision</summary>
+      <pre>{JSON.stringify(conflict.latest.entry.values, null, 2)}</pre>
+    </details>
+  </div>
+),
+EntryEditorConflictPanel = ({
   conflict,
   contentTypeId,
   entryId,
@@ -37,55 +87,6 @@ export const EntryEditorConflictPanel = ({
       onReapply={onReapply}
     />
   </section>
-),
-
-EntryEditorConflictComparison = ({
-  conflict,
-  values,
-}: {
-  readonly conflict: EntryConflict;
-  readonly values: Record<string, unknown>;
-}) => (
-  <div className="conflict-comparison">
-    <details>
-      <summary>Your local draft</summary>
-      <pre>{JSON.stringify(values, null, 2)}</pre>
-    </details>
-    <details>
-      <summary>Latest CMS revision</summary>
-      <pre>{JSON.stringify(conflict.latest.entry.values, null, 2)}</pre>
-    </details>
-  </div>
-),
-
-EntryEditorConflictActions = ({
-  conflict,
-  contentTypeId,
-  entryId,
-  isSaving,
-  onDiscard,
-  onReapply,
-}: {
-  readonly conflict: EntryConflict;
-  readonly contentTypeId: string;
-  readonly entryId: string;
-  readonly isSaving: boolean;
-  readonly onDiscard: (latestValues: Record<string, unknown>) => void;
-  readonly onReapply: () => void;
-}) => (
-  <div className="editor-actions">
-    <button className="primary-button" disabled={isSaving} onClick={onReapply} type="button">
-      Reapply my draft
-    </button>
-    <button
-      className="secondary-button"
-      onClick={() => {
-        onDiscard(conflict.latest.entry.values);
-        queryClient.setQueryData(["entry-state", contentTypeId, entryId], conflict.latest);
-      }}
-      type="button"
-    >
-      Discard my draft
-    </button>
-  </div>
 );
+
+export { EntryEditorConflictPanel };

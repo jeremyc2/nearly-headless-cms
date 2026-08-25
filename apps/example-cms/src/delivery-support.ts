@@ -1,7 +1,7 @@
 import { type Cms, CmsError, type ContentDefinition, type EntryQuery } from "nearly-headless-cms";
-import type { HttpContract } from "nearly-headless-cms/http";
 import { Effect, Schema } from "effect";
 import { EmptyRequest, PageQuery } from "./wire-schemas.ts";
+import type { HttpContract } from "nearly-headless-cms/http";
 
 export type PublicValue = ContentDefinition.JsonObject;
 
@@ -23,13 +23,17 @@ export interface QueryPageInput extends QueryEntriesInput {
   readonly request: Request;
 }
 
-export const DEFAULT_PAGE_SIZE = 20,
+const requestUrlSearchParameter = (parameterName: string, request: Request): string | undefined => {
+  const requestUrl = new URL(request.url);
+  return requestUrl.searchParams.get(parameterName) ?? undefined;
+},
+
+ DEFAULT_PAGE_SIZE = 20,
   FIRST_INDEX = 0,
   MAX_PUBLIC_EXPORT_BYTES = 5_000_000,
   MAX_QUERY_PAGE_SIZE = 100,
-  ONE_ITEM = 1;
-
-const canonicalizeJsonValue = (value: unknown): unknown => {
+  ONE_ITEM = 1,
+  canonicalizeJsonValue = (value: unknown): unknown => {
     if (value === null || typeof value !== "object" || Array.isArray(value)) {
       return value;
     }
@@ -114,7 +118,7 @@ const canonicalizeJsonValue = (value: unknown): unknown => {
   > =>
     Effect.gen(function* queryEveryPage() {
       const entries: Cms.ConsistentReadSnapshot["entries"][number][] = [];
-      let nextCursor;
+      let nextCursor = undefined as string | undefined;
       for (;;) {
         const page: EntryQuery.QueryPage = yield* cms.queryEntries({
           contentTypeId,
@@ -124,16 +128,16 @@ const canonicalizeJsonValue = (value: unknown): unknown => {
           where,
         });
         entries.push(...page.items);
-        nextCursor = page.nextCursor;
+        ({ nextCursor } = page);
         if (nextCursor === undefined) {
           return entries;
         }
       }
     }),
   queryPage = ({ cms, contentTypeId, request, sort, where }: QueryPageInput) => {
-    const cursor = requestUrlSearchParameter(request, "cursor"),
+    const cursor = requestUrlSearchParameter("cursor", request),
       pageSize = Number(
-        requestUrlSearchParameter(request, "pageSize") ?? String(DEFAULT_PAGE_SIZE),
+        requestUrlSearchParameter("pageSize", request) ?? String(DEFAULT_PAGE_SIZE),
       );
     return cms
       .queryEntries({ contentTypeId, cursor, pageSize, sort, where })
@@ -159,14 +163,15 @@ const canonicalizeJsonValue = (value: unknown): unknown => {
       throw new Error(`Missing required parameter: ${name}`);
     }
     return value;
-  },
-  requestUrlSearchParameter = (
-    request: Request,
-    parameterName: string,
-  ): string | undefined => {
-    const requestUrl = new URL(request.url);
-    return requestUrl.searchParams.get(parameterName) ?? undefined;
   };
+
+export {
+  DEFAULT_PAGE_SIZE,
+  FIRST_INDEX,
+  MAX_PUBLIC_EXPORT_BYTES,
+  MAX_QUERY_PAGE_SIZE,
+  ONE_ITEM,
+};
 
 export default {
   canonicalizeJsonValue,

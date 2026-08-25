@@ -1,13 +1,16 @@
-import { InvalidInput, UnsupportedQueryCapability } from "./cms-error.ts";
 import {
   type CompiledSnapshot,
+  type EntryGeneration,
   type Field,
+  InvalidInput,
+  type JsonObject,
+  type JsonValue,
   type RelationshipFieldKind,
+  type Representation,
+  UnsupportedQueryCapability,
   capabilitiesFor,
-} from "./content-definition.ts";
-import { type JsonObject, type JsonValue, cloneJson } from "./internal/json.ts";
-import type { Representation } from "./entry.ts";
-import type { EntryGeneration } from "./persistence.ts";
+  cloneJson,
+} from "./cms-entry-expansion-relationship-imports.ts";
 
 interface ExpandRelationshipEntryIdInput {
   readonly ancestorEntryIds: ReadonlySet<string>;

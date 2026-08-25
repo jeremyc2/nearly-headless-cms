@@ -1,13 +1,15 @@
 import {
+  type CatalogState,
   type CompiledContentType,
   type CompiledSnapshot,
+  Conflict,
+  Effect,
+  InvalidInput,
+  type Revision,
+  Schema,
   type SnapshotInput,
-} from "./content-definition.ts";
-import { Conflict, InvalidInput } from "./cms-error.ts";
-import type { Revision } from "./entry-history.ts";
-import { canonicalJson } from "./internal/json.ts";
-import type { CatalogState } from "./persistence.ts";
-import { Effect, Schema } from "effect";
+  canonicalJson,
+} from "./cms-catalog-support-imports.ts";
 
 interface HistoryCursorPayload {
   readonly entryId: string;
@@ -90,8 +92,7 @@ const applyRetention = (
       return undefined;
     }
     const record: Record<string, unknown> = { ...value },
-      {offset} = record,
-      parsedEntryId = record["entryId"];
+      { entryId: parsedEntryId, offset } = record;
     if (
       typeof parsedEntryId !== "string" ||
       typeof offset !== "number" ||

@@ -1,24 +1,30 @@
-import type { Asset as AssetValue, IngestInput, StoredAsset } from "./asset.ts";
 import type {
+  AssetValue,
+  CatalogState,
+  CmsError,
   CompileOptions,
   CompiledSnapshot,
-  Definition,
-  SnapshotInput,
-} from "./content-definition.ts";
-import type { Handler, Manifest, Preparation } from "./definition-migration.ts";
-import type {
+  CreateInput,
   CurrentState,
+  Definition,
+  DefinitionContract,
   DeletionRecord,
+  Handler,
+  IngestInput,
   ListRevisionsInput,
+  Manifest,
+  Preparation,
+  Query,
+  QueryPage,
+  ReadInput,
+  Representation,
   RestoreInput,
   Revision,
   RevisionPage,
-} from "./entry-history.ts";
-import type { Query, QueryPage } from "./entry-query.ts";
-import type { CreateInput, ReadInput, Representation, UpdateInput } from "./entry.ts";
-import type { CmsError } from "./cms-error.ts";
-import type { DefinitionContract } from "./operation.ts";
-import type { CatalogState } from "./persistence.ts";
+  SnapshotInput,
+  StoredAsset,
+  UpdateInput,
+} from "./cms-types-imports.ts";
 import type { Effect } from "effect";
 
 export type MutationResult = Representation | CurrentState;

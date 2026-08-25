@@ -1,7 +1,12 @@
-import { InvalidInput } from "./cms-error.ts";
-import { type JsonObject, type JsonValue, isJsonObject } from "./internal/json.ts";
-import type { CompiledSnapshot, ResolvedField } from "./content-definition.ts";
-import type { EntryGeneration } from "./persistence.ts";
+import {
+  type CompiledSnapshot,
+  type EntryGeneration,
+  InvalidInput,
+  type JsonObject,
+  type JsonValue,
+  type ResolvedField,
+  isJsonObject,
+} from "./cms-entry-expansion-field-group-imports.ts";
 
 interface ExpandFieldGroupInput {
   readonly expandObject: (input: ExpandObjectInput) => JsonObject;

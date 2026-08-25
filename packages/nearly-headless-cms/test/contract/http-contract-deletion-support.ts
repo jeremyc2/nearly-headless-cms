@@ -1,6 +1,6 @@
-import { ContentDefinition } from "../../src/index.ts";
+import { type CompiledSnapshot, compileSnapshot } from "../../src/content-definition.ts";
 
-export const deletionSnapshot = ContentDefinition.compile({
+export const deletionSnapshot: CompiledSnapshot = compileSnapshot({
   definitionSpaceId: "delete-contract",
   definitions: [
     {

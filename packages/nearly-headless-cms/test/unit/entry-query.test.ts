@@ -1,8 +1,8 @@
-import { type CompiledSnapshot, compile } from "../../src/content-definition.ts";
+import { type CompiledSnapshot, compileSnapshot } from "../../src/content-definition.ts";
 import { expect, test } from "bun:test";
 import { EntryQuery } from "../../src/index.ts";
 
-const baseSnapshot: CompiledSnapshot = compile({
+const baseSnapshot: CompiledSnapshot = compileSnapshot({
     definitionSpaceId: "example-blog",
     definitions: [
       {
@@ -23,7 +23,7 @@ const baseSnapshot: CompiledSnapshot = compile({
     snapshotId: "initial",
   }),
   firstItemIndex = 0,
-  groupedSnapshot: CompiledSnapshot = compile({
+  groupedSnapshot: CompiledSnapshot = compileSnapshot({
     definitionSpaceId: "nested-query",
     definitions: [
       {
