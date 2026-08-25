@@ -203,3 +203,4 @@ export default {
   expandObject,
   expandRepresentation,
 };
+export type { ExpandObjectInput, ExpandRepresentationInput };

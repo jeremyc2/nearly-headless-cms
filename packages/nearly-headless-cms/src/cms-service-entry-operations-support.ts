@@ -137,9 +137,9 @@ const { attempt, entryResource, expandRepresentation, liveRecords, project } = c
     input: ReadInput,
   ): Effect.Effect<Representation, CmsError> =>
     Effect.gen(function* runGetEntryEffect() {
-      const generation = yield* context.persistence.readGeneration,
-        record = yield* readLiveEntryRecord(context, input),
-        snapshot = yield* authorizeGetEntry(context, input);
+      const snapshot = yield* authorizeGetEntry(context, input),
+       generation = yield* context.persistence.readGeneration,
+       record = yield* readLiveEntryRecord(context, input);
       return project(
         yield* attempt(() =>
           expandRepresentation({

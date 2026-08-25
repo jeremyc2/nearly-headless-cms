@@ -10,8 +10,12 @@ const allowedTopLevel = new Set([
   twoSpaceIndent = 2,
   workspace = new URL("..", import.meta.url).pathname,
   workspaceArchiveDirectory = new URL("../../../.artifacts/npm/", import.meta.url).pathname,
-  workspaceArchiveName = "nearly-headless-cms-0.1.0.tgz",
-  workspaceArchivePath = `${workspaceArchiveDirectory}${workspaceArchiveName}`;
+
+ workspaceManifest = (await Bun.file(`${workspace}/package.json`).json()) as {
+  readonly version: string;
+},
+ workspaceArchiveName = `nearly-headless-cms-${workspaceManifest.version}.tgz`,
+ workspaceArchivePath = `${workspaceArchiveDirectory}${workspaceArchiveName}`;
 
 await Bun.$`mkdir -p ${workspaceArchiveDirectory}`.quiet();
 await Bun.$`rm -f ${workspaceArchivePath}`.quiet();
@@ -86,7 +90,7 @@ await Bun.$`rm -f ${workspaceArchivePath}`.quiet();
           entryCount: listProcessTextEntries.length,
           package: "nearly-headless-cms",
           sha256: "",
-          version: "0.1.0",
+          version: workspaceManifest.version,
         };
       archiveHasher.update(archiveBytes);
       report.sha256 = archiveHasher.digest("hex");

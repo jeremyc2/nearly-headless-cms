@@ -10,7 +10,7 @@ const listComponentSchemaNames = (document: Readonly<Record<string, unknown>>): 
     if (value === null || typeof value !== "object" || Array.isArray(value)) {
       throw new Error(`OpenAPI generator expected ${description}`);
     }
-    return value;
+    return value as Readonly<Record<string, unknown>>;
   };
 
 export { listComponentSchemaNames };

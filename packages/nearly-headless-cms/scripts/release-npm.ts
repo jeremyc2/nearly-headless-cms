@@ -1,7 +1,15 @@
-const archiveValue = Bun.env["PACKAGE_ARCHIVE"],
-  successfulExitCode = 0;
-if (Bun.env["CONFIRM_NPM_RELEASE"] !== "nearly-headless-cms@0.1.0") {
-  throw new Error("Refusing publication without the exact protected release confirmation");
+const packageDirectory = `${import.meta.dir}/..`,
+ packageManifest = (await Bun.file(`${packageDirectory}/package.json`).json()) as {
+  readonly version: string;
+},
+ archiveValue = Bun.env["PACKAGE_ARCHIVE"],
+ releaseConfirmation = `nearly-headless-cms@${packageManifest.version}`,
+ successfulExitCode = 0;
+
+if (Bun.env["CONFIRM_NPM_RELEASE"] !== releaseConfirmation) {
+  throw new Error(
+    `Refusing publication without the exact protected release confirmation: ${releaseConfirmation}`,
+  );
 }
 if (archiveValue === undefined) {
   throw new Error("PACKAGE_ARCHIVE must identify the already inspected exact tarball");

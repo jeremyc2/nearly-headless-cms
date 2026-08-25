@@ -94,4 +94,4 @@ export default {
   recordDeletedEntry,
   removeDeletedEntryRecord,
 };
-export type { PreparedDeleteEntry };
+export type { PreparedDeleteEntry, RemoveDeletedEntryRecordInput };

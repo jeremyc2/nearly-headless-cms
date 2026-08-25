@@ -10,14 +10,23 @@ const acceptanceServers: {
     publicBlog: undefined,
   },
   repository = path.join(import.meta.dir, ".."),
-  // oxlint-disable-next-line effecttsgo/async-function -- CLI command runner awaits process completion.
-  run = async (
+ packageManifest = (await Bun.file(
+  path.join(repository, "packages/nearly-headless-cms/package.json"),
+).json()) as { readonly version: string },
+ packageArchive = path.join(
+  repository,
+  ".artifacts/npm",
+  `nearly-headless-cms-${packageManifest.version}.tgz`,
+),
+
+// oxlint-disable-next-line effecttsgo/async-function -- CLI command runner awaits process completion.
+ run = async (
     command: readonly string[],
     environment: Record<string, string> = {},
   ): Promise<void> => {
     // oxlint-disable-next-line effecttsgo/global-console -- acceptance progress is intentionally emitted to CLI stdout.
     console.log(`\n→ ${command.join(" ")}`);
-    const child = Bun.spawn(command, {
+    const child = Bun.spawn([...command], {
       cwd: repository,
       env: { ...process.env, ...environment },
       stderr: "inherit",
@@ -27,28 +36,29 @@ const acceptanceServers: {
       throw new Error(`Acceptance command failed: ${command.join(" ")}`);
     }
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- CLI readiness polling requires awaited retries.
-  waitFor = (requestUrl: string): Promise<void> => {
-    const deadline = performance.now() + 20_000,
-      // oxlint-disable-next-line effecttsgo/async-function -- recursive polling requires awaited retries.
-      poll = async (): Promise<void> => {
-        if (performance.now() >= deadline) {
-          throw new Error(`Timed out waiting for ${requestUrl}`);
-        }
-        try {
-          // oxlint-disable-next-line effecttsgo/global-fetch -- CLI acceptance polling intentionally uses the platform fetch boundary.
-          const response = await fetch(requestUrl);
-          if (response.ok) {
-            return;
-          }
-        } catch {
-          // Keep polling until the service becomes reachable.
-        }
-        await Bun.sleep(100);
-        return poll();
-      };
+
+// oxlint-disable-next-line effecttsgo/async-function -- CLI readiness polling requires awaited retries.
+ waitFor = (requestUrl: string): Promise<void> => {
+  const deadline = performance.now() + 20_000,
+  // oxlint-disable-next-line effecttsgo/async-function -- recursive polling requires awaited retries.
+   poll = async (): Promise<void> => {
+    if (performance.now() >= deadline) {
+      throw new Error(`Timed out waiting for ${requestUrl}`);
+    }
+    try {
+      // oxlint-disable-next-line effecttsgo/global-fetch -- CLI acceptance polling intentionally uses the platform fetch boundary.
+      const response = await fetch(requestUrl);
+      if (response.ok) {
+        return;
+      }
+    } catch {
+      // Keep polling until the service becomes reachable.
+    }
+    await Bun.sleep(100);
     return poll();
   };
+  return poll();
+};
 
 await run(["bun", "run", "verify"]);
 await run(["bun", "run", "check:architecture"]);
@@ -72,8 +82,13 @@ try {
     stdout: "inherit",
   });
   await waitFor("http://localhost:4321/");
-  await run(["bun", "run", "test:webview"], { ACCEPTANCE_SERVERS_READY: "1" });
-  await run(["bun", "run", "test:visual"], { ACCEPTANCE_SERVERS_READY: "1" });
+  if (process.platform === "darwin") {
+    await run(["bun", "run", "test:webview"], { ACCEPTANCE_SERVERS_READY: "1" });
+    await run(["bun", "run", "test:visual"], { ACCEPTANCE_SERVERS_READY: "1" });
+  } else {
+    // oxlint-disable-next-line effecttsgo/global-console -- acceptance progress is intentionally emitted to CLI stdout.
+    console.log("\n→ Skipping WebView acceptance on non-macOS platforms");
+  }
 } finally {
   acceptanceServers.publicBlog?.kill();
   acceptanceServers.exampleCms.kill();
@@ -88,7 +103,7 @@ await run(["bun", "run", "--cwd", "packages/nearly-headless-cms", "package:inspe
 await run(["bun", "run", "--cwd", "packages/nearly-headless-cms", "build:determinism"]);
 await run(["bun", "run", "--cwd", "packages/nearly-headless-cms", "readme:verify"]);
 await run(["bun", "run", "--cwd", "packages/nearly-headless-cms", "package:smoke"], {
-  PACKAGE_ARCHIVE: path.join(repository, ".artifacts/npm/nearly-headless-cms-0.1.0.tgz"),
+  PACKAGE_ARCHIVE: packageArchive,
 });
 // oxlint-disable-next-line effecttsgo/global-console -- acceptance completion is intentionally emitted to CLI stdout.
 console.log("\nNearly Headless CMS v0.1 automated acceptance passed.");

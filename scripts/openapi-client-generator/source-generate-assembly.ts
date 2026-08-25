@@ -33,6 +33,7 @@ const {
   }: AssembleGeneratedFilesInput): readonly { readonly content: string; readonly filename: string }[] => [
     buildComponentTypeFile(clientBasename, document),
     ...inputChunks.map(({ content, filename }) => ({ content, filename })),
+    ...responseChunks.map(({ content, filename }) => ({ content, filename })),
     ...buildMergedTypeFiles(clientBasename, inputChunks, responseChunks),
     {
       content: buildSpecificationTypesFile(),

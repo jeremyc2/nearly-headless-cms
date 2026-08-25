@@ -1,8 +1,13 @@
 import { Effect } from "effect";
 
-const repository = new URL("../../../", import.meta.url).pathname,
+const packageDirectory = new URL("..", import.meta.url).pathname,
+  packageManifest = (await Bun.file(`${packageDirectory}/package.json`).json()) as {
+    readonly version: string;
+  },
+  repository = new URL("../../../", import.meta.url).pathname,
   repositoryArchivePath =
-    Bun.env["PACKAGE_ARCHIVE"] ?? `${repository}.artifacts/npm/nearly-headless-cms-0.1.0.tgz`,
+    Bun.env["PACKAGE_ARCHIVE"] ??
+    `${repository}.artifacts/npm/nearly-headless-cms-${packageManifest.version}.tgz`,
   successfulExitCode = 0,
   temporaryDirectoryTemplate = `${Bun.env["TMPDIR"] ?? "/tmp/"}nearly-headless-cms-consumer-XXXXXX`,
   twoSpaceIndent = 2;

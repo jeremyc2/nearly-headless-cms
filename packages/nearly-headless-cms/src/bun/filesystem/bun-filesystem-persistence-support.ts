@@ -174,6 +174,13 @@ const assetStageEndPromise = (stage: {
     const handle = await open(path, "r");
     try {
       await handle.sync();
+    } catch (error) {
+      // Windows rejects fsync on directories; durable writes still fsync staged file contents first.
+      const errorCode = filesystemErrorCode(error);
+      if (errorCode === "EPERM" || errorCode === "EISDIR") {
+        return;
+      }
+      throw error;
     } finally {
       await handle.close();
     }

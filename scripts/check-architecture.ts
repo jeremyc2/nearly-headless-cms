@@ -135,6 +135,17 @@ if (
 ) {
   throw new Error("Exactly the library package may be publishable");
 }
+{
+  const libraryManifest = findWorkspaceManifest("nearly-headless-cms");
+  if (
+    libraryManifest === undefined ||
+    !recordIs(libraryManifest["exports"]) ||
+    JSON.stringify(Object.keys(libraryManifest["exports"])) !==
+      JSON.stringify(expectedExports)
+  ) {
+    throw new Error("Library exports map is not the complete settled public seam");
+  }
+}
 if (
   findWorkspaceManifest("@nearly-headless-cms/public-blog") === undefined ||
   findWorkspaceManifest("@nearly-headless-cms/example-cms") === undefined ||
@@ -193,13 +204,6 @@ await Promise.all(
     }
   }),
 );
-if (
-  !recordIs(workspaceManifests[firstIndex]["exports"]) ||
-  JSON.stringify(Object.keys(workspaceManifests[firstIndex]["exports"])) !==
-    JSON.stringify(expectedExports)
-) {
-  throw new Error("Library exports map is not the complete settled public seam");
-}
 await Promise.all(
   portableDistributionPaths
     .filter((relativePath) => !relativePath.includes("/bun/filesystem/"))

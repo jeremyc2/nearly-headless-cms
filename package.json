@@ -14,7 +14,8 @@
     "lint": "oxlint . --fix --deny-warnings --format=agent",
     "lint:pretty": "oxlint . --fix --deny-warnings",
     "lint:stats": "bun lint:pretty | tail -n 2",
-    "typecheck": "bun run --filter '*' typecheck",
+    "typecheck": "bun run --filter '*' typecheck && bun run typecheck:scripts",
+    "typecheck:scripts": "tsc --noEmit -p tsconfig.json",
     "test": "bun test",
     "test:unit": "bun test packages/nearly-headless-cms/test/unit apps/example-cms/test/unit apps/public-blog/test/unit",
     "test:types": "bun run --cwd packages/nearly-headless-cms test:types",
@@ -26,7 +27,8 @@
     "check:generated": "bun run scripts/check-generated.ts",
     "check:architecture": "bun run scripts/check-architecture.ts",
     "acceptance": "bun run scripts/run-acceptance.ts",
-    "format": "oxfmt --write package.json tsconfig.json README.md packages apps/example-cms/package.json apps/example-cms/tsconfig.json apps/example-cms/scripts apps/example-cms/src apps/example-cms/test apps/public-blog/package.json apps/public-blog/tsconfig.json apps/public-blog/astro.config.ts apps/public-blog/src apps/public-blog/test acceptance scripts .github docs/manual docs/releasing.md"
+    "release": "bun run scripts/release.ts",
+    "format": "oxfmt --write package.json tsconfig.json README.md packages apps/example-cms/package.json apps/example-cms/tsconfig.json apps/example-cms/scripts apps/example-cms/src apps/example-cms/test apps/public-blog/package.json apps/public-blog/tsconfig.json apps/public-blog/astro.config.ts apps/public-blog/src apps/public-blog/test acceptance scripts docs/manual docs/releasing.md"
   },
   "devDependencies": {
     "@effect/tsgo": "0.36.5",

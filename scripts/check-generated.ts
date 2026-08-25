@@ -96,12 +96,12 @@ const buildClientArtifacts = (
     {
       const artifacts: readonly GeneratedArtifact[] = [
         {
-          content: OpenApi.stringify(managementDocument),
-          path: `${repository}/apps/example-cms/openapi/management.v1.json`,
+          content: OpenApi.stringify(OpenApi.headless(makeDeliveryOperations())),
+          path: `${repository}/apps/example-cms/openapi/headless.v1.json`,
         },
         {
-          content: OpenApi.stringify(headlessDocument),
-          path: `${repository}/apps/example-cms/openapi/headless.v1.json`,
+          content: OpenApi.stringify(OpenApi.management(makeManagementOperations())),
+          path: `${repository}/apps/example-cms/openapi/management.v1.json`,
         },
         ...managementClientArtifacts,
         ...headlessClientArtifacts,

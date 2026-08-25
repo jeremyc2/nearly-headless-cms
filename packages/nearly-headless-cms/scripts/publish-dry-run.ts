@@ -1,6 +1,11 @@
-const repository = `${import.meta.dir}/../../..`,
+const packageDirectory = `${import.meta.dir}/..`,
+  packageManifest = (await Bun.file(`${packageDirectory}/package.json`).json()) as {
+    readonly version: string;
+  },
+  repository = `${import.meta.dir}/../../..`,
   repositoryArchivePath =
-    Bun.env["PACKAGE_ARCHIVE"] ?? `${repository}/.artifacts/npm/nearly-headless-cms-0.1.0.tgz`,
+    Bun.env["PACKAGE_ARCHIVE"] ??
+    `${repository}/.artifacts/npm/nearly-headless-cms-${packageManifest.version}.tgz`,
   successfulExitCode = 0;
 if (!(await Bun.file(repositoryArchivePath).exists())) {
   throw new Error(`Package archive does not exist: ${repositoryArchivePath}`);
