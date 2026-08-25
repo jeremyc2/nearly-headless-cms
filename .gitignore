@@ -7,6 +7,10 @@ dist
 *.tgz
 .artifacts
 
+# local app runtime data
+apps/example-cms/.data/
+apps/public-blog/.generated/
+
 # code coverage
 coverage
 *.lcov
