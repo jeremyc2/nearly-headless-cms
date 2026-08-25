@@ -32,13 +32,13 @@ export { generatorFormatVersion, makeGeneratedClient } from "./${clientBasename}
     chunkImports,
     mergedType,
     typeName,
-  }: BuildMergedTypeFileInput): string =>
+  }: Readonly<BuildMergedTypeFileInput>): string =>
     `${generatedFileBanner}${chunkImports}\nexport type ${typeName} = ${mergedType};\n`,
   buildRuntimeSpecificationsFile = ({
     clientBasename,
     specificationImports,
     specificationSpread,
-  }: BuildRuntimeSpecificationsFileInput): string =>
+  }: Readonly<BuildRuntimeSpecificationsFileInput>): string =>
     `${generatedFileBanner}import type { OperationInputs } from "./${clientBasename}-operation-inputs.ts";
 import type { OperationSpecification } from "./${clientBasename}-specification-types.ts";
 ${specificationImports}
@@ -68,6 +68,7 @@ import { TransportFailure } from "./transport-failure.ts";
 import { operationSpecifications } from "./${clientBasename}-runtime-specifications.ts";
 
 ${runtimeBeforeSpecifications}  generatorFormatVersion = ${formatVersion},
+  httpStatusNoContent = 204,
 ${runtimeConstChainMiddle}  makeGeneratedClient = (baseAddress = "") => ({
 ${operationMethods}
   }),
@@ -93,13 +94,13 @@ ${runtimeTypes}`,
 }
 `,
   sourceFileBuilders = {
-  buildEntryFile,
-  buildMergedTypeFile,
-  buildRuntimeSpecificationsFile,
-  buildRuntimeTransportFile,
-  buildRuntimeTypesFile,
-  buildSpecificationTypesFile,
-};
+    buildEntryFile,
+    buildMergedTypeFile,
+    buildRuntimeSpecificationsFile,
+    buildRuntimeTransportFile,
+    buildRuntimeTypesFile,
+    buildSpecificationTypesFile,
+  };
 
 export default sourceFileBuilders;
 export type { BuildMergedTypeFileInput, BuildRuntimeSpecificationsFileInput };

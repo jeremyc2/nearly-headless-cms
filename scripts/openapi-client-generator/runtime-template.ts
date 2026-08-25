@@ -1,9 +1,9 @@
 const runtimeAfterMakeGeneratedClient = `
   // oxlint-disable-next-line effecttsgo/async-function -- generated clients expose a Promise-backed transport boundary; converting this callback to Effect would change the generated public client contract.
   parseOperationSuccessResponse = async (
-    input: OperationSuccessParseInput,
+    input: Readonly<OperationSuccessParseInput>,
   ): Promise<unknown> => {
-    if (input.response.status === 204 || input.specification.method === "HEAD") {
+    if (input.response.status === httpStatusNoContent || input.specification.method === "HEAD") {
       return undefined;
     }
     if (input.successResponse.responseMediaType === "application/octet-stream") {
@@ -26,8 +26,8 @@ const runtimeAfterMakeGeneratedClient = `
   },
   prepareOperationRequest = (
     baseAddress: string,
-    input: OperationInputs[keyof OperationInputs],
-    specification: OperationSpecification,
+    input: Readonly<OperationInputs[keyof OperationInputs]>,
+    specification: Readonly<OperationSpecification>,
   ): { readonly body: BodyInit | undefined; readonly headers: Headers; readonly requestUrl: URL } => {
     let { path } = specification;
     if ("path" in input && input.path !== undefined) {
@@ -44,7 +44,7 @@ const runtimeAfterMakeGeneratedClient = `
     };
   },
   // oxlint-disable-next-line effecttsgo/async-function -- generated clients expose a Promise-backed transport boundary; converting this callback to Effect would change the generated public client contract.
-  resolveOperationFailure = async (response: Response, mediaType: string): Promise<never> => {
+  resolveOperationFailure = async (response: Readonly<Response>, mediaType: string): Promise<never> => {
     if (mediaType.includes("application/json")) {
       throwDeclaredFailure(response, await response.json());
     }
@@ -63,7 +63,7 @@ const runtimeAfterMakeGeneratedClient = `
     }
     return path;
   },
-  throwDeclaredFailure = (response: Response, failure: unknown): never => {
+  throwDeclaredFailure = (response: Readonly<Response>, failure: unknown): never => {
     if (isDeclaredFailurePayload(failure)) {
       const { code, details, message } = failure;
       throw DeclaredFailure.make({
@@ -79,7 +79,7 @@ const runtimeAfterMakeGeneratedClient = `
     });
   },
   // oxlint-disable-next-line effecttsgo/async-function -- generated clients expose a Promise-backed transport boundary; converting this callback to Effect would change the generated public client contract.
-  undertakeOperationRequest = async (request: OperationRequestInput): Promise<unknown> => {
+  undertakeOperationRequest = async (request: Readonly<OperationRequestInput>): Promise<unknown> => {
     const { body, headers, requestUrl } = prepareOperationRequest(
       request.baseAddress,
       request.input,
@@ -108,7 +108,7 @@ const runtimeAfterMakeGeneratedClient = `
   }
   `,
   runtimeBeforeSpecifications = `const appendQueryParameters = (
-    requestUrl: URL,
+    requestUrl: Pick<URL, "pathname" | "searchParams">,
     queryParameters: Readonly<Record<string, unknown>>,
   ): void => {
     for (const [name, value] of Object.entries(queryParameters)) {
@@ -127,9 +127,9 @@ const runtimeAfterMakeGeneratedClient = `
     }
   },
   buildRequestBody = (
-    input: OperationInputs[keyof OperationInputs],
+    input: Readonly<OperationInputs[keyof OperationInputs]>,
     headers: Headers,
-    specification: OperationSpecification,
+    specification: Readonly<OperationSpecification>,
   ): BodyInit | undefined => {
     if (!("body" in input) || input.body === undefined) {
       return undefined;
@@ -142,7 +142,7 @@ const runtimeAfterMakeGeneratedClient = `
     // oxlint-disable-next-line effecttsgo/prefer-schema-over-json -- request bodies are OpenAPI-generated unknown shapes and must be serialized using the browser JSON boundary.
     return JSON.stringify(requestBody);
   },
-  buildRequestHeaders = (input: OperationInputs[keyof OperationInputs]): Headers => {
+  buildRequestHeaders = (input: Readonly<OperationInputs[keyof OperationInputs]>): Headers => {
     if ("headers" in input) {
       return new Headers(input.headers);
     }
@@ -163,8 +163,8 @@ const runtimeAfterMakeGeneratedClient = `
     baseAddress: string,
     identifier: Identifier,
   ): ((
-    input: OperationInputs[Identifier],
-    signal?: AbortSignal,
+    input: Readonly<OperationInputs[Identifier]>,
+    signal?: Pick<AbortSignal, "aborted" | "addEventListener" | "reason" | "removeEventListener" | "throwIfAborted">,
   ) => Effect.Effect<
     OperationResponses[Identifier],
     TransportFailure | ProtocolFailure | DeclaredFailure
@@ -177,7 +177,7 @@ const runtimeAfterMakeGeneratedClient = `
         specification: operationSpecifications[identifier],
       }),
   /* oxlint-disable effecttsgo/global-fetch, effecttsgo/global-fetch-in-effect -- generated clients intentionally use the platform fetch boundary so callers can supply the browser or server runtime. */
-  fetchOperationResponse = (request: OperationFetchRequest): Promise<Response> =>
+  fetchOperationResponse = (request: Readonly<OperationFetchRequest>): Promise<Response> =>
     fetch(request.requestUrl, {
       body: request.body,
       headers: request.headers,
@@ -201,7 +201,7 @@ const runtimeAfterMakeGeneratedClient = `
     Schema.is(DeclaredFailure)(cause),
   `,
   runtimeRequestOperation = `function requestOperation<Identifier extends keyof OperationInputs>(
-  request: RequestOperationInput<Identifier>,
+  request: Readonly<RequestOperationInput<Identifier>>,
 ): Effect.Effect<
   OperationResponses[Identifier],
   TransportFailure | ProtocolFailure | DeclaredFailure
@@ -211,7 +211,7 @@ function requestOperation({
   input,
   signal,
   specification,
-}: RequestOperationInput<keyof OperationInputs>): Effect.Effect<
+}: Readonly<RequestOperationInput<keyof OperationInputs>>): Effect.Effect<
   unknown,
   TransportFailure | ProtocolFailure | DeclaredFailure
 > {
@@ -230,7 +230,7 @@ function requestOperation({
   runtimeTypes = `export interface RequestOperationInput<Identifier extends keyof OperationInputs> {
   readonly baseAddress: string;
   readonly input: OperationInputs[Identifier];
-  readonly signal?: AbortSignal;
+  readonly signal?: Pick<AbortSignal, keyof AbortSignal>;
   readonly specification: OperationSpecification;
 }
 
@@ -238,8 +238,8 @@ export interface OperationFetchRequest {
   readonly body: BodyInit | undefined;
   readonly headers: Headers;
   readonly method: string;
-  readonly requestUrl: URL;
-  readonly signal: AbortSignal | undefined;
+  readonly requestUrl: Pick<URL, "pathname" | "searchParams">;
+  readonly signal: Pick<AbortSignal, "aborted" | "addEventListener" | "reason" | "removeEventListener" | "throwIfAborted"> | undefined;
 }
 
 export interface OperationSuccessParseInput {
@@ -252,7 +252,7 @@ export interface OperationSuccessParseInput {
 export interface OperationRequestInput {
   readonly baseAddress: string;
   readonly input: OperationInputs[keyof OperationInputs];
-  readonly signal: AbortSignal | undefined;
+  readonly signal: Pick<AbortSignal, "aborted" | "addEventListener" | "reason" | "removeEventListener" | "throwIfAborted"> | undefined;
   readonly specification: OperationSpecification;
 }
 `;

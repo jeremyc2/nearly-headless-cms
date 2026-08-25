@@ -15,13 +15,13 @@ interface AssembleGeneratedFilesInput {
 }
 
 const {
-  buildEntryFile,
-  buildMergedTypeFile,
-  buildRuntimeSpecificationsFile,
-  buildRuntimeTransportFile,
-  buildRuntimeTypesFile,
-  buildSpecificationTypesFile,
-} = sourceFileBuilders,
+    buildEntryFile,
+    buildMergedTypeFile,
+    buildRuntimeSpecificationsFile,
+    buildRuntimeTransportFile,
+    buildRuntimeTypesFile,
+    buildSpecificationTypesFile,
+  } = sourceFileBuilders,
   assembleGeneratedFiles = ({
     clientBasename,
     document,
@@ -30,7 +30,10 @@ const {
     operationMethods,
     responseChunks,
     specificationChunks,
-  }: AssembleGeneratedFilesInput): readonly { readonly content: string; readonly filename: string }[] => [
+  }: Readonly<AssembleGeneratedFilesInput>): readonly {
+    readonly content: string;
+    readonly filename: string;
+  }[] => [
     buildComponentTypeFile(clientBasename, document),
     ...inputChunks.map(({ content, filename }) => ({ content, filename })),
     ...responseChunks.map(({ content, filename }) => ({ content, filename })),

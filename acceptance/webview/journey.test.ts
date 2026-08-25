@@ -1,6 +1,10 @@
 import { afterAll, describe, expect, test } from "bun:test";
 
-const EXPECTED_SIGNAL_CARD_COUNT = 4,
+const CMS_VIEWPORT_HEIGHT = 1000,
+  CMS_VIEWPORT_WIDTH = 1440,
+  EXPECTED_SIGNAL_CARD_COUNT = 4,
+  JOURNEY_TEST_TIMEOUT_MILLISECONDS = 120_000,
+  MINIMUM_EDITOR_PATH_SEGMENTS = 4,
   MINIMUM_ENTRY_ROW_COUNT = 2,
   POLLING_INTERVAL_MILLISECONDS = 50,
   PUBLIC_BLOG_HEIGHT = 844,
@@ -15,7 +19,7 @@ const EXPECTED_SIGNAL_CARD_COUNT = 4,
     return test.skip;
   })(),
   // oxlint-disable-next-line effecttsgo/async-function -- journey assertions compose awaited WebView navigation and evaluation.
-  assertCmsHomePage = async (view: Bun.WebView): Promise<void> => {
+  assertCmsHomePage = async <View extends Bun.WebView>(view: Readonly<View>): Promise<void> => {
     await view.navigate("http://localhost:3000/");
     await waitFor(
       view,
@@ -29,7 +33,9 @@ const EXPECTED_SIGNAL_CARD_COUNT = 4,
     ).toEqual({ heading: 1, main: 1, navigation: 1 });
   },
   // oxlint-disable-next-line effecttsgo/async-function -- journey assertions compose awaited WebView navigation and evaluation.
-  assertContentListAndFilter = async (view: Bun.WebView): Promise<void> => {
+  assertContentListAndFilter = async <View extends Bun.WebView>(
+    view: Readonly<View>,
+  ): Promise<void> => {
     await view.click('a[href="/content/post"]');
     await waitFor(
       view,
@@ -49,22 +55,28 @@ const EXPECTED_SIGNAL_CARD_COUNT = 4,
     ).toBe("lighthouse");
   },
   // oxlint-disable-next-line effecttsgo/async-function -- journey assertions compose awaited WebView navigation and evaluation.
-  assertEditorHistoryNavigation = async (view: Bun.WebView): Promise<string> => {
+  assertEditorHistoryNavigation = async <View extends Bun.WebView>(
+    view: Readonly<View>,
+  ): Promise<string> => {
     await view.click(".entry-row");
-    await waitFor(view, "location.pathname", (value: string) => value.split("/").length > 3);
+    await waitFor(
+      view,
+      "location.pathname",
+      (value: string) => value.split("/").length >= MINIMUM_EDITOR_PATH_SEGMENTS,
+    );
     const editorPath = await view.evaluate<string>("location.pathname");
     await view.evaluate("(() => { history.back(); return true })()");
     expect(
       await waitFor(view, "location.pathname", (value: string) => value === "/content/post"),
     ).toBe("/content/post");
     await view.evaluate("(() => { history.forward(); return true })()");
-    expect(
-      await waitFor(view, "location.pathname", (value: string) => value === editorPath),
-    ).toBe(editorPath);
+    expect(await waitFor(view, "location.pathname", (value: string) => value === editorPath)).toBe(
+      editorPath,
+    );
     return editorPath;
   },
   // oxlint-disable-next-line effecttsgo/async-function -- journey assertions compose awaited WebView navigation and evaluation.
-  assertPublicBlogPage = async (view: Bun.WebView): Promise<void> => {
+  assertPublicBlogPage = async <View extends Bun.WebView>(view: Readonly<View>): Promise<void> => {
     await view.navigate("http://localhost:4321/posts/a-lighthouse-for-content/");
     expect(
       await waitFor(
@@ -92,7 +104,10 @@ const EXPECTED_SIGNAL_CARD_COUNT = 4,
     expect(await view.evaluate<boolean>("window.__commentInputWasTrusted")).toBeTrue();
   },
   // oxlint-disable-next-line effecttsgo/async-function -- journey assertions compose awaited WebView navigation and evaluation.
-  assertResponsiveEditor = async (view: Bun.WebView, editorPath: string): Promise<void> => {
+  assertResponsiveEditor = async <View extends Bun.WebView>(
+    view: Readonly<View>,
+    editorPath: string,
+  ): Promise<void> => {
     await view.navigate(`http://localhost:3000${editorPath}`);
     expect(
       await waitFor(
@@ -104,49 +119,49 @@ const EXPECTED_SIGNAL_CARD_COUNT = 4,
     await view.resize(RESPONSIVE_WIDTH, RESPONSIVE_HEIGHT);
     expect(await view.evaluate<number>("innerWidth")).toBe(RESPONSIVE_WIDTH);
   },
-  createWebView = (
-    consoleErrors: unknown[],
+  createWebView = <Input extends { readonly errors: unknown[] }>(
+    consoleErrors: Readonly<Input>,
     height: number,
     width: number,
   ): Bun.WebView =>
     new Bun.WebView({
       console: (method, ...values) => {
         if (method === "error") {
-          consoleErrors.push(...values);
+          consoleErrors.errors.push(...values);
         }
       },
       height,
       width,
     }),
   // oxlint-disable-next-line effecttsgo/async-function -- journey orchestration composes native WebView Promise operations.
-  runCmsJourneyPhase = async (
-    consoleErrors: unknown[],
+  runCmsJourneyPhase = async <Input extends { readonly errors: unknown[] }>(
+    consoleErrors: Readonly<Input>,
   ): Promise<{ editorPath: string; view: Bun.WebView }> => {
-    let view = createWebView(consoleErrors, 1000, 1440);
+    let view = createWebView(consoleErrors, CMS_VIEWPORT_HEIGHT, CMS_VIEWPORT_WIDTH);
     await assertCmsHomePage(view);
     await assertContentListAndFilter(view);
     const editorPath = await assertEditorHistoryNavigation(view);
     view.close();
-    view = createWebView(consoleErrors, 1000, 1440);
+    view = createWebView(consoleErrors, CMS_VIEWPORT_HEIGHT, CMS_VIEWPORT_WIDTH);
     await assertResponsiveEditor(view, editorPath);
     return { editorPath, view };
   },
   // oxlint-disable-next-line effecttsgo/async-function -- journey orchestration composes native WebView Promise operations.
   runCompleteSystemJourney = async (): Promise<void> => {
-    const accumulatedErrors: unknown[] = [],
+    const accumulatedErrors = { errors: [] as unknown[] },
       cmsJourney = await runCmsJourneyPhase(accumulatedErrors);
-    let {view} = cmsJourney;
+    let { view } = cmsJourney;
     try {
       view.close();
       view = createWebView(accumulatedErrors, PUBLIC_BLOG_HEIGHT, PUBLIC_BLOG_WIDTH);
       await assertPublicBlogPage(view);
-      expect(accumulatedErrors).toEqual([]);
+      expect(accumulatedErrors.errors).toEqual([]);
     } finally {
       view.close();
     }
   },
-  waitFor = <Value>(
-    view: Bun.WebView,
+  waitFor = <Value, View extends Bun.WebView>(
+    view: Readonly<View>,
     expression: string,
     predicate: (value: Value) => boolean,
   ): Promise<Value> => {
@@ -177,6 +192,6 @@ describe("complete-system WebView journey", () => {
     async () => {
       await runCompleteSystemJourney();
     },
-    120_000,
+    JOURNEY_TEST_TIMEOUT_MILLISECONDS,
   );
 });

@@ -11,89 +11,65 @@ import {
   type useEntryEditorQueries,
 } from "./entry-editor-layout-imports.ts";
 
-export const EntryEditorLayout = ({
-  assets,
-  authors,
-  categories,
-  contentTypeId,
-  deleteEntry,
-  editorialCommand,
-  entryId,
-  onRequestDeletion,
-  onRequestEditorialConfirmation,
-  onUpdateField,
-  state,
-  tags,
-  title,
-  titleField,
-  values,
-}: EntryEditorLayoutProperties) => (
-  <div className="editor-layout">
-    <EntryEditorStoryCanvas
-      assets={assets}
-      contentTypeId={contentTypeId}
-      onUpdateField={onUpdateField}
-      title={title}
-      titleField={titleField}
-      values={values}
-    />
-    <EntryEditorLayoutSidebar
-      authors={authors}
-      categories={categories}
-      contentTypeId={contentTypeId}
-      deleteEntry={deleteEntry}
-      editorialCommand={editorialCommand}
-      entryId={entryId}
-      onRequestDeletion={onRequestDeletion}
-      onRequestEditorialConfirmation={onRequestEditorialConfirmation}
-      onUpdateField={onUpdateField}
-      state={state}
-      tags={tags}
-      values={values}
-    />
-  </div>
-),
-
-EntryEditorLayoutSidebar = ({
-  authors,
-  categories,
-  contentTypeId,
-  deleteEntry,
-  editorialCommand,
-  entryId,
-  onRequestDeletion,
-  onRequestEditorialConfirmation,
-  onUpdateField,
-  state,
-  tags,
-  values,
-}: Omit<EntryEditorLayoutProperties, "assets" | "title" | "titleField">) => (
-  <aside className="editor-sidebar">
-    <EntryEditorPublicationPanel
-      authors={authors}
-      categories={categories}
-      contentTypeId={contentTypeId}
-      editorialError={editorialCommand.error ?? undefined}
-      isEditorialPending={editorialCommand.isPending}
-      onRequestEditorialConfirmation={onRequestEditorialConfirmation}
-      onUpdateField={onUpdateField}
-      tags={tags}
-      values={values}
-    />
-    <EntryEditorHistoryPanel
-      contentTypeId={contentTypeId}
-      entryId={entryId}
-      writeToken={state.data?.writeToken}
-    />
-    <EntryEditorDangerPanel
-      contentTypeId={contentTypeId}
-      deleteErrorMessage={deleteEntry.error?.message}
-      isDeleting={deleteEntry.isPending}
-      onRequestDeletion={onRequestDeletion}
-      saveDisabled={state.data === undefined}
-    />
-  </aside>
-);
+export const EntryEditorLayout = <Properties extends EntryEditorLayoutProperties>(
+    properties: Readonly<Properties>,
+  ) => (
+    <div className="editor-layout">
+      <EntryEditorStoryCanvas
+        assets={properties.assets}
+        contentTypeId={properties.contentTypeId}
+        onUpdateField={properties.onUpdateField}
+        title={properties.title}
+        titleField={properties.titleField}
+        values={properties.values}
+      />
+      <EntryEditorLayoutSidebar
+        authors={properties.authors}
+        categories={properties.categories}
+        contentTypeId={properties.contentTypeId}
+        deleteEntry={properties.deleteEntry}
+        editorialCommand={properties.editorialCommand}
+        entryId={properties.entryId}
+        onRequestDeletion={properties.onRequestDeletion}
+        onRequestEditorialConfirmation={properties.onRequestEditorialConfirmation}
+        onUpdateField={properties.onUpdateField}
+        state={properties.state}
+        tags={properties.tags}
+        values={properties.values}
+      />
+    </div>
+  ),
+  EntryEditorLayoutSidebar = <
+    Properties extends Omit<EntryEditorLayoutProperties, "assets" | "title" | "titleField">,
+  >(
+    properties: Readonly<Properties>,
+  ) => (
+    <aside className="editor-sidebar">
+      <EntryEditorPublicationPanel
+        authors={properties.authors}
+        categories={properties.categories}
+        contentTypeId={properties.contentTypeId}
+        editorialError={properties.editorialCommand.error ?? undefined}
+        isEditorialPending={properties.editorialCommand.isPending}
+        onRequestEditorialConfirmation={properties.onRequestEditorialConfirmation}
+        onUpdateField={properties.onUpdateField}
+        tags={properties.tags}
+        values={properties.values}
+      />
+      <EntryEditorHistoryPanel
+        contentTypeId={properties.contentTypeId}
+        entryId={properties.entryId}
+        writeToken={properties.state.data?.writeToken}
+      />
+      <EntryEditorDangerPanel
+        contentTypeId={properties.contentTypeId}
+        deleteErrorMessage={properties.deleteEntry.error?.message}
+        isDeleting={properties.deleteEntry.isPending}
+        onRequestDeletion={properties.onRequestDeletion}
+        saveDisabled={properties.state.data === undefined}
+      />
+    </aside>
+  );
 
 interface EntryEditorLayoutProperties {
   readonly assets: readonly AssetRepresentation[] | undefined;

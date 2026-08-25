@@ -11,7 +11,7 @@ import {
 
 interface ClearImageAssignmentsInput {
   readonly assetId: string;
-  readonly cms: Cms.ServiceShape;
+  readonly cms: Readonly<Cms.ServiceShape>;
   readonly commandKey: string;
   readonly commandReceiptStore: CommandReceiptStore;
 }
@@ -36,7 +36,7 @@ const { requiredParameter } = managementSupport,
     cms,
     commandKey,
     commandReceiptStore,
-  }: ClearImageAssignmentsInput) =>
+  }: Readonly<ClearImageAssignmentsInput>) =>
     Effect.gen(function* clearImageAssignmentsBeforeDeletion() {
       yield* cms.getAsset(assetId);
       const { authorStates, postStates } = yield* loadAssetAssignmentStates(cms, assetId),
@@ -54,19 +54,21 @@ const { requiredParameter } = managementSupport,
         postStates,
       });
     }),
-  completeImageReplacement = ({
+  completeImageReplacement = <
+    Input extends {
+      readonly cms: Readonly<Cms.ServiceShape>;
+      readonly commandKey: string;
+      readonly commandReceiptStore: CommandReceiptStore;
+      readonly oldAssetId: string;
+      readonly request: Request;
+    },
+  >({
     cms,
     commandKey,
     commandReceiptStore,
     oldAssetId,
     request,
-  }: {
-    readonly cms: Cms.ServiceShape;
-    readonly commandKey: string;
-    readonly commandReceiptStore: CommandReceiptStore;
-    readonly oldAssetId: string;
-    readonly request: Request;
-  }) =>
+  }: Readonly<Input>) =>
     Effect.gen(function* completeImageReplacementWorkflow() {
       const assignmentStates = yield* loadImageReplacementStates(cms, oldAssetId),
         imageAsset = yield* cms.ingestAsset(yield* parseReplacementUpload(request)),
@@ -87,7 +89,7 @@ const { requiredParameter } = managementSupport,
       });
     }),
   finalizeImageReplacement = (
-    cms: Cms.ServiceShape,
+    cms: Readonly<Cms.ServiceShape>,
     mutations: readonly Cms.EntryBatchMutation[],
     oldAssetId: string,
   ) =>
@@ -101,9 +103,7 @@ const { requiredParameter } = managementSupport,
       );
     }),
   makeDeleteImageAndClearAssignments =
-    (
-      commandReceiptStore: CommandReceiptStore,
-    ): HttpContract.ManagementOperation["execute"] =>
+    (commandReceiptStore: CommandReceiptStore): HttpContract.ManagementOperation["execute"] =>
     ({ cms, parameters, request }) =>
       Effect.gen(function* deleteImageAfterClearingAssignments() {
         const assetId = requiredParameter(parameters, "assetId"),
@@ -153,7 +153,7 @@ const { requiredParameter } = managementSupport,
     commandKey,
     commandReceiptStore,
     postStates,
-  }: PersistImageDeletionReceiptInput) => {
+  }: Readonly<PersistImageDeletionReceiptInput>) => {
     const receipt = {
       clearedAuthorCount: authorStates.length,
       clearedPostCount: postStates.length,

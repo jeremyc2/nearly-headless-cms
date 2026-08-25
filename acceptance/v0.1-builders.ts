@@ -32,7 +32,7 @@ export const acceptanceExternalProcess = (level: VerificationLevel): string => {
     owner,
     selector,
     source,
-  }: AutomatedAcceptanceCaseInput): AcceptanceCase => ({
+  }: Readonly<AutomatedAcceptanceCaseInput>): AcceptanceCase => ({
     adapter,
     automation: "automated",
     claim,
@@ -47,7 +47,12 @@ export const acceptanceExternalProcess = (level: VerificationLevel): string => {
     selector,
     source,
   }),
-  manual = ({ claim, id, selector, source }: ManualAcceptanceCaseInput): AcceptanceCase => ({
+  manual = ({
+    claim,
+    id,
+    selector,
+    source,
+  }: Readonly<ManualAcceptanceCaseInput>): AcceptanceCase => ({
     adapter: "filesystem",
     automation: "manual",
     claim,

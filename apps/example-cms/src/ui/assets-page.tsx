@@ -18,7 +18,11 @@ const { AssetsPageDeleteDialog, AssetsPageGrid, AssetsPageReplaceDialog } = asse
           replacementInput={page.replacementInput}
           upload={page.upload}
         />
-        <AssetsPageStatus deleteImage={page.deleteImage} replace={page.replace} upload={page.upload} />
+        <AssetsPageStatus
+          deleteImage={page.deleteImage}
+          replace={page.replace}
+          upload={page.upload}
+        />
         <AssetsPageGrid
           assets={page.assets}
           chooseFile={page.chooseFile}

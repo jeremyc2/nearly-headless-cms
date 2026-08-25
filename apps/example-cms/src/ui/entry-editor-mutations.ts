@@ -1,8 +1,9 @@
+import * as mainShared from "./main-shared.ts";
 import { Effect, Schema } from "effect";
 import { type EntryRepresentation, ManagementClientFailure } from "../generated/management-client.ts";
-import { managementClient, queryClient } from "./main-shared.ts";
 import type { DeletionRecord } from "./entry-editor-types.ts";
 import { deletionRecordFrom } from "./main-entry-support.ts";
+import { httpStatusConflict } from "nearly-headless-cms/http";
 import { normalizeSaveResult } from "./entry-editor-support.ts";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
@@ -32,7 +33,7 @@ export const useEntryEditorDeleteMutation = ({
         throw new Error("Current Entry deletion state is unavailable");
       }
       const outcome = await Effect.runPromise(
-          managementClient.deleteContentEntry(contentTypeId, entryId, writeToken),
+          mainShared.managementClient.deleteContentEntry(contentTypeId, entryId, writeToken),
         ),
         receipt = deletionRecordFrom(outcome);
       if (receipt === undefined) {
@@ -42,10 +43,10 @@ export const useEntryEditorDeleteMutation = ({
     },
     onSuccess: (receipt) => {
       onDeleted(receipt);
-      return queryClient
+      return mainShared.queryClient
         .invalidateQueries({ queryKey: ["entries", contentTypeId] })
-        .then(() => queryClient.invalidateQueries({ queryKey: ["count", contentTypeId] }))
-        .then(() => queryClient.invalidateQueries({ queryKey: ["navigation"] }));
+        .then(() => mainShared.queryClient.invalidateQueries({ queryKey: ["count", contentTypeId] }))
+        .then(() => mainShared.queryClient.invalidateQueries({ queryKey: ["navigation"] }));
     },
   }),
 
@@ -57,7 +58,7 @@ useEntryEditorEditorialMutation = ({
 }: {
   readonly contentTypeId: string;
   readonly entryId: string;
-  readonly onUpdated: (values: Record<string, unknown>) => void;
+  readonly onUpdated: (values: Readonly<Record<string, unknown>>) => void;
   readonly writeToken?: string;
 }) =>
   useMutation({
@@ -66,7 +67,7 @@ useEntryEditorEditorialMutation = ({
         throw new Error("Current Entry state is unavailable");
       }
       return Effect.runPromise(
-        managementClient.runEditorialCommand({
+        mainShared.managementClient.runEditorialCommand({
           contentTypeId,
           entryId,
           status,
@@ -76,10 +77,10 @@ useEntryEditorEditorialMutation = ({
     },
     onSuccess: (result) => {
       onUpdated(result.entry.values);
-      return queryClient
+      return mainShared.queryClient
         .invalidateQueries({ queryKey: ["entry-state", contentTypeId, entryId] })
-        .then(() => queryClient.invalidateQueries({ queryKey: ["entries", contentTypeId] }))
-        .then(() => queryClient.invalidateQueries({ queryKey: ["revisions", contentTypeId, entryId] }));
+        .then(() => mainShared.queryClient.invalidateQueries({ queryKey: ["entries", contentTypeId] }))
+        .then(() => mainShared.queryClient.invalidateQueries({ queryKey: ["revisions", contentTypeId, entryId] }));
     },
   }),
 
@@ -97,7 +98,7 @@ useEntryEditorPurgeMutation = ({
         throw new Error("Deletion record is unavailable");
       }
       return Effect.runPromise(
-        managementClient.permanentlyPurgeEntry(
+        mainShared.managementClient.permanentlyPurgeEntry(
           deletionRecord.contentTypeId,
           deletionRecord.entryId,
           deletionRecord.writeToken,
@@ -124,7 +125,7 @@ useEntryEditorSaveMutation = ({
     readonly revisionNumber: number;
     readonly writeToken: string;
   }) => void;
-  readonly onSaved: (values: Record<string, unknown>) => void;
+  readonly onSaved: (values: Readonly<Record<string, unknown>>) => void;
 }) =>
   useMutation({
     mutationFn: ({
@@ -135,7 +136,7 @@ useEntryEditorSaveMutation = ({
       readonly writeToken?: string;
     }) =>
       Effect.runPromise(
-        managementClient.replaceEntry({
+        mainShared.managementClient.replaceEntry({
           contentTypeId,
           entryId,
           values: replacementValues,
@@ -144,9 +145,9 @@ useEntryEditorSaveMutation = ({
       ),
     // oxlint-disable-next-line effecttsgo/async-function -- React query error callback awaits the latest server state.
     onError: async (error) => {
-      if (Schema.is(ManagementClientFailure)(error) && error.status === 409) {
+      if (Schema.is(ManagementClientFailure)(error) && error.status === httpStatusConflict) {
         const latest = await Effect.runPromise(
-          managementClient.getCurrentState(contentTypeId, entryId),
+          mainShared.managementClient.getCurrentState(contentTypeId, entryId),
         );
         onConflict(latest);
       }
@@ -154,9 +155,9 @@ useEntryEditorSaveMutation = ({
     onSuccess: (result) => {
       const updatedState = normalizeSaveResult(result);
       onSaved(updatedState.entry.values);
-      return queryClient
+      return mainShared.queryClient
         .invalidateQueries({ queryKey: ["entry-state", contentTypeId, entryId] })
-        .then(() => queryClient.invalidateQueries({ queryKey: ["entries", contentTypeId] }))
-        .then(() => queryClient.invalidateQueries({ queryKey: ["count", contentTypeId] }));
+        .then(() => mainShared.queryClient.invalidateQueries({ queryKey: ["entries", contentTypeId] }))
+        .then(() => mainShared.queryClient.invalidateQueries({ queryKey: ["count", contentTypeId] }));
     },
   });

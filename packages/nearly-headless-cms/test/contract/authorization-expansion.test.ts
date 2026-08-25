@@ -1,73 +1,11 @@
-import { Cms, type Identifier, type Operation } from "../../src/index.ts";
-import { type CompiledSnapshot, compileSnapshot } from "../../src/content-definition.ts";
-import {
-  CryptoIdentifierGenerator,
-  MemoryAssetManagement,
-  MemoryDefinitionCatalog,
-  MemoryEntryPersistence,
-} from "../../src/adapters/index.ts";
-import { CurrentIdentity, anonymous } from "../../src/identity.ts";
-import type { DefinitionCatalog, EntryPersistence } from "../../src/persistence.ts";
-import { Effect, Exit, Layer } from "effect";
+import { Cms, type Operation } from "../../src/index.ts";
+import { Effect, Exit } from "effect";
 import { describe, expect, test } from "bun:test";
-import type { Management as AssetManagement } from "../../src/asset.ts";
-import { Service as AuthorizationService } from "../../src/authorization.ts";
+import { runAuthorizationExpansion } from "./authorization-expansion-support.ts";
 
-const authorizationContractSnapshot: CompiledSnapshot = compileSnapshot({
-    definitionSpaceId: "authorization-contract",
-    definitions: [
-      {
-        fields: [
-          { key: "name", kind: { kind: "text" }, label: "Name", required: true },
-          {
-            key: "friend",
-            kind: { kind: "relationship", targetContentTypeIds: ["person"] },
-            label: "Friend",
-            nullable: true,
-          },
-        ],
-        id: "person",
-        kind: "contentType",
-        name: "Person",
-      },
-      {
-        fields: [
-          {
-            key: "editor",
-            kind: { kind: "relationship", targetContentTypeIds: ["person"] },
-            label: "Editor",
-          },
-        ],
-        id: "byline",
-        kind: "fieldGroup",
-        name: "Byline",
-      },
-      {
-        fieldGroups: [
-          { fieldGroupId: "byline", key: "metadata", label: "Metadata", mode: "nested" },
-        ],
-        fields: [
-          { key: "title", kind: { kind: "text" }, label: "Title", required: true },
-          {
-            key: "authors",
-            kind: {
-              distinct: true,
-              element: { kind: "relationship", targetContentTypeIds: ["person"] },
-              kind: "list",
-            },
-            label: "Authors",
-          },
-        ],
-        id: "article",
-        kind: "contentType",
-        name: "Article",
-      },
-    ],
-    snapshotId: "initial",
-  }),
-  createVerifyDeniedExpansion = (
-    actions: Operation.Action[],
-    deniedAction: { current?: Operation.Action },
+const createVerifyDeniedExpansion = <Actions extends Operation.Action[]>(
+    actions: Actions,
+    deniedAction: Readonly<{ current?: Actions[number] }>,
   ) =>
     Effect.gen(function* verifyDeniedExpansion() {
       const { adaEntry, cms, graceEntry } = yield* createVerifyNestedRelationshipExpansion(
@@ -91,12 +29,17 @@ const authorizationContractSnapshot: CompiledSnapshot = compileSnapshot({
       expect(actions).toEqual(["entry.read", "entry.expand"]);
       return { adaEntry, cms, graceEntry };
     }),
-  createVerifyExpandedPerson = (actions: Operation.Action[]) =>
+  createVerifyExpandedPerson = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- action log must remain mutable for assertions.
+    actions: Operation.Action[],
+  ) =>
     Effect.gen(function* verifyExpandedPerson() {
       const { adaEntry, cms, graceEntry } = yield* seedArticleEntries.pipe(
-          Effect.tap(() => Effect.sync(() => {
-            actions.length = emptyCollectionLength;
-          })),
+          Effect.tap(() =>
+            Effect.sync(() => {
+              actions.length = emptyCollectionLength;
+            }),
+          ),
         ),
         expandedPerson = yield* cms.getEntry({
           contentTypeId: "person",
@@ -111,12 +54,17 @@ const authorizationContractSnapshot: CompiledSnapshot = compileSnapshot({
       expect(actions).toEqual(["entry.read", "entry.expand"]);
       return { adaEntry, cms, graceEntry };
     }),
-  createVerifyListRelationshipExpansion = (actions: Operation.Action[]) =>
+  createVerifyListRelationshipExpansion = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- action log must remain mutable for assertions.
+    actions: Operation.Action[],
+  ) =>
     Effect.gen(function* verifyListRelationshipExpansion() {
       const { adaEntry, cms, graceEntry } = yield* createVerifyExpandedPerson(actions).pipe(
-          Effect.tap(() => Effect.sync(() => {
-            actions.length = emptyCollectionLength;
-          })),
+          Effect.tap(() =>
+            Effect.sync(() => {
+              actions.length = emptyCollectionLength;
+            }),
+          ),
         ),
         expandedArticle = yield* cms.queryEntries({
           contentTypeId: "article",
@@ -141,93 +89,50 @@ const authorizationContractSnapshot: CompiledSnapshot = compileSnapshot({
       expect(actions).toEqual(["entry.query", "entry.expand"]);
       return { adaEntry, cms, graceEntry };
     }),
-  createVerifyNestedRelationshipExpansion = (actions: Operation.Action[]) =>
+  createVerifyNestedRelationshipExpansion = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- action log must remain mutable for assertions.
+    actions: Operation.Action[],
+  ) =>
     Effect.gen(function* verifyNestedRelationshipExpansion() {
       const { adaEntry, cms, graceEntry } = yield* createVerifyListRelationshipExpansion(
           actions,
         ).pipe(
-          Effect.tap(() => Effect.sync(() => {
-            actions.length = emptyCollectionLength;
-          })),
+          Effect.tap(() =>
+            Effect.sync(() => {
+              actions.length = emptyCollectionLength;
+            }),
+          ),
         ),
         expandedNestedRelationship = yield* cms.queryEntries({
           contentTypeId: "article",
           expansion: ["metadata.editor.friend"],
           pageSize: 10,
         });
-      expect(expandedNestedRelationship.items[emptyCollectionLength]?.values["metadata"]).toEqual(
-        {
-          editor: {
-            contentTypeId: "person",
-            id: graceEntry.id,
-            values: {
-              friend: {
-                contentTypeId: "person",
-                id: adaEntry.id,
-                values: { friend: null, name: "Ada" },
-              },
-              name: "Grace",
+      expect(expandedNestedRelationship.items[emptyCollectionLength]?.values["metadata"]).toEqual({
+        editor: {
+          contentTypeId: "person",
+          id: graceEntry.id,
+          values: {
+            friend: {
+              contentTypeId: "person",
+              id: adaEntry.id,
+              values: { friend: null, name: "Ada" },
             },
+            name: "Grace",
           },
         },
-      );
+      });
       expect(actions).toEqual(["entry.query", "entry.expand"]);
       return { adaEntry, cms, graceEntry };
     }),
   emptyCollectionLength = 0,
   entryFromCreateResult = <Entry extends { id: string }>(
-    result: { entry: Entry } | Entry,
+    result: Readonly<{ entry: Entry } | Entry>,
   ): Entry => {
     if ("entry" in result) {
       return result.entry;
     }
     return result;
-  },
-  makeLayer = (actions: Operation.Action[], deniedAction: { current?: Operation.Action }) => {
-    const anonymousIdentity = CurrentIdentity.of({ current: Effect.succeed(anonymous) }),
-      assetsLayer = MemoryAssetManagement.layer().pipe(
-        Layer.provide(CryptoIdentifierGenerator.layer),
-      ),
-      authorizationLayer = Layer.succeed(
-        AuthorizationService,
-        AuthorizationService.of({
-          authorize: (_identity, action) =>
-            Effect.sync(() => {
-              actions.push(action);
-              return action !== deniedAction.current;
-            }),
-        }),
-      ),
-      catalogLayer = MemoryDefinitionCatalog.layer({ snapshot: authorizationContractSnapshot }).pipe(
-        Layer.provide(MemoryEntryPersistence.layer),
-      ),
-      dependencies: Layer.Layer<
-        | AuthorizationService
-        | CurrentIdentity
-        | DefinitionCatalog
-        | EntryPersistence
-        | AssetManagement
-        | Identifier.Generator
-      > = Layer.mergeAll(
-        assetsLayer,
-        authorizationLayer,
-        catalogLayer,
-        CryptoIdentifierGenerator.layer,
-        MemoryEntryPersistence.layer,
-        Layer.succeed(CurrentIdentity, anonymousIdentity),
-      );
-    return Cms.layer.pipe(Layer.provide(dependencies));
-  },
-  runAuthorizationExpansion = <Value, Error>(
-    effect: Effect.Effect<Value, Error, Cms.Service>,
-    actions: Operation.Action[],
-    deniedAction: { current?: Operation.Action },
-  ): Promise<Value> => {
-    const layer = makeLayer(actions, deniedAction),
-      // This test helper is the application entry point for each isolated test run.
-      // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer per run.
-      providedEffect = effect.pipe(Effect.provide(layer));
-    return Effect.runPromise(providedEffect);
   },
   seedArticleEntries = Effect.gen(function* seedArticleEntries() {
     const ada = yield* Cms.Service.pipe(

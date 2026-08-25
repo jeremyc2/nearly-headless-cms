@@ -7,7 +7,11 @@ import {
   useEntryEditorSaveMutation,
 } from "./entry-editor-controller-mutations-imports.ts";
 
-export const useEntryEditorControllerMutations = ({
+export const useEntryEditorControllerMutations = <
+  Values extends Record<string, unknown>,
+  OnSaved extends (values: Values) => void,
+  OnUpdated extends (values: Values) => void,
+>({
   contentTypeId,
   deletionRecord,
   entryId,
@@ -22,8 +26,8 @@ export const useEntryEditorControllerMutations = ({
   readonly entryId: string;
   readonly onConflict: (latest: EntryConflict["latest"]) => void;
   readonly onDeleted: (receipt: DeletionRecord) => void;
-  readonly onSaved: (values: Record<string, unknown>) => void;
-  readonly onUpdated: (values: Record<string, unknown>) => void;
+  readonly onSaved: Readonly<OnSaved>;
+  readonly onUpdated: Readonly<OnUpdated>;
   readonly writeToken?: string;
 }) => {
   const deleteEntry = useEntryEditorDeleteMutation({

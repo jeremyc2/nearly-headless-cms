@@ -6,8 +6,10 @@ import entryBatchOperationsSupport from "./cms-service-entry-batch-operations-su
 
 const { runMutateEntriesAtomically } = entryBatchOperationsSupport,
   mutateEntriesAtomicallyOperation =
-    (context: CmsServiceOperationContext) =>
-    (mutations: readonly EntryBatchMutation[]): Effect.Effect<readonly EntryBatchMutationResult[], CmsError> =>
+    (context: Readonly<CmsServiceOperationContext>) =>
+    (
+      mutations: readonly EntryBatchMutation[],
+    ): Effect.Effect<readonly EntryBatchMutationResult[], CmsError> =>
       runMutateEntriesAtomically(context, mutations);
 
 export default {

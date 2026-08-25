@@ -86,18 +86,22 @@ const { customDescriptor, descriptor } = openApiOperationSupport,
       post: descriptor("prepareDefinitionMigration"),
     },
   }),
-  dCustomManagementPaths = (
-    operations: readonly ManagementOperation[],
-  ): Readonly<Record<string, Readonly<Record<string, OperationDescriptor>>>> =>
+  dCustomManagementPaths = <Operations extends readonly ManagementOperation[]>(
+    operations: Operations,
+  ): Operations extends readonly ManagementOperation[]
+    ? Readonly<Record<string, Readonly<Record<string, OperationDescriptor>>>>
+    : never =>
     Object.fromEntries(
       operations.map((operation) => [
         `${managementPrefix}/definition-spaces/{definitionSpaceId}${operation.path}`,
         { [operation.method.toLowerCase()]: customDescriptor(operation) },
       ]),
     ),
-  eManagementPaths = (
-    operations: readonly ManagementOperation[],
-  ): Readonly<Record<string, Readonly<Record<string, OperationDescriptor>>>> => ({
+  eManagementPaths = <Operations extends readonly ManagementOperation[]>(
+    operations: Operations,
+  ): Operations extends readonly ManagementOperation[]
+    ? Readonly<Record<string, Readonly<Record<string, OperationDescriptor>>>>
+    : never => ({
     ...aEntryManagementPaths(),
     ...bAssetManagementPaths(),
     ...cDefinitionManagementPaths(),

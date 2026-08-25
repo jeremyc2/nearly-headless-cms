@@ -20,12 +20,7 @@ import filesystemLockRootLoadSupport from "./bun-filesystem-persistence-lock-roo
 import filesystemLockRootValidation from "./bun-filesystem-persistence-lock-root-validation.ts";
 import filesystemSupport from "./bun-filesystem-persistence-support.ts";
 
-const {
-    acquireWriterLock,
-    initialCatalog,
-    persistState,
-    removeOwnedWriterLock,
-  } = filesystemLockIo,
+const { acquireWriterLock, initialCatalog, persistState, removeOwnedWriterLock } = filesystemLockIo,
   { loadExistingRoot, readJson } = filesystemLockRootLoadSupport,
   { validateManifest } = filesystemLockRootValidation,
   { encode, writeAtomic } = filesystemSupport,

@@ -25,21 +25,21 @@ interface PrepareMigrationPreparationInput {
 
 const { attempt, entryResource, liveRecords } = cmsSupport,
   authorizeDefinitionSpace = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     action: DefinitionAuthorizationAction,
     definitionSpaceId: string,
   ): Effect.Effect<void, CmsError> =>
     context.authorize(action, { definitionSpaceId, kind: "definitionSpace" }),
   compileMigrationTarget = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     snapshot: PrepareDefinitionMigrationInput["snapshot"],
   ): Effect.Effect<CompiledSnapshot, CmsError> =>
     attempt((): CompiledSnapshot => compileSnapshot(snapshot, context.compileOptions)),
   loadStoredAssets = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
   ): Effect.Effect<readonly StoredAsset[], CmsError> =>
     Effect.gen(function* loadStoredAssetsEffect() {
-      const assetMetadata = yield* context.assets.list,
+      const assetMetadata = yield* context.assets.list(),
         storedAssets: StoredAsset[] = [];
       for (const asset of assetMetadata) {
         storedAssets.push(yield* context.assets.read(asset.id));
@@ -47,21 +47,22 @@ const { attempt, entryResource, liveRecords } = cmsSupport,
       return storedAssets;
     }),
   prepareMigrationPreparation = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     input: PrepareMigrationPreparationInput,
   ): Effect.Effect<Preparation, CmsError> =>
-    attempt((): Preparation =>
-      prepare({
-        entries: liveRecords(input.generation).map((record) => record.entry),
-        handlers: [...context.migrationHandlers.values()],
-        manifest: input.manifest,
-        source: input.state.active.compiled,
-        sourceGeneration: input.generation.generation,
-        target: input.target,
-      }),
+    attempt(
+      (): Preparation =>
+        prepare({
+          entries: liveRecords(input.generation).map((record) => record.entry),
+          handlers: [...context.migrationHandlers.values()],
+          manifest: input.manifest,
+          source: input.state.active.compiled,
+          sourceGeneration: input.generation.generation,
+          target: input.target,
+        }),
     ),
   readAuthorizedConsistentSnapshotRecords = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     definitionSnapshot: CompiledSnapshot,
   ): Effect.Effect<
     {
@@ -83,12 +84,12 @@ const { attempt, entryResource, liveRecords } = cmsSupport,
         definitionSpaceId: definitionSnapshot.definitionSpaceId,
         kind: "asset",
       });
-      const entryGeneration = yield* context.persistence.readGeneration,
+      const entryGeneration = yield* context.persistence.readGeneration(),
         storedAssets = yield* loadStoredAssets(context);
       return { entryGeneration, storedAssets };
     }),
   readConsistentSnapshotData = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
   ): Effect.Effect<
     {
       readonly definitionSnapshot: CompiledSnapshot;
@@ -98,7 +99,7 @@ const { attempt, entryResource, liveRecords } = cmsSupport,
     CmsError
   > =>
     Effect.gen(function* readConsistentSnapshotDataEffect() {
-      const catalogState = yield* context.catalog.read,
+      const catalogState = yield* context.catalog.read(),
         definitionSnapshot = catalogState.active.compiled,
         { entryGeneration, storedAssets } = yield* readAuthorizedConsistentSnapshotRecords(
           context,
@@ -107,7 +108,7 @@ const { attempt, entryResource, liveRecords } = cmsSupport,
       return { definitionSnapshot, entryGeneration, storedAssets };
     }),
   storePreparedDefinitionMigration = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     input: {
       readonly catalogState: CatalogState;
       readonly expectedCatalogVersion: number;

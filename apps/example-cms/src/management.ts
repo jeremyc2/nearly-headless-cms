@@ -25,7 +25,7 @@ export const makeManagementOperations = (
     deleteImageAndClearAssignments: makeDeleteImageAndClearAssignments(commandReceiptStore),
     deletePostWithComments,
     detachTaxonomy,
-    listExampleAssets: ({ cms }) => cms.listAssets,
+    listExampleAssets: ({ cms }) => cms.listAssets(),
     replaceImage: makeReplaceImage(commandReceiptStore),
     transition,
   });

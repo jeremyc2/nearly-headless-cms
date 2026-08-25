@@ -2,10 +2,12 @@ import { EntryEditorDeletionDialog } from "./entry-editor-deletion-dialog.tsx";
 import { EntryEditorEditorialDialog } from "./entry-editor-editorial-dialog.tsx";
 import type { useEntryEditorController } from "./entry-editor-controller.ts";
 
-export const EntryEditorOverlays = ({
+export const EntryEditorOverlays = <
+  Controller extends ReturnType<typeof useEntryEditorController>,
+>({
   controller,
 }: {
-  readonly controller: ReturnType<typeof useEntryEditorController>;
+  readonly controller: Readonly<Controller>;
 }) => (
   <>
     {controller.editorialConfirmation !== undefined && (

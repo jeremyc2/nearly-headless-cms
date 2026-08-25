@@ -46,7 +46,10 @@ interface PathFor {
     readonly contentTypeId: string;
     readonly definitionSpaceId: string;
   };
-  (contentTypeId: string, entryId: string): {
+  (
+    contentTypeId: string,
+    entryId: string,
+  ): {
     readonly contentTypeId: string;
     readonly definitionSpaceId: string;
     readonly entryId: string;
@@ -90,7 +93,7 @@ const buildAssetFormData = (file: File): FormData => {
   },
   definitionSpaceId = "example-blog",
   deleteContentEntryFor = (
-    generatedClient: GeneratedClient,
+    generatedClient: Readonly<GeneratedClient>,
     pathFor: PathFor,
     input: {
       readonly contentTypeId: "post" | "author" | "category" | "tag" | "comment";
@@ -129,7 +132,7 @@ const buildAssetFormData = (file: File): FormData => {
       }
     }
   },
-  makeAssetMethods = (generatedClient: GeneratedClient) => ({
+  makeAssetMethods = (generatedClient: Readonly<GeneratedClient>) => ({
     deleteImageAndClearAssignments: (assetId: string, idempotencyKey: string) =>
       mapFailure(
         generatedClient.deleteImageAndClearAssignments({
@@ -137,7 +140,8 @@ const buildAssetFormData = (file: File): FormData => {
           path: { assetId, definitionSpaceId },
         }),
       ),
-    listAssets: () => mapFailure(generatedClient.listExampleAssets({ path: { definitionSpaceId } })),
+    listAssets: () =>
+      mapFailure(generatedClient.listExampleAssets({ path: { definitionSpaceId } })),
     replaceImage: (assetId: string, file: File, idempotencyKey: string) =>
       mapFailure(
         generatedClient.replaceImage({
@@ -148,16 +152,19 @@ const buildAssetFormData = (file: File): FormData => {
       ),
     uploadAsset: (file: File) =>
       mapFailure(
-        generatedClient.ingestAsset({ body: buildAssetFormData(file), path: { definitionSpaceId } }),
+        generatedClient.ingestAsset({
+          body: buildAssetFormData(file),
+          path: { definitionSpaceId },
+        }),
       ),
   }),
-  makeEditorialMethods = (generatedClient: GeneratedClient) => ({
+  makeEditorialMethods = (generatedClient: Readonly<GeneratedClient>) => ({
     runEditorialCommand: ({
       contentTypeId,
       entryId,
       status,
       writeToken,
-    }: RunEditorialCommandInput) => {
+    }: Readonly<RunEditorialCommandInput>) => {
       const input = {
         headers: { "cms-write-token": writeToken },
         path: { definitionSpaceId, entryId },
@@ -174,7 +181,7 @@ const buildAssetFormData = (file: File): FormData => {
       return mapFailure(generatedClient.rejectComment(input));
     },
   }),
-  makeEntryMutationMethods = (generatedClient: GeneratedClient, pathFor: PathFor) => ({
+  makeEntryMutationMethods = (generatedClient: Readonly<GeneratedClient>, pathFor: PathFor) => ({
     createEntry: (contentTypeId: string, values: Readonly<Record<string, unknown>>) =>
       mapFailure(generatedClient.createEntry({ body: { values }, path: pathFor(contentTypeId) })),
     deleteContentEntry: (
@@ -194,7 +201,7 @@ const buildAssetFormData = (file: File): FormData => {
       entryId,
       values,
       writeToken,
-    }: ReplaceEntryInput): Effect.Effect<MutationResult, ManagementClientFailure> =>
+    }: Readonly<ReplaceEntryInput>): Effect.Effect<MutationResult, ManagementClientFailure> =>
       mapFailure(
         generatedClient.replaceEntry({
           body: { values },
@@ -207,7 +214,7 @@ const buildAssetFormData = (file: File): FormData => {
       entryId,
       revisionNumber,
       writeToken,
-    }: RestoreRevisionInput) =>
+    }: Readonly<RestoreRevisionInput>) =>
       mapFailure(
         generatedClient.restoreEntryRevision({
           body: { revisionNumber, writeToken },
@@ -215,7 +222,7 @@ const buildAssetFormData = (file: File): FormData => {
         }),
       ),
   }),
-  makeEntryQueryMethods = (generatedClient: GeneratedClient, pathFor: PathFor) => ({
+  makeEntryQueryMethods = (generatedClient: Readonly<GeneratedClient>, pathFor: PathFor) => ({
     getCurrentState: (contentTypeId: string, entryId: string) =>
       mapFailure(generatedClient.getCurrentEntryState({ path: pathFor(contentTypeId, entryId) })),
     getEntry: (contentTypeId: string, entryId: string) =>
@@ -247,9 +254,12 @@ const buildAssetFormData = (file: File): FormData => {
     };
   },
   makeTaggedErrorClass = Schema.TaggedError,
-  mapFailure = <Value, Failure extends { readonly message: string }>(
-    operation: Effect.Effect<Value, Failure>,
-  ): Effect.Effect<Value, ManagementClientFailure> =>
+  mapFailure = <
+    Failure extends { readonly message: string },
+    OperationType extends Effect.Effect<unknown, Failure>,
+  >(
+    operation: OperationType,
+  ): Effect.Effect<Effect.Success<OperationType>, ManagementClientFailure> =>
     operation.pipe(
       Effect.mapError((failure) => {
         const failureProperties: {

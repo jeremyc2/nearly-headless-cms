@@ -2,41 +2,40 @@ import { expect, test } from "bun:test";
 import { generateClientSource, parseOpenApiDocument } from "./openapi-client-generator.ts";
 
 const document = {
-  components: {
-    schemas: {
-      Greeting: {
-        additionalProperties: false,
-        properties: { message: { type: "string" } },
-        required: ["message"],
-        type: "object",
+    components: {
+      schemas: {
+        Greeting: {
+          additionalProperties: false,
+          properties: { message: { type: "string" } },
+          required: ["message"],
+          type: "object",
+        },
       },
     },
-  },
-  openapi: "3.1.0",
-  paths: {
-    "/greetings/{name}": {
-      get: {
-        operationId: "getGreeting",
-        parameters: [{ in: "path", name: "name", required: true, schema: { type: "string" } }],
-        responses: {
-          "200": {
-            content: {
-              "application/json": { schema: { $ref: "#/components/schemas/Greeting" } },
+    openapi: "3.1.0",
+    paths: {
+      "/greetings/{name}": {
+        get: {
+          operationId: "getGreeting",
+          parameters: [{ in: "path", name: "name", required: true, schema: { type: "string" } }],
+          responses: {
+            "200": {
+              content: {
+                "application/json": { schema: { $ref: "#/components/schemas/Greeting" } },
+              },
+              description: "Greeting",
             },
-            description: "Greeting",
           },
         },
       },
     },
-  },
-} as const,
-
- generateExampleClient = () =>
-  generateClientSource({
-    ...parseOpenApiDocument(document),
-    clientBasename: "example-openapi-client",
-    formatVersion: 3,
-  });
+  } as const,
+  generateExampleClient = () =>
+    generateClientSource({
+      ...parseOpenApiDocument(document),
+      clientBasename: "example-openapi-client",
+      formatVersion: 3,
+    });
 
 test("generates stable typed Effect methods", () => {
   const first = generateExampleClient(),

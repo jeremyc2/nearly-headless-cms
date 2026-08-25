@@ -1,4 +1,8 @@
-import { CmsError, type CommandReceiptStore, Effect } from "./management-image-receipt-support-imports.ts";
+import {
+  CmsError,
+  type CommandReceiptStore,
+  Effect,
+} from "./management-image-receipt-support-imports.ts";
 
 interface CommandReceiptInput {
   readonly commandKey: string;
@@ -16,7 +20,7 @@ const readCommandReceipt = ({
     commandReceiptStore,
     failureMessage,
     receiptScope,
-  }: CommandReceiptInput): Effect.Effect<unknown, CmsError.InfrastructureFailure> =>
+  }: Readonly<CommandReceiptInput>): Effect.Effect<unknown, CmsError.InfrastructureFailure> =>
     commandReceiptStore.read(receiptScope, commandKey).pipe(
       Effect.mapError((cause) =>
         CmsError.InfrastructureFailure.make({
@@ -26,8 +30,8 @@ const readCommandReceipt = ({
         }),
       ),
     ),
-  requireIdempotencyKey = (
-    request: Request,
+  requireIdempotencyKey = <RequestType extends Request>(
+    request: Readonly<RequestType>,
   ): Effect.Effect<string, CmsError.InvalidInput> => {
     const commandKey = request.headers.get("idempotency-key");
     if (commandKey === null || commandKey.length === 0) {
@@ -41,7 +45,7 @@ const readCommandReceipt = ({
     failureMessage,
     receipt,
     receiptScope,
-  }: WriteCommandReceiptInput): Effect.Effect<void, CmsError.InfrastructureFailure> =>
+  }: Readonly<WriteCommandReceiptInput>): Effect.Effect<void, CmsError.InfrastructureFailure> =>
     commandReceiptStore.write(receiptScope, commandKey, receipt).pipe(
       Effect.mapError((cause) =>
         CmsError.InfrastructureFailure.make({

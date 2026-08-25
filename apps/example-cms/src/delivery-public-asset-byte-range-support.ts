@@ -5,21 +5,27 @@ interface ParsedByteRange {
   readonly start: number;
 }
 
-const byteRangeEndFromMatch = (match: RegExpExecArray, byteLength: number): number => {
+const byteRangeEndFromMatch = <Match extends RegExpExecArray>(
+    match: Readonly<Match>,
+    byteLength: number,
+  ): number => {
     if (match.groups?.["start"] === "" || match.groups?.["end"] === "") {
       return byteLength - ONE_ITEM;
     }
     return Number(match.groups?.["end"]);
   },
   byteRangePattern = /^bytes=(?<start>\d*)-(?<end>\d*)$/u,
-  byteRangeStartFromMatch = (match: RegExpExecArray, byteLength: number): number => {
+  byteRangeStartFromMatch = <Match extends RegExpExecArray>(
+    match: Readonly<Match>,
+    byteLength: number,
+  ): number => {
     if (match.groups?.["start"] === "") {
       return Math.max(FIRST_INDEX, byteLength - Number(match.groups?.["end"]));
     }
     return Number(match.groups?.["start"]);
   },
-  parseByteRange = (
-    range: string,
+  parseByteRange = <Range extends string>(
+    range: Readonly<Range>,
     byteLength: number,
   ): ParsedByteRange | "invalid" | "unsatisfiable" => {
     const match = byteRangePattern.exec(range);
@@ -28,8 +34,8 @@ const byteRangeEndFromMatch = (match: RegExpExecArray, byteLength: number): numb
     }
     return parseMatchedByteRange(match, byteLength);
   },
-  parseMatchedByteRange = (
-    match: RegExpExecArray,
+  parseMatchedByteRange = <Match extends RegExpExecArray>(
+    match: Readonly<Match>,
     byteLength: number,
   ): ParsedByteRange | "unsatisfiable" => {
     const end = byteRangeEndFromMatch(match, byteLength),

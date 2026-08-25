@@ -13,20 +13,43 @@ import {
   UnsupportedQueryCapability,
 } from "../cms-error.ts";
 import { Effect, Schema } from "effect";
-import type { JsonResponseInput, OperationOutcome, RespondWithOutcomeInput } from "./http-transport-types.ts";
+import type {
+  JsonResponseInput,
+  OperationOutcome,
+  RespondWithOutcomeInput,
+} from "./http-transport-types.ts";
+import {
+  type ReadonlyTransportAbortSignal,
+  toAbortSignal,
+} from "./http-transport-readonly-types.ts";
+import {
+  httpStatusBadRequest,
+  httpStatusConflict,
+  httpStatusForbidden,
+  httpStatusInternalServerError,
+  httpStatusNotFound,
+  httpStatusPreconditionFailed,
+  httpStatusServiceUnavailable,
+  httpStatusUnprocessableEntity,
+} from "./http-status-codes.ts";
 import { RequestFailureError } from "./http-transport-request-failure.ts";
 import responseSupport from "./http-transport-response-support.ts";
+
+export { httpStatusNotFound } from "./http-status-codes.ts";
 
 const { assetContentResponse, buildErrorDocument, responseHeaders } = responseSupport,
   bodylessResponse = (status: number, requestId: string, fingerprint?: string): Response =>
     new Response(null, { headers: responseHeaders(requestId, fingerprint), status }),
-  encodeChunk = (chunk: Uint8Array | string): Uint8Array => {
+  encodeChunk = <Chunk extends Uint8Array | string>(chunk: Readonly<Chunk>): Uint8Array => {
     if (typeof chunk === "string") {
       return new TextEncoder().encode(chunk);
     }
     return chunk;
   },
-  errorResponse = (error: CmsError, requestId: string): Response => {
+  errorResponse = <ErrorType extends CmsError>(
+    error: Readonly<ErrorType>,
+    requestId: string,
+  ): Response => {
     const document = buildErrorDocument(error, requestId),
       headers = responseHeaders(requestId);
     headers.set("content-type", "application/json; charset=utf-8");
@@ -35,7 +58,7 @@ const { assetContentResponse, buildErrorDocument, responseHeaders } = responseSu
     }
     return Response.json(document, { headers, status: errorStatus(error) });
   },
-  errorStatus = (error: CmsError): number => {
+  errorStatus = <ErrorType extends CmsError>(error: Readonly<ErrorType>): number => {
     const knownStatus =
       readConflictStatus(error) ??
       readDefinitionSnapshotChangedStatus(error) ??
@@ -47,7 +70,7 @@ const { assetContentResponse, buildErrorDocument, responseHeaders } = responseSu
     if (knownStatus !== undefined) {
       return knownStatus;
     }
-    return 500;
+    return httpStatusInternalServerError;
   },
   invalidRequestResponse = (
     error: unknown,
@@ -68,62 +91,79 @@ const { assetContentResponse, buildErrorDocument, responseHeaders } = responseSu
     requestId,
     status,
     value,
-  }: JsonResponseInput): Response => {
+  }: Readonly<JsonResponseInput>): Response => {
     const headers = responseHeaders(requestId, fingerprint, cacheControl);
     headers.set("content-type", "application/json; charset=utf-8");
     return Response.json(value, { headers, status });
   },
-  readConflictStatus = (error: CmsError): number | undefined => {
+  readConflictStatus = <ErrorType extends CmsError>(
+    error: Readonly<ErrorType>,
+  ): number | undefined => {
     if (
       Schema.is(Conflict)(error) ||
       Schema.is(AssetReferenced)(error) ||
       Schema.is(ReferenceBlockedDeletion)(error) ||
       Schema.is(IdempotencyConflict)(error)
     ) {
-      return 409;
+      return httpStatusConflict;
     }
     return undefined;
   },
-  readDefinitionSnapshotChangedStatus = (error: CmsError): number | undefined => {
+  readDefinitionSnapshotChangedStatus = <ErrorType extends CmsError>(
+    error: Readonly<ErrorType>,
+  ): number | undefined => {
     if (Schema.is(DefinitionSnapshotChanged)(error)) {
-      return 412;
+      return httpStatusPreconditionFailed;
     }
     return undefined;
   },
-  readForbiddenStatus = (error: CmsError): number | undefined => {
+  readForbiddenStatus = <ErrorType extends CmsError>(
+    error: Readonly<ErrorType>,
+  ): number | undefined => {
     if (Schema.is(Forbidden)(error)) {
-      return 403;
+      return httpStatusForbidden;
     }
     return undefined;
   },
-  readInfrastructureFailureStatus = (error: CmsError): number | undefined => {
+  readInfrastructureFailureStatus = <ErrorType extends CmsError>(
+    error: Readonly<ErrorType>,
+  ): number | undefined => {
     if (!Schema.is(InfrastructureFailure)(error)) {
       return undefined;
     }
     if (error.retryable) {
-      return 503;
+      return httpStatusServiceUnavailable;
     }
-    return 500;
+    return httpStatusInternalServerError;
   },
-  readInvalidInputStatus = (error: CmsError): number | undefined => {
+  readInvalidInputStatus = <ErrorType extends CmsError>(
+    error: Readonly<ErrorType>,
+  ): number | undefined => {
     if (Schema.is(InvalidInput)(error)) {
-      return 400;
+      return httpStatusBadRequest;
     }
     return undefined;
   },
-  readNotFoundStatus = (error: CmsError): number | undefined => {
+  readNotFoundStatus = <ErrorType extends CmsError>(
+    error: Readonly<ErrorType>,
+  ): number | undefined => {
     if (Schema.is(NotFound)(error)) {
-      return 404;
+      return httpStatusNotFound;
     }
     return undefined;
   },
-  readUnsupportedQueryStatus = (error: CmsError): number | undefined => {
+  readUnsupportedQueryStatus = <ErrorType extends CmsError>(
+    error: Readonly<ErrorType>,
+  ): number | undefined => {
     if (Schema.is(UnsupportedQueryCapability)(error) || Schema.is(ExportTooLarge)(error)) {
-      return 422;
+      return httpStatusUnprocessableEntity;
     }
     return undefined;
   },
-  requestFailureResponse = (failure: RequestFailureError, requestId: string): Response => {
+  requestFailureResponse = <FailureType extends RequestFailureError>(
+    failure: Readonly<FailureType>,
+    requestId: string,
+  ): Response => {
     const headers = responseHeaders(requestId);
     headers.set("content-type", "application/json; charset=utf-8");
     return Response.json(
@@ -137,18 +177,26 @@ const { assetContentResponse, buildErrorDocument, responseHeaders } = responseSu
     requestId,
     signal,
     success,
-  }: RespondWithOutcomeInput<Value>): Promise<Response> => {
-    const outcome = await runOperationInterruptibly(effect, signal);
+  }: Readonly<RespondWithOutcomeInput<Value>>): Promise<Response> => {
+    const outcome = await runOperationInterruptibly(effect(), signal);
     if (outcome.success) {
       return success(outcome.value);
     }
     return errorResponse(outcome.error, requestId);
   },
-  runOperationInterruptibly = <Value>(
-    effect: Effect.Effect<Value, CmsError>,
-    signal?: AbortSignal,
-  ): Promise<OperationOutcome<Value>> =>
-    Effect.runPromise(
+  runOperationInterruptibly = <
+    Value,
+    SignalType extends ReadonlyTransportAbortSignal,
+    EffectType extends Effect.Effect<Value, CmsError>,
+  >(
+    effect: EffectType,
+    signal?: Readonly<SignalType>,
+  ): Promise<OperationOutcome<Effect.Success<EffectType>>> => {
+    let runOptions: { signal: AbortSignal } | undefined = undefined;
+    if (signal !== undefined) {
+      runOptions = { signal: toAbortSignal(signal) };
+    }
+    return Effect.runPromise(
       effect.pipe(
         Effect.match({
           onFailure: (operationError): OperationOutcome<Value> => ({
@@ -158,8 +206,9 @@ const { assetContentResponse, buildErrorDocument, responseHeaders } = responseSu
           onSuccess: (value): OperationOutcome<Value> => ({ success: true, value }),
         }),
       ),
-      { signal },
+      runOptions,
     );
+  };
 
 export default {
   assetContentResponse,

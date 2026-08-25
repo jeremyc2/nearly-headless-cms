@@ -1,7 +1,4 @@
-import {
-  type CmsError,
-  InvalidInput,
-} from "./cms-error.ts";
+import { type CmsError, InvalidInput } from "./cms-error.ts";
 import type { CompiledContentType, CompiledSnapshot } from "./content-definition.ts";
 import type { CreateInput, ReadInput, Representation, UpdateInput } from "./entry.ts";
 import { DateTime, Effect } from "effect";
@@ -54,7 +51,7 @@ interface PreparedUpdateEntry {
 
 interface ValidatePreparedUpdateEntryInput {
   readonly contentType: CompiledContentType | undefined;
-  readonly context: CmsServiceOperationContext;
+  readonly context: Readonly<CmsServiceOperationContext>;
   readonly current: EntryRecord;
   readonly entry: Representation;
   readonly generation: EntryGeneration;
@@ -71,15 +68,11 @@ const {
     entryResource,
     expandRepresentation,
   } = cmsSupport,
-  {
-    assertLiveEntry,
-    assertWriteToken,
-    commitEntryWithoutHistory,
-  } = entryOperationSupport,
+  { assertLiveEntry, assertWriteToken, commitEntryWithoutHistory } = entryOperationSupport,
   { prepareDeleteEntry, recordDeletedEntry, removeDeletedEntryRecord } =
     entryOperationsPrepareDeleteSupport,
   commitCreatedEntryWithHistory = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     input: CommitCreatedEntryWithHistoryInput,
   ): Effect.Effect<MutationResult, CmsError> =>
     Effect.gen(function* commitCreatedEntryWithHistoryEffect() {
@@ -98,7 +91,7 @@ const {
       yield* context.persistence.commitGeneration(input.generation.generation, input.records);
       return { entry: input.entry, revisionNumber: 1, writeToken };
     }),
-  expandQueryPage = (input: ExpandQueryPageInput): Effect.Effect<QueryPage, CmsError> =>
+  expandQueryPage = (input: Readonly<ExpandQueryPageInput>): Effect.Effect<QueryPage, CmsError> =>
     Effect.gen(function* expandQueryPageEffect() {
       if (input.expansion === undefined || input.expansion.length === 0) {
         return input.page;
@@ -127,7 +120,7 @@ const {
           message: `Unknown Content Type ${input.updateInput.contentTypeId}`,
         });
       }
-      const {contentType} = input;
+      const { contentType } = input;
       yield* assertWriteToken(contentType, input.current, input.updateInput.writeToken);
       yield* attempt(() => {
         ensureUniqueValues({
@@ -152,7 +145,7 @@ const {
       };
     }),
   persistCreatedEntry = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     input: PersistCreatedEntryInput,
   ): Effect.Effect<MutationResult, CmsError> =>
     Effect.gen(function* persistCreatedEntryEffect() {
@@ -180,14 +173,14 @@ const {
       });
     }),
   prepareCreateEntry = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     snapshot: CompiledSnapshot,
     input: CreateInput,
   ): Effect.Effect<PreparedCreateEntry, CmsError> =>
     Effect.gen(function* prepareCreateEntryEffect() {
       yield* context.authorize("entry.create", entryResource(snapshot, input.contentTypeId));
       const contentType = snapshot.contentTypes.get(input.contentTypeId),
-        generation = yield* context.persistence.readGeneration,
+        generation = yield* context.persistence.readGeneration(),
         values = yield* attempt(() =>
           snapshot.validateEntry(input.contentTypeId, input.values, { applyDefaults: true }),
         );
@@ -207,7 +200,7 @@ const {
       return { contentType, generation, values };
     }),
   prepareUpdateEntry = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     snapshot: CompiledSnapshot,
     input: UpdateInput,
   ): Effect.Effect<PreparedUpdateEntry, CmsError> =>
@@ -218,7 +211,7 @@ const {
       );
       const contentType = snapshot.contentTypes.get(input.contentTypeId),
         current = yield* assertLiveEntry(
-          (yield* context.persistence.readGeneration).records.get(input.entryId),
+          (yield* context.persistence.readGeneration()).records.get(input.entryId),
           input.contentTypeId,
           input.entryId,
         ),
@@ -229,7 +222,7 @@ const {
             snapshot.validateEntry(input.contentTypeId, input.values, { applyDefaults: false }),
           ),
         },
-        generation = yield* context.persistence.readGeneration,
+        generation = yield* context.persistence.readGeneration(),
         records = new Map(generation.records);
       return yield* finalizePreparedUpdateEntry({
         contentType,
@@ -243,11 +236,11 @@ const {
       });
     }),
   readLiveEntryRecord = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     input: ReadInput,
   ): Effect.Effect<EntryRecord, CmsError> =>
     Effect.gen(function* readLiveEntryRecordEffect() {
-      const generation = yield* context.persistence.readGeneration;
+      const generation = yield* context.persistence.readGeneration();
       return yield* assertLiveEntry(
         generation.records.get(input.entryId),
         input.contentTypeId,

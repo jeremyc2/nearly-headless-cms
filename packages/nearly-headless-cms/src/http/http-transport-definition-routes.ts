@@ -3,7 +3,9 @@ import handleDefinitionCatalogRoutes from "./http-transport-definition-catalog-r
 import handleDefinitionMigrationRoutes from "./http-transport-definition-migration-routes.ts";
 
 // oxlint-disable-next-line effecttsgo/async-function -- definition routes delegate to catalog and migration handlers sequentially.
-const handleDefinitionRoutes = async (context: RouteHandlerContext): Promise<RouteHandlerResult> => {
+const handleDefinitionRoutes = async (
+  context: Readonly<RouteHandlerContext>,
+): Promise<RouteHandlerResult> => {
   const catalogResult = await handleDefinitionCatalogRoutes(context);
   if (catalogResult !== undefined) {
     return catalogResult;

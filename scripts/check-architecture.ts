@@ -91,9 +91,7 @@ const architectureRepository = path.join(import.meta.dir, ".."),
     }
     return manifest;
   },
-  rootManifest: unknown = await Bun.file(
-    path.join(architectureRepository, "package.json"),
-  ).json(),
+  rootManifest: unknown = await Bun.file(path.join(architectureRepository, "package.json")).json(),
   sourceGlob = new Bun.Glob("apps/public-blog/src/**/*.{ts,astro}"),
   sourcePaths = await Array.fromAsync(sourceGlob.scan({ cwd: architectureRepository })),
   twoSpaceIndent = 2,
@@ -140,8 +138,7 @@ if (
   if (
     libraryManifest === undefined ||
     !recordIs(libraryManifest["exports"]) ||
-    JSON.stringify(Object.keys(libraryManifest["exports"])) !==
-      JSON.stringify(expectedExports)
+    JSON.stringify(Object.keys(libraryManifest["exports"])) !== JSON.stringify(expectedExports)
   ) {
     throw new Error("Library exports map is not the complete settled public seam");
   }

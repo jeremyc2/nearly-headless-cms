@@ -3,12 +3,21 @@ import {
   type RichText,
   emptyIndex,
 } from "./transactions-editor-adapter-support-imports.ts";
+import type {
+  ReadonlyClipboardEvent,
+  ReadonlyCompositionEvent,
+  ReadonlyDragEvent,
+  ReadonlyEditableHost,
+  ReadonlyHtmlElement,
+  ReadonlyInputEvent,
+  ReadonlyKeyboardEvent,
+} from "./readonly-dom-types.ts";
 import transactionsSupport from "./transactions-support.ts";
 
 const { conditionalValue } = transactionsSupport,
   attachBrowserAdapterEventListeners = (
-    host: HTMLDivElement,
-    handlers: BrowserAdapterEventHandlers,
+    host: ReadonlyEditableHost,
+    handlers: Readonly<BrowserAdapterEventHandlers>,
   ): void => {
     host.addEventListener("beforeinput", handlers.beforeInput);
     host.addEventListener("keydown", handlers.keyDown);
@@ -17,7 +26,7 @@ const { conditionalValue } = transactionsSupport,
     host.addEventListener("paste", handlers.paste);
     host.addEventListener("drop", handlers.drop);
   },
-  beforeInputCommand = (event: InputEvent): Command | undefined => {
+  beforeInputCommand = (event: ReadonlyInputEvent): Command | undefined => {
     if (event.inputType === "insertText" && event.data !== null) {
       return { text: event.data, type: "insertText" };
     }
@@ -29,7 +38,7 @@ const { conditionalValue } = transactionsSupport,
     }
     return undefined;
   },
-  blockElementName = (block: RichText.BlockNode): string => {
+  blockElementName = <Block extends RichText.BlockNode>(block: Readonly<Block>): string => {
     switch (block.type) {
       case "asset-reference": {
         return "figure";
@@ -62,13 +71,13 @@ const { conditionalValue } = transactionsSupport,
     childList: true,
     subtree: true,
   } as const,
-  configureEditableHost = (host: HTMLDivElement): void => {
+  configureEditableHost = (host: ReadonlyEditableHost): void => {
     host.contentEditable = "true";
     host.setAttribute("role", "textbox");
     host.setAttribute("aria-multiline", "true");
   },
   createRenderingObserver = (
-    host: HTMLDivElement,
+    host: ReadonlyEditableHost,
     shouldRender: () => boolean,
     render: () => void,
   ): MutationObserver => {
@@ -81,8 +90,8 @@ const { conditionalValue } = transactionsSupport,
     return observer;
   },
   detachBrowserAdapterEventListeners = (
-    host: HTMLDivElement,
-    handlers: BrowserAdapterEventHandlers,
+    host: ReadonlyEditableHost,
+    handlers: Readonly<BrowserAdapterEventHandlers>,
   ): void => {
     host.removeEventListener("beforeinput", handlers.beforeInput);
     host.removeEventListener("keydown", handlers.keyDown);
@@ -97,7 +106,7 @@ const { conditionalValue } = transactionsSupport,
     }
     return `[data-list-item-index="${listItemIndex}"]`;
   },
-  metaKeyEditorAction = (event: KeyboardEvent): MetaKeyEditorAction | undefined => {
+  metaKeyEditorAction = (event: ReadonlyKeyboardEvent): MetaKeyEditorAction | undefined => {
     const key = event.key.toLowerCase();
     if (key === "b") {
       return { command: { mark: "bold", type: "toggleMark" } };
@@ -117,26 +126,37 @@ const { conditionalValue } = transactionsSupport,
     }
     return undefined;
   },
-  resolveElementFromNode = (node: Node | null): Element | null | undefined => {
+  resolveElementFromNode = <NodeType extends globalThis.Node | null>(
+    node: Readonly<NodeType>,
+  ): globalThis.Element | null | undefined => {
+    if (node === null) {
+      return undefined;
+    }
     if (node instanceof Element) {
       return node;
     }
-    return node?.parentElement;
+    if ("parentElement" in node) {
+      return node.parentElement;
+    }
+    return undefined;
   },
-  selectionPositionFromNode = (
-    node: Node | null,
+  selectionPositionFromNode = <
+    NodeType extends globalThis.Node | null,
+    Host extends ReadonlyHtmlElement,
+  >(
+    node: Readonly<NodeType>,
     offset: number,
-    host: HTMLElement,
+    host: Readonly<Host>,
   ): SelectionPosition | undefined => {
     const element = resolveElementFromNode(node),
-      text = element?.closest<HTMLElement>("[data-block-index][data-inline-index]");
+      text = element?.closest<ReadonlyHtmlElement>("[data-block-index][data-inline-index]");
     if (text === undefined || text === null || !host.contains(text)) {
       return undefined;
     }
     return selectionPositionFromResolvedText(text, offset);
   },
-  selectionPositionFromResolvedText = (
-    text: HTMLElement,
+  selectionPositionFromResolvedText = <Text extends ReadonlyHtmlElement>(
+    text: Readonly<Text>,
     offset: number,
   ): SelectionPosition => {
     const blockIndex = Number(text.dataset["blockIndex"]),
@@ -156,12 +176,12 @@ const { conditionalValue } = transactionsSupport,
   };
 
 export interface BrowserAdapterEventHandlers {
-  readonly beforeInput: (event: InputEvent) => void;
-  readonly compositionEnd: (event: CompositionEvent) => void;
+  readonly beforeInput: <Event extends ReadonlyInputEvent>(event: Readonly<Event>) => void;
+  readonly compositionEnd: <Event extends ReadonlyCompositionEvent>(event: Readonly<Event>) => void;
   readonly compositionStart: () => void;
-  readonly drop: (event: DragEvent) => void;
-  readonly keyDown: (event: KeyboardEvent) => void;
-  readonly paste: (event: ClipboardEvent) => void;
+  readonly drop: <Event extends ReadonlyDragEvent>(event: Readonly<Event>) => void;
+  readonly keyDown: <Event extends ReadonlyKeyboardEvent>(event: Readonly<Event>) => void;
+  readonly paste: <Event extends ReadonlyClipboardEvent>(event: Readonly<Event>) => void;
 }
 
 export interface SelectionPosition {
@@ -171,9 +191,7 @@ export interface SelectionPosition {
   readonly offset: number;
 }
 
-export type MetaKeyEditorAction =
-  | { readonly command: Command }
-  | { readonly type: "requestLink" };
+export type MetaKeyEditorAction = { readonly command: Command } | { readonly type: "requestLink" };
 
 export default {
   attachBrowserAdapterEventListeners,

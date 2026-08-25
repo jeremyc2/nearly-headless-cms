@@ -115,7 +115,12 @@ const {
     path: readonly (string | number)[],
     value: unknown,
   ): readonly ValidationIssue[] => {
-    if (isJsonValue(value) && value !== null && !Array.isArray(value) && typeof value === "object") {
+    if (
+      isJsonValue(value) &&
+      value !== null &&
+      !Array.isArray(value) &&
+      typeof value === "object"
+    ) {
       return [];
     }
     return [createValidationIssue(path, "expectedRichText", "Expected a Rich Text document")];

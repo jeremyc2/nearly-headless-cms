@@ -1,9 +1,15 @@
-import type { Compatibility, CompiledContentType, CompiledSnapshot, ResolvedField } from "./content-definition-types.ts";
+import type {
+  Compatibility,
+  CompiledContentType,
+  CompiledSnapshot,
+  ResolvedField,
+} from "./content-definition-types.ts";
 import { dual } from "effect/Function";
 
-const // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- dual's generic overload is not inferred by the linter for this public helper.
+const arityForClassifyCompatibilityDual = 2,
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- dual's generic overload is not inferred by the linter for this public helper.
   classifyCompatibility = dual(
-    2,
+    arityForClassifyCompatibilityDual,
     (source: CompiledSnapshot, target: CompiledSnapshot): Compatibility => {
       for (const [contentTypeId, sourceContentType] of source.contentTypes) {
         const targetContentType = target.contentTypes.get(contentTypeId);
@@ -34,7 +40,7 @@ const // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- dual'
     }
     return false;
   },
-  fieldCompatibilitySignature = (field: ResolvedField): string =>
+  fieldCompatibilitySignature = (field: Readonly<ResolvedField>): string =>
     JSON.stringify({
       kind: field.kind,
       nestedFields: field.nestedFields?.map(fieldCompatibilitySignature),

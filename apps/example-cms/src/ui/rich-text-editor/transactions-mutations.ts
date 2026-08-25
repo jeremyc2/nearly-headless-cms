@@ -6,11 +6,7 @@ import transactionsState from "./transactions-state.ts";
 import transactionsSupport from "./transactions-support.ts";
 
 const { commit, replaceBlock } = transactionsState,
-  {
-    canonicalMarks,
-    conditionalValue,
-    replaceInlineNode,
-  } = transactionsSupport,
+  { canonicalMarks, conditionalValue, replaceInlineNode } = transactionsSupport,
   buildMarkedTextSegments = (
     selected: NonNullable<ReturnType<typeof selectedText>>,
     activeMarks: readonly RichText.Mark[],
@@ -80,17 +76,19 @@ const { commit, replaceBlock } = transactionsState,
     }
     return workSplitBlockForSelection(state, selected);
   },
-  splitListBlock = ({
+  splitListBlock = <
+    Input extends {
+      before: RichText.TextNode;
+      listBlock: RichText.ListNode;
+      secondBlock: RichText.ParagraphNode;
+      state: State;
+    },
+  >({
     before,
     listBlock,
     secondBlock,
     state,
-  }: {
-    before: RichText.TextNode;
-    listBlock: RichText.ListNode;
-    secondBlock: RichText.ParagraphNode;
-    state: State;
-  }): State => {
+  }: Readonly<Input>): State => {
     const listItemIndex = state.selection.anchor.listItemIndex ?? emptyIndex,
       nextList: RichText.ListNode = {
         ...listBlock,
@@ -117,15 +115,17 @@ const { commit, replaceBlock } = transactionsState,
       { anchor: nextPosition, focus: nextPosition },
     );
   },
-  splitRootBlock = ({
+  splitRootBlock = <
+    Input extends {
+      firstBlock: RichText.ParagraphNode | RichText.HeadingNode;
+      secondBlock: RichText.ParagraphNode;
+      state: State;
+    },
+  >({
     firstBlock,
     secondBlock,
     state,
-  }: {
-    firstBlock: RichText.ParagraphNode | RichText.HeadingNode;
-    secondBlock: RichText.ParagraphNode;
-    state: State;
-  }): State => {
+  }: Readonly<Input>): State => {
     const children = [
         ...state.document.children.slice(emptyIndex, state.selection.anchor.blockIndex),
         firstBlock,
@@ -225,7 +225,10 @@ const { commit, replaceBlock } = transactionsState,
         | RichText.ParagraphNode
         | RichText.HeadingNode,
       secondBlock: RichText.ParagraphNode = { children: [after], type: "paragraph" };
-    if (selected.rootBlock.type === "ordered-list" || selected.rootBlock.type === "unordered-list") {
+    if (
+      selected.rootBlock.type === "ordered-list" ||
+      selected.rootBlock.type === "unordered-list"
+    ) {
       return splitListBlock({
         before,
         listBlock: selected.rootBlock,

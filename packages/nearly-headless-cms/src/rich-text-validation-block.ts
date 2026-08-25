@@ -1,5 +1,6 @@
 import type { Extension, ExtensionNode } from "./rich-text.ts";
-import type { ValidationIssue } from "./cms-error.ts";
+import { type ValidationIssue } from "./cms-error.ts";
+import { coreNodeTypes } from "./rich-text-validation-block-core-node-types.ts";
 import inlineValidation from "./rich-text-validation-inline.ts";
 import { isJsonValue } from "./internal/json.ts";
 
@@ -10,19 +11,7 @@ interface ExtensionChildrenInput {
   readonly path: readonly (string | number)[];
 }
 
-const coreNodeTypes = new Set([
-    "asset-reference",
-    "code-block",
-    "entry-reference",
-    "heading",
-    "link",
-    "list-item",
-    "ordered-list",
-    "paragraph",
-    "quote",
-    "text",
-    "unordered-list",
-  ]),
+const coreNodeTypesSet = coreNodeTypes,
   emptyLength = 0,
   extensionNodePredicate = (node: unknown): node is ExtensionNode =>
     inlineValidation.isObject(node) &&
@@ -31,7 +20,7 @@ const coreNodeTypes = new Set([
     typeof node["version"] === "number" &&
     isJsonValue(node["configuration"]) &&
     Array.isArray(node["children"]) &&
-    !coreNodeTypes.has(node["type"]),
+    !coreNodeTypesSet.has(node["type"]),
   extensionNodeValidationIssues = (
     node: Readonly<Record<string, unknown>>,
     path: readonly (string | number)[],
@@ -50,7 +39,10 @@ const coreNodeTypes = new Set([
     const separatorIndex = type.indexOf(".");
     return separatorIndex > emptyLength && separatorIndex < type.length - 1;
   },
-  headingLevels = [2, 3, 4] as const,
+  headingLevelFour = 4,
+  headingLevelThree = 3,
+  headingLevelTwo = 2,
+  headingLevels = [headingLevelTwo, headingLevelThree, headingLevelFour] as const,
   makeIssue = (
     path: readonly (string | number)[],
     reason: string,

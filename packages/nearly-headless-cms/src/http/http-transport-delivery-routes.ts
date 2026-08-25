@@ -1,5 +1,6 @@
 import type { Options, RouteHandlerContext } from "./http-transport-types.ts";
 import deliveryRouteSupport from "./http-transport-delivery-route-support.ts";
+import { httpStatusMethodNotAllowed } from "./http-status-codes.ts";
 import transportOperation from "./http-transport-operation.ts";
 import transportResponse from "./http-transport-response.ts";
 
@@ -12,10 +13,15 @@ const { executeOperation } = transportOperation,
     operationResponse,
     resolveUnmatchedDeliveryRoute,
   } = deliveryRouteSupport,
-  handleCustomManagementOperations = (
-    context: RouteHandlerContext,
-    managementOperations: NonNullable<Options["managementOperations"]>,
-  ): Response | undefined | Promise<Response | undefined> => {
+  handleCustomManagementOperations = <
+    Context extends RouteHandlerContext,
+    Operations extends NonNullable<Options["managementOperations"]>,
+  >(
+    context: Readonly<Context>,
+    managementOperations: Operations,
+  ): Operations extends NonNullable<Options["managementOperations"]>
+    ? Response | undefined | Promise<Response | undefined>
+    : never => {
     const match = findCustomManagementMatch(context, managementOperations);
     if (match === undefined) {
       return undefined;
@@ -24,7 +30,7 @@ const { executeOperation } = transportOperation,
       return Promise.resolve(
         jsonResponse({
           requestId: context.requestId,
-          status: 405,
+          status: httpStatusMethodNotAllowed,
           value: {
             code: "MethodNotAllowed",
             message: "Method not allowed",
@@ -34,25 +40,35 @@ const { executeOperation } = transportOperation,
       );
     }
     return context.withOutcome(
-      executeOperation(match.operation, {
-        cms: context.cms,
-        parameters: match.parameters,
-        request: context.request,
-        requestId: context.requestId,
-        snapshot: context.snapshot,
-      }),
+      () =>
+        executeOperation(match.operation, {
+          cms: context.cms,
+          parameters: match.parameters,
+          request: context.request,
+          requestId: context.requestId,
+          snapshot: context.snapshot,
+        }),
       context.requestId,
       (value) => operationResponse(context, value),
     );
   },
-  handleDeliveryOperations = (
-    context: RouteHandlerContext,
-    operationMatchers: readonly {
+  handleDeliveryOperations = <
+    Context extends RouteHandlerContext,
+    Matchers extends readonly {
       readonly expression: RegExp;
       readonly names: readonly string[];
       readonly operation: NonNullable<Options["deliveryOperations"]>[number];
     }[],
-  ): Response | undefined | Promise<Response | undefined> => {
+  >(
+    context: Readonly<Context>,
+    operationMatchers: Matchers,
+  ): Matchers extends readonly {
+    readonly expression: RegExp;
+    readonly names: readonly string[];
+    readonly operation: NonNullable<Options["deliveryOperations"]>[number];
+  }[]
+    ? Response | undefined | Promise<Response | undefined>
+    : never => {
     const deliveryMatch = findDeliveryMatcher(context, operationMatchers);
     if (deliveryMatch === undefined) {
       return resolveUnmatchedDeliveryRoute(context, operationMatchers);

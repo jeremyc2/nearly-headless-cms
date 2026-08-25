@@ -8,25 +8,23 @@ import {
   preserveSelection,
 } from "./entry-editor-rich-text-toolbar-imports.ts";
 
-export const EntryEditorRichTextToolbar = ({
+export const EntryEditorRichTextToolbar = <
+  AdapterRef extends RefObject<BrowserAdapter | null>,
+  ToolbarRef extends RefObject<HTMLDivElement | null>,
+>({
   adapter,
   onOpenAssetDialog,
   onOpenEntryDialog,
   onOpenLinkDialog,
   toolbar,
 }: {
-  readonly adapter: RefObject<BrowserAdapter | null>;
+  readonly adapter: Readonly<AdapterRef>;
   readonly onOpenAssetDialog: () => void;
   readonly onOpenEntryDialog: () => void;
   readonly onOpenLinkDialog: () => void;
-  readonly toolbar: RefObject<HTMLDivElement | null>;
+  readonly toolbar: Readonly<ToolbarRef>;
 }) => (
-  <div
-    aria-label="Rich Text formatting"
-    className="rich-toolbar"
-    ref={toolbar}
-    role="toolbar"
-  >
+  <div aria-label="Rich Text formatting" className="rich-toolbar" ref={toolbar} role="toolbar">
     <RichTextBlockPicker adapter={adapter} />
     <RichTextMarkButton adapter={adapter} ariaLabel="Bold" mark="bold">
       <strong>B</strong>

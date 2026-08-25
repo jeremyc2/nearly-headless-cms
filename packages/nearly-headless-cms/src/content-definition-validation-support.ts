@@ -1,6 +1,19 @@
 import { InvalidInput, type ValidationIssue } from "./cms-error.ts";
 
 const calendarDatePattern = /^\d{4}-\d{2}-\d{2}$/u,
+  calendarDayMinimum = 1,
+  calendarMonthDayCountThirty = 30,
+  calendarMonthDayCountThirtyOne = 31,
+  calendarMonthHasThirtyDays = (month: number): boolean =>
+    month === leapYearDivisorFour ||
+    month === calendarMonthJune ||
+    month === calendarMonthSeptember ||
+    month === calendarMonthNovember,
+  calendarMonthJune = 6,
+  calendarMonthMaximum = 12,
+  calendarMonthMinimum = 1,
+  calendarMonthNovember = 11,
+  calendarMonthSeptember = 9,
   createValidationIssue = (
     path: readonly (string | number)[],
     reason: string,
@@ -8,17 +21,19 @@ const calendarDatePattern = /^\d{4}-\d{2}-\d{2}$/u,
   ): ValidationIssue => ({ message, path, reason }),
   customIdentifierPattern = /^(?:[a-z][a-z0-9-]*\.)+[a-z][a-z0-9-]*$/u,
   daysInCalendarMonth = (year: number, month: number): number => {
-    if (month === 2) {
-      const isLeapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+    if (month === februaryMonthNumber) {
+      const isLeapYear =
+        year % leapYearDivisorFour === 0 &&
+        (year % leapYearDivisorOneHundred !== 0 || year % leapYearDivisorFourHundred === 0);
       if (isLeapYear) {
-        return 29;
+        return februaryLeapYearDayCount;
       }
-      return 28;
+      return februaryStandardDayCount;
     }
-    if ([4, 6, 9, 11].includes(month)) {
-      return 30;
+    if (calendarMonthHasThirtyDays(month)) {
+      return calendarMonthDayCountThirty;
     }
-    return 31;
+    return calendarMonthDayCountThirtyOne;
   },
   defaultCalendarDay = 1,
   defaultCalendarMonth = 1,
@@ -34,7 +49,13 @@ const calendarDatePattern = /^\d{4}-\d{2}-\d{2}$/u,
     }
     throw InvalidInput.make({ issues: [...issues], message: `${message}${issueLocation}` });
   },
+  februaryLeapYearDayCount = 29,
+  februaryMonthNumber = 2,
+  februaryStandardDayCount = 28,
   identifierPattern = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/u,
+  leapYearDivisorFour = 4,
+  leapYearDivisorFourHundred = 400,
+  leapYearDivisorOneHundred = 100,
   utcDatetimePattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/u,
   validateCalendarDate = (value: string): boolean => {
     if (!calendarDatePattern.test(value)) {
@@ -48,9 +69,9 @@ const calendarDatePattern = /^\d{4}-\d{2}-\d{2}$/u,
       normalizedDay = day ?? defaultCalendarDay,
       normalizedMonth = month ?? defaultCalendarMonth;
     return (
-      normalizedMonth >= 1 &&
-      normalizedMonth <= 12 &&
-      normalizedDay >= 1 &&
+      normalizedMonth >= calendarMonthMinimum &&
+      normalizedMonth <= calendarMonthMaximum &&
+      normalizedDay >= calendarDayMinimum &&
       normalizedDay <= monthDayCount
     );
   },

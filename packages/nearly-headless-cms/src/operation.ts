@@ -99,7 +99,7 @@ const contractIssue = ({
     message,
     operationIdentifier,
     reason,
-  }: ContractIssueInput): ValidationIssue => {
+  }: Readonly<ContractIssueInput>): ValidationIssue => {
     const path = ["operations", operationIdentifier, "contentTypes", contentTypeIdentifier];
     if (fieldPath !== undefined) {
       path.push("fields", fieldPath);
@@ -108,7 +108,7 @@ const contractIssue = ({
   },
   defaultFormatVersion = 1,
   emptyIssueCount = 0,
-  fieldFormatVersion = (field: ResolvedField): number => {
+  fieldFormatVersion = (field: Readonly<ResolvedField>): number => {
     if (field.kind.kind === "custom") {
       return field.kind.formatVersion;
     }
@@ -117,7 +117,7 @@ const contractIssue = ({
     }
     return defaultFormatVersion;
   },
-  fieldKindIdentifier = (field: ResolvedField): string => {
+  fieldKindIdentifier = (field: Readonly<ResolvedField>): string => {
     if (field.kind.kind === "custom") {
       return field.kind.identifier;
     }
@@ -140,7 +140,7 @@ const contractIssue = ({
     field,
     fieldContract,
     requirement,
-  }: FieldCompatibilityInput): readonly ValidationIssue[] => {
+  }: Readonly<FieldCompatibilityInput>): readonly ValidationIssue[] => {
     if (fieldContract.projectable !== true || capabilitiesFor(field.kind).projectable === true) {
       return [];
     }
@@ -159,7 +159,7 @@ const contractIssue = ({
     field,
     fieldContract,
     requirement,
-  }: FieldCompatibilityInput): readonly ValidationIssue[] => {
+  }: Readonly<FieldCompatibilityInput>): readonly ValidationIssue[] => {
     if (fieldContract.required !== true || field.required === true) {
       return [];
     }
@@ -178,7 +178,7 @@ const contractIssue = ({
     field,
     fieldContract,
     requirement,
-  }: FieldCompatibilityInput): readonly ValidationIssue[] => {
+  }: Readonly<FieldCompatibilityInput>): readonly ValidationIssue[] => {
     if (
       fieldContract.richTextExtensionIdentifiers === undefined ||
       field.kind.kind !== "rich-text"
@@ -202,7 +202,7 @@ const contractIssue = ({
     }
     return issues;
   },
-  validatedFieldIssues = (input: FieldCompatibilityInput): readonly ValidationIssue[] => {
+  validatedFieldIssues = (input: Readonly<FieldCompatibilityInput>): readonly ValidationIssue[] => {
     const { contract, field, fieldContract, requirement } = input,
       issues: ValidationIssue[] = [
         ...projectableFieldIssues(input),
@@ -272,13 +272,13 @@ const contractIssue = ({
   validatedSnapshotIssues = ({
     contracts,
     snapshot,
-  }: ValidateDefinitionContractsInput): readonly ValidationIssue[] =>
+  }: Readonly<ValidateDefinitionContractsInput>): readonly ValidationIssue[] =>
     contracts.flatMap((contract) =>
       contract.definitionRequirements.flatMap((requirement) =>
         validatedRequirementIssues(snapshot, contract, requirement),
       ),
     ),
-  zValidateDefinitionContracts = (input: ValidateDefinitionContractsInput): void => {
+  zValidateDefinitionContracts = (input: Readonly<ValidateDefinitionContractsInput>): void => {
     const issues = validatedSnapshotIssues(input);
     if (issues.length > emptyIssueCount) {
       throw InvalidInput.make({

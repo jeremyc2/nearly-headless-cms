@@ -1,8 +1,12 @@
-import type { AppendMigrationManifestInput, PrepareDefinitionMigrationInput } from "../cms-types.ts";
+import type {
+  AppendMigrationManifestInput,
+  PrepareDefinitionMigrationInput,
+} from "../cms-types.ts";
 import { InvalidInput, NotFound } from "../cms-error.ts";
 import { type JsonObject, isJsonObject } from "../internal/json.ts";
 import type { RouteHandlerContext, RouteHandlerResult } from "./http-transport-types.ts";
 import { Effect } from "effect";
+import { httpStatusOk } from "./http-status-codes.ts";
 import transportOperation from "./http-transport-operation.ts";
 import transportResponse from "./http-transport-response.ts";
 
@@ -12,14 +16,14 @@ type SnapshotInput = PrepareDefinitionMigrationInput["snapshot"];
 const { jsonResponse } = transportResponse,
   { matchPath, requiredPathParameter } = transportOperation,
   buildActivationEffect = (
-    context: RouteHandlerContext,
+    context: Readonly<RouteHandlerContext>,
     body: JsonObject,
     expectedCatalogVersion: number,
   ) => {
     const targetSnapshot = body["snapshot"],
       { migrationPreparationId } = body;
     if (typeof migrationPreparationId === "string") {
-      return context.cms.readDefinitionCatalog.pipe(
+      return context.cms.readDefinitionCatalog().pipe(
         Effect.flatMap((state) => {
           const preparation = state.migrationPreparations.find(
             (candidate) => candidate.id === migrationPreparationId,
@@ -55,19 +59,27 @@ const { jsonResponse } = transportResponse,
       source: "management-http",
     });
   },
-  handleCatalogEventsRoute = (context: RouteHandlerContext): RouteHandlerResult | Promise<RouteHandlerResult> => {
+  handleCatalogEventsRoute = (
+    context: Readonly<RouteHandlerContext>,
+  ): RouteHandlerResult | Promise<RouteHandlerResult> => {
     if (
       context.requestUrl.pathname !== `${context.managementBase}/catalog-events` ||
       context.request.method !== "GET"
     ) {
       return undefined;
     }
-    return context.withOutcome(context.cms.readDefinitionCatalog, context.requestId, (state) =>
-      migrationJsonResponse(context, 200, { catalogVersion: state.version, items: state.events }),
+    return context.withOutcome(
+      () => context.cms.readDefinitionCatalog(),
+      context.requestId,
+      (state) =>
+        migrationJsonResponse(context, httpStatusOk, {
+          catalogVersion: state.version,
+          items: state.events,
+        }),
     );
   },
   handleMigrationManifestDetailRoute = (
-    context: RouteHandlerContext,
+    context: Readonly<RouteHandlerContext>,
   ): RouteHandlerResult | Promise<RouteHandlerResult> => {
     const migrationManifestMatch = matchPath(
       `${context.managementBase}/migration-manifests/{migrationManifestId}`,
@@ -77,25 +89,26 @@ const { jsonResponse } = transportResponse,
       return undefined;
     }
     return context.withOutcome(
-      context.cms.readDefinitionCatalog.pipe(
-        Effect.flatMap((state) => {
-          const manifest = state.migrationManifests.find(
-            (candidate) =>
-              candidate.id ===
-              requiredPathParameter(migrationManifestMatch, "migrationManifestId"),
-          );
-          if (manifest === undefined) {
-            return Effect.fail(NotFound.make({ message: "Migration Manifest was not found" }));
-          }
-          return Effect.succeed(manifest);
-        }),
-      ),
+      () =>
+        context.cms.readDefinitionCatalog().pipe(
+          Effect.flatMap((state) => {
+            const manifest = state.migrationManifests.find(
+              (candidate) =>
+                candidate.id ===
+                requiredPathParameter(migrationManifestMatch, "migrationManifestId"),
+            );
+            if (manifest === undefined) {
+              return Effect.fail(NotFound.make({ message: "Migration Manifest was not found" }));
+            }
+            return Effect.succeed(manifest);
+          }),
+        ),
       context.requestId,
-      (value) => migrationJsonResponse(context, 200, value),
+      (value) => migrationJsonResponse(context, httpStatusOk, value),
     );
   },
   handleMigrationPreparationDetailRoute = (
-    context: RouteHandlerContext,
+    context: Readonly<RouteHandlerContext>,
   ): RouteHandlerResult | Promise<RouteHandlerResult> => {
     const migrationPreparationMatch = matchPath(
       `${context.managementBase}/migration-preparations/{migrationPreparationId}`,
@@ -105,21 +118,22 @@ const { jsonResponse } = transportResponse,
       return undefined;
     }
     return context.withOutcome(
-      context.cms.readDefinitionCatalog.pipe(
-        Effect.flatMap((state) => {
-          const preparation = state.migrationPreparations.find(
-            (candidate) =>
-              candidate.id ===
-              requiredPathParameter(migrationPreparationMatch, "migrationPreparationId"),
-          );
-          if (preparation === undefined) {
-            return Effect.fail(NotFound.make({ message: "Migration Preparation was not found" }));
-          }
-          return Effect.succeed(preparation);
-        }),
-      ),
+      () =>
+        context.cms.readDefinitionCatalog().pipe(
+          Effect.flatMap((state) => {
+            const preparation = state.migrationPreparations.find(
+              (candidate) =>
+                candidate.id ===
+                requiredPathParameter(migrationPreparationMatch, "migrationPreparationId"),
+            );
+            if (preparation === undefined) {
+              return Effect.fail(NotFound.make({ message: "Migration Preparation was not found" }));
+            }
+            return Effect.succeed(preparation);
+          }),
+        ),
       context.requestId,
-      (value) => migrationJsonResponse(context, 200, value),
+      (value) => migrationJsonResponse(context, httpStatusOk, value),
     );
   },
   hasMigrationManifestHandler = (value: JsonObject): boolean =>
@@ -169,7 +183,11 @@ const { jsonResponse } = transportResponse,
     }
     return hasOptionalSafeIntegerField(value, "compilerFormatVersion");
   },
-  migrationJsonResponse = (context: RouteHandlerContext, status: number, value: unknown): Response =>
+  migrationJsonResponse = (
+    context: Readonly<RouteHandlerContext>,
+    status: number,
+    value: unknown,
+  ): Response =>
     jsonResponse({
       fingerprint: context.fingerprint,
       requestId: context.requestId,

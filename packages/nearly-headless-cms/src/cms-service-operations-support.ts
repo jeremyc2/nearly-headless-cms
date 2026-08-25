@@ -12,52 +12,53 @@ import { Generator } from "./identifier.ts";
 import { Service } from "./cms-service.ts";
 import { createCmsServiceOperationContext } from "./cms-service-operation-context.ts";
 
-const assembleService = (
-  context: ReturnType<typeof createCmsServiceOperationContext>,
-  withOperationGate: <Success, Failure, Requirements>(
-    operation: Effect.Effect<Success, Failure, Requirements>,
-  ) => Effect.Effect<Success, Failure, Requirements>,
-) => {
-  const { asset, definition, definitionActivation, entries, entryBatch, entryHistory } =
-    cmsServiceOperationsModules;
-  return Service.of({
-    activateDefinitionSnapshot: (input) =>
-      withOperationGate(definitionActivation.activateDefinitionSnapshot(context)(input)),
-    activeDefinitionSnapshot: withOperationGate(definition.activeDefinitionSnapshot(context)),
-    appendDefinitionRevision: (input) =>
-      withOperationGate(definition.appendDefinitionRevision(context)(input)),
-    appendMigrationManifest: (input) =>
-      withOperationGate(definition.appendMigrationManifest(context)(input)),
-    createEntry: (input) => withOperationGate(entries.createEntry(context)(input)),
-    deleteAsset: (input) => withOperationGate(asset.deleteAsset(context)(input)),
-    deleteEntry: (input) => withOperationGate(entries.deleteEntry(context)(input)),
-    getAsset: (input) => withOperationGate(asset.getAsset(context)(input)),
-    getCurrentEntryState: (input) =>
-      withOperationGate(entryHistory.getCurrentEntryState(context)(input)),
-    getEntry: (input) => withOperationGate(entries.getEntry(context)(input)),
-    ingestAsset: (input) => withOperationGate(asset.ingestAsset(context)(input)),
-    inspectEntryRevision: (input) =>
-      withOperationGate(entryHistory.inspectEntryRevision(context)(input)),
-    listAssets: withOperationGate(asset.listAssets(context)),
-    listEntryRevisions: (input) =>
-      withOperationGate(entryHistory.listEntryRevisions(context)(input)),
-    mutateEntriesAtomically: (input) =>
-      withOperationGate(entryBatch.mutateEntriesAtomically(context)(input)),
-    permanentlyPurgeEntry: (input) =>
-      withOperationGate(entryHistory.permanentlyPurgeEntry(context)(input)),
-    prepareDefinitionMigration: (input) =>
-      withOperationGate(definition.prepareDefinitionMigration(context)(input)),
-    queryEntries: (input) => withOperationGate(entries.queryEntries(context)(input)),
-    readAsset: (input) => withOperationGate(asset.readAsset(context)(input)),
-    readConsistentSnapshot: withOperationGate(definition.readConsistentSnapshot(context)),
-    readDefinitionCatalog: withOperationGate(definition.readDefinitionCatalog(context)),
-    restoreEntryRevision: (input) =>
-      withOperationGate(entryHistory.restoreEntryRevision(context)(input)),
-    retireDefinition: (input) => withOperationGate(definition.retireDefinition(context)(input)),
-    updateEntry: (input) => withOperationGate(entries.updateEntry(context)(input)),
-  });
-},
-  createCmsService = (options: CmsLayerOptions) =>
+const assembleService = <Context extends ReturnType<typeof createCmsServiceOperationContext>>(
+    context: Readonly<Context>,
+    withOperationGate: <
+      Success,
+      Failure,
+      Requirements,
+      Operation extends Effect.Effect<Success, Failure, Requirements>,
+    >(
+      operation: Readonly<Operation>,
+    ) => Effect.Effect<Success, Failure, Requirements>,
+  ) => {
+    const { asset, definition, definitionActivation, entries, entryBatch, entryHistory } =
+      cmsServiceOperationsModules;
+    return Service.of({
+      activateDefinitionSnapshot: (input) =>
+        withOperationGate(definitionActivation.activateDefinitionSnapshot(context)(input)),
+      activeDefinitionSnapshot: (_void: void) =>
+        withOperationGate(definition.activeDefinitionSnapshot(context)),
+      appendDefinitionRevision: (input) =>
+        withOperationGate(definition.appendDefinitionRevision(context)(input)),
+      appendMigrationManifest: (input) =>
+        withOperationGate(definition.appendMigrationManifest(context)(input)),
+      createEntry: (input) => withOperationGate(entries.createEntry(context)(input)),
+      deleteAsset: (input) => withOperationGate(asset.deleteAsset(context)(input)),
+      deleteEntry: (input) => withOperationGate(entries.deleteEntry(context)(input)),
+      getAsset: (input) => withOperationGate(asset.getAsset(context)(input)),
+      getCurrentEntryState: (input) => withOperationGate(entryHistory.getCurrentEntryState(context)(input)),
+      getEntry: (input) => withOperationGate(entries.getEntry(context)(input)),
+      ingestAsset: (input) => withOperationGate(asset.ingestAsset(context)(input)),
+      inspectEntryRevision: (input) => withOperationGate(entryHistory.inspectEntryRevision(context)(input)),
+      listAssets: (_void: void) => withOperationGate(asset.listAssets(context)),
+      listEntryRevisions: (input) => withOperationGate(entryHistory.listEntryRevisions(context)(input)),
+      mutateEntriesAtomically: (input) => withOperationGate(entryBatch.mutateEntriesAtomically(context)(input)),
+      permanentlyPurgeEntry: (input) => withOperationGate(entryHistory.permanentlyPurgeEntry(context)(input)),
+      prepareDefinitionMigration: (input) => withOperationGate(definition.prepareDefinitionMigration(context)(input)),
+      queryEntries: (input) => withOperationGate(entries.queryEntries(context)(input)),
+      readAsset: (input) => withOperationGate(asset.readAsset(context)(input)),
+      readConsistentSnapshot: (_void: void) =>
+        withOperationGate(definition.readConsistentSnapshot(context)),
+      readDefinitionCatalog: (_void: void) =>
+        withOperationGate(definition.readDefinitionCatalog(context)),
+      restoreEntryRevision: (input) => withOperationGate(entryHistory.restoreEntryRevision(context)(input)),
+      retireDefinition: (input) => withOperationGate(definition.retireDefinition(context)(input)),
+      updateEntry: (input) => withOperationGate(entries.updateEntry(context)(input)),
+    });
+  },
+  createCmsService = <Options extends CmsLayerOptions>(options: Readonly<Options>) =>
     Effect.gen(function* createCmsServiceEffect() {
       const assets = yield* AssetManagement,
         authorization = yield* AuthorizationService,
@@ -72,8 +73,13 @@ const assembleService = (
         ),
         operationGate = yield* Semaphore.make(1),
         persistence = yield* EntryPersistence,
-        withOperationGate = <Success, Failure, Requirements>(
-          operation: Effect.Effect<Success, Failure, Requirements>,
+        withOperationGate = <
+          Success,
+          Failure,
+          Requirements,
+          Operation extends Effect.Effect<Success, Failure, Requirements>,
+        >(
+          operation: Readonly<Operation>,
         ) => operationGate.withPermit(operation);
       return assembleService(
         createCmsServiceOperationContext({
@@ -93,7 +99,9 @@ const assembleService = (
         withOperationGate,
       );
     }),
-  makeLayerImpl = (options: CmsLayerOptions = {}): Layer.Layer<
+  makeLayerImpl = (
+    options: CmsLayerOptions = {},
+  ): Layer.Layer<
     Service,
     never,
     | AuthorizationService

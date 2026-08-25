@@ -1,5 +1,10 @@
 import type { CompiledSnapshot, JsonObject } from "./content-definition.ts";
-import type { Handler, Manifest, Preparation, PreparationInput } from "./definition-migration-types.ts";
+import type {
+  Handler,
+  Manifest,
+  Preparation,
+  PreparationInput,
+} from "./definition-migration-types.ts";
 import { InvalidInput, type ValidationIssue } from "./cms-error.ts";
 import type { Representation } from "./entry.ts";
 import { Schema } from "effect";
@@ -13,11 +18,11 @@ interface PathCountInput {
 
 const NO_PATHS = 0,
   SINGLE_PATH = 1,
-  appendMigrationIssue = (
-    issues: ValidationIssue[],
-    entry: Representation,
+  appendMigrationIssue = <Issues extends ValidationIssue[]>(
+    issues: Issues,
+    entry: Readonly<Representation>,
     error: unknown,
-  ): void => {
+  ): Issues => {
     if (Schema.is(InvalidInput)(error) && error.issues !== undefined) {
       issues.push(
         ...error.issues.map((validationIssue) => ({
@@ -25,7 +30,7 @@ const NO_PATHS = 0,
           path: ["entries", entry.id, ...validationIssue.path],
         })),
       );
-      return;
+      return issues;
     }
     let message = "Migration Handler failed";
     if (error instanceof Error) {
@@ -36,13 +41,14 @@ const NO_PATHS = 0,
       path: ["entries", entry.id],
       reason: "migrationHandlerFailure",
     });
+    return issues;
   },
   countPathsFromSnapshot = ({
     manifests,
     sourceSnapshotId,
     targetSnapshotId,
     visited,
-  }: PathCountInput): number => {
+  }: Readonly<PathCountInput>): number => {
     const nextVisited = new Set(visited).add(sourceSnapshotId),
       outgoingManifests = manifests.filter(
         (candidate) => candidate.sourceSnapshotId === sourceSnapshotId,
@@ -61,10 +67,10 @@ const NO_PATHS = 0,
     }
     return count;
   },
-  finalizePreparation = (
-    input: PreparationInput,
-    transformedEntries: Representation[],
-    issues: ValidationIssue[],
+  finalizePreparation = <Input extends PreparationInput, Issues extends ValidationIssue[]>(
+    input: Readonly<Input>,
+    transformedEntries: readonly Representation[],
+    issues: Readonly<Issues>,
   ): Preparation => {
     let entries: readonly Representation[] = [],
       report: Preparation["report"] = { issues, status: "failed" };
@@ -112,7 +118,7 @@ const NO_PATHS = 0,
       applyDefaults: false,
     });
   },
-  missingHandlerPreparation = (input: PreparationInput): Preparation => ({
+  missingHandlerPreparation = (input: Readonly<PreparationInput>): Preparation => ({
     entries: [],
     id: `${input.manifest.id}@${input.sourceGeneration}`,
     manifest: input.manifest,
@@ -135,7 +141,7 @@ const NO_PATHS = 0,
     sourceSnapshotId,
     targetSnapshotId,
     visited,
-  }: PathCountInput): number => {
+  }: Readonly<PathCountInput>): number => {
     if (sourceSnapshotId === targetSnapshotId) {
       return SINGLE_PATH;
     }

@@ -53,7 +53,7 @@ const BASE64_QUARTET_LENGTH = 4,
   },
   dEncodeCursor = (cursor: CursorPayload): string =>
     btoa(JSON.stringify(cursor)).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/u, ""),
-  dResolveNextFields = (field: ResolvedField): readonly ResolvedField[] => {
+  dResolveNextFields = (field: Readonly<ResolvedField>): readonly ResolvedField[] => {
     if (field.kind.kind === "list") {
       return [];
     }
@@ -84,8 +84,9 @@ const BASE64_QUARTET_LENGTH = 4,
       Number.isSafeInteger(offset)
     );
   },
-  gQueryFingerprintFor = (query: Query): string => fingerprint(hQueryWithoutCursor(query)),
-  hQueryWithoutCursor = (query: Query): JsonValue => {
+  gQueryFingerprintFor = (query: Readonly<Query>): string =>
+    fingerprint(hQueryWithoutCursor(query)),
+  hQueryWithoutCursor = (query: Readonly<Query>): JsonValue => {
     const value: Record<string, unknown> = {
       contentTypeId: query.contentTypeId,
       expansion: query.expansion ?? [],

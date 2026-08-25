@@ -8,7 +8,7 @@ import transactionsSupport from "./transactions-support.ts";
 
 const { commit, replaceBlock } = transactionsState,
   { conditionalValue } = transactionsSupport,
-  applyDeleteBackward = (state: State): State => {
+  applyDeleteBackward = <StateType extends State>(state: StateType): StateType => {
     const selected = selectedText(state);
     if (selected === undefined) {
       return state;
@@ -22,10 +22,10 @@ const { commit, replaceBlock } = transactionsState,
     }
     return workDeleteBackwardForSelection(state, selected);
   },
-  applyToggleList = (
-    state: State,
+  applyToggleList = <StateType extends State>(
+    state: StateType,
     command: Extract<Command, { type: "toggleList" }>,
-  ): State => {
+  ): StateType => {
     const rootBlock = state.document.children[state.selection.anchor.blockIndex];
     if (rootBlock === undefined) {
       return state;
@@ -45,17 +45,17 @@ const { commit, replaceBlock } = transactionsState,
       state,
     });
   },
-  outdentListItem = ({
-    selected,
-    state,
-  }: {
-    selected: SelectedTextContext;
-    state: State;
-  }): State => {
-    if (selected.rootBlock.type !== "ordered-list" && selected.rootBlock.type !== "unordered-list") {
-      return state;
+  outdentListItem = <Input extends { selected: SelectedTextContext; state: State }>(
+    input: Readonly<Input>,
+  ): State => {
+    if (
+      input.selected.rootBlock.type !== "ordered-list" &&
+      input.selected.rootBlock.type !== "unordered-list"
+    ) {
+      return input.state;
     }
-    const listBlock = selected.rootBlock,
+    const { selected, state } = input,
+      listBlock = selected.rootBlock,
       listItemIndex = state.selection.anchor.listItemIndex ?? emptyIndex,
       listReplacement = conditionalValue(
         listBlock.children.filter((_listItem, index) => index !== listItemIndex).length ===
@@ -88,32 +88,36 @@ const { commit, replaceBlock } = transactionsState,
       { anchor: position, focus: position },
     );
   },
-  toggleExistingList = ({
-    blockIndex,
-    listBlock,
-    listType,
-    state,
-  }: {
-    blockIndex: number;
-    listBlock: RichText.ListNode;
-    listType: "ordered-list" | "unordered-list";
-    state: State;
-  }): State => {
+  toggleExistingList = <
+    Input extends {
+      blockIndex: number;
+      listBlock: RichText.ListNode;
+      listType: "ordered-list" | "unordered-list";
+      state: State;
+    },
+  >(
+    input: Readonly<Input>,
+  ): State => {
+    const { blockIndex, listBlock, listType, state } = input;
     if (listBlock.type !== listType) {
-      return commit(state, replaceBlock(state.document, blockIndex, { ...listBlock, type: listType }));
+      return commit(
+        state,
+        replaceBlock(state.document, blockIndex, { ...listBlock, type: listType }),
+      );
     }
     return unwrapListItem({ blockIndex, listBlock, state });
   },
-  unwrapListItem = ({
-    blockIndex,
-    listBlock,
-    state,
-  }: {
-    blockIndex: number;
-    listBlock: RichText.ListNode;
-    state: State;
-  }): State => {
-    const listItemIndex = state.selection.anchor.listItemIndex ?? emptyIndex,
+  unwrapListItem = <
+    Input extends {
+      blockIndex: number;
+      listBlock: RichText.ListNode;
+      state: State;
+    },
+  >(
+    input: Readonly<Input>,
+  ): State => {
+    const { blockIndex, listBlock, state } = input,
+      listItemIndex = state.selection.anchor.listItemIndex ?? emptyIndex,
       paragraph = listBlock.children[listItemIndex]?.children[emptyIndex];
     if (paragraph?.type !== "paragraph") {
       return state;
@@ -126,20 +130,19 @@ const { commit, replaceBlock } = transactionsState,
       state,
     });
   },
-  unwrapListItemParagraph = ({
-    blockIndex,
-    listBlock,
-    listItemIndex,
-    paragraph,
-    state,
-  }: {
-    blockIndex: number;
-    listBlock: RichText.ListNode;
-    listItemIndex: number;
-    paragraph: RichText.ParagraphNode;
-    state: State;
-  }): State => {
-    const listReplacement = conditionalValue(
+  unwrapListItemParagraph = <
+    Input extends {
+      blockIndex: number;
+      listBlock: RichText.ListNode;
+      listItemIndex: number;
+      paragraph: RichText.ParagraphNode;
+      state: State;
+    },
+  >(
+    input: Readonly<Input>,
+  ): State => {
+    const { blockIndex, listBlock, listItemIndex, paragraph, state } = input,
+      listReplacement = conditionalValue(
         listBlock.children.filter((_listItem, index) => index !== listItemIndex).length ===
           emptyIndex,
         [] as readonly RichText.BlockNode[],
@@ -151,7 +154,8 @@ const { commit, replaceBlock } = transactionsState,
         ],
       ),
       nextBlockIndex =
-        blockIndex + conditionalValue(listReplacement.length === emptyIndex, emptyIndex, firstIndex),
+        blockIndex +
+        conditionalValue(listReplacement.length === emptyIndex, emptyIndex, firstIndex),
       position = {
         blockIndex: nextBlockIndex,
         inlineIndex: state.selection.anchor.inlineIndex,
@@ -171,14 +175,14 @@ const { commit, replaceBlock } = transactionsState,
       { anchor: position, focus: position },
     );
   },
-  workDeleteBackwardAtListStart = (
-    state: State,
+  workDeleteBackwardAtListStart = <StateType extends State>(
+    state: StateType,
     selected: SelectedTextContext,
-  ): State => outdentListItem({ selected, state }),
-  workDeleteBackwardForSelection = (
-    state: State,
+  ): StateType => outdentListItem({ selected, state }),
+  workDeleteBackwardForSelection = <StateType extends State>(
+    state: StateType,
     selected: NonNullable<ReturnType<typeof selectedText>>,
-  ): State => {
+  ): StateType => {
     const { insertText } = transactionsMutations,
       selection = {
         anchor: {
@@ -193,21 +197,21 @@ const { commit, replaceBlock } = transactionsState,
       };
     return insertText({ ...state, selection }, "");
   },
-  wrapBlockInList = ({
-    blockIndex,
-    listType,
-    rootBlock,
-    state,
-  }: {
-    blockIndex: number;
-    listType: "ordered-list" | "unordered-list";
-    rootBlock: RichText.BlockNode;
-    state: State;
-  }): State => {
-    if (rootBlock.type !== "paragraph" && rootBlock.type !== "heading") {
-      return state;
+  wrapBlockInList = <
+    Input extends {
+      blockIndex: number;
+      listType: "ordered-list" | "unordered-list";
+      rootBlock: RichText.BlockNode;
+      state: State;
+    },
+  >(
+    input: Readonly<Input>,
+  ): State => {
+    if (input.rootBlock.type !== "paragraph" && input.rootBlock.type !== "heading") {
+      return input.state;
     }
-    const anchor = { ...state.selection.anchor, listItemIndex: emptyIndex },
+    const { blockIndex, listType, rootBlock, state } = input,
+      anchor = { ...state.selection.anchor, listItemIndex: emptyIndex },
       focus = { ...state.selection.focus, listItemIndex: emptyIndex },
       list: RichText.ListNode = {
         children: [

@@ -26,7 +26,7 @@ interface SchemaRenderer {
     schema: Readonly<Record<string, unknown>>,
     context: SchemaContext,
   ) => Readonly<Record<string, unknown>>;
-  readonly fieldType: (input: FieldTypeInput) => string;
+  readonly fieldType: (input: Readonly<FieldTypeInput>) => string;
   readonly literalType: (schema: Readonly<Record<string, unknown>>) => string | null;
   readonly localReferenceType: (reference: string, context: SchemaContext) => string;
   readonly namedScalarType: (typeName: unknown) => string | null;

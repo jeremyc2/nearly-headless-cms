@@ -24,9 +24,11 @@ const { managementPaths } = openApiManagementPaths,
       aSortedEntries(value).map(([key, child]) => [key, bSortValue(child)]),
     );
   },
-  cHeadlessPaths = (
-    operations: readonly DeliveryOperation[],
-  ): Readonly<Record<string, Readonly<Record<string, OperationDescriptor>>>> =>
+  cHeadlessPaths = <Operations extends readonly DeliveryOperation[]>(
+    operations: Operations,
+  ): Operations extends readonly DeliveryOperation[]
+    ? Readonly<Record<string, Readonly<Record<string, OperationDescriptor>>>>
+    : never =>
     operations.reduce<Record<string, Record<string, OperationDescriptor>>>(
       (paths, operation) => {
         const path = `${headlessPrefix}${operation.path}`;
@@ -43,14 +45,18 @@ const { managementPaths } = openApiManagementPaths,
       },
     ),
   /** Builds an OpenAPI document containing only declared Headless Delivery Operations. */
-  headless = (operations: readonly DeliveryOperation[]): Document => ({
+  headless = <Operations extends readonly DeliveryOperation[]>(
+    operations: Operations,
+  ): Operations extends readonly DeliveryOperation[] ? Document : never => ({
     components: { schemas },
     info: { title: "Nearly Headless CMS Headless API", version: "1.0.0" },
     openapi: "3.1.0",
     paths: completePaths(cHeadlessPaths(operations)),
   }),
   /** Builds the complete generic plus Builder-defined Management OpenAPI document. */
-  management = (operations: readonly ManagementOperation[] = []): Document => ({
+  management = <Operations extends readonly ManagementOperation[]>(
+    operations: Operations,
+  ): Operations extends readonly ManagementOperation[] ? Document : never => ({
     components: { schemas },
     info: { title: "Nearly Headless CMS Management API", version: "1.0.0" },
     openapi: "3.1.0",

@@ -10,10 +10,13 @@ if (Bun.env["ACCEPTANCE_SERVERS_READY"] === "1") {
 }
 const baselineDirectory = join(import.meta.dir, "baselines"),
   // oxlint-disable-next-line effecttsgo/async-function -- screenshot and filesystem APIs are Promise-based Bun platform operations.
-  captureAndCheckBaseline = async (
-    view: Bun.WebView,
+  captureAndCheckBaseline = async <
+    View extends Bun.WebView,
+    Viewport extends { readonly height: number; readonly width: number },
+  >(
+    view: Readonly<View>,
     pageName: string,
-    viewport: { readonly height: number; readonly width: number },
+    viewport: Readonly<Viewport>,
   ): Promise<void> => {
     const baselinePath = join(
         baselineDirectory,
@@ -31,14 +34,17 @@ const baselineDirectory = join(import.meta.dir, "baselines"),
     await compareToBaseline(screenshotBytes, baselinePath);
   },
   // oxlint-disable-next-line effecttsgo/async-function -- baseline bytes are read through Promise-based Bun filesystem APIs.
-  compareToBaseline = async (
-    screenshotBytes: Uint8Array,
+  compareToBaseline = async <Bytes extends Uint8Array>(
+    screenshotBytes: Readonly<Bytes>,
     baselinePath: string,
   ): Promise<void> => {
     const baselineBytes = new Uint8Array(await Bun.file(baselinePath).arrayBuffer());
-    expect(digest(screenshotBytes), `Visual mismatch for ${baselinePath}`).toBe(digest(baselineBytes));
+    expect(digest(screenshotBytes), `Visual mismatch for ${baselinePath}`).toBe(
+      digest(baselineBytes),
+    );
   },
-  digest = (bytes: Uint8Array): string => createHash("sha256").update(bytes).digest("hex"),
+  digest = <Bytes extends Uint8Array>(bytes: Readonly<Bytes>): string =>
+    createHash("sha256").update(bytes).digest("hex"),
   pages = [
     {
       name: "example-cms-overview",
@@ -60,7 +66,10 @@ const baselineDirectory = join(import.meta.dir, "baselines"),
     { height: 1024, width: 768 },
     { height: 1000, width: 1440 },
   ] as const,
-  waitUntilReady = (view: Bun.WebView, expression: string): Promise<void> => {
+  waitUntilReady = <View extends Bun.WebView>(
+    view: Readonly<View>,
+    expression: string,
+  ): Promise<void> => {
     const deadline = performance.now() + settleTimeoutMilliseconds,
       // oxlint-disable-next-line effecttsgo/async-function -- Bun WebView evaluation and sleep are Promise-based platform lifecycle operations.
       poll = async (): Promise<void> => {

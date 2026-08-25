@@ -121,14 +121,21 @@ export interface HeadlessClient {
 
 const apiContractVersion = 1,
   apiSuccessfulResponseStatus = 200,
-  decodeResponse = <Value>(
-    schema: Schema.Codec<Value>,
-    value: unknown,
-    status = apiSuccessfulResponseStatus,
-  ): Effect.Effect<Value, ProtocolFailure> =>
-    Schema.decodeUnknownEffect(schema)(value).pipe(
+  decodeResponse = <
+    Value,
+    Input extends {
+      readonly schema: Schema.Codec<Value>;
+      readonly status?: number;
+      readonly value: unknown;
+    },
+  >(
+    input: Readonly<Input>,
+  ): Effect.Effect<Value, ProtocolFailure> => {
+    const status = input.status ?? apiSuccessfulResponseStatus;
+    return Schema.decodeUnknownEffect(input.schema)(input.value).pipe(
       Effect.mapError((issue) => ProtocolFailure.make({ message: String(issue), status })),
-    ),
+    );
+  },
   generatorFormatVersion = 1,
   makeBaseTaggedErrorClass = Schema.TaggedError,
   makeRichTextNodeSchema = (): Schema.Codec<RichTextNode> => {
@@ -234,13 +241,13 @@ const apiContractVersion = 1,
     return {
       discover: generatedClient
         .discoverPublicDefinitionSnapshot({})
-        .pipe(Effect.flatMap((value) => decodeResponse(schemaDiscovery, value))),
+        .pipe(Effect.flatMap((value) => decodeResponse({ schema: schemaDiscovery, value }))),
       exportPublicBlog: (expectedFingerprint) =>
         generatedClient
           .exportPublicBlog({
             headers: { "CMS-Expected-Definition-Fingerprint": expectedFingerprint },
           })
-          .pipe(Effect.flatMap((value) => decodeResponse(schemaPublicBlogZExport, value))),
+          .pipe(Effect.flatMap((value) => decodeResponse({ schema: schemaPublicBlogZExport, value }))),
       submitComment: (postId, input, idempotencyKey) =>
         generatedClient.submitComment({
           body: input,

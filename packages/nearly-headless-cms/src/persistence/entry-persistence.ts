@@ -25,6 +25,6 @@ export class EntryPersistence extends Context.Service<
       expectedGeneration: number,
       records: ReadonlyMap<string, EntryRecord>,
     ) => Effect.Effect<EntryGeneration, CmsError>;
-    readonly readGeneration: Effect.Effect<EntryGeneration, InfrastructureFailure>;
+    readonly readGeneration: (_void: void) => Effect.Effect<EntryGeneration, InfrastructureFailure>;
   }
 >()("nearly-headless-cms/persistence/entry-persistence/EntryPersistence") {}

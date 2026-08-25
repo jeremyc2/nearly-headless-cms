@@ -21,15 +21,19 @@ const { canonicalizeJsonValue, parseBody, requiredParameter } = deliverySupport,
       message: "Comment receipt persistence failed",
       retryable: true,
     }),
-  createPendingCommentReceipt = (input: {
-    body: Record<string, unknown>;
-    canonicalInput: string;
-    cms: Parameters<HttpContract.DeliveryOperation["execute"]>[0]["cms"];
-    commandReceiptStore: CommandReceiptStore;
-    idempotencyKey: string;
-    post: { id: string };
-    postIdentifier: string;
-  }) =>
+  createPendingCommentReceipt = <
+    Input extends {
+      body: Record<string, unknown>;
+      canonicalInput: string;
+      cms: Parameters<HttpContract.DeliveryOperation["execute"]>[0]["cms"];
+      commandReceiptStore: CommandReceiptStore;
+      idempotencyKey: string;
+      post: { id: string };
+      postIdentifier: string;
+    },
+  >(
+    input: Readonly<Input>,
+  ) =>
     Effect.gen(function* createPendingCommentReceiptEffect() {
       const { commentBody, displayName, websiteUrl } = yield* validateCommentFields(input.body),
         receipt = pendingCommentReceipt(
@@ -93,8 +97,10 @@ const { canonicalizeJsonValue, parseBody, requiredParameter } = deliverySupport,
           postIdentifier,
         });
       }),
-  pendingCommentReceipt = (
-    result: { id: string } | { entry: { id: string }; writeToken: string },
+  pendingCommentReceipt = <
+    Result extends { id: string } | { entry: { id: string }; writeToken: string },
+  >(
+    result: Readonly<Result>,
   ): { status: "pending"; submissionId: string } => ({
     status: "pending",
     submissionId: submissionIdentifier(result),
@@ -104,9 +110,9 @@ const { canonicalizeJsonValue, parseBody, requiredParameter } = deliverySupport,
     postIdentifier: string,
     idempotencyKey: string,
   ) =>
-    commandReceiptStore.read(`comment-submission:${postIdentifier}`, idempotencyKey).pipe(
-      Effect.mapError(commentReceiptLookupFailure),
-    ),
+    commandReceiptStore
+      .read(`comment-submission:${postIdentifier}`, idempotencyKey)
+      .pipe(Effect.mapError(commentReceiptLookupFailure)),
   resolveStoredCommentReceipt = (
     prior: unknown,
     canonicalInput: string,
@@ -132,21 +138,25 @@ const { canonicalizeJsonValue, parseBody, requiredParameter } = deliverySupport,
     return Effect.succeed(prior.receipt);
   },
   submissionIdentifier = (
-    result: { id: string } | { entry: { id: string }; writeToken: string },
+    result: { readonly id: string } | { readonly entry: { readonly id: string }; readonly writeToken: string },
   ): string => {
     if ("writeToken" in result) {
       return result.entry.id;
     }
     return result.id;
   },
-  submitNewComment = (input: {
-    body: Record<string, unknown>;
-    canonicalInput: string;
-    cms: Parameters<HttpContract.DeliveryOperation["execute"]>[0]["cms"];
-    commandReceiptStore: CommandReceiptStore;
-    idempotencyKey: string;
-    postIdentifier: string;
-  }) =>
+  submitNewComment = <
+    Input extends {
+      body: Record<string, unknown>;
+      canonicalInput: string;
+      cms: Parameters<HttpContract.DeliveryOperation["execute"]>[0]["cms"];
+      commandReceiptStore: CommandReceiptStore;
+      idempotencyKey: string;
+      postIdentifier: string;
+    },
+  >(
+    input: Readonly<Input>,
+  ) =>
     Effect.gen(function* submitNewCommentEffect() {
       const post = yield* input.cms.getEntry({
         contentTypeId: "post",
@@ -165,8 +175,8 @@ const { canonicalizeJsonValue, parseBody, requiredParameter } = deliverySupport,
         postIdentifier: input.postIdentifier,
       });
     }),
-  validateCommentFields = (
-    body: Record<string, unknown>,
+  validateCommentFields = <Body extends Record<string, unknown>>(
+    body: Readonly<Body>,
   ): Effect.Effect<
     { commentBody: string; displayName: string; websiteUrl: string | null | undefined },
     CmsError.InvalidInput
@@ -183,13 +193,17 @@ const { canonicalizeJsonValue, parseBody, requiredParameter } = deliverySupport,
     }
     return Effect.succeed({ commentBody, displayName, websiteUrl });
   },
-  writeCommentReceipt = (input: {
-    canonicalInput: string;
-    commandReceiptStore: CommandReceiptStore;
-    idempotencyKey: string;
-    postIdentifier: string;
-    receipt: Record<string, unknown>;
-  }) =>
+  writeCommentReceipt = <
+    Input extends {
+      canonicalInput: string;
+      commandReceiptStore: CommandReceiptStore;
+      idempotencyKey: string;
+      postIdentifier: string;
+      receipt: Record<string, unknown>;
+    },
+  >(
+    input: Readonly<Input>,
+  ) =>
     input.commandReceiptStore
       .write(`comment-submission:${input.postIdentifier}`, input.idempotencyKey, {
         canonicalInput: input.canonicalInput,

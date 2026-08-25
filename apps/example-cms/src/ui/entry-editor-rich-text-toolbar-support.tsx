@@ -3,10 +3,10 @@ import type { BrowserAdapter } from "./rich-text-editor/index.ts";
 import { headingLevel } from "./main-labels.ts";
 import { preserveSelection } from "./main-shared.ts";
 
-const RichTextBlockPicker = ({
+const RichTextBlockPicker = <Adapter extends RefObject<BrowserAdapter | null>>({
     adapter,
   }: {
-    readonly adapter: RefObject<BrowserAdapter | null>;
+    readonly adapter: Readonly<Adapter>;
   }) => (
     <label className="rich-block-picker">
       <span className="visually-hidden">Block type</span>
@@ -26,16 +26,20 @@ const RichTextBlockPicker = ({
       </select>
     </label>
   ),
-  RichTextMarkButton = ({
+  RichTextMarkButton = <
+    Adapter extends RefObject<BrowserAdapter | null>,
+    Mark extends "bold" | "code" | "italic" | "strikethrough",
+    Content extends ReactNode,
+  >({
     adapter,
     ariaLabel,
     children,
     mark,
   }: {
-    readonly adapter: RefObject<BrowserAdapter | null>;
+    readonly adapter: Readonly<Adapter>;
     readonly ariaLabel: string;
-    readonly children: ReactNode;
-    readonly mark: "bold" | "code" | "italic" | "strikethrough";
+    readonly children: Readonly<Content>;
+    readonly mark: Readonly<Mark>;
   }) => (
     <button
       aria-label={ariaLabel}
@@ -46,10 +50,10 @@ const RichTextBlockPicker = ({
       {children}
     </button>
   ),
-  RichTextToolbarHistoryButtons = ({
+  RichTextToolbarHistoryButtons = <Adapter extends RefObject<BrowserAdapter | null>>({
     adapter,
   }: {
-    readonly adapter: RefObject<BrowserAdapter | null>;
+    readonly adapter: Readonly<Adapter>;
   }) => (
     <>
       <button
@@ -68,15 +72,17 @@ const RichTextBlockPicker = ({
       </button>
     </>
   ),
-  RichTextToolbarListButtons = ({
+  RichTextToolbarListButtons = <Adapter extends RefObject<BrowserAdapter | null>>({
     adapter,
   }: {
-    readonly adapter: RefObject<BrowserAdapter | null>;
+    readonly adapter: Readonly<Adapter>;
   }) => (
     <>
       <button
         aria-label="Unordered list"
-        onClick={() => adapter.current?.dispatch({ listType: "unordered-list", type: "toggleList" })}
+        onClick={() =>
+          adapter.current?.dispatch({ listType: "unordered-list", type: "toggleList" })
+        }
         onMouseDown={preserveSelection}
         type="button"
       >
@@ -92,9 +98,9 @@ const RichTextBlockPicker = ({
       </button>
     </>
   ),
-  dispatchBlockKind = (
-    adapter: RefObject<BrowserAdapter | null>,
-    blockType: string,
+  dispatchBlockKind = <Adapter extends RefObject<BrowserAdapter | null>, BlockType extends string>(
+    adapter: Readonly<Adapter>,
+    blockType: Readonly<BlockType>,
   ): void => {
     if (blockType === "heading-2" || blockType === "heading-3" || blockType === "heading-4") {
       adapter.current?.dispatch({

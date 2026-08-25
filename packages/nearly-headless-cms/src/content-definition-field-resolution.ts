@@ -17,11 +17,11 @@ interface ResolveFieldsInput {
 
 const { createValidationIssue, emptyLength, failValidation } = validationSupport,
   { validateFieldDefinition } = fieldValidation,
-  appendComposedFieldGroup = (
-    fields: ResolvedField[],
-    input: ResolveFieldsInput,
+  appendComposedFieldGroup = <Fields extends ResolvedField[], Input extends ResolveFieldsInput>(
+    fields: Fields,
+    input: Readonly<Input>,
     composition: NonNullable<ContentTypeDefinition["fieldGroups"]>[number],
-  ): void => {
+  ): Fields => {
     const composedFields = ((): readonly ResolvedField[] => {
       const target = input.definitions.get(composition.fieldGroupId);
       if (target === undefined || target.kind !== "fieldGroup") {
@@ -37,9 +37,10 @@ const { createValidationIssue, emptyLength, failValidation } = validationSupport
     })();
     if (composition.mode === "inline") {
       fields.push(...composedFields);
-      return;
+      return fields;
     }
     fields.push(composeFieldGroup(composition, composedFields));
+    return fields;
   },
   assertUniqueFieldKeys = (definitionId: string, fields: readonly ResolvedField[]): void => {
     const duplicateKey = fields.find(
@@ -56,7 +57,10 @@ const { createValidationIssue, emptyLength, failValidation } = validationSupport
     }
   },
   composeFieldGroup = (
-    composition: Extract<NonNullable<ContentTypeDefinition["fieldGroups"]>[number], { mode: "nested" }>,
+    composition: Extract<
+      NonNullable<ContentTypeDefinition["fieldGroups"]>[number],
+      { mode: "nested" }
+    >,
     composedFields: readonly ResolvedField[],
   ): ResolvedField => ({
     key: composition.key,
@@ -76,7 +80,7 @@ const { createValidationIssue, emptyLength, failValidation } = validationSupport
       definitions: input.definitions,
       resolving: [...input.resolving, input.definition.id],
     }),
-  resolveFields = (input: ResolveFieldsInput): readonly ResolvedField[] => {
+  resolveFields = (input: Readonly<ResolveFieldsInput>): readonly ResolvedField[] => {
     if (input.resolving.includes(input.definition.id)) {
       failValidation("Field Group inclusion cycle", [
         createValidationIssue(

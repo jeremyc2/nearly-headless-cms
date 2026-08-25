@@ -23,14 +23,17 @@ const EntryEditorAuthorProfileField = ({
       />
     </div>
   ),
-  EntryEditorBodyFields = ({
+  EntryEditorBodyFields = <
+    Values extends Record<string, unknown>,
+    UpdateField extends (key: string, value: unknown) => void,
+  >({
     bodyDocument,
     onUpdateField,
     values,
   }: {
     readonly bodyDocument: RichText.Document | undefined;
-    readonly onUpdateField: (key: string, value: unknown) => void;
-    readonly values: Record<string, unknown>;
+    readonly onUpdateField: Readonly<UpdateField>;
+    readonly values: Readonly<Values>;
   }) => (
     <>
       {"body" in values && typeof values["body"] === "string" && (
@@ -56,12 +59,15 @@ const EntryEditorAuthorProfileField = ({
       )}
     </>
   ),
-  EntryEditorTextAreaFields = ({
+  EntryEditorTextAreaFields = <
+    Values extends Record<string, unknown>,
+    UpdateField extends (key: string, value: unknown) => void,
+  >({
     onUpdateField,
     values,
   }: {
-    readonly onUpdateField: (key: string, value: unknown) => void;
-    readonly values: Record<string, unknown>;
+    readonly onUpdateField: Readonly<UpdateField>;
+    readonly values: Readonly<Values>;
   }) => (
     <>
       {"excerpt" in values && (
@@ -102,16 +108,19 @@ const EntryEditorAuthorProfileField = ({
       )}
     </>
   ),
-  EntryEditorTitleField = ({
+  EntryEditorTitleField = <
+    Values extends Record<string, unknown>,
+    UpdateField extends (key: string, value: unknown) => void,
+  >({
     onUpdateField,
     title,
     titleField,
     values,
   }: {
-    readonly onUpdateField: (key: string, value: unknown) => void;
+    readonly onUpdateField: Readonly<UpdateField>;
     readonly title: string;
     readonly titleField: string;
-    readonly values: Record<string, unknown>;
+    readonly values: Readonly<Values>;
   }) => (
     <>
       <label className="field full">

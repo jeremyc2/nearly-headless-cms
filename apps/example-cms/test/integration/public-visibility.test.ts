@@ -9,7 +9,9 @@ import { exportTimeoutMilliseconds } from "./public-visibility-support.ts";
 
 type PublicVisibilityFixture = Awaited<ReturnType<typeof createPublicVisibilityFixture>>;
 
-const publicVisibilityContext: { fixture: PublicVisibilityFixture | undefined } = { fixture: undefined },
+const publicVisibilityContext: { fixture: PublicVisibilityFixture | undefined } = {
+    fixture: undefined,
+  },
   requirePublicVisibilityFixture = (): PublicVisibilityFixture => {
     const { fixture } = publicVisibilityContext;
     if (fixture === undefined) {

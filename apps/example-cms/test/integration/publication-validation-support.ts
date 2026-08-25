@@ -30,7 +30,9 @@ const managementEntryUrl = (contentTypeIdentifier: string, entryIdentifier: stri
   // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- test URL helper is intentionally a direct two-argument operation.
   publishPostUrl = (postIdentifier: string): string =>
     `http://cms.test/api/v1/management/definition-spaces/example-blog/operations/posts/${postIdentifier}/publications`,
-  readEntryValues = (state: Readonly<Record<string, unknown>>): Readonly<Record<string, unknown>> => {
+  readEntryValues = (
+    state: Readonly<Record<string, unknown>>,
+  ): Readonly<Record<string, unknown>> => {
     const { entry } = state;
     if (!isRecord(entry)) {
       throw new TypeError("Expected entry field");

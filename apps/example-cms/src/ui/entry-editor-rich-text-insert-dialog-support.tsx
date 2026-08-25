@@ -6,14 +6,17 @@ import {
   assetCaption,
 } from "./entry-editor-rich-text-insert-dialog-imports.ts";
 
-const InsertDialogActions = ({
+const InsertDialogActions = <
+    AdapterRef extends RefObject<BrowserAdapter | null>,
+    Dialog extends RichTextInsertDialog,
+  >({
     adapter,
     closeDialog,
     dialog,
   }: {
-    readonly adapter: RefObject<BrowserAdapter | null>;
+    readonly adapter: Readonly<AdapterRef>;
     readonly closeDialog: () => void;
-    readonly dialog: RichTextInsertDialog;
+    readonly dialog: Readonly<Dialog>;
   }) => (
     <div className="editor-actions">
       <button className="secondary-button" onClick={closeDialog} type="button">
@@ -151,9 +154,9 @@ const InsertDialogActions = ({
     </>
   ),
   insertReference = (
-    adapter: RefObject<BrowserAdapter | null>,
+    adapter: Readonly<RefObject<BrowserAdapter | null>>,
     closeDialog: () => void,
-    dialog: RichTextInsertDialog,
+    dialog: Readonly<RichTextInsertDialog>,
   ): void => {
     if (dialog.type === "link") {
       adapter.current?.dispatch({ label: dialog.label, type: "wrapLink", url: dialog.url });

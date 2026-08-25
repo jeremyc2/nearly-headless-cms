@@ -44,35 +44,47 @@ interface CollectFieldReferencesInput {
   readonly value: JsonValue;
 }
 
-const { collectRichTextReferences, validateRichTextDocument } =
-    cmsEntryReferencesRichTextSupport,
-  appendAssetIdentifiers = (assetIds: string[], value: JsonValue): void => {
+const { collectRichTextReferences, validateRichTextDocument } = cmsEntryReferencesRichTextSupport,
+  appendAssetIdentifiers = <AssetIds extends string[], Value extends JsonValue>(
+    assetIds: AssetIds,
+    value: Readonly<Value>,
+  ): AssetIds extends string[] ? void : never => {
     for (const assetId of oneOrMany(value)) {
       if (typeof assetId === "string") {
         assetIds.push(assetId);
       }
     }
   },
-  appendRelationshipTargets = (
-    relationships: { entryId: string; targetContentTypeIds: readonly string[] }[],
+  appendRelationshipTargets = <
+    Relationships extends { entryId: string; targetContentTypeIds: readonly string[] }[],
+    Value extends JsonValue,
+  >(
+    relationships: Relationships,
     targetContentTypeIds: readonly string[],
-    value: JsonValue,
-  ): void => {
+    value: Readonly<Value>,
+  ): Relationships extends { entryId: string; targetContentTypeIds: readonly string[] }[]
+    ? void
+    : never => {
     for (const entryId of oneOrMany(value)) {
       if (typeof entryId === "string") {
         relationships.push({ entryId, targetContentTypeIds });
       }
     }
   },
-  collectAssetFieldReferences = ({ assetIds, field, value }: CollectFieldReferencesInput): void => {
-    const isAssetField =
-      field.kind.kind === "asset" ||
-      (field.kind.kind === "list" && field.kind.element.kind === "asset");
+  collectAssetFieldReferences = <Input extends CollectFieldReferencesInput>(
+    input: Readonly<Input>,
+  ): void => {
+    const { assetIds, field, value } = input,
+      isAssetField =
+        field.kind.kind === "asset" ||
+        (field.kind.kind === "list" && field.kind.element.kind === "asset");
     if (isAssetField) {
       appendAssetIdentifiers(assetIds, value);
     }
   },
-  collectFieldReferences = (input: CollectFieldReferencesInput): void => {
+  collectFieldReferences = <Input extends CollectFieldReferencesInput>(
+    input: Readonly<Input>,
+  ): void => {
     collectRelationshipFieldReferences(input);
     collectAssetFieldReferences(input);
     collectRichTextFieldReferences(input);
@@ -105,22 +117,19 @@ const { collectRichTextReferences, validateRichTextDocument } =
     visit(contentType.fields, values);
     return { assetIds, relationships };
   },
-  collectRelationshipFieldReferences = ({
-    field,
-    relationships,
-    value,
-  }: CollectFieldReferencesInput): void => {
-    const relationship = relationshipKind(field);
+  collectRelationshipFieldReferences = <Input extends CollectFieldReferencesInput>(
+    input: Readonly<Input>,
+  ): void => {
+    const { field, relationships, value } = input,
+      relationship = relationshipKind(field);
     if (relationship !== undefined) {
       appendRelationshipTargets(relationships, relationship.targetContentTypeIds, value);
     }
   },
-  collectRichTextFieldReferences = ({
-    assetIds,
-    field,
-    relationships,
-    value,
-  }: CollectFieldReferencesInput): void => {
+  collectRichTextFieldReferences = <Input extends CollectFieldReferencesInput>(
+    input: Readonly<Input>,
+  ): void => {
+    const { assetIds, field, relationships, value } = input;
     if (field.kind.kind === "rich-text") {
       const richTextReferences = collectRichTextReferences(validateRichTextDocument(value));
       for (const entryId of richTextReferences.entryIds) {
@@ -158,7 +167,7 @@ const { collectRichTextReferences, validateRichTextDocument } =
     ignoredEntryId,
     records,
     values,
-  }: EnsureUniqueValuesInput): void => {
+  }: Readonly<EnsureUniqueValuesInput>): void => {
     for (const { path } of fieldsAtPaths(contentType.fields).filter(
       (candidate) => candidate.field.unique === true,
     )) {
@@ -248,8 +257,8 @@ const { collectRichTextReferences, validateRichTextDocument } =
     }
     return undefined;
   },
-  setProjectedValue = (
-    values: Record<string, JsonValue>,
+  setProjectedValue = <Values extends Record<string, JsonValue>>(
+    values: Readonly<Values>,
     segments: readonly string[],
     value: JsonValue,
   ): void => {

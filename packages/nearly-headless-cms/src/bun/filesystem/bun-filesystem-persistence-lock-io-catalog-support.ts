@@ -48,7 +48,9 @@ const catalogGenerationFields = (
     snapshots: readonly DefinitionSnapshotRecord[],
     activeInputSnapshotId: string,
   ): DefinitionSnapshotRecord => {
-    const active = snapshots.find((snapshot) => snapshot.input.snapshotId === activeInputSnapshotId);
+    const active = snapshots.find(
+      (snapshot) => snapshot.input.snapshotId === activeInputSnapshotId,
+    );
     if (active === undefined) {
       throw new Error("Committed Definition Catalog active Snapshot is missing");
     }

@@ -52,9 +52,7 @@ interface RejectedPublicationExpectation {
   readonly writeToken: string;
 }
 
-const assertRejectedPublication = (
-    expectation: RejectedPublicationExpectation,
-  ): Promise<void> =>
+const assertRejectedPublication = (expectation: RejectedPublicationExpectation): Promise<void> =>
     readPublicationFailure(
       expectation.handler,
       expectation.postIdentifier,
@@ -85,22 +83,21 @@ const assertRejectedPublication = (
     format: "nearly-headless-cms/rich-text",
     version: richTextVersion,
   }),
-  createPrivateReferenceTarget = (
-    context: DraftEntryContext,
-  ): Promise<string> =>
-    context.handler(
-      new Request(managementEntriesUrl("post"), {
-        body: JSON.stringify({
-          values: {
-            ...context.entryValues,
-            slug: "private-reference-target",
-            title: "Private reference target",
-          },
+  createPrivateReferenceTarget = (context: DraftEntryContext): Promise<string> =>
+    context
+      .handler(
+        new Request(managementEntriesUrl("post"), {
+          body: JSON.stringify({
+            values: {
+              ...context.entryValues,
+              slug: "private-reference-target",
+              title: "Private reference target",
+            },
+          }),
+          headers: { "content-type": "application/json" },
+          method: "POST",
         }),
-        headers: { "content-type": "application/json" },
-        method: "POST",
-      }),
-    )
+      )
       .then(jsonRecord)
       .then(requireEntryIdentifier),
   // Bun lifecycle hooks require a Promise-returning dispose callback.
@@ -173,10 +170,12 @@ const assertRejectedPublication = (
     readonly writeToken: string;
   }> => {
     const stateUrl = managementStateUrl("post", draftIdentifier);
-    return handler(new Request(stateUrl)).then(jsonRecord).then((state) => ({
-      entryValues: readEntryValues(state),
-      writeToken: requireWriteToken(state),
-    }));
+    return handler(new Request(stateUrl))
+      .then(jsonRecord)
+      .then((state) => ({
+        entryValues: readEntryValues(state),
+        writeToken: requireWriteToken(state),
+      }));
   },
   readPublicExport = (handler: PublicationValidationHandler): Promise<string | undefined> =>
     handler(new Request(exportUrl)).then(jsonRecord).then(readFirstAssetId),
@@ -196,16 +195,17 @@ const assertRejectedPublication = (
     values: Readonly<Record<string, unknown>>,
     writeToken: string,
   ): Promise<string> =>
-    context.handler(
-      new Request(context.entryUrl, {
-        body: JSON.stringify({ values }),
-        headers: {
-          "cms-write-token": writeToken,
-          "content-type": "application/json",
-        },
-        method: "PUT",
-      }),
-    )
+    context
+      .handler(
+        new Request(context.entryUrl, {
+          body: JSON.stringify({ values }),
+          headers: {
+            "cms-write-token": writeToken,
+            "content-type": "application/json",
+          },
+          method: "PUT",
+        }),
+      )
       .then(jsonRecord)
       .then(requireWriteToken),
   saveInvalidReferenceEntry = (
@@ -222,9 +222,7 @@ const assertRejectedPublication = (
       },
       context.invalidImageWriteToken,
     ),
-  saveInvalidReferenceEntryFromContext = (
-    context: ReferencePublicationContext,
-  ): Promise<string> =>
+  saveInvalidReferenceEntryFromContext = (context: ReferencePublicationContext): Promise<string> =>
     createPrivateReferenceTarget(context).then((targetEntryIdentifier) =>
       saveInvalidReferenceEntry(context, targetEntryIdentifier),
     ),
@@ -246,9 +244,7 @@ const assertRejectedPublication = (
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
   // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
-  verifyInvalidImagePublication = async (
-    context: ImagePublicationContext,
-  ): Promise<string> => {
+  verifyInvalidImagePublication = async (context: ImagePublicationContext): Promise<string> => {
     const invalidImageWriteToken = await saveEntryValues(
       context,
       {
@@ -274,14 +270,7 @@ const assertRejectedPublication = (
   ): Promise<void> => {
     const invalidReferenceWriteToken = await saveInvalidReferenceEntryFromContext(context);
     await assertRejectedPublication({
-      expectedPath: [
-        "body",
-        "children",
-        firstItemIndex,
-        "children",
-        firstItemIndex,
-        "entryId",
-      ],
+      expectedPath: ["body", "children", firstItemIndex, "children", firstItemIndex, "entryId"],
       expectedReason: "referenceNotPublic",
       handler: context.handler,
       postIdentifier: context.draftIdentifier,

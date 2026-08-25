@@ -20,7 +20,9 @@ interface ExportPublicBlogResponseInput {
 
 const { publicAssetIds, publicContent } = deliveryPublicContent,
   { publicValue, readSchemas } = deliverySupport,
-  buildExportArtifact = (consistentSnapshot: Cms.ConsistentReadSnapshot) => {
+  buildExportArtifact = <Snapshot extends Cms.ConsistentReadSnapshot>(
+    consistentSnapshot: Readonly<Snapshot>,
+  ) => {
     const content = publicContent(consistentSnapshot),
       snapshot = consistentSnapshot.definitionSnapshot;
     return {
@@ -39,13 +41,11 @@ const { publicAssetIds, publicContent } = deliveryPublicContent,
       snapshot,
     };
   },
-  buildExportPublicBlogResponse = ({
-    bytes,
-    request,
-    requestId,
-    snapshot,
-  }: ExportPublicBlogResponseInput): Response => {
-    const digest = new Bun.CryptoHasher("sha256").update(bytes).digest("hex"),
+  buildExportPublicBlogResponse = <Input extends ExportPublicBlogResponseInput>(
+    input: Readonly<Input>,
+  ): Response => {
+    const { bytes, request, requestId, snapshot } = input,
+      digest = new Bun.CryptoHasher("sha256").update(bytes).digest("hex"),
       etag = `"sha256-${digest}"`,
       headers = new Headers({
         "cache-control": "no-cache",
@@ -76,7 +76,7 @@ const { publicAssetIds, publicContent } = deliveryPublicContent,
     reachableContentTypeIds: ["post", "author", "category", "tag", "comment"],
     schemas: readSchemas(PublicBlogExport),
   }),
-  encodeExportArtifact = (artifact: Record<string, unknown>) =>
+  encodeExportArtifact = <Artifact extends Record<string, unknown>>(artifact: Readonly<Artifact>) =>
     Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(artifact).pipe(Effect.orDie),
   exportPublicBlogExecute: HttpContract.DeliveryOperation["execute"] = ({
     cms,
@@ -84,7 +84,7 @@ const { publicAssetIds, publicContent } = deliveryPublicContent,
     requestId,
   }) =>
     Effect.gen(function* exportPublicBlog() {
-      const builtExport = buildExportArtifact(yield* cms.readConsistentSnapshot),
+      const builtExport = buildExportArtifact(yield* cms.readConsistentSnapshot()),
         bytes = new TextEncoder().encode(yield* encodeExportArtifact(builtExport.artifact));
       if (bytes.byteLength > MAX_PUBLIC_EXPORT_BYTES) {
         return yield* CmsError.ExportTooLarge.make({

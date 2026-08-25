@@ -93,42 +93,54 @@ export interface CmsLayerOptions extends CompileOptions {
   readonly operationContracts?: readonly DefinitionContract[];
 }
 export interface ServiceShape {
-  readonly readDefinitionCatalog: Effect.Effect<CatalogState, CmsError>;
+  readonly readDefinitionCatalog: (_void: void) => Effect.Effect<CatalogState, CmsError>;
   readonly appendDefinitionRevision: (
-    input: AppendDefinitionRevisionInput,
+    input: Readonly<AppendDefinitionRevisionInput>,
   ) => Effect.Effect<CatalogState, CmsError>;
   readonly activateDefinitionSnapshot: (
-    input: ActivateDefinitionSnapshotInput,
+    input: Readonly<ActivateDefinitionSnapshotInput>,
   ) => Effect.Effect<ActivateDefinitionSnapshotResult, CmsError>;
   readonly retireDefinition: (
-    input: RetireDefinitionInput,
+    input: Readonly<RetireDefinitionInput>,
   ) => Effect.Effect<CatalogState, CmsError>;
   readonly appendMigrationManifest: (
-    input: AppendMigrationManifestInput,
+    input: Readonly<AppendMigrationManifestInput>,
   ) => Effect.Effect<CatalogState, CmsError>;
   readonly prepareDefinitionMigration: (
-    input: PrepareDefinitionMigrationInput,
+    input: Readonly<PrepareDefinitionMigrationInput>,
   ) => Effect.Effect<Preparation, CmsError>;
-  readonly createEntry: (input: CreateInput) => Effect.Effect<MutationResult, CmsError>;
-  readonly getEntry: (input: ReadInput) => Effect.Effect<Representation, CmsError>;
-  readonly updateEntry: (input: UpdateInput) => Effect.Effect<MutationResult, CmsError>;
-  readonly deleteEntry: (input: DeleteEntryInput) => Effect.Effect<DeleteResult, CmsError>;
+  readonly createEntry: (input: Readonly<CreateInput>) => Effect.Effect<MutationResult, CmsError>;
+  readonly getEntry: (input: Readonly<ReadInput>) => Effect.Effect<Representation, CmsError>;
+  readonly updateEntry: (input: Readonly<UpdateInput>) => Effect.Effect<MutationResult, CmsError>;
+  readonly deleteEntry: (
+    input: Readonly<DeleteEntryInput>,
+  ) => Effect.Effect<DeleteResult, CmsError>;
   readonly mutateEntriesAtomically: (
     mutations: readonly EntryBatchMutation[],
   ) => Effect.Effect<readonly EntryBatchMutationResult[], CmsError>;
-  readonly queryEntries: (query: Query) => Effect.Effect<QueryPage, CmsError>;
+  readonly queryEntries: (query: Readonly<Query>) => Effect.Effect<QueryPage, CmsError>;
   readonly getCurrentEntryState: (
     input: Pick<ReadInput, "contentTypeId" | "entryId">,
   ) => Effect.Effect<CurrentState, CmsError>;
-  readonly listEntryRevisions: (input: ListRevisionsInput) => Effect.Effect<RevisionPage, CmsError>;
-  readonly inspectEntryRevision: (input: ReadRevisionInput) => Effect.Effect<Revision, CmsError>;
-  readonly restoreEntryRevision: (input: RestoreInput) => Effect.Effect<CurrentState, CmsError>;
-  readonly permanentlyPurgeEntry: (input: PurgeEntryInput) => Effect.Effect<void, CmsError>;
-  readonly ingestAsset: (input: IngestInput) => Effect.Effect<AssetValue, CmsError>;
+  readonly listEntryRevisions: (
+    input: Readonly<ListRevisionsInput>,
+  ) => Effect.Effect<RevisionPage, CmsError>;
+  readonly inspectEntryRevision: (
+    input: Readonly<ReadRevisionInput>,
+  ) => Effect.Effect<Revision, CmsError>;
+  readonly restoreEntryRevision: (
+    input: Readonly<RestoreInput>,
+  ) => Effect.Effect<CurrentState, CmsError>;
+  readonly permanentlyPurgeEntry: (
+    input: Readonly<PurgeEntryInput>,
+  ) => Effect.Effect<void, CmsError>;
+  readonly ingestAsset: <Input extends IngestInput>(
+    input: Readonly<Input>,
+  ) => Effect.Effect<AssetValue, CmsError>;
   readonly getAsset: (assetId: string) => Effect.Effect<AssetValue, CmsError>;
   readonly readAsset: (assetId: string) => Effect.Effect<StoredAsset, CmsError>;
-  readonly listAssets: Effect.Effect<readonly AssetValue[], CmsError>;
+  readonly listAssets: (_void: void) => Effect.Effect<readonly AssetValue[], CmsError>;
   readonly deleteAsset: (assetId: string) => Effect.Effect<void, CmsError>;
-  readonly activeDefinitionSnapshot: Effect.Effect<CompiledSnapshot, CmsError>;
-  readonly readConsistentSnapshot: Effect.Effect<ConsistentReadSnapshot, CmsError>;
+  readonly activeDefinitionSnapshot: (_void: void) => Effect.Effect<CompiledSnapshot, CmsError>;
+  readonly readConsistentSnapshot: (_void: void) => Effect.Effect<ConsistentReadSnapshot, CmsError>;
 }

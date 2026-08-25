@@ -14,10 +14,14 @@ import { canonicalJson } from "./internal/json.ts";
 import entryQuerySupport from "./entry-query-support.ts";
 
 const { ZERO, compareScalar, findField, valueAtPath } = entryQuerySupport,
-  isAllPredicate = (predicate: Predicate): predicate is AllPredicate => "all" in predicate,
-  isAnyPredicate = (predicate: Predicate): predicate is AnyPredicate => "any" in predicate,
-  isFieldPredicate = (predicate: Predicate): predicate is FieldPredicate => "path" in predicate,
-  isNotPredicate = (predicate: Predicate): predicate is NotPredicate => "not" in predicate,
+  isAllPredicate = (predicate: Readonly<Predicate>): predicate is AllPredicate =>
+    "all" in predicate,
+  isAnyPredicate = (predicate: Readonly<Predicate>): predicate is AnyPredicate =>
+    "any" in predicate,
+  isFieldPredicate = (predicate: Readonly<Predicate>): predicate is FieldPredicate =>
+    "path" in predicate,
+  isNotPredicate = (predicate: Readonly<Predicate>): predicate is NotPredicate =>
+    "not" in predicate,
   matchesComparisonPredicate = (
     fieldValue: JsonValue | undefined,
     expectedValue: JsonValue | undefined,
@@ -131,7 +135,7 @@ const { ZERO, compareScalar, findField, valueAtPath } = entryQuerySupport,
     typeof fieldValue === "string" &&
     typeof expectedValue === "string" &&
     fieldValue.startsWith(expectedValue),
-  predicateChildren = (predicate: Predicate): readonly Predicate[] => {
+  predicateChildren = (predicate: Readonly<Predicate>): readonly Predicate[] => {
     if (isAllPredicate(predicate)) {
       return predicate.all;
     }

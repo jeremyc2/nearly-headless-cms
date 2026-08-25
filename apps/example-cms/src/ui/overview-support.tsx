@@ -2,12 +2,8 @@ import overviewPanelsSupport from "./overview-panels-support.tsx";
 import { useOverviewState } from "./overview-data-support.ts";
 
 export const Overview = (): React.JSX.Element => {
-  const {
-      OverviewBuildPanel,
-      OverviewQueuesPanel,
-      OverviewRecentEntries,
-      OverviewSignalGrid,
-    } = overviewPanelsSupport,
+  const { OverviewBuildPanel, OverviewQueuesPanel, OverviewRecentEntries, OverviewSignalGrid } =
+      overviewPanelsSupport,
     state = useOverviewState();
   return (
     <div className="page">

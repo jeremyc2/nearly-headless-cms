@@ -30,11 +30,11 @@ const { attempt, entryResource, expandRepresentation, liveRecords, project } = c
     removeDeletedEntryRecord,
   } = entryOperationsPrepareSupport,
   authorizeDeleteEntry = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     input: DeleteEntryInput,
   ): Effect.Effect<CompiledSnapshot, CmsError> =>
     Effect.gen(function* authorizeDeleteEntryEffect() {
-      const snapshot = yield* context.currentDefinitionSnapshot;
+      const snapshot = yield* context.readCurrentDefinitionSnapshot();
       yield* context.authorize(
         "entry.delete",
         entryResource(snapshot, input.contentTypeId, input.entryId),
@@ -42,7 +42,7 @@ const { attempt, entryResource, expandRepresentation, liveRecords, project } = c
       return snapshot;
     }),
   authorizeEntryExpansion = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     input: AuthorizeEntryExpansionInput,
   ): Effect.Effect<void, CmsError> =>
     Effect.gen(function* authorizeEntryExpansionEffect() {
@@ -63,11 +63,11 @@ const { attempt, entryResource, expandRepresentation, liveRecords, project } = c
       );
     }),
   authorizeGetEntry = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     input: ReadInput,
   ): Effect.Effect<CompiledSnapshot, CmsError> =>
     Effect.gen(function* authorizeGetEntryEffect() {
-      const snapshot = yield* context.currentDefinitionSnapshot;
+      const snapshot = yield* context.readCurrentDefinitionSnapshot();
       yield* context.authorize(
         "entry.read",
         entryResource(snapshot, input.contentTypeId, input.entryId),
@@ -81,11 +81,11 @@ const { attempt, entryResource, expandRepresentation, liveRecords, project } = c
       return snapshot;
     }),
   authorizeQueryEntries = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     query: Query,
   ): Effect.Effect<CompiledSnapshot, CmsError> =>
     Effect.gen(function* authorizeQueryEntriesEffect() {
-      const snapshot = yield* context.currentDefinitionSnapshot;
+      const snapshot = yield* context.readCurrentDefinitionSnapshot();
       yield* context.authorize("entry.query", {
         contentTypeId: query.contentTypeId,
         definitionSpaceId: snapshot.definitionSpaceId,
@@ -100,12 +100,12 @@ const { attempt, entryResource, expandRepresentation, liveRecords, project } = c
       return snapshot;
     }),
   runCreateEntry = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     input: CreateInput,
   ): Effect.Effect<MutationResult, CmsError> =>
     Effect.gen(function* runCreateEntryEffect() {
       const createEntryState = {
-          snapshot: yield* context.currentDefinitionSnapshot,
+          snapshot: yield* context.readCurrentDefinitionSnapshot(),
         },
         prepared = yield* prepareCreateEntry(context, createEntryState.snapshot, input);
       return yield* persistCreatedEntry(context, {
@@ -115,7 +115,7 @@ const { attempt, entryResource, expandRepresentation, liveRecords, project } = c
       });
     }),
   runDeleteEntry = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     input: DeleteEntryInput,
   ): Effect.Effect<DeleteResult, CmsError> =>
     Effect.gen(function* runDeleteEntryEffect() {
@@ -133,32 +133,32 @@ const { attempt, entryResource, expandRepresentation, liveRecords, project } = c
       return yield* recordDeletedEntry(context, prepared, input);
     }),
   runGetEntry = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     input: ReadInput,
   ): Effect.Effect<Representation, CmsError> =>
     Effect.gen(function* runGetEntryEffect() {
-      const snapshot = yield* authorizeGetEntry(context, input),
-       generation = yield* context.persistence.readGeneration,
-       record = yield* readLiveEntryRecord(context, input);
+      const authorizedSnapshot = yield* authorizeGetEntry(context, input),
+        entryGeneration = yield* context.persistence.readGeneration(),
+        entryRecord = yield* readLiveEntryRecord(context, input);
       return project(
         yield* attempt(() =>
           expandRepresentation({
-            entry: record.entry,
+            entry: entryRecord.entry,
             expansion: input.expansion,
-            generation,
-            snapshot,
+            generation: entryGeneration,
+            snapshot: authorizedSnapshot,
           }),
         ),
         input.projection,
       );
     }),
   runQueryEntries = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     query: Query,
   ): Effect.Effect<QueryPage, CmsError> =>
     Effect.gen(function* runQueryEntriesEffect() {
       const contextSnapshotForQuery = yield* authorizeQueryEntries(context, query),
-        generation = yield* context.persistence.readGeneration,
+        generation = yield* context.persistence.readGeneration(),
         page = yield* attempt(() =>
           evaluateQuery({
             entries: liveRecords(generation).map((record) => record.entry),
@@ -175,11 +175,11 @@ const { attempt, entryResource, expandRepresentation, liveRecords, project } = c
       });
     }),
   runUpdateEntry = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     input: UpdateInput,
   ): Effect.Effect<MutationResult, CmsError> =>
     Effect.gen(function* runUpdateEntryEffect() {
-      const contextSnapshotForUpdate = yield* context.currentDefinitionSnapshot,
+      const contextSnapshotForUpdate = yield* context.readCurrentDefinitionSnapshot(),
         prepared = yield* prepareUpdateEntry(context, contextSnapshotForUpdate, input);
       if (prepared.contentType.definition.history !== true) {
         return yield* commitEntryWithoutHistory({

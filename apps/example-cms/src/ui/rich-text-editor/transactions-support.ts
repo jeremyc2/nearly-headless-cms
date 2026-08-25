@@ -4,12 +4,7 @@ import {
   secondHeadingLevel,
   thirdHeadingLevel,
 } from "./transactions-types.ts";
-import {
-  emptyIndex,
-  firstIndex,
-  markOrder,
-  negativeOne,
-} from "./transactions-constants.ts";
+import { emptyIndex, firstIndex, markOrder, negativeOne } from "./transactions-constants.ts";
 import type { RichText } from "nearly-headless-cms";
 
 const asParagraph = (
@@ -36,7 +31,9 @@ const asParagraph = (
     leftMarks: readonly RichText.Mark[] | undefined,
     rightMarks: readonly RichText.Mark[] | undefined,
   ): boolean => JSON.stringify(leftMarks ?? []) === JSON.stringify(rightMarks ?? []),
-  marksProperty = (marks: readonly RichText.Mark[] | undefined): {
+  marksProperty = (
+    marks: readonly RichText.Mark[] | undefined,
+  ): {
     readonly marks?: readonly RichText.Mark[];
   } => {
     if (marks === undefined || marks.length === emptyIndex) {
@@ -86,17 +83,19 @@ const asParagraph = (
       normalized,
     );
   },
-  replaceInlineNode = ({
+  replaceInlineNode = <
+    Input extends {
+      index: number;
+      node: RichText.InlineNode;
+      replacement: RichText.InlineNode;
+      targetIndex: number;
+    },
+  >({
     index,
     node,
     replacement,
     targetIndex,
-  }: {
-    index: number;
-    node: RichText.InlineNode;
-    replacement: RichText.InlineNode;
-    targetIndex: number;
-  }): RichText.InlineNode => {
+  }: Readonly<Input>): RichText.InlineNode => {
     if (index === targetIndex) {
       return replacement;
     }

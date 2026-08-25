@@ -1,6 +1,13 @@
 import { type CmsError, InvalidInput, type ValidationIssue } from "../cms-error.ts";
 import { type Effect, Schema } from "effect";
+import {
+  httpStatusNotModified,
+  httpStatusOk,
+  httpStatusPartialContent,
+  httpStatusRangeNotSatisfiable,
+} from "./http-status-codes.ts";
 import type { Service as CmsService } from "../cms.ts";
+import type { ReadonlyTransportRequest } from "./http-transport-readonly-types.ts";
 
 type StoredAsset = Awaited<
   ReturnType<CmsService["Service"]["readAsset"]> extends Effect.Effect<infer Value, unknown>
@@ -8,16 +15,9 @@ type StoredAsset = Awaited<
     : never
 >;
 
-interface ResolveRangedAssetResponseInput {
-  readonly baseHeaders: Headers;
-  readonly etag: string;
-  readonly request: Request;
-  readonly storedAsset: StoredAsset;
-}
-
-const assetContentResponse = (
-    storedAsset: StoredAsset,
-    request: Request,
+const assetContentResponse = <Asset extends StoredAsset>(
+    storedAsset: Readonly<Asset>,
+    request: ReadonlyTransportRequest,
     requestId: string,
   ): Response => {
     const baseHeaders = buildAssetBaseHeaders(storedAsset, requestId),
@@ -28,9 +28,9 @@ const assetContentResponse = (
     }
     return resolveRangedAssetResponse({ baseHeaders, etag, request, storedAsset });
   },
-  assetFullResponse = (
-    storedAsset: StoredAsset,
-    baseHeaders: Headers,
+  assetFullResponse = <Asset extends StoredAsset, HeadersType extends Headers>(
+    storedAsset: Readonly<Asset>,
+    baseHeaders: Readonly<HeadersType>,
     requestMethod: string,
   ): Response => {
     baseHeaders.set("content-length", String(storedAsset.bytes.byteLength));
@@ -38,11 +38,12 @@ const assetContentResponse = (
     if (requestMethod === "HEAD") {
       body = null;
     }
-    return new Response(body, { headers: baseHeaders, status: 200 });
+    return new Response(body, { headers: baseHeaders, status: httpStatusOk });
   },
-  assetNotModifiedResponse = (baseHeaders: Headers): Response =>
-    new Response(null, { headers: baseHeaders, status: 304 }),
-  assetRangeResponse = ({
+  assetNotModifiedResponse = <HeadersType extends Headers>(
+    baseHeaders: Readonly<HeadersType>,
+  ): Response => new Response(null, { headers: baseHeaders, status: httpStatusNotModified }),
+  assetRangeResponse = <Asset extends StoredAsset>({
     baseHeaders,
     range,
     request,
@@ -50,18 +51,25 @@ const assetContentResponse = (
   }: {
     readonly baseHeaders: Headers;
     readonly range: string;
-    readonly request: Request;
-    readonly storedAsset: StoredAsset;
+    readonly request: ReadonlyTransportRequest;
+    readonly storedAsset: Readonly<Asset>;
   }): Response => {
     const bounds = parseRangeBounds(range, storedAsset.bytes.byteLength);
     if (bounds === undefined) {
       baseHeaders.set("content-range", `bytes */${storedAsset.bytes.byteLength}`);
-      return new Response(null, { headers: baseHeaders, status: 416 });
+      return new Response(null, { headers: baseHeaders, status: httpStatusRangeNotSatisfiable });
     }
     return buildSuccessfulAssetRangeResponse({ baseHeaders, bounds, request, storedAsset });
   },
-  buildAssetBaseHeaders = (storedAsset: StoredAsset, requestId: string): Headers => {
-    const baseHeaders = responseHeaders(requestId, undefined, "public, max-age=31536000, immutable");
+  buildAssetBaseHeaders = <Asset extends StoredAsset>(
+    storedAsset: Readonly<Asset>,
+    requestId: string,
+  ): Headers => {
+    const baseHeaders = responseHeaders(
+      requestId,
+      undefined,
+      "public, max-age=31536000, immutable",
+    );
     baseHeaders.set("accept-ranges", "bytes");
     baseHeaders.set(
       "content-disposition",
@@ -70,13 +78,19 @@ const assetContentResponse = (
     baseHeaders.set("content-type", storedAsset.metadata.mediaType);
     return baseHeaders;
   },
-  buildAssetRangeBody = (request: Request, bytes: Uint8Array): BodyInit | null => {
+  buildAssetRangeBody = (
+    request: ReadonlyTransportRequest,
+    bytes: Readonly<Uint8Array>,
+  ): BodyInit | null => {
     if (request.method === "HEAD") {
       return null;
     }
     return responseBody(bytes);
   },
-  buildErrorDocument = (error: CmsError, requestId: string) => {
+  buildErrorDocument = <ErrorType extends CmsError>(
+    error: Readonly<ErrorType>,
+    requestId: string,
+  ) => {
     const details = invalidInputDetails(error),
       document = {
         code: errorCode(error),
@@ -88,7 +102,7 @@ const assetContentResponse = (
     }
     return { ...document, details };
   },
-  buildSuccessfulAssetRangeResponse = ({
+  buildSuccessfulAssetRangeResponse = <Asset extends StoredAsset>({
     baseHeaders,
     bounds,
     request,
@@ -96,8 +110,8 @@ const assetContentResponse = (
   }: {
     readonly baseHeaders: Headers;
     readonly bounds: { readonly end: number; readonly start: number };
-    readonly request: Request;
-    readonly storedAsset: StoredAsset;
+    readonly request: ReadonlyTransportRequest;
+    readonly storedAsset: Readonly<Asset>;
   }): Response => {
     const { boundedEnd, bytes } = sliceAssetRange(storedAsset, bounds);
     baseHeaders.set(
@@ -105,7 +119,10 @@ const assetContentResponse = (
       `bytes ${bounds.start}-${boundedEnd}/${storedAsset.bytes.byteLength}`,
     );
     baseHeaders.set("content-length", String(bytes.byteLength));
-    return new Response(buildAssetRangeBody(request, bytes), { headers: baseHeaders, status: 206 });
+    return new Response(buildAssetRangeBody(request, bytes), {
+      headers: baseHeaders,
+      status: httpStatusPartialContent,
+    });
   },
   computeRangeEndpoints = (
     startGroup: string,
@@ -124,7 +141,8 @@ const assetContentResponse = (
     }
     return { end, start: Number(startGroup) };
   },
-  errorCode = (error: CmsError): string => error.constructor.name,
+  errorCode = <ErrorType extends CmsError>(error: Readonly<ErrorType>): string =>
+    error.constructor.name,
   finalizeRangeBounds = (
     startGroup: string,
     endGroup: string,
@@ -136,8 +154,8 @@ const assetContentResponse = (
     }
     return { end, start };
   },
-  invalidInputDetails = (
-    error: CmsError,
+  invalidInputDetails = <ErrorType extends CmsError>(
+    error: Readonly<ErrorType>,
   ): { readonly issues: readonly Pick<ValidationIssue, "path" | "reason">[] } | undefined => {
     if (!Schema.is(InvalidInput)(error) || error.issues === undefined) {
       return undefined;
@@ -168,8 +186,8 @@ const assetContentResponse = (
     }
     return finalizeRangeBounds(groups.startGroup, groups.endGroup, byteLength);
   },
-  readRangeGroups = (
-    match: RegExpExecArray,
+  readRangeGroups = <Match extends RegExpMatchArray>(
+    match: Readonly<Match>,
   ): { readonly endGroup: string; readonly startGroup: string } | undefined => {
     const endGroup = match.groups?.["end"],
       startGroup = match.groups?.["start"];
@@ -187,12 +205,17 @@ const assetContentResponse = (
     }
     return readRangeGroups(match);
   },
-  resolveRangedAssetResponse = ({
+  resolveRangedAssetResponse = <Asset extends StoredAsset>({
     baseHeaders,
     etag,
     request,
     storedAsset,
-  }: ResolveRangedAssetResponseInput): Response => {
+  }: Readonly<{
+    readonly baseHeaders: Headers;
+    readonly etag: string;
+    readonly request: ReadonlyTransportRequest;
+    readonly storedAsset: Readonly<Asset>;
+  }>): Response => {
     const range = request.headers.get("range");
     if (
       range !== null &&
@@ -206,7 +229,7 @@ const assetContentResponse = (
     }
     return assetFullResponse(storedAsset, baseHeaders, request.method);
   },
-  responseBody = (bytes: Uint8Array): ArrayBuffer => {
+  responseBody = (bytes: Readonly<Uint8Array>): ArrayBuffer => {
     const copy = new Uint8Array(bytes.byteLength);
     copy.set(bytes);
     return copy.buffer;
@@ -222,8 +245,8 @@ const assetContentResponse = (
     }
     return headers;
   },
-  sliceAssetRange = (
-    storedAsset: StoredAsset,
+  sliceAssetRange = <Asset extends StoredAsset>(
+    storedAsset: Readonly<Asset>,
     bounds: { readonly end: number; readonly start: number },
   ): { readonly boundedEnd: number; readonly bytes: Uint8Array } => {
     const boundedEnd = Math.min(bounds.end, storedAsset.bytes.byteLength - 1),

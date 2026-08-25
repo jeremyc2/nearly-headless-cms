@@ -9,7 +9,7 @@ import {
 } from "./cms-entry-expansion-field-group-imports.ts";
 
 interface ExpandFieldGroupInput {
-  readonly expandObject: (input: ExpandObjectInput) => JsonObject;
+  readonly expandObject: (input: Readonly<ExpandObjectInput>) => JsonObject;
   readonly expandObjectInput: ExpandObjectInput;
   readonly field: ResolvedField;
   readonly fieldKey: string;
@@ -29,7 +29,7 @@ interface ExpandObjectInput {
   readonly snapshot: CompiledSnapshot;
 }
 
-const expandFieldGroup = ({
+const expandFieldGroup = <Input extends ExpandFieldGroupInput>({
     expandObject,
     expandObjectInput,
     field,
@@ -38,7 +38,7 @@ const expandFieldGroup = ({
     nestedPaths,
     value,
     values,
-  }: ExpandFieldGroupInput): void => {
+  }: Readonly<Input>): void => {
     const { nestedFields } = field;
     if (nestedFields === undefined) {
       throw InvalidInput.make({ message: `Field Group ${fieldPath} has no nested fields` });
@@ -67,18 +67,30 @@ const expandFieldGroup = ({
       parentPath: fieldPath,
     });
   },
-  expandFieldGroupList = (input: {
-    readonly expandObject: (input: ExpandObjectInput) => JsonObject;
-    readonly expandObjectInput: ExpandObjectInput;
-    readonly fieldKey: string;
-    readonly fieldPath: string;
-    readonly nestedFields: readonly ResolvedField[];
-    readonly nestedPaths: readonly string[];
-    readonly value: JsonValue;
-    readonly values: Record<string, JsonValue>;
-  }): void => {
-    const { expandObject, expandObjectInput, fieldKey, fieldPath, nestedFields, nestedPaths, value, values } =
-      input;
+  expandFieldGroupList = <
+    Input extends {
+      readonly expandObject: (input: Readonly<ExpandObjectInput>) => JsonObject;
+      readonly expandObjectInput: ExpandObjectInput;
+      readonly fieldKey: string;
+      readonly fieldPath: string;
+      readonly nestedFields: readonly ResolvedField[];
+      readonly nestedPaths: readonly string[];
+      readonly value: JsonValue;
+      readonly values: Record<string, JsonValue>;
+    },
+  >(
+    input: Readonly<Input>,
+  ): void => {
+    const {
+      expandObject,
+      expandObjectInput,
+      fieldKey,
+      fieldPath,
+      nestedFields,
+      nestedPaths,
+      value,
+      values,
+    } = input;
     if (!Array.isArray(value)) {
       throw InvalidInput.make({
         message: `Field Group List ${fieldPath} contains an invalid value`,

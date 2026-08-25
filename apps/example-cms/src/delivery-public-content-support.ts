@@ -8,9 +8,9 @@ import { Schema } from "effect";
 import deliveryPublicContentQuerySupport from "./delivery-public-content-query-support.ts";
 
 const { querySnapshot } = deliveryPublicContentQuerySupport,
-  appendReachableRichTextEntry = (
+  appendReachableRichTextEntry = <State extends ReachabilityState>(
     discoveredIdentifier: string,
-    state: ReachabilityState,
+    state: Readonly<State>,
   ): void => {
     if (state.richTextReachableIdentifiers.has(discoveredIdentifier)) {
       return;
@@ -25,10 +25,10 @@ const { querySnapshot } = deliveryPublicContentQuerySupport,
     state.richTextReachableIdentifiers.add(discoveredIdentifier);
     applyReachableEntrySideEffects(discoveredIdentifier, entry, state);
   },
-  applyReachableEntrySideEffects = (
+  applyReachableEntrySideEffects = <State extends ReachabilityState>(
     discoveredIdentifier: string,
     entry: SnapshotEntry,
-    state: ReachabilityState,
+    state: Readonly<State>,
   ): void => {
     if (entry.contentTypeId === "author") {
       state.publicAuthorIdentifiers.add(discoveredIdentifier);
@@ -43,8 +43,8 @@ const { querySnapshot } = deliveryPublicContentQuerySupport,
       state.publicTagIdentifiers.add(discoveredIdentifier);
     }
   },
-  collectAuthorAssetIds = (
-    author: { readonly values: Record<string, unknown> },
+  collectAuthorAssetIds = <Author extends { readonly values: Record<string, unknown> }>(
+    author: Readonly<Author>,
     assetIds: Set<string>,
   ): void => {
     const portraitAssetId = author.values["portrait"];
@@ -53,8 +53,8 @@ const { querySnapshot } = deliveryPublicContentQuerySupport,
     }
     collectRichTextAssetIds(author.values["profile"], assetIds);
   },
-  collectPostAssetIds = (
-    post: { readonly values: Record<string, unknown> },
+  collectPostAssetIds = <Post extends { readonly values: Record<string, unknown> }>(
+    post: Readonly<Post>,
     assetIds: Set<string>,
   ): void => {
     const featuredAssetId = post.values["featured-asset"];
@@ -102,7 +102,7 @@ const { querySnapshot } = deliveryPublicContentQuerySupport,
     categories,
     posts,
     tags,
-  }: PublicReachabilityInput): {
+  }: Readonly<PublicReachabilityInput>): {
     readonly publishedPostIdentifiers: Set<string>;
     readonly reachabilityState: ReachabilityState;
   } => {
@@ -129,8 +129,8 @@ const { querySnapshot } = deliveryPublicContentQuerySupport,
       },
     };
   },
-  publicApprovedComments = (
-    consistentSnapshot: Cms.ConsistentReadSnapshot,
+  publicApprovedComments = <Snapshot extends Cms.ConsistentReadSnapshot>(
+    consistentSnapshot: Readonly<Snapshot>,
     publishedPostIdentifiers: ReadonlySet<string>,
   ) =>
     querySnapshot({
@@ -142,9 +142,12 @@ const { querySnapshot } = deliveryPublicContentQuerySupport,
       const postIdentifier = comment.values["post"];
       return typeof postIdentifier === "string" && publishedPostIdentifiers.has(postIdentifier);
     }),
-  publicAssetIds = (
-    posts: readonly { readonly values: Record<string, unknown> }[],
-    authors: readonly { readonly values: Record<string, unknown> }[],
+  publicAssetIds = <
+    Post extends { readonly values: Record<string, unknown> },
+    Author extends { readonly values: Record<string, unknown> },
+  >(
+    posts: readonly Readonly<Post>[],
+    authors: readonly Readonly<Author>[],
   ): ReadonlySet<string> => {
     const assetIds = new Set<string>();
     for (const post of posts) {
@@ -155,7 +158,9 @@ const { querySnapshot } = deliveryPublicContentQuerySupport,
     }
     return assetIds;
   },
-  publicContent = (consistentSnapshot: Cms.ConsistentReadSnapshot) => {
+  publicContent = <Snapshot extends Cms.ConsistentReadSnapshot>(
+    consistentSnapshot: Readonly<Snapshot>,
+  ) => {
     const allAuthors = querySnapshot({ consistentSnapshot, contentTypeId: "author" }),
       allCategories = querySnapshot({ consistentSnapshot, contentTypeId: "category" }),
       allTags = querySnapshot({ consistentSnapshot, contentTypeId: "tag" }),
@@ -182,7 +187,12 @@ const { querySnapshot } = deliveryPublicContentQuerySupport,
       tags: allTags.filter((tag) => reachability.publicTagIdentifiers.has(tag.id)),
     };
   },
-  publicReachability = ({ authors, categories, posts, tags }: PublicReachabilityInput) => {
+  publicReachability = ({
+    authors,
+    categories,
+    posts,
+    tags,
+  }: Readonly<PublicReachabilityInput>) => {
     const { publishedPostIdentifiers, reachabilityState } = createReachabilityState({
         authors,
         categories,

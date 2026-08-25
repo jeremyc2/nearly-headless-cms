@@ -7,13 +7,12 @@ import {
   richTextInsertDialogSupport,
 } from "./entry-editor-rich-text-insert-dialog-bindings.ts";
 
-const {
-    InsertDialogActions,
-    RichTextAssetFields,
-    RichTextEntryFields,
-    RichTextLinkFields,
-  } = richTextInsertDialogSupport,
-  EntryEditorRichTextInsertDialog = ({
+const { InsertDialogActions, RichTextAssetFields, RichTextEntryFields, RichTextLinkFields } =
+    richTextInsertDialogSupport,
+  EntryEditorRichTextInsertDialog = <
+    AdapterRef extends RefObject<BrowserAdapter | null>,
+    Dialog extends RichTextInsertDialog,
+  >({
     adapter,
     assets,
     closeDialog,
@@ -21,10 +20,10 @@ const {
     entryOptions,
     setDialog,
   }: {
-    readonly adapter: RefObject<BrowserAdapter | null>;
+    readonly adapter: Readonly<AdapterRef>;
     readonly assets: readonly AssetRepresentation[] | undefined;
     readonly closeDialog: () => void;
-    readonly dialog: RichTextInsertDialog;
+    readonly dialog: Readonly<Dialog>;
     readonly entryOptions: readonly {
       readonly identifier: string;
       readonly label: string;

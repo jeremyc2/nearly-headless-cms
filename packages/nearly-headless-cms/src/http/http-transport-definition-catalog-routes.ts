@@ -1,4 +1,5 @@
 import type { RouteHandlerContext, RouteHandlerResult } from "./http-transport-types.ts";
+import { httpStatusCreated, httpStatusOk } from "./http-status-codes.ts";
 import catalogRouteSupport from "./http-transport-definition-catalog-route-support.ts";
 import dispatchRouteHandlers from "./http-transport-route-dispatch.ts";
 import transportOperation from "./http-transport-operation.ts";
@@ -14,11 +15,12 @@ const { invalidRequestResponse } = transportResponse,
     readDefinitionRevisionAppendInput,
     requireSafeInteger,
   } = catalogRouteSupport,
-  handleDefinitionCatalogRoutes = (context: RouteHandlerContext): Promise<RouteHandlerResult> =>
-    dispatchRouteHandlers(managementCatalogRouteHandlers, context),
+  handleDefinitionCatalogRoutes = (
+    context: Readonly<RouteHandlerContext>,
+  ): Promise<RouteHandlerResult> => dispatchRouteHandlers(managementCatalogRouteHandlers, context),
   // oxlint-disable-next-line effecttsgo/async-function -- route handlers await JSON body parsing before Effect execution.
   handleDefinitionRetirementRoute = async (
-    context: RouteHandlerContext,
+    context: Readonly<RouteHandlerContext>,
   ): Promise<RouteHandlerResult> => {
     const retirementMatch = matchPath(
       `${context.managementBase}/definitions/{definitionId}/retirements`,
@@ -30,36 +32,44 @@ const { invalidRequestResponse } = transportResponse,
     try {
       const body = await context.parseJson(context.request, context.maximumJsonBodyByteLength);
       return await context.withOutcome(
-        context.cms.retireDefinition({
-          definitionId: requiredPathParameter(retirementMatch, "definitionId"),
-          expectedCatalogVersion: requireSafeInteger(
-            body["expectedCatalogVersion"],
-            "Definition retirement requires expectedCatalogVersion",
-          ),
-          source: "management-http",
-        }),
+        () =>
+          context.cms.retireDefinition({
+            definitionId: requiredPathParameter(retirementMatch, "definitionId"),
+            expectedCatalogVersion: requireSafeInteger(
+              body["expectedCatalogVersion"],
+              "Definition retirement requires expectedCatalogVersion",
+            ),
+            source: "management-http",
+          }),
         context.requestId,
-        (state) => catalogJsonResponse(context, 201, { catalogVersion: state.version }),
+        (state) =>
+          catalogJsonResponse(context, httpStatusCreated, { catalogVersion: state.version }),
       );
     } catch (error) {
-      return invalidRequestResponse(error, "Invalid Definition retirement request", context.requestId);
+      return invalidRequestResponse(
+        error,
+        "Invalid Definition retirement request",
+        context.requestId,
+      );
     }
   },
   // oxlint-disable-next-line effecttsgo/async-function -- route handlers await JSON body parsing before Effect execution.
   handleDefinitionRevisionAppendRoute = async (
-    context: RouteHandlerContext,
+    context: Readonly<RouteHandlerContext>,
     definitionId: string,
   ): Promise<RouteHandlerResult> => {
     try {
       const body = await context.parseJson(context.request, context.maximumJsonBodyByteLength),
         revisionAppendInput = readDefinitionRevisionAppendInput(body, definitionId);
       return await context.withOutcome(
-        context.cms.appendDefinitionRevision({
-          ...revisionAppendInput,
-          source: "management-http",
-        }),
+        () =>
+          context.cms.appendDefinitionRevision({
+            ...revisionAppendInput,
+            source: "management-http",
+          }),
         context.requestId,
-        (state) => catalogJsonResponse(context, 201, { catalogVersion: state.version }),
+        (state) =>
+          catalogJsonResponse(context, httpStatusCreated, { catalogVersion: state.version }),
       );
     } catch (error) {
       return invalidRequestResponse(
@@ -70,7 +80,7 @@ const { invalidRequestResponse } = transportResponse,
     }
   },
   handleDefinitionRevisionsRoute = (
-    context: RouteHandlerContext,
+    context: Readonly<RouteHandlerContext>,
   ): RouteHandlerResult | Promise<RouteHandlerResult> => {
     const definitionRevisionsMatch = matchPath(
       `${context.managementBase}/definitions/{definitionId}/revisions`,
@@ -93,20 +103,20 @@ const { invalidRequestResponse } = transportResponse,
     }
     return undefined;
   },
-  handleDefinitionSnapshotRoute = (context: RouteHandlerContext): RouteHandlerResult => {
+  handleDefinitionSnapshotRoute = (context: Readonly<RouteHandlerContext>): RouteHandlerResult => {
     if (
       context.requestUrl.pathname !== `${context.managementBase}/definition-snapshot` ||
       context.request.method !== "GET"
     ) {
       return undefined;
     }
-    return catalogJsonResponse(context, 200, {
+    return catalogJsonResponse(context, httpStatusOk, {
       ...context.snapshot.input,
       fingerprint: context.fingerprint,
     });
   },
   handleDefinitionSnapshotsListRoute = (
-    context: RouteHandlerContext,
+    context: Readonly<RouteHandlerContext>,
   ): RouteHandlerResult | Promise<RouteHandlerResult> => {
     if (
       context.requestUrl.pathname !== `${context.managementBase}/definition-snapshots` ||
@@ -114,29 +124,37 @@ const { invalidRequestResponse } = transportResponse,
     ) {
       return undefined;
     }
-    return context.withOutcome(context.cms.readDefinitionCatalog, context.requestId, (state) =>
-      catalogJsonResponse(context, 200, {
-        catalogVersion: state.version,
-        items: state.snapshots.map((snapshotRecord) => ({
-          ...snapshotRecord.input,
-          activatedAt: snapshotRecord.activatedAt,
-          fingerprint: snapshotRecord.compiled.fingerprint,
-        })),
-      }),
+    return context.withOutcome(
+      () => context.cms.readDefinitionCatalog(),
+      context.requestId,
+      (state) =>
+        catalogJsonResponse(context, httpStatusOk, {
+          catalogVersion: state.version,
+          items: state.snapshots.map((snapshotRecord) => ({
+            ...snapshotRecord.input,
+            activatedAt: snapshotRecord.activatedAt,
+            fingerprint: snapshotRecord.compiled.fingerprint,
+          })),
+        }),
     );
   },
-  handleDefinitionsListRoute = (context: RouteHandlerContext): RouteHandlerResult | Promise<RouteHandlerResult> => {
+  handleDefinitionsListRoute = (
+    context: Readonly<RouteHandlerContext>,
+  ): RouteHandlerResult | Promise<RouteHandlerResult> => {
     if (
       context.requestUrl.pathname !== `${context.managementBase}/definitions` ||
       context.request.method !== "GET"
     ) {
       return undefined;
     }
-    return context.withOutcome(context.cms.readDefinitionCatalog, context.requestId, (state) =>
-      catalogJsonResponse(context, 200, {
-        catalogVersion: state.version,
-        items: state.active.input.definitions,
-      }),
+    return context.withOutcome(
+      () => context.cms.readDefinitionCatalog(),
+      context.requestId,
+      (state) =>
+        catalogJsonResponse(context, httpStatusOk, {
+          catalogVersion: state.version,
+          items: state.active.input.definitions,
+        }),
     );
   },
   managementCatalogRouteHandlers = [

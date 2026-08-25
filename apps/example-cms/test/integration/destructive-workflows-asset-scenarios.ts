@@ -57,7 +57,11 @@ const assignFeaturedAsset = (
       .then((draftState) => {
         const draftEntry = draftState["entry"],
           draftWriteToken = draftState["writeToken"];
-        if (!isRecord(draftEntry) || !isRecord(draftEntry["values"]) || typeof draftWriteToken !== "string") {
+        if (
+          !isRecord(draftEntry) ||
+          !isRecord(draftEntry["values"]) ||
+          typeof draftWriteToken !== "string"
+        ) {
           throw new Error("Expected a draft Post Current Entry State");
         }
         return { draftEntry, draftWriteToken };

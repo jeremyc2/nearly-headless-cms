@@ -23,21 +23,18 @@ import {
 type DefinitionAuthorizationAction = "definition.activate" | "definition.read" | "definition.write";
 
 const { attempt, liveRecords, parentRevisionProperty, sourceProperty } = cmsSupport,
-  {
-    assertFreshCatalogVersion,
-    findMigrationManifest,
-    validateAppendDefinitionRevisionInput,
-  } = definitionOperationsGuards,
+  { assertFreshCatalogVersion, findMigrationManifest, validateAppendDefinitionRevisionInput } =
+    definitionOperationsGuards,
   { readConsistentSnapshotData, storePreparedDefinitionMigration } =
     definitionOperationsPreparationSupport,
   authorizeDefinitionSpace = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     action: DefinitionAuthorizationAction,
     definitionSpaceId: string,
   ): Effect.Effect<void, CmsError> =>
     context.authorize(action, { definitionSpaceId, kind: "definitionSpace" }),
   compileDraftDefinitionRevision = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     state: CatalogState,
     input: AppendDefinitionRevisionInput,
   ): Effect.Effect<void, CmsError> =>
@@ -61,20 +58,16 @@ const { attempt, liveRecords, parentRevisionProperty, sourceProperty } = cmsSupp
       });
     }),
   readAuthorizedDefinitionCatalog = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     action: DefinitionAuthorizationAction,
   ): Effect.Effect<CatalogState, CmsError> =>
     Effect.gen(function* readAuthorizedDefinitionCatalogEffect() {
-      const state = yield* context.catalog.read;
-      yield* authorizeDefinitionSpace(
-        context,
-        action,
-        state.active.compiled.definitionSpaceId,
-      );
+      const state = yield* context.catalog.read();
+      yield* authorizeDefinitionSpace(context, action, state.active.compiled.definitionSpaceId);
       return state;
     }),
   readFreshAuthorizedCatalog = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     action: DefinitionAuthorizationAction,
     expectedCatalogVersion: number,
   ): Effect.Effect<CatalogState, CmsError> =>
@@ -84,14 +77,14 @@ const { attempt, liveRecords, parentRevisionProperty, sourceProperty } = cmsSupp
       return catalogState;
     }),
   runActiveDefinitionSnapshot = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
   ): Effect.Effect<CompiledSnapshot, CmsError> =>
     Effect.gen(function* runActiveDefinitionSnapshotEffect() {
       const catalogState = yield* readAuthorizedDefinitionCatalog(context, "definition.read");
       return catalogState.active.compiled;
     }),
   runAppendDefinitionRevision = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     input: AppendDefinitionRevisionInput,
   ): Effect.Effect<CatalogState, CmsError> =>
     Effect.gen(function* runAppendDefinitionRevisionEffect() {
@@ -126,7 +119,7 @@ const { attempt, liveRecords, parentRevisionProperty, sourceProperty } = cmsSupp
       });
     }),
   runAppendMigrationManifest = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     input: AppendMigrationManifestInput,
   ): Effect.Effect<CatalogState, CmsError> =>
     Effect.gen(function* runAppendMigrationManifestEffect() {
@@ -149,7 +142,7 @@ const { attempt, liveRecords, parentRevisionProperty, sourceProperty } = cmsSupp
       });
     }),
   runPrepareDefinitionMigration = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     input: PrepareDefinitionMigrationInput,
   ): Effect.Effect<Preparation, CmsError> =>
     Effect.gen(function* runPrepareDefinitionMigrationEffect() {
@@ -158,7 +151,7 @@ const { attempt, liveRecords, parentRevisionProperty, sourceProperty } = cmsSupp
           "definition.activate",
           input.expectedCatalogVersion,
         ),
-        generation = yield* context.persistence.readGeneration,
+        generation = yield* context.persistence.readGeneration(),
         manifest = findMigrationManifest(catalogState, input.manifestId);
       if (manifest === undefined) {
         return yield* NotFound.make({
@@ -174,7 +167,7 @@ const { attempt, liveRecords, parentRevisionProperty, sourceProperty } = cmsSupp
       });
     }),
   runReadConsistentSnapshot = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
   ): Effect.Effect<ConsistentReadSnapshot, CmsError> =>
     Effect.gen(function* runReadConsistentSnapshotEffect() {
       const snapshotData = yield* readConsistentSnapshotData(context);
@@ -188,11 +181,11 @@ const { attempt, liveRecords, parentRevisionProperty, sourceProperty } = cmsSupp
       } satisfies ConsistentReadSnapshot;
     }),
   runReadDefinitionCatalog = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
   ): Effect.Effect<CatalogState, CmsError> =>
     readAuthorizedDefinitionCatalog(context, "definition.read"),
   runRetireDefinition = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     input: RetireDefinitionInput,
   ): Effect.Effect<CatalogState, CmsError> =>
     Effect.gen(function* runRetireDefinitionEffect() {

@@ -45,7 +45,9 @@ const foundationAssetBytes = Schema.Uint8Array,
     pageSize: Schema.Int,
   },
   foundationRichTextDocument = Schema.JsonObject,
-  modelEntryPage = (entry: Schema.Codec<unknown, unknown>): Schema.Codec<unknown, unknown> =>
+  modelEntryPage = <Entry extends Schema.Codec<unknown, unknown>>(
+    entry: Readonly<Entry>,
+  ): Schema.Codec<unknown, unknown> =>
     Schema.Struct({
       items: Schema.Array(entry),
       nextCursor: Schema.optionalKey(Schema.String),

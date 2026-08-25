@@ -1,4 +1,8 @@
-import { type CompiledSnapshot, type JsonObject, compileSnapshot } from "../../src/content-definition.ts";
+import {
+  type CompiledSnapshot,
+  type JsonObject,
+  compileSnapshot,
+} from "../../src/content-definition.ts";
 import { describe, expect, test } from "bun:test";
 import { DefinitionMigration } from "../../src/index.ts";
 

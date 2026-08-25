@@ -19,7 +19,9 @@ import { DevelopmentCms } from "../../src/testing/index.ts";
 import { HttpTransport } from "../../src/http/index.ts";
 import { expect } from "bun:test";
 
-type TransportHandler = (request: Request) => Response | Promise<Response>;
+type TransportHandler = <RequestType extends Request>(
+  request: Readonly<RequestType>,
+) => Response | Promise<Response>;
 
 const makeLimitsHandler = (): Promise<TransportHandler> => {
     const handlerEffect = HttpTransport.makeHandler({
@@ -126,7 +128,9 @@ const makeLimitsHandler = (): Promise<TransportHandler> => {
   // Bun's test runner requires an async callback for the native Request and Response promises.
   // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
   verifyRequestTimeout = async (handler: TransportHandler): Promise<void> => {
-    const timeoutResponse = await handler(new Request("http://cms.test/api/v1/headless/wait-forever"));
+    const timeoutResponse = await handler(
+      new Request("http://cms.test/api/v1/headless/wait-forever"),
+    );
     expect(timeoutResponse.status).toBe(requestTimeoutStatus);
     expect(await readJsonCode(timeoutResponse)).toBe("RequestTimeout");
   },

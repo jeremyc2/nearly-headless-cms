@@ -13,7 +13,9 @@ export const contentTypes = [
     { identifier: "comment", label: "Comments", symbol: "M" },
   ] as const,
   managementClient = makeManagementClient(),
-  preserveSelection = (event: MouseEvent<HTMLButtonElement>): void => {
+  preserveSelection = <Event extends MouseEvent<HTMLButtonElement>>(
+    event: Readonly<Event>,
+  ): void => {
     event.preventDefault();
   },
   queryClient = new QueryClient({
@@ -21,8 +23,25 @@ export const contentTypes = [
   }),
   richTextDocumentFrom = (value: unknown): RichText.Document | undefined => {
     try {
-      return RichText.validate(value);
+      RichText.validate(value);
     } catch {
       return undefined;
     }
+    if (
+      typeof value !== "object" ||
+      value === null ||
+      !("children" in value) ||
+      !("format" in value) ||
+      !("version" in value) ||
+      value.format !== RichText.format ||
+      value.version !== RichText.formatVersion ||
+      !Array.isArray(value.children)
+    ) {
+      return undefined;
+    }
+    return {
+      children: value.children,
+      format: value.format,
+      version: value.version,
+    };
   };

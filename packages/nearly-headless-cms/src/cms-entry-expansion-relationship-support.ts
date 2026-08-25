@@ -32,7 +32,10 @@ interface ExpandRelationshipEntryIdInput {
 interface ExpandRelationshipFieldInput {
   readonly ancestorEntryIds: ReadonlySet<string>;
   readonly expandRelationshipEntryId: (
-    input: Omit<ExpandRelationshipEntryIdInput, "expandRelationshipEntryId" | "expandRepresentation">,
+    input: Omit<
+      ExpandRelationshipEntryIdInput,
+      "expandRelationshipEntryId" | "expandRepresentation"
+    >,
   ) => JsonValue;
   readonly fieldKind: Field["kind"];
   readonly fieldKey: string;
@@ -54,7 +57,7 @@ const expandRelationshipEntryId = ({
     nestedPaths,
     relationship,
     snapshot,
-  }: ExpandRelationshipEntryIdInput): JsonValue => {
+  }: Readonly<ExpandRelationshipEntryIdInput>): JsonValue => {
     if (typeof entryId !== "string") {
       throw InvalidInput.make({
         message: `Relationship ${fieldPath} contains an invalid Entry ID`,
@@ -80,7 +83,7 @@ const expandRelationshipEntryId = ({
     }
     return expandedEntryValue(expandedTarget);
   },
-  expandRelationshipField = ({
+  expandRelationshipField = <Input extends ExpandRelationshipFieldInput>({
     ancestorEntryIds,
     expandRelationshipEntryId: resolveRelationshipEntryId,
     fieldKind,
@@ -92,7 +95,7 @@ const expandRelationshipEntryId = ({
     snapshot,
     value,
     values,
-  }: ExpandRelationshipFieldInput): void => {
+  }: Readonly<Input>): void => {
     if (
       fieldKind.capabilities?.expandable === false ||
       (fieldKind.capabilities === undefined &&

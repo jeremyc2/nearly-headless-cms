@@ -22,7 +22,9 @@ export interface EntryEditorRichTextFieldViewProperties {
   readonly toolbar: RefObject<HTMLDivElement | null>;
 }
 
-export const EntryEditorRichTextFieldView = ({
+export const EntryEditorRichTextFieldView = <
+  Properties extends EntryEditorRichTextFieldViewProperties,
+>({
   adapter,
   assets,
   dialog,
@@ -31,7 +33,7 @@ export const EntryEditorRichTextFieldView = ({
   setDialog,
   surfaceId,
   toolbar,
-}: EntryEditorRichTextFieldViewProperties) => (
+}: Readonly<Properties>) => (
   <div className="rich-text-shell" id={surfaceId}>
     <EntryEditorRichTextToolbar
       adapter={adapter}
@@ -53,7 +55,9 @@ export const EntryEditorRichTextFieldView = ({
         assets={assets}
         closeDialog={() => {
           setDialog(undefined);
-          queueMicrotask(() => toolbar.current?.querySelector<HTMLButtonElement>("button")?.focus());
+          queueMicrotask(() =>
+            toolbar.current?.querySelector<HTMLButtonElement>("button")?.focus(),
+          );
         }}
         dialog={dialog}
         entryOptions={entryOptions}

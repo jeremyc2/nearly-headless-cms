@@ -8,7 +8,7 @@ import batchMutationsSupport from "./cms-service-entry-batch-operations-mutation
 import entryOperationSupport from "./cms-service-entry-operation-support.ts";
 
 interface PrepareBatchMutationInput {
-  readonly context: CmsServiceOperationContext;
+  readonly context: Readonly<CmsServiceOperationContext>;
   readonly generation: EntryGeneration;
   readonly mutation: EntryBatchMutation;
   readonly records: Map<string, EntryRecord>;
@@ -17,13 +17,17 @@ interface PrepareBatchMutationInput {
 
 const { assertLiveEntry, assertWriteToken } = entryOperationSupport,
   { authorizeBatchMutation, processBatchMutation } = batchMutationsSupport,
-  prepareBatchMutation = (input: PrepareBatchMutationInput) =>
+  prepareBatchMutation = (input: Readonly<PrepareBatchMutationInput>) =>
     Effect.gen(function* prepareBatchMutationEffect() {
       const { context, generation, mutation, records, snapshot } = input,
         { input: mutationInput } = mutation,
         contentType = snapshot.contentTypes.get(mutationInput.contentTypeId),
         current = records.get(mutationInput.entryId),
-        liveCurrent = yield* assertLiveEntry(current, mutationInput.contentTypeId, mutationInput.entryId);
+        liveCurrent = yield* assertLiveEntry(
+          current,
+          mutationInput.contentTypeId,
+          mutationInput.entryId,
+        );
       yield* authorizeBatchMutation(context, snapshot, mutation);
       if (contentType === undefined) {
         return yield* NotFound.make({ message: `Entry ${mutationInput.entryId} was not found` });
@@ -40,7 +44,7 @@ const { assertLiveEntry, assertWriteToken } = entryOperationSupport,
       };
     }),
   runMutateEntriesAtomically = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     mutations: readonly EntryBatchMutation[],
   ): Effect.Effect<readonly EntryBatchMutationResult[], CmsError> =>
     Effect.gen(function* runMutateEntriesAtomicallyEffect() {
@@ -49,10 +53,10 @@ const { assertLiveEntry, assertWriteToken } = entryOperationSupport,
           message: "An atomic Entry batch requires at least one mutation",
         });
       }
-      const generation = yield* context.persistence.readGeneration,
+      const generation = yield* context.persistence.readGeneration(),
         records = new Map(generation.records),
         results: EntryBatchMutationResult[] = [],
-        snapshot = yield* context.currentDefinitionSnapshot;
+        snapshot = yield* context.readCurrentDefinitionSnapshot();
       for (const mutation of mutations) {
         const batchInput = yield* prepareBatchMutation({
           context,

@@ -3,15 +3,15 @@ import { Effect } from "effect";
 import type { HttpContract } from "nearly-headless-cms/http";
 import managementSupport from "./management-support.ts";
 
-const {
-    queryAllEntries,
-    requireDeletionRecord,
-    requiredParameter,
-    requiredWriteToken,
-  } = managementSupport,
-  buildCommentDeletionMutations = (
-    commentStates: readonly { entry: { id: string }; writeToken: string }[],
-  ): Cms.EntryBatchMutation[] =>
+const { queryAllEntries, requireDeletionRecord, requiredParameter, requiredWriteToken } =
+    managementSupport,
+  buildCommentDeletionMutations = <
+    States extends readonly { entry: { id: string }; writeToken: string }[],
+  >(
+    commentStates: States,
+  ): States extends readonly { entry: { id: string }; writeToken: string }[]
+    ? Cms.EntryBatchMutation[]
+    : never =>
     commentStates.map(
       (state): Cms.EntryBatchMutation => ({
         input: {
@@ -22,9 +22,13 @@ const {
         kind: "delete",
       }),
     ),
-  buildPostDeletionMutations = (
-    postStates: readonly { entry: { id: string }; writeToken: string }[],
-  ): Cms.EntryBatchMutation[] =>
+  buildPostDeletionMutations = <
+    States extends readonly { entry: { id: string }; writeToken: string }[],
+  >(
+    postStates: States,
+  ): States extends readonly { entry: { id: string }; writeToken: string }[]
+    ? Cms.EntryBatchMutation[]
+    : never =>
     postStates.map(
       (state): Cms.EntryBatchMutation => ({
         input: {
@@ -88,7 +92,7 @@ const {
       return { deletedCommentCount: commentStates.length, deletedPostId: postId, deletionRecord };
     }),
   loadAuthorOwnedContentStates = (
-    cms: Cms.ServiceShape,
+    cms: Readonly<Cms.ServiceShape>,
     authorId: string,
   ): Effect.Effect<
     {
@@ -99,41 +103,38 @@ const {
   > =>
     Effect.gen(function* loadAuthorOwnedContentEntryStates() {
       const commentGroups = yield* Effect.all(
-        (yield* queryAllEntries(cms, {
-          contentTypeId: "post",
-          pageSize: 100,
-          where: { operator: "equals", path: "author", value: authorId },
-        })).map((post) =>
-          queryAllEntries(cms, {
-            contentTypeId: "comment",
+          (yield* queryAllEntries(cms, {
+            contentTypeId: "post",
             pageSize: 100,
-            where: { operator: "equals", path: "post", value: post.id },
-          }),
-        ),
-      ),
-       commentStates = yield* Effect.all(
-          commentGroups.flat().map((comment) =>
-            cms.getCurrentEntryState({ contentTypeId: "comment", entryId: comment.id }),
+            where: { operator: "equals", path: "author", value: authorId },
+          })).map((post) =>
+            queryAllEntries(cms, {
+              contentTypeId: "comment",
+              pageSize: 100,
+              where: { operator: "equals", path: "post", value: post.id },
+            }),
           ),
+        ),
+        commentStates = yield* Effect.all(
+          commentGroups
+            .flat()
+            .map((comment) =>
+              cms.getCurrentEntryState({ contentTypeId: "comment", entryId: comment.id }),
+            ),
         ),
         postStates = yield* Effect.all(
           (yield* queryAllEntries(cms, {
             contentTypeId: "post",
             pageSize: 100,
             where: { operator: "equals", path: "author", value: authorId },
-          })).map((post) =>
-            cms.getCurrentEntryState({ contentTypeId: "post", entryId: post.id }),
-          ),
+          })).map((post) => cms.getCurrentEntryState({ contentTypeId: "post", entryId: post.id })),
         );
       return { commentStates, postStates };
     }),
   loadCommentStatesForPost = (
-    cms: Cms.ServiceShape,
+    cms: Readonly<Cms.ServiceShape>,
     postId: string,
-  ): Effect.Effect<
-    readonly { entry: { id: string }; writeToken: string }[],
-    CmsError.CmsError
-  > =>
+  ): Effect.Effect<readonly { entry: { id: string }; writeToken: string }[], CmsError.CmsError> =>
     Effect.gen(function* loadCommentStatesForPostEntries() {
       const comments = yield* cms.queryEntries({
         contentTypeId: "comment",

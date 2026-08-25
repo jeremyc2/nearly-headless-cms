@@ -13,53 +13,14 @@ import type { OperationSpecification } from "./management-openapi-client-specifi
 import { ProtocolFailure } from "./protocol-failure.ts";
 import { TransportFailure } from "./transport-failure.ts";
 import { operationSpecifications } from "./management-openapi-client-runtime-specifications.ts";
+import transportRequestSupport from "./management-openapi-client-runtime-transport-request-support.ts";
 
-const appendQueryParameters = (
-    requestUrl: URL,
-    queryParameters: Readonly<Record<string, unknown>>,
-  ): void => {
-    for (const [name, value] of Object.entries(queryParameters)) {
-      if (value !== undefined) {
-        if (
-          typeof value === "string" ||
-          typeof value === "number" ||
-          typeof value === "boolean" ||
-          typeof value === "bigint"
-        ) {
-          requestUrl.searchParams.set(name, String(value));
-        } else {
-          requestUrl.searchParams.set(name, JSON.stringify(value));
-        }
-      }
-    }
-  },
-  buildRequestBody = (
-    input: OperationInputs[keyof OperationInputs],
-    headers: Headers,
-    specification: OperationSpecification,
-  ): BodyInit | undefined => {
-    if (!("body" in input) || input.body === undefined) {
-      return undefined;
-    }
-    const { body: requestBody } = input;
-    if (requestBody instanceof FormData) {
-      return requestBody;
-    }
-    headers.set("content-type", specification.requestMediaType ?? "application/json");
-    // oxlint-disable-next-line effecttsgo/prefer-schema-over-json -- request bodies are OpenAPI-generated unknown shapes and must be serialized using the browser JSON boundary.
-    return JSON.stringify(requestBody);
-  },
-  buildRequestHeaders = (input: OperationInputs[keyof OperationInputs]): Headers => {
-    if ("headers" in input) {
-      return new Headers(input.headers);
-    }
-    return new Headers();
-  },
-  buildRequestUrl = (baseAddress: string, path: string): URL =>
-    new URL(
-      `${baseAddress}${path}`,
-      baseAddress || globalThis.location?.origin || "http://localhost",
-    ),
+const {
+    appendQueryParameters,
+    buildRequestBody,
+    buildRequestHeaders,
+    buildRequestUrl,
+  } = transportRequestSupport,
   connectionFailureMessage = (cause: unknown): string => {
     if (cause instanceof Error) {
       return cause.message;
@@ -71,8 +32,11 @@ const appendQueryParameters = (
       baseAddress: string,
       identifier: Identifier,
     ): ((
-      input: OperationInputs[Identifier],
-      signal?: AbortSignal,
+      input: Readonly<OperationInputs[Identifier]>,
+      signal?: Pick<
+        AbortSignal,
+        "aborted" | "addEventListener" | "reason" | "removeEventListener" | "throwIfAborted"
+      >,
     ) => Effect.Effect<
       OperationResponses[Identifier],
       TransportFailure | ProtocolFailure | DeclaredFailure
@@ -85,7 +49,7 @@ const appendQueryParameters = (
         specification: operationSpecifications[identifier],
       }),
   /* oxlint-disable effecttsgo/global-fetch, effecttsgo/global-fetch-in-effect -- generated clients intentionally use the platform fetch boundary so callers can supply the browser or server runtime. */
-  fetchOperationResponse = (request: OperationFetchRequest): Promise<Response> =>
+  fetchOperationResponse = (request: Readonly<OperationFetchRequest>): Promise<Response> =>
     fetch(request.requestUrl, {
       body: request.body,
       headers: request.headers,
@@ -96,6 +60,7 @@ const appendQueryParameters = (
     }),
   /* oxlint-enable effecttsgo/global-fetch, effecttsgo/global-fetch-in-effect */
   generatorFormatVersion = 3,
+  httpStatusNoContent = 204,
   isDeclaredFailurePayload = (
     value: unknown,
   ): value is { readonly code: unknown; readonly details?: unknown; readonly message: unknown } =>
@@ -157,8 +122,10 @@ const appendQueryParameters = (
     returnPostToDraft: createOperationMethod(baseAddress, "returnPostToDraft"),
   }),
   // oxlint-disable-next-line effecttsgo/async-function -- generated clients expose a Promise-backed transport boundary; converting this callback to Effect would change the generated public client contract.
-  parseOperationSuccessResponse = async (input: OperationSuccessParseInput): Promise<unknown> => {
-    if (input.response.status === 204 || input.specification.method === "HEAD") {
+  parseOperationSuccessResponse = async (
+    input: Readonly<OperationSuccessParseInput>,
+  ): Promise<unknown> => {
+    if (input.response.status === httpStatusNoContent || input.specification.method === "HEAD") {
       return undefined;
     }
     if (input.successResponse.responseMediaType === "application/octet-stream") {
@@ -181,8 +148,8 @@ const appendQueryParameters = (
   },
   prepareOperationRequest = (
     baseAddress: string,
-    input: OperationInputs[keyof OperationInputs],
-    specification: OperationSpecification,
+    input: Readonly<OperationInputs[keyof OperationInputs]>,
+    specification: Readonly<OperationSpecification>,
   ): {
     readonly body: BodyInit | undefined;
     readonly headers: Headers;
@@ -203,7 +170,10 @@ const appendQueryParameters = (
     };
   },
   // oxlint-disable-next-line effecttsgo/async-function -- generated clients expose a Promise-backed transport boundary; converting this callback to Effect would change the generated public client contract.
-  resolveOperationFailure = async (response: Response, mediaType: string): Promise<never> => {
+  resolveOperationFailure = async (
+    response: Readonly<Response>,
+    mediaType: string,
+  ): Promise<never> => {
     if (mediaType.includes("application/json")) {
       throwDeclaredFailure(response, await response.json());
     }
@@ -222,7 +192,7 @@ const appendQueryParameters = (
     }
     return path;
   },
-  throwDeclaredFailure = (response: Response, failure: unknown): never => {
+  throwDeclaredFailure = (response: Readonly<Response>, failure: unknown): never => {
     if (isDeclaredFailurePayload(failure)) {
       const { code, details, message } = failure;
       throw DeclaredFailure.make({
@@ -238,7 +208,9 @@ const appendQueryParameters = (
     });
   },
   // oxlint-disable-next-line effecttsgo/async-function -- generated clients expose a Promise-backed transport boundary; converting this callback to Effect would change the generated public client contract.
-  undertakeOperationRequest = async (request: OperationRequestInput): Promise<unknown> => {
+  undertakeOperationRequest = async (
+    request: Readonly<OperationRequestInput>,
+  ): Promise<unknown> => {
     const { body, headers, requestUrl } = prepareOperationRequest(
         request.baseAddress,
         request.input,
@@ -267,7 +239,7 @@ const appendQueryParameters = (
   };
 
 function requestOperation<Identifier extends keyof OperationInputs>(
-  request: RequestOperationInput<Identifier>,
+  request: Readonly<RequestOperationInput<Identifier>>,
 ): Effect.Effect<
   OperationResponses[Identifier],
   TransportFailure | ProtocolFailure | DeclaredFailure
@@ -277,7 +249,7 @@ function requestOperation({
   input,
   signal,
   specification,
-}: RequestOperationInput<keyof OperationInputs>): Effect.Effect<
+}: Readonly<RequestOperationInput<keyof OperationInputs>>): Effect.Effect<
   unknown,
   TransportFailure | ProtocolFailure | DeclaredFailure
 > {

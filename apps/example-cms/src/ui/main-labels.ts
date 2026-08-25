@@ -1,7 +1,7 @@
 import { DateTime } from "effect";
 
-export const activeStatusClass = (value: unknown): string => {
-    if (value === "published" || value === "approved") {
+const activeStatusClass = (value: unknown): string => {
+    if (value === "published") {
       return "published";
     }
     return "";
@@ -86,7 +86,10 @@ export const activeStatusClass = (value: unknown): string => {
     return "this Entry";
   },
   // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- UI label helper is intentionally a direct two-argument operation.
-  entryOptionLabel = (values: Record<string, unknown>, identifier: string): string => {
+  entryOptionLabel = <Values extends Record<string, unknown>>(
+    values: Readonly<Values>,
+    identifier: string,
+  ): string => {
     if (typeof values["title"] === "string") {
       return values["title"];
     }
@@ -101,24 +104,33 @@ export const activeStatusClass = (value: unknown): string => {
     }
     return "field-body";
   },
-  headingLevel = (blockType: string): 2 | 3 | 4 => {
+  headingLevel = (
+    blockType: string,
+  ):
+    | typeof headingLevelValueTwo
+    | typeof headingLevelValueThree
+    | typeof headingLevelValueFour => {
     if (blockType.endsWith("2")) {
-      return 2;
+      return headingLevelValueTwo;
     }
     if (blockType.endsWith("3")) {
-      return 3;
+      return headingLevelValueThree;
     }
-    return 4;
+    return headingLevelValueFour;
   },
+  headingLevelValueFour = 4,
+  headingLevelValueThree = 3,
+  headingLevelValueTwo = 2,
   pendingCommentClass = (count: number): string => {
     if (count > 0) {
       return "attention";
     }
     return "";
   },
+  publicationInputMaxLength = 16,
   publicationInputValue = (value: unknown): string => {
     if (typeof value === "string") {
-      return value.slice(0, 16);
+      return value.slice(0, publicationInputMaxLength);
     }
     return "";
   },
@@ -195,3 +207,35 @@ export const activeStatusClass = (value: unknown): string => {
     }
     return [];
   };
+
+export {
+  activeStatusClass,
+  assetCaption,
+  assetDimensions,
+  assetSelectValue,
+  deleteImageLabel,
+  deletionStatus,
+  dialogHeading,
+  draftPluralSuffix,
+  editorialButtonLabel,
+  editorialConfirmationDescription,
+  editorialConfirmationLabel,
+  editorialStatus,
+  entryDeletionTitle,
+  entryOptionLabel,
+  featuredAlternativeTextField,
+  headingLevel,
+  pendingCommentClass,
+  publicationInputValue,
+  publicationValue,
+  purgeStatus,
+  rebuildLabel,
+  relatedContentType,
+  revisionClass,
+  revisionLabel,
+  saveStatus,
+  sortDirectionValue,
+  sortLabel,
+  statusOptions,
+  stringArrayValue,
+};

@@ -1,4 +1,9 @@
-import { Cms, type CmsError, RichText } from "nearly-headless-cms";
+import {
+  Cms,
+  type CmsError,
+  type ContentDefinition,
+  RichText,
+} from "nearly-headless-cms";
 import { Effect } from "effect";
 
 export interface SeedResult {
@@ -22,11 +27,21 @@ const paragraph = (text: string): RichText.ParagraphNode => ({
     children: [{ text, type: "text" }],
     type: "paragraph",
   }),
+  richTextJsonObject = (document: RichText.Document): ContentDefinition.JsonObject => {
+    RichText.toJson(document);
+    return {
+      children: document.children,
+      format: document.format,
+      version: document.version,
+    };
+  },
   seedAuthorProfile = (): RichText.Document => ({
     children: [paragraph("Ada writes about durable knowledge, small tools, and the coast.")],
     format: RichText.format,
     version: RichText.formatVersion,
   }),
+  seedAuthorProfileDocument = (): ContentDefinition.JsonObject =>
+    richTextJsonObject(seedAuthorProfile()),
   seedDraftBody = (): RichText.Document => ({
     children: [paragraph("Still taking notes.")],
     format: RichText.format,
@@ -39,7 +54,7 @@ const paragraph = (text: string): RichText.ParagraphNode => ({
     return result.id;
   },
   seedFindExistingEntries = (
-    cms: Cms.ServiceShape,
+    cms: Readonly<Cms.ServiceShape>,
   ): Effect.Effect<ExistingSeedEntries, CmsError.CmsError> =>
     Effect.gen(function* findExistingSeedEntriesEffect() {
       const existingDraftPosts = yield* cms.queryEntries({
@@ -59,7 +74,9 @@ const paragraph = (text: string): RichText.ParagraphNode => ({
         publishedPostId: existingPublishedPost?.id,
       };
     }),
-  seedMakeReferences = (cms: Cms.ServiceShape): Effect.Effect<SeedReferences, CmsError.CmsError> =>
+  seedMakeReferences = (
+    cms: Readonly<Cms.ServiceShape>,
+  ): Effect.Effect<SeedReferences, CmsError.CmsError> =>
     Effect.gen(function* createSeedReferencesEffect() {
       const asset = yield* cms.ingestAsset({
           content: new TextEncoder().encode(
@@ -79,7 +96,7 @@ const paragraph = (text: string): RichText.ParagraphNode => ({
             name: "Ada Rowan",
             portrait: asset.id,
             "portrait-alternative-text": "Portrait illustration of Ada Rowan",
-            profile: RichText.toJson(seedAuthorProfile()),
+            profile: seedAuthorProfileDocument(),
             slug: "ada-rowan",
           },
         }),
@@ -105,10 +122,10 @@ const paragraph = (text: string): RichText.ParagraphNode => ({
       return { assetId: asset.id, authorId, categoryId, tagId };
     }),
   seedPrepareDraftPost = (
-    cms: Cms.ServiceShape,
+    cms: Readonly<Cms.ServiceShape>,
     references: SeedReferences,
   ): Effect.Effect<string, CmsError.CmsError> => {
-    const body = RichText.toJson(seedDraftBody());
+    const body = richTextJsonObject(seedDraftBody());
     return Effect.map(
       cms.createEntry({
         contentTypeId: "post",
@@ -149,10 +166,10 @@ const paragraph = (text: string): RichText.ParagraphNode => ({
     version: RichText.formatVersion,
   }),
   seedPreparePublishedPost = (
-    cms: Cms.ServiceShape,
+    cms: Readonly<Cms.ServiceShape>,
     references: SeedReferences,
   ): Effect.Effect<string, CmsError.CmsError> => {
-    const body = RichText.toJson(seedPreparePublishedBody(references.assetId));
+    const body = richTextJsonObject(seedPreparePublishedBody(references.assetId));
     return Effect.map(
       cms.createEntry({
         contentTypeId: "post",
@@ -174,7 +191,7 @@ const paragraph = (text: string): RichText.ParagraphNode => ({
     );
   },
   seedRecordComments = (
-    cms: Cms.ServiceShape,
+    cms: Readonly<Cms.ServiceShape>,
     publishedPostId: string,
   ): Effect.Effect<void, CmsError.CmsError> =>
     Effect.gen(function* createSeedCommentsEffect() {
@@ -201,7 +218,9 @@ const paragraph = (text: string): RichText.ParagraphNode => ({
         },
       });
     }),
-  seedWritePosts = (cms: Cms.ServiceShape): Effect.Effect<SeedResult, CmsError.CmsError> =>
+  seedWritePosts = (
+    cms: Readonly<Cms.ServiceShape>,
+  ): Effect.Effect<SeedResult, CmsError.CmsError> =>
     Effect.flatMap(seedMakeReferences(cms), (references) =>
       Effect.gen(function* createSeedPostsEffect() {
         const draftPostId = yield* seedPrepareDraftPost(cms, references),

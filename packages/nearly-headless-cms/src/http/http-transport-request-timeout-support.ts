@@ -1,26 +1,46 @@
 import { Duration, Effect, Fiber } from "effect";
+import {
+  type ReadonlyTransportAbortSignal,
+  type ReadonlyTransportHandlerRequest,
+  toWebRequest,
+} from "./http-transport-readonly-types.ts";
 import type { Handler } from "./http-transport-types.ts";
 import { RequestFailureError } from "./http-transport-request-failure.ts";
+import { httpStatusRequestTimeout } from "./http-status-codes.ts";
 import transportResponse from "./http-transport-response.ts";
 
 interface RunTimedRequestInput {
   readonly controller: AbortController;
-  readonly handleRequest: (request: Request, signal: AbortSignal, requestId: string) => Promise<Response>;
-  readonly request: Request;
+  readonly handleRequest: (
+    request: ReadonlyTransportHandlerRequest,
+    signal: ReadonlyTransportAbortSignal,
+    requestId: string,
+  ) => Promise<Response>;
+  readonly request: ReadonlyTransportHandlerRequest;
   readonly requestId: string;
 }
 
 const { requestFailureResponse } = transportResponse,
-  abortRequestOnTimeout = (controller: AbortController): void => {
+  abortRequestOnTimeout = <Controller extends AbortController>(
+    controller: Readonly<Controller>,
+  ): void => {
     controller.abort(new Error("request timeout"));
   },
-  buildTimeoutEffect = (controller: AbortController, requestTimeoutMilliseconds: number) => {
+  buildTimeoutEffect = <Controller extends AbortController>(
+    controller: Readonly<Controller>,
+    requestTimeoutMilliseconds: number,
+  ) => {
     const abortEffect = Effect.sync(() => {
       abortRequestOnTimeout(controller);
     });
-    return Effect.sleep(Duration.millis(requestTimeoutMilliseconds)).pipe(Effect.andThen(abortEffect));
+    return Effect.sleep(Duration.millis(requestTimeoutMilliseconds)).pipe(
+      Effect.andThen(abortEffect),
+    );
   },
-  createAbortPromise = (controller: AbortController, requestId: string): Promise<Response> =>
+  createAbortPromise = <Controller extends AbortController>(
+    controller: Readonly<Controller>,
+    requestId: string,
+  ): Promise<Response> =>
     Effect.runPromise(
       Effect.callback<Response>((resume) => {
         controller.signal.addEventListener(
@@ -32,26 +52,27 @@ const { requestFailureResponse } = transportResponse,
         );
       }),
     ),
-  createTimeoutFiber = (controller: AbortController, requestTimeoutMilliseconds: number) =>
+  createTimeoutFiber = <Controller extends AbortController>(
+    controller: Readonly<Controller>,
+    requestTimeoutMilliseconds: number,
+  ): ReturnType<typeof Effect.runFork<void, never>> =>
     Effect.runFork(buildTimeoutEffect(controller, requestTimeoutMilliseconds)),
   requestTimeoutResponse = (requestId: string): Response =>
     requestFailureResponse(
       new RequestFailureError(
         "RequestTimeout",
         "The request was interrupted or exceeded its configured duration",
-        408,
+        httpStatusRequestTimeout,
       ),
       requestId,
     ),
-  runTimedRequest = ({
-    controller,
-    handleRequest,
-    request,
-    requestId,
-  }: RunTimedRequestInput): Promise<Response> => {
-    const abortPromise = createAbortPromise(controller, requestId),
+  runTimedRequest = <Input extends RunTimedRequestInput>(
+    input: Readonly<Input>,
+  ): Promise<Response> => {
+    const { controller, handleRequest, request, requestId } = input,
+      abortPromise = createAbortPromise(controller, requestId),
       requestPromise = handleRequest(
-        new Request(request, { signal: controller.signal }),
+        new Request(toWebRequest(request), { signal: controller.signal }),
         controller.signal,
         requestId,
       ).catch((error: unknown) => {
@@ -64,11 +85,24 @@ const { requestFailureResponse } = transportResponse,
     return Promise.race([requestPromise, abortPromise]);
   },
   // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- Web handler timeout wrapper is not a pipeable Effect API.
-  wrapHandlerWithTimeout = (
-    handleRequest: (request: Request, signal: AbortSignal, requestId: string) => Promise<Response>,
-    requestIdentifier: () => string,
-    requestTimeoutMilliseconds: number,
-  ): Handler =>
+  wrapHandlerWithTimeout =
+    <
+      HandleRequest extends (
+        request: ReadonlyTransportHandlerRequest,
+        signal: ReadonlyTransportAbortSignal,
+        requestId: string,
+      ) => Promise<Response>,
+    >(
+      handleRequest: HandleRequest,
+      requestIdentifier: () => string,
+      requestTimeoutMilliseconds: number,
+    ): HandleRequest extends (
+      request: ReadonlyTransportHandlerRequest,
+      signal: ReadonlyTransportAbortSignal,
+      requestId: string,
+    ) => Promise<Response>
+      ? Handler
+      : never =>
     // oxlint-disable-next-line effecttsgo/async-function -- Handler is a Web-standard Promise<Response> callback.
     async (request): Promise<Response> => {
       const controller = new AbortController(),

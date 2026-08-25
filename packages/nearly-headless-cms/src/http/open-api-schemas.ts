@@ -1,5 +1,7 @@
+import { httpStatusNoContent } from "./http-status-codes.ts";
+
 const additionalBodylessSuccessStatuses = new Map<string, readonly number[]>([
-    ["deleteEntry", [204]],
+    ["deleteEntry", [httpStatusNoContent]],
   ]),
   createdStatus = 201,
   entrySchema = {

@@ -196,7 +196,10 @@ const buildAssetRoutes = (
     detachTaxonomy: ManagementRouteHandlers["detachTaxonomy"],
   ): readonly HttpContract.ManagementOperation[] => [
     {
-      definitionRequirements: [taxonomyDefinitionRequirement("category"), postDefinitionRequirement],
+      definitionRequirements: [
+        taxonomyDefinitionRequirement("category"),
+        postDefinitionRequirement,
+      ],
       execute: detachTaxonomy("category", "categories"),
       identifier: "detachAndDeleteCategory",
       method: "POST",
@@ -229,7 +232,7 @@ const buildAssetRoutes = (
     path,
     status,
     transition,
-  }: EditorialRouteInput): HttpContract.ManagementOperation => ({
+  }: Readonly<EditorialRouteInput>): HttpContract.ManagementOperation => ({
     definitionRequirements,
     execute: transition(contentTypeId, status),
     identifier,

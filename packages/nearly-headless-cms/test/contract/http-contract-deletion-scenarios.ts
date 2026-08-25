@@ -10,10 +10,12 @@ import { HttpTransport } from "../../src/http/index.ts";
 import { deletionSnapshot } from "./http-contract-deletion-support.ts";
 import { expect } from "bun:test";
 
-type DeletionHandler = (request: Request) => Response | Promise<Response>;
+type DeletionHandler = <RequestType extends Request>(
+  request: Readonly<RequestType>,
+) => Response | Promise<Response>;
 
 const makeDeletionHandler = (): Promise<DeletionHandler> => {
-    const handlerEffect = HttpTransport.makeHandler().pipe(
+    const handlerEffect = HttpTransport.makeHandler({}).pipe(
       // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer.
       Effect.provide(DevelopmentCms.layer({ snapshot: deletionSnapshot })),
     );

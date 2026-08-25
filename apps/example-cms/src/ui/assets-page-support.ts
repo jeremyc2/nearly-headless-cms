@@ -1,10 +1,4 @@
-import {
-  Effect,
-  managementClient,
-  useQuery,
-  useRef,
-  useState,
-} from "./assets-page-imports.ts";
+import { Effect, managementClient, useQuery, useRef, useState } from "./assets-page-imports.ts";
 import { useAssetsPageMutations } from "./assets-page-mutations-support.ts";
 
 export const useAssetsPage = () => {

@@ -12,7 +12,8 @@ describe("HTTP contract", () => {
   test("streams bounded multipart Asset uploads and rejects unexpected metadata", () =>
     verifyMultipartAssetUpload());
 
-  test("returns a deletion receipt only for history-enabled Entries", () => verifyDeletionReceipt());
+  test("returns a deletion receipt only for history-enabled Entries", () =>
+    verifyDeletionReceipt());
 
   test("serves versioned Management operations while keeping Headless CRUD absent", () =>
     verifyVersionedManagementOperations());
@@ -23,6 +24,7 @@ describe("HTTP contract", () => {
   test("maps transport limits, media, and methods to their stable HTTP failures", () =>
     verifyTransportLimits());
 
-  test("derives stable OpenAPI request, success, parameter, and declared error schemas", () =>{ 
-    verifyOpenApiSchemas(); });
+  test("derives stable OpenAPI request, success, parameter, and declared error schemas", () => {
+    verifyOpenApiSchemas();
+  });
 });

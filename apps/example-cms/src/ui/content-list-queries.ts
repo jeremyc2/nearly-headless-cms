@@ -1,4 +1,5 @@
 import { Effect } from "effect";
+import type { QueryPage } from "../generated/management-client.ts";
 import { contentListQueryOptions } from "./content-list-support.ts";
 import { managementClient } from "./main-shared.ts";
 import { useQuery } from "@tanstack/react-query";
@@ -16,8 +17,8 @@ export const useContentListEntriesQuery = ({
   readonly sortDirection: "ascending" | "descending";
   readonly statusFilter: string;
 }) =>
-  useQuery({
-    queryFn: () =>
+  useQuery<QueryPage>({
+    queryFn: (): Promise<QueryPage> =>
       Effect.runPromise(
         managementClient.queryEntries(
           contentTypeId,

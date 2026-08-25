@@ -1,4 +1,8 @@
-import { type CompiledSnapshot, type JsonObject, compileSnapshot } from "../../src/content-definition.ts";
+import {
+  type CompiledSnapshot,
+  type JsonObject,
+  compileSnapshot,
+} from "../../src/content-definition.ts";
 import { expect, test } from "bun:test";
 
 const fieldGroupSnapshot: CompiledSnapshot = compileSnapshot({
@@ -161,10 +165,8 @@ test("ContentDefinition.compile validates ordered lists of reusable Field Groups
     links: [{ label: "First" }, { label: "Second" }],
   });
   expect(() =>
-    compiled.validateEntry(
-      "page",
-      { links: [{ unknown: true }] } satisfies JsonObject,
-      { applyDefaults: true },
-    ),
+    compiled.validateEntry("page", { links: [{ unknown: true }] } satisfies JsonObject, {
+      applyDefaults: true,
+    }),
   ).toThrow("Entry validation failed");
 });

@@ -19,18 +19,23 @@ export type {
   SerializableManifest,
 } from "./definition-migration-types.ts";
 
-/** Rejects a preparation whose source Entry generation has changed. */
-const // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- dual's generic overload is not inferred by the linter for this public helper.
-  assertFresh = dual(2, (preparation: Preparation, currentGeneration: number): void => {
-    if (preparation.sourceGeneration !== currentGeneration) {
-      throw Conflict.make({
-        message: "Migration Preparation is stale because the source generation changed",
-      });
-    }
-    if (preparation.report.status !== "ready") {
-      throw InvalidInput.make({ message: "A failed Migration Preparation cannot be cut over" });
-    }
-  }),
+const arityForMigrationFreshnessDual = 2,
+  arityForMigrationPathDual = 3,
+  /** Rejects a preparation whose source Entry generation has changed. */
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- dual's generic overload is not inferred by the linter for this public helper.
+  assertFresh = dual(
+    arityForMigrationFreshnessDual,
+    (preparation: Preparation, currentGeneration: number): void => {
+      if (preparation.sourceGeneration !== currentGeneration) {
+        throw Conflict.make({
+          message: "Migration Preparation is stale because the source generation changed",
+        });
+      }
+      if (preparation.report.status !== "ready") {
+        throw InvalidInput.make({ message: "A failed Migration Preparation cannot be cut over" });
+      }
+    },
+  ),
   migrateEntries = (
     entries: PreparationInput["entries"],
     handler: Handler | undefined,
@@ -55,7 +60,7 @@ const // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- dual'
   /** Resolves the unique ordered migration path between two snapshots. */
   // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- dual's generic overload is not inferred by the linter for this public helper.
   path = dual(
-    3,
+    arityForMigrationPathDual,
     (
       manifests: readonly Manifest[],
       sourceSnapshotId: string,
@@ -76,7 +81,7 @@ const // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- dual'
     },
   ),
   /** Deterministically prepares every live Entry without modifying durable state. */
-  prepare = (input: PreparationInput): Preparation => {
+  prepare = (input: Readonly<PreparationInput>): Preparation => {
     migrationHelpers.validateManifestSnapshots(input.manifest, input.source, input.target);
     if (
       migrationHelpers.findMigrationHandler(input.handlers, input.manifest) === undefined &&
@@ -88,6 +93,6 @@ const // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- dual'
       { issues, transformedEntries } = migrateEntries(input.entries, handler, input);
     return migrationHelpers.finalizePreparation(input, transformedEntries, issues);
   },
-  {validateGraph} = migrationHelpers;
+  { validateGraph } = migrationHelpers;
 
 export { assertFresh, path, prepare, validateGraph };

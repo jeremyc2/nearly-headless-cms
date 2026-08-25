@@ -1,135 +1,36 @@
-import { Cms, type Operation } from "../../src/index.ts";
-import { type CompiledSnapshot, type CustomFieldRegistration, compileSnapshot } from "../../src/content-definition.ts";
 import { Effect, Exit } from "effect";
 import { describe, expect, test } from "bun:test";
-import { DevelopmentCms } from "../../src/testing/index.ts";
+import {
+  incompatibleNoteDefinition,
+  noteSlugMigrationLayer,
+  noteSlugMigrationManifest,
+  operationContractsLayer,
+  optionalSummaryDefinition,
+  ratedNoteDefinition,
+  ratedNotesLayer,
+  requiredSlugDefinition,
+} from "./definition-lifecycle-fixture.ts";
+import { Cms } from "../../src/index.ts";
 
-const incompatibleNoteDefinition = {
-    fields: [{ key: "title", kind: { kind: "integer" as const }, label: "Title", required: true }],
-    history: true,
-    id: "note",
-    kind: "contentType" as const,
-    name: "Note",
-    parentRevision: 1,
-    revision: 2,
-  },
-  initialSnapshot: CompiledSnapshot = compileSnapshot({
-    definitionSpaceId: "definition-lifecycle",
-    definitions: [
-      {
-        fields: [{ key: "title", kind: { kind: "text" }, label: "Title", required: true }],
-        history: true,
-        id: "note",
-        kind: "contentType",
-        name: "Note",
-        revision: 1,
-      },
-    ],
-    snapshotId: "initial",
-  }),
-  noteSlugMigrationLayer = DevelopmentCms.layer({
-    migrationHandlers: [
-      {
-        identifier: "note-slug",
-        transform: ({ values }) => ({ ...values, slug: "a-durable-note" }),
-        version: 1,
-      },
-    ],
-    snapshot: initialSnapshot,
-  }),
-  noteSlugMigrationManifest = {
-    handlerIdentifier: "note-slug", handlerVersion: 1, id: "add-note-slug",
-    sourceSnapshotId: "optional-summary", targetSnapshotId: "required-slug",
-  },
-  operationContracts: readonly Operation.DefinitionContract[] = [
-    {
-      definitionRequirements: [
-        {
-          contentTypeId: "note",
-          fields: [{ kind: "text", path: "title", projectable: true, required: true }],
-        },
-      ],
-      identifier: "readPublicNote",
-    },
-  ],
-  operationContractsLayer = DevelopmentCms.layer({ operationContracts, snapshot: initialSnapshot }),
-  optionalSummaryDefinition = {
-    fields: [
-      { key: "title", kind: { kind: "text" as const }, label: "Title", required: true },
-      { key: "summary", kind: { kind: "text" as const }, label: "Summary" },
-    ],
-    history: true,
-    id: "note",
-    kind: "contentType" as const,
-    name: "Note",
-    parentRevision: 1,
-    revision: 2,
-  },
-  ratedNoteDefinition = {
-    fields: [
-      { key: "title", kind: { kind: "text" as const }, label: "Title", required: true },
-      {
-        key: "rating",
-        kind: {
-          configuration: {},
-          formatVersion: 1,
-          identifier: "com.example.rating",
-          kind: "custom" as const,
-        },
-        label: "Rating",
-      },
-    ],
-    history: true,
-    id: "note",
-    kind: "contentType" as const,
-    name: "Note",
-    parentRevision: 1,
-    revision: 2,
-  },
-  ratedNoteRegistration: CustomFieldRegistration = {
-    capabilities: { filter: ["equals"], projectable: true, sortable: true },
-    formatVersion: 1,
-    identifier: "com.example.rating",
-    validateConfiguration: () => [],
-    validateValue: (value) => {
-      if (typeof value === "number" && Number.isSafeInteger(value) && value >= 1 && value <= 5) {
-        return [];
-      }
-      return [{ message: "Rating must be an integer from one through five", path: [], reason: "invalidRating" }];
-    },
-  },
-  ratedNotesLayer = DevelopmentCms.layer({
-    compileOptions: { customFieldKinds: [ratedNoteRegistration] },
-    snapshot: initialSnapshot,
-  }),
-  requiredSlugDefinition = {
-    ...optionalSummaryDefinition,
-    fields: [
-      ...optionalSummaryDefinition.fields,
-      { key: "slug", kind: { kind: "text" as const }, label: "Slug", required: true, unique: true },
-    ],
-    parentRevision: 2,
-    revision: 3,
-  },
-  runNoteSlugMigration = <Value, Error>(
-    effect: Effect.Effect<Value, Error, Cms.Service>,
-  ): Promise<Value> => 
+const runNoteSlugMigration = <Error, EffectType extends Effect.Effect<unknown, Error, Cms.Service>>(
+    effect: EffectType,
+  ): Promise<Effect.Success<EffectType>> =>
     // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer per run.
-    Effect.runPromise(effect.pipe(Effect.provide(noteSlugMigrationLayer)))
-  ,
-  runOperationContracts = <Value, Error>(
-    effect: Effect.Effect<Value, Error, Cms.Service>,
-  ): Promise<Value> => 
+    Effect.runPromise(effect.pipe(Effect.provide(noteSlugMigrationLayer))),
+  runOperationContracts = <Error, EffectType extends Effect.Effect<unknown, Error, Cms.Service>>(
+    effect: EffectType,
+  ): Promise<Effect.Success<EffectType>> =>
     // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer per run.
-    Effect.runPromise(effect.pipe(Effect.provide(operationContractsLayer)))
-  ,
-  runRatedNotes = <Value, Error>(effect: Effect.Effect<Value, Error, Cms.Service>): Promise<Value> => 
+    Effect.runPromise(effect.pipe(Effect.provide(operationContractsLayer))),
+  runRatedNotes = <Error, EffectType extends Effect.Effect<unknown, Error, Cms.Service>>(
+    effect: EffectType,
+  ): Promise<Effect.Success<EffectType>> =>
     // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer per run.
-    Effect.runPromise(effect.pipe(Effect.provide(ratedNotesLayer)))
-  ,
+    Effect.runPromise(effect.pipe(Effect.provide(ratedNotesLayer))),
+  secondCatalogVersion = 2,
   verifyCatalogEvents = Effect.gen(function* verifyCatalogEvents() {
     const { cms } = yield* verifyEntryRestoreAfterMigration,
-      catalog = yield* cms.readDefinitionCatalog;
+      catalog = yield* cms.readDefinitionCatalog();
     expect(catalog.active.compiled.snapshotId).toBe("required-slug");
     expect(catalog.events.map((event) => event.eventType)).toContain("revisionAppended");
     expect(catalog.events.map((event) => event.eventType)).toContain("snapshotActivated");
@@ -146,27 +47,32 @@ const incompatibleNoteDefinition = {
     expect(restored.entry.values["slug"]).toBe("a-durable-note");
     return { cms, entry };
   }),
-  verifyIncompatibleActivationRejected = Effect.gen(function* verifyIncompatibleActivationRejected() {
-    const { appended, cms } = yield* verifyIncompatibleRevisionAppended,
-      activation = yield* Effect.exit(
-        cms.activateDefinitionSnapshot({
-          expectedCatalogVersion: appended.version,
-          snapshot: {
-            definitionSpaceId: "definition-lifecycle",
-            definitions: [incompatibleNoteDefinition],
-            snapshotId: "incompatible-operation-contract",
-          },
-        }),
-      ),
-      catalog = yield* cms.readDefinitionCatalog;
-    expect(Exit.isFailure(activation)).toBeTrue();
-    expect((yield* cms.activeDefinitionSnapshot).snapshotId).toBe("initial");
-    expect(catalog.version).toBe(appended.version);
-  }),
+  verifyIncompatibleActivationRejected = Effect.gen(
+    function* verifyIncompatibleActivationRejected() {
+      const { appended, cms } = yield* verifyIncompatibleRevisionAppended,
+        activation = yield* Effect.exit(
+          cms.activateDefinitionSnapshot({
+            expectedCatalogVersion: appended.version,
+            snapshot: {
+              definitionSpaceId: "definition-lifecycle",
+              definitions: [incompatibleNoteDefinition],
+              snapshotId: "incompatible-operation-contract",
+            },
+          }),
+        ),
+        catalog = yield* cms.readDefinitionCatalog();
+      expect(Exit.isFailure(activation)).toBeTrue();
+      expect((yield* cms.activeDefinitionSnapshot()).snapshotId).toBe("initial");
+      expect(catalog.version).toBe(appended.version);
+    },
+  ),
   verifyIncompatibleRevisionAppended = Cms.Service.pipe(
     Effect.flatMap((cms) =>
       cms
-        .appendDefinitionRevision({ definition: incompatibleNoteDefinition, expectedCatalogVersion: 1 })
+        .appendDefinitionRevision({
+          definition: incompatibleNoteDefinition,
+          expectedCatalogVersion: 1,
+        })
         .pipe(Effect.map((appended) => ({ appended, cms }))),
     ),
   ),
@@ -191,9 +97,9 @@ const incompatibleNoteDefinition = {
         source: "integration test",
       });
     expect(migrated.migratedEntryCount).toBe(1);
-    expect(
-      (yield* cms.getEntry({ contentTypeId: "note", entryId: entry.id })).values["slug"],
-    ).toBe("a-durable-note");
+    expect((yield* cms.getEntry({ contentTypeId: "note", entryId: entry.id })).values["slug"]).toBe(
+      "a-durable-note",
+    );
     return { cms, entry };
   }),
   verifyMigrationPrepared = Effect.gen(function* verifyMigrationPrepared() {
@@ -211,12 +117,15 @@ const incompatibleNoteDefinition = {
           snapshotId: "required-slug",
         },
       }),
-      preparedCatalog = yield* cms.readDefinitionCatalog;
+      preparedCatalog = yield* cms.readDefinitionCatalog();
     return { cms, entry, preparation, preparedCatalog };
   }),
   verifyNoteEntryCreated = Effect.gen(function* verifyNoteEntryCreated() {
     const cms = yield* Cms.Service,
-      created = yield* cms.createEntry({ contentTypeId: "note", values: { title: "A durable note" } });
+      created = yield* cms.createEntry({
+        contentTypeId: "note",
+        values: { title: "A durable note" },
+      });
     if (!("entry" in created)) {
       return yield* Effect.die("Expected entry on create");
     }
@@ -238,7 +147,7 @@ const incompatibleNoteDefinition = {
         },
         source: "integration test",
       });
-    expect(appended.version).toBe(2);
+    expect(appended.version).toBe(secondCatalogVersion);
     expect(compatible.migratedEntryCount).toBe(0);
     expect((yield* cms.getEntry({ contentTypeId: "note", entryId: entry.id })).values).toEqual({
       title: "A durable note",
@@ -284,7 +193,7 @@ const incompatibleNoteDefinition = {
         }),
       );
     expect(Exit.isFailure(rejected)).toBeTrue();
-    expect((yield* cms.activeDefinitionSnapshot).snapshotId).toBe("optional-summary");
+    expect((yield* cms.activeDefinitionSnapshot()).snapshotId).toBe("optional-summary");
     return { appendedRequiredVersion: appendedRequired.version, cms, entry };
   });
 

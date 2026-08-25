@@ -29,7 +29,7 @@ const {
     writeTokenProperty,
   } = cmsSupport,
   applyMigrationRecords = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     input: Pick<ActivationContext, "generation" | "preparation" | "target"> & {
       readonly records: Map<string, EntryRecord>;
     },
@@ -62,7 +62,7 @@ const {
     return state.migrationPreparations.find((candidate) => candidate.id === preparationId);
   },
   resolveActivationPreparation = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     input: {
       readonly generation: EntryGeneration;
       readonly input: ActivateDefinitionSnapshotInput;
@@ -107,22 +107,21 @@ const {
     }
     if (input.migrationManifest === undefined) {
       return Effect.fail(
-        InvalidInput.make({ message: "A migration manifest is required for this Definition change" }),
+        InvalidInput.make({
+          message: "A migration manifest is required for this Definition change",
+        }),
       );
     }
     return Effect.succeed(input.migrationManifest);
   },
-  snapshotCompatibility = (
-    source: CompiledSnapshot,
-    target: CompiledSnapshot,
-  ): Compatibility => {
+  snapshotCompatibility = (source: CompiledSnapshot, target: CompiledSnapshot): Compatibility => {
     if (classifyCompatibility(source, target) === "compatible") {
       return "compatible";
     }
     return "migrationRequired";
   },
   validateMigratedRecords = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     input: Pick<ActivationContext, "generation" | "target"> & {
       readonly records: Map<string, EntryRecord>;
     },

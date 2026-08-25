@@ -9,18 +9,18 @@ interface GeneratedArtifact {
   readonly path: string;
 }
 
-const buildClientArtifacts = (
-  document: ReturnType<typeof HttpApiContract.headlessDocument>,
-  clientBasename: string,
-  outputDirectory: string,
-): Promise<readonly GeneratedArtifact[]> => {
-  const generatedClient = generateClientSource({
-    ...parseOpenApiDocument(document),
-    clientBasename,
-    formatVersion: 3,
-  });
-  return formatGeneratedClient(generatedClient, outputDirectory);
-},
+const buildClientArtifacts = <Document extends ReturnType<typeof HttpApiContract.headlessDocument>>(
+    document: Readonly<Document>,
+    clientBasename: string,
+    outputDirectory: string,
+  ): Promise<readonly GeneratedArtifact[]> => {
+    const generatedClient = generateClientSource({
+      ...parseOpenApiDocument(document),
+      clientBasename,
+      formatVersion: 3,
+    });
+    return formatGeneratedClient(generatedClient, outputDirectory);
+  },
   formatExitCodeSuccess = 0,
   formatGeneratedClient = (
     generatedClient: ReturnType<typeof generateClientSource>,
@@ -79,13 +79,17 @@ const buildClientArtifacts = (
     managementDocument = HttpApiContract.managementDocument(makeManagementOperations());
   {
     const [headlessClientArtifacts, managementClientArtifacts] = await Promise.all([
-      buildClientArtifacts(headlessDocument, "headless-openapi-client", "apps/example-cms/src/generated"),
-      buildClientArtifacts(
-        managementDocument,
-        "management-openapi-client",
-        "apps/example-cms/src/generated",
-      ),
-    ]),
+        buildClientArtifacts(
+          headlessDocument,
+          "headless-openapi-client",
+          "apps/example-cms/src/generated",
+        ),
+        buildClientArtifacts(
+          managementDocument,
+          "management-openapi-client",
+          "apps/example-cms/src/generated",
+        ),
+      ]),
       publicBlogHeadlessClientArtifacts = headlessClientArtifacts.map((artifact) => ({
         ...artifact,
         path: artifact.path.replace(

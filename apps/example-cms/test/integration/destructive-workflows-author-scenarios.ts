@@ -18,9 +18,9 @@ const readAuthorId = (exported: Readonly<Record<string, unknown>>): string => {
     return readStringField(authors[firstItemIndex], "id");
   },
   readExport = (system: ExampleSystem): Promise<Readonly<Record<string, unknown>>> =>
-    Promise.resolve(
-      system.handler(new Request("http://cms.test/api/v1/headless/export")),
-    ).then(jsonRecord),
+    Promise.resolve(system.handler(new Request("http://cms.test/api/v1/headless/export"))).then(
+      jsonRecord,
+    ),
   readPostId = (exported: Readonly<Record<string, unknown>>): string => {
     const { posts } = exported;
     if (!Array.isArray(posts) || !isRecord(posts[firstItemIndex])) {

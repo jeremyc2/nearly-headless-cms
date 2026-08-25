@@ -56,6 +56,7 @@ const applyRetention = (
       },
       try: operation,
     }),
+  base64BlockCharacterCount = 4,
   compatibleManifest = (source: CompiledSnapshot, target: CompiledSnapshot) => ({
     compatible: true,
     handlerIdentifier: "nearly-headless-cms.compatible-identity",
@@ -70,7 +71,8 @@ const applyRetention = (
     }
     try {
       const normalized = cursor.replaceAll("-", "+").replaceAll("_", "/"),
-        paddingLength = Math.ceil(normalized.length / 4) * 4,
+        paddingLength =
+          Math.ceil(normalized.length / base64BlockCharacterCount) * base64BlockCharacterCount,
         parsed: unknown = JSON.parse(atob(normalized.padEnd(paddingLength, "="))),
         payload = historyCursorPayloadFromUnknown(parsed),
         { entryId: parsedEntryId, offset } = payload ?? { entryId: "", offset: 0 };

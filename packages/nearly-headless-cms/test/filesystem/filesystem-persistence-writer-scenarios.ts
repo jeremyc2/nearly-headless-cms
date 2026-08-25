@@ -16,29 +16,49 @@ import { mkdtemp } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import { tmpdir } from "node:os";
 
-const runWithLayer = <Value, EffectError, LayerError, Requirements>(
-    layer: Layer.Layer<Requirements, LayerError>,
-    effect: Effect.Effect<Value, EffectError, Requirements>,
-  ): Promise<Value> =>
+const runWithLayer = <
+    Value,
+    EffectError,
+    LayerError,
+    Requirements,
+    LayerType extends Layer.Layer<Requirements, LayerError>,
+    EffectType extends Effect.Effect<Value, EffectError, Requirements>,
+  >(
+    layer: Readonly<LayerType>,
+    effect: EffectType,
+  ): Promise<Effect.Success<EffectType>> =>
     Effect.runPromise(
       // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer.
       effect.pipe(Effect.provide(layer)),
     ),
-  runWithLayerExit = <Value, EffectError, LayerError, Requirements>(
-    layer: Layer.Layer<Requirements, LayerError>,
-    effect: Effect.Effect<Value, EffectError, Requirements>,
-  ): Promise<Exit.Exit<Value, EffectError | LayerError>> =>
+  runWithLayerExit = <
+    Value,
+    EffectError,
+    LayerError,
+    Requirements,
+    LayerType extends Layer.Layer<Requirements, LayerError>,
+    EffectType extends Effect.Effect<Value, EffectError, Requirements>,
+  >(
+    layer: Readonly<LayerType>,
+    effect: EffectType,
+  ): Promise<Exit.Exit<Effect.Success<EffectType>, EffectError | LayerError>> =>
     Effect.runPromise(
       // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer.
       effect.pipe(Effect.provide(layer), Effect.exit),
     ),
   spawnWriterChild = (root: string): Promise<void> => {
-    const adaptersSourceUrl = pathToFileURL(join(import.meta.dir, "../../src/adapters/index.ts")).href,
+    const adaptersSourceUrl = pathToFileURL(
+        join(import.meta.dir, "../../src/adapters/index.ts"),
+      ).href,
       filesystemSourceUrl = pathToFileURL(
         join(import.meta.dir, "../../src/bun/filesystem/index.ts"),
       ).href,
       packageSourceUrl = pathToFileURL(join(import.meta.dir, "../../src/index.ts")).href,
-      writerProcess = Bun.spawn([process.execPath, "--eval", `
+      writerProcess = Bun.spawn(
+        [
+          process.execPath,
+          "--eval",
+          `
         import { Effect, Layer } from "effect";
         import { Persistence } from ${JSON.stringify(packageSourceUrl)};
         import { CryptoIdentifierGenerator } from ${JSON.stringify(adaptersSourceUrl)};
@@ -52,23 +72,27 @@ const runWithLayer = <Value, EffectError, LayerError, Requirements>(
           console.log("writer-ready");
           yield* Effect.never;
         })));
-      `], {
-        cwd: join(import.meta.dir, "../.."),
-        stderr: "pipe",
-        stdout: "pipe",
-      });
-    return writerProcess.stdout.getReader().read().then((firstOutput) => {
-      if (firstOutput.done) {
-        return new Response(writerProcess.stderr)
-          .text()
-          .then((standardError) => {
+      `,
+        ],
+        {
+          cwd: join(import.meta.dir, "../.."),
+          stderr: "pipe",
+          stdout: "pipe",
+        },
+      );
+    return writerProcess.stdout
+      .getReader()
+      .read()
+      .then((firstOutput) => {
+        if (firstOutput.done) {
+          return new Response(writerProcess.stderr).text().then((standardError) => {
             throw new Error(`Writer process exited before startup: ${standardError}`);
           });
-      }
-      expect(new TextDecoder().decode(firstOutput.value)).toContain("writer-ready");
-      writerProcess.kill(killSignal);
-      return writerProcess.exited.then(() => {});
-    });
+        }
+        expect(new TextDecoder().decode(firstOutput.value)).toContain("writer-ready");
+        writerProcess.kill(killSignal);
+        return writerProcess.exited.then(() => {});
+      });
   },
   verifyAbandonedStagingCleaned = (root: string): Promise<void> => {
     const filesystemLayer = durableFilesystemLayer(root);
@@ -119,12 +143,11 @@ const runWithLayer = <Value, EffectError, LayerError, Requirements>(
   },
   verifyWriterEnforcement = (): Promise<void> => {
     const writerPrefix = join(tmpdir(), "nearly-headless-cms-writer-");
-    return mkdtemp(writerPrefix)
-      .then((root) =>
-        verifyCompetingWriterRejected(root)
-          .then(() => verifyAbandonedStagingCleaned(root))
-          .then(() => verifyUnexpectedStagingPreserved(root)),
-      );
+    return mkdtemp(writerPrefix).then((root) =>
+      verifyCompetingWriterRejected(root)
+        .then(() => verifyAbandonedStagingCleaned(root))
+        .then(() => verifyUnexpectedStagingPreserved(root)),
+    );
   },
   verifyWriterLockRecovery = (): Promise<void> => {
     const crashPrefix = join(tmpdir(), "nearly-headless-cms-writer-crash-");

@@ -21,10 +21,7 @@ const {
     failValidation,
     validateIdentifier,
   } = validationSupport,
-  { resolveFields } = fieldResolution,
-  { validateEntryValues } = entryValuesValidation,
-  { validateRelationshipTargets } = relationshipValidation,
-  acceptSnapshotDefinitions = (input: SnapshotInput): ReadonlyMap<string, Definition> => {
+  acceptSnapshotDefinitions = (input: Readonly<SnapshotInput>): ReadonlyMap<string, Definition> => {
     const definitions = new Map<string, Definition>(),
       inputIssues = [
         ...validateIdentifier(input.definitionSpaceId, ["definitionSpaceId"]),
@@ -50,6 +47,9 @@ const {
     }
     return definitions;
   },
+  { resolveFields } = fieldResolution,
+  { validateEntryValues } = entryValuesValidation,
+  { validateRelationshipTargets } = relationshipValidation,
   assertRelationshipTargets = (contentTypes: Map<string, CompiledContentType>): void => {
     for (const [contentTypeId, compiledContentType] of contentTypes) {
       validateRelationshipTargets(contentTypes, compiledContentType.fields, [
@@ -90,6 +90,7 @@ const {
     }
     return contentTypes;
   },
+  compileDualInputMinimumArity = 2,
   // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- compileSnapshot is exported for typed internal call sites.
   compileSnapshot = (input: SnapshotInput, options: CompileOptions = {}): CompiledSnapshot => {
     const acceptedDefinitions = acceptSnapshotDefinitions(input),
@@ -121,23 +122,20 @@ const {
     };
   },
   // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- dual's generic overload is not inferred by the linter for this public helper.
-  pipeableCompile = Function.dual(
-    (arguments_) => {
-      if (arguments_.length >= 2) {
-        return true;
-      }
-      const [firstArgument] = arguments_;
-      return (
-        arguments_.length === 1 &&
-        typeof firstArgument === "object" &&
-        firstArgument !== null &&
-        "definitionSpaceId" in firstArgument &&
-        "definitions" in firstArgument &&
-        "snapshotId" in firstArgument
-      );
-    },
-    compileSnapshot,
-  );
+  pipeableCompile = Function.dual((arguments_) => {
+    if (arguments_.length >= compileDualInputMinimumArity) {
+      return true;
+    }
+    const [firstArgument] = arguments_;
+    return (
+      arguments_.length === 1 &&
+      typeof firstArgument === "object" &&
+      firstArgument !== null &&
+      "definitionSpaceId" in firstArgument &&
+      "definitions" in firstArgument &&
+      "snapshotId" in firstArgument
+    );
+  }, compileSnapshot);
 
 /** Compiles and fingerprints a complete snapshot or throws `InvalidInput` atomically. */
 export { compileSnapshot, pipeableCompile as compile };

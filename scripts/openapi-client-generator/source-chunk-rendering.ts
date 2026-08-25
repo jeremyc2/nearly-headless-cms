@@ -10,25 +10,25 @@ import {
 } from "./source-chunk-rendering-imports.ts";
 
 const renderComponentTypeImport = (
-  clientBasename: string,
-  componentSchemaNames: readonly string[],
-  renderedSource: string,
-): string => {
-  const usedComponentSchemaNames = componentSchemaNames.filter((componentSchemaName) =>
-    new RegExp(String.raw`\b${componentSchemaName}\b`, "u").test(renderedSource),
-  );
-  if (usedComponentSchemaNames.length === emptyItemCount) {
-    return "";
-  }
-  return `import type { ${usedComponentSchemaNames.join(", ")} } from "./${clientBasename}-component-types.ts";\n`;
-},
+    clientBasename: string,
+    componentSchemaNames: readonly string[],
+    renderedSource: string,
+  ): string => {
+    const usedComponentSchemaNames = componentSchemaNames.filter((componentSchemaName) =>
+      new RegExp(String.raw`\b${componentSchemaName}\b`, "u").test(renderedSource),
+    );
+    if (usedComponentSchemaNames.length === emptyItemCount) {
+      return "";
+    }
+    return `import type { ${usedComponentSchemaNames.join(", ")} } from "./${clientBasename}-component-types.ts";\n`;
+  },
   renderOperationChunks = ({
     clientBasename,
     componentSchemaNames,
     fileStem,
     operations,
     renderOperationFields,
-  }: RenderOperationChunksInput): readonly OperationChunk[] => {
+  }: Readonly<RenderOperationChunksInput>): readonly OperationChunk[] => {
     let chunkLabel = "OperationResponses";
     if (fileStem === "operation-inputs") {
       chunkLabel = "OperationInputs";
@@ -39,7 +39,9 @@ const renderComponentTypeImport = (
       chunkStartIndex < operations.length;
       chunkStartIndex += chunkOperationCount
     ) {
-      operationChunks.push(operations.slice(chunkStartIndex, chunkStartIndex + chunkOperationCount));
+      operationChunks.push(
+        operations.slice(chunkStartIndex, chunkStartIndex + chunkOperationCount),
+      );
     }
     return operationChunks.map((operationChunk, chunkIndex) => {
       let exportName = `${chunkLabel}Chunk`;
@@ -99,14 +101,13 @@ const renderComponentTypeImport = (
       };
     });
   },
-
- sourceChunkRendering = {
-  renderOperationChunks,
-  renderOperationInputFields,
-  renderOperationMethodFields,
-  renderOperationResponseFields,
-  renderSpecificationChunks,
-};
+  sourceChunkRendering = {
+    renderOperationChunks,
+    renderOperationInputFields,
+    renderOperationMethodFields,
+    renderOperationResponseFields,
+    renderSpecificationChunks,
+  };
 
 export {
   renderOperationChunks,

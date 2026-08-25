@@ -1,4 +1,5 @@
 import { Effect } from "effect";
+import { readPackageManifest } from "../../../scripts/package-manifest.ts";
 
 const allowedTopLevel = new Set([
     "package/package.json",
@@ -6,16 +7,13 @@ const allowedTopLevel = new Set([
     "package/LICENSE",
     "package/CHANGELOG.md",
   ]),
+  workspace = new URL("..", import.meta.url).pathname,
+  workspaceManifest = await readPackageManifest(`${workspace}/package.json`),
   successfulExitCode = 0,
   twoSpaceIndent = 2,
-  workspace = new URL("..", import.meta.url).pathname,
   workspaceArchiveDirectory = new URL("../../../.artifacts/npm/", import.meta.url).pathname,
-
- workspaceManifest = (await Bun.file(`${workspace}/package.json`).json()) as {
-  readonly version: string;
-},
- workspaceArchiveName = `nearly-headless-cms-${workspaceManifest.version}.tgz`,
- workspaceArchivePath = `${workspaceArchiveDirectory}${workspaceArchiveName}`;
+  workspaceArchiveName = `nearly-headless-cms-${workspaceManifest.version}.tgz`,
+  workspaceArchivePath = `${workspaceArchiveDirectory}${workspaceArchiveName}`;
 
 await Bun.$`mkdir -p ${workspaceArchiveDirectory}`.quiet();
 await Bun.$`rm -f ${workspaceArchivePath}`.quiet();

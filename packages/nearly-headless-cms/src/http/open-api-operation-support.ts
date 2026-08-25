@@ -1,12 +1,11 @@
 import type {
-  DeliveryOperation,
-  ManagementOperation,
   OperationSchema,
   OperationSchemas,
 } from "./http-contract.ts";
 import type { OperationDescriptor } from "./open-api-types.ts";
 import { Schema } from "effect";
 import buildCompletedOperation from "./open-api-operation-completion-support.ts";
+import openApiOperationDescriptorSupport from "./open-api-operation-descriptor-support.ts";
 import openApiSchemas from "./open-api-schemas.ts";
 
 interface OperationResponsesInput {
@@ -34,7 +33,9 @@ const {
     }
     return whenFalse;
   },
-  bEffectSchema = (schema: OperationSchema): Readonly<Record<string, unknown>> => {
+  bEffectSchema = <SchemaType extends OperationSchema>(
+    schema: Readonly<SchemaType>,
+  ): Readonly<Record<string, unknown>> => {
     const document = Schema.toJsonSchemaDocument(schema);
     if (Object.keys(document.definitions).length === firstIndex) {
       return document.schema;
@@ -72,9 +73,9 @@ const {
       {},
     );
   },
-  dPathParameterSchema = (
+  dPathParameterSchema = <SchemaType extends OperationSchema>(
     parameterName: string,
-    declaredSchema: OperationSchema | undefined,
+    declaredSchema: Readonly<SchemaType> | undefined,
   ): Readonly<Record<string, unknown>> => {
     if (declaredSchema !== undefined) {
       return bEffectSchema(declaredSchema);
@@ -84,9 +85,9 @@ const {
     }
     return { type: "string" };
   },
-  ePathParameters = (
+  ePathParameters = <Schemas extends OperationSchemas>(
     path: string,
-    operationSchemas?: OperationSchemas,
+    operationSchemas?: Readonly<Schemas>,
   ): readonly Readonly<Record<string, unknown>>[] =>
     [...path.matchAll(/\{(?<parameterName>[^}]+)\}/gu)].map((match) => {
       const parameterName = match.groups?.["parameterName"] ?? "";
@@ -100,9 +101,9 @@ const {
         ),
       };
     }),
-  fQueryParameters = (
+  fQueryParameters = <Schemas extends OperationSchemas>(
     operationIdentifier: string,
-    operationSchemas?: OperationSchemas,
+    operationSchemas?: Readonly<Schemas>,
   ): readonly Readonly<Record<string, unknown>>[] => {
     let declared = operationSchemas?.queryParameters;
     if (declared === undefined && paginatedOperations.has(operationIdentifier)) {
@@ -116,9 +117,9 @@ const {
       schema: bEffectSchema(schema),
     }));
   },
-  gHeaderParameters = (
+  gHeaderParameters = <Schemas extends OperationSchemas>(
     operationIdentifier: string,
-    operationSchemas?: OperationSchemas,
+    operationSchemas?: Readonly<Schemas>,
   ): readonly Readonly<Record<string, unknown>>[] => {
     const declared = {
       "CMS-Expected-Definition-Fingerprint": Schema.String,
@@ -135,17 +136,17 @@ const {
       schema: bEffectSchema(schema),
     }));
   },
-  hRequestBodySchema = (
+  hRequestBodySchema = <SchemaType extends OperationSchema>(
     operationIdentifier: string,
-    declaredRequestBody: OperationSchema | undefined,
+    declaredRequestBody: Readonly<SchemaType> | undefined,
   ): Readonly<Record<string, unknown>> | undefined => {
     if (declaredRequestBody !== undefined) {
       return bEffectSchema(declaredRequestBody);
     }
     return requestBodySchemas.get(operationIdentifier);
   },
-  iResponseSchema = (
-    operationDescriptor: OperationDescriptor,
+  iResponseSchema = <Descriptor extends OperationDescriptor>(
+    operationDescriptor: Readonly<Descriptor>,
     responseMediaType: string,
   ): Readonly<Record<string, unknown>> => {
     if (operationDescriptor.schemas === undefined) {
@@ -160,6 +161,10 @@ const {
     }
     return bEffectSchema(operationDescriptor.schemas.response);
   },
+  isOperationDescriptorMap = (
+    value: unknown,
+  ): value is Readonly<Record<string, OperationDescriptor>> =>
+    value !== null && typeof value === "object" && !Array.isArray(value),
   jResponseDescription = (bodyless: boolean): string =>
     aConditionalValue(
       bodyless,
@@ -172,7 +177,7 @@ const {
     responseMediaType,
     responseSchema,
     successStatus,
-  }: OperationResponsesInput): Readonly<Record<string, unknown>> => ({
+  }: Readonly<OperationResponsesInput>): Readonly<Record<string, unknown>> => ({
     [String(successStatus)]: {
       description: jResponseDescription(bodyless),
       ...aConditionalValue(
@@ -209,10 +214,10 @@ const {
       "application/octet-stream",
       "application/json",
     ),
-  nCompleteOperation = (
+  nCompleteOperation = <Descriptor extends OperationDescriptor>(
     path: string,
     method: string,
-    operationDescriptor: OperationDescriptor,
+    operationDescriptor: Readonly<Descriptor>,
   ): Readonly<Record<string, unknown>> => {
     const { operationIdentifier } = operationDescriptor,
       bodyless =
@@ -250,38 +255,33 @@ const {
       responseMediaType,
       responseSchema,
       successStatus:
-        operationDescriptor.successStatus ??
-        successStatuses.get(operationIdentifier) ??
-        okStatus,
+        operationDescriptor.successStatus ?? successStatuses.get(operationIdentifier) ?? okStatus,
     });
   },
-  pCompletePaths = (
-    paths: Readonly<Record<string, Readonly<Record<string, OperationDescriptor>>>>,
+  pCompletePaths = <
+    Paths extends Readonly<Record<string, Readonly<Record<string, OperationDescriptor>>>>,
+  >(
+    paths: Readonly<Paths>,
   ): Readonly<Record<string, Readonly<Record<string, unknown>>>> =>
     Object.fromEntries(
-      Object.entries(paths).map(([path, methods]) => [
-        path,
-        Object.fromEntries(
-          Object.entries(methods).map(([method, operationDescriptor]) => [
-            method,
-            nCompleteOperation(path, method, operationDescriptor),
-          ]),
-        ),
-      ]),
+      Object.entries(paths).map(([path, methods]) => {
+        let operationDescriptors: Readonly<Record<string, OperationDescriptor>> = {};
+        if (isOperationDescriptorMap(methods)) {
+          operationDescriptors = methods;
+        }
+        return [
+          path,
+          Object.fromEntries(
+            Object.entries(operationDescriptors).map(([method, operationDescriptor]) => [
+              method,
+              nCompleteOperation(path, method, operationDescriptor),
+            ]),
+          ),
+        ];
+      }),
     ),
-  qCustomDescriptor = (
-    operation: DeliveryOperation | ManagementOperation,
-  ): OperationDescriptor => {
-    const operationDescriptor: OperationDescriptor = {
-      operationIdentifier: operation.identifier,
-      schemas: operation.schemas,
-    };
-    if ("successStatus" in operation && operation.successStatus !== undefined) {
-      return { ...operationDescriptor, successStatus: operation.successStatus };
-    }
-    return operationDescriptor;
-  },
-  rDescriptor = (operationIdentifier: string): OperationDescriptor => ({ operationIdentifier });
+  qCustomDescriptor = openApiOperationDescriptorSupport.customDescriptor,
+  rDescriptor = openApiOperationDescriptorSupport.descriptor;
 
 export default {
   completePaths: pCompletePaths,

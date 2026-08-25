@@ -1,24 +1,23 @@
 import type { QuerySnapshotInput, SnapshotEntry } from "./delivery-public-content-types.ts";
 import { EntryQuery } from "nearly-headless-cms";
 
-const evaluateSnapshotQueryPage = ({
-    consistentSnapshot,
-    contentTypeId,
-    cursor,
-    sort,
-    where,
-  }: QuerySnapshotInput & { readonly cursor: string | undefined }) => {
-    const query = {
-      contentTypeId,
-      cursor,
-      pageSize: 100,
-    } as {
-      contentTypeId: string;
-      cursor: string | undefined;
-      pageSize: number;
-      sort?: QuerySnapshotInput["sort"];
-      where?: QuerySnapshotInput["where"];
-    };
+const evaluateSnapshotQueryPage = <
+    Input extends QuerySnapshotInput & { readonly cursor: string | undefined },
+  >(
+    input: Readonly<Input>,
+  ): EntryQuery.QueryPage => {
+    const { consistentSnapshot, contentTypeId, cursor, sort, where } = input,
+      query = {
+        contentTypeId,
+        cursor,
+        pageSize: 100,
+      } as {
+        contentTypeId: string;
+        cursor: string | undefined;
+        pageSize: number;
+        sort?: QuerySnapshotInput["sort"];
+        where?: QuerySnapshotInput["where"];
+      };
     if (sort !== undefined) {
       query.sort = sort;
     }
@@ -32,16 +31,14 @@ const evaluateSnapshotQueryPage = ({
       snapshot: consistentSnapshot.definitionSnapshot,
     });
   },
-  querySnapshot = ({
-    consistentSnapshot,
-    contentTypeId,
-    sort,
-    where,
-  }: QuerySnapshotInput): readonly SnapshotEntry[] => {
-    const entries: SnapshotEntry[] = [];
+  querySnapshot = <Input extends QuerySnapshotInput>(
+    input: Readonly<Input>,
+  ): readonly SnapshotEntry[] => {
+    const { consistentSnapshot, contentTypeId, sort, where } = input,
+      entries: SnapshotEntry[] = [];
     let cursor: string | undefined = undefined;
     do {
-      const page = evaluateSnapshotQueryPage({
+      const page: EntryQuery.QueryPage = evaluateSnapshotQueryPage({
         consistentSnapshot,
         contentTypeId,
         cursor,

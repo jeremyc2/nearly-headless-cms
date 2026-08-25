@@ -16,7 +16,9 @@ import { Effect } from "effect";
 import { HttpTransport } from "../../src/http/index.ts";
 import { expect } from "bun:test";
 
-type MultipartHandler = (request: Request) => Response | Promise<Response>;
+type MultipartHandler = <RequestType extends Request>(
+  request: Readonly<RequestType>,
+) => Response | Promise<Response>;
 
 const assetUrl = "http://cms.test/api/v1/management/definition-spaces/example-blog/assets",
   makeAcceptedForm = (): FormData => {
@@ -81,7 +83,9 @@ const assetUrl = "http://cms.test/api/v1/management/definition-spaces/example-bl
   // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
   verifyAcceptedMultipart = async (handler: MultipartHandler): Promise<void> => {
     const formAccepted = makeAcceptedForm(),
-      responseAccepted = await handler(new Request(assetUrl, { body: formAccepted, method: "POST" }));
+      responseAccepted = await handler(
+        new Request(assetUrl, { body: formAccepted, method: "POST" }),
+      );
     expect(responseAccepted.status).toBe(acceptedStatus);
     expect(await responseAccepted.json()).toMatchObject({
       metadata: {
@@ -96,7 +100,9 @@ const assetUrl = "http://cms.test/api/v1/management/definition-spaces/example-bl
   // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
   verifyOversizedMultipart = async (handler: MultipartHandler): Promise<void> => {
     const formOversized = makeOversizedForm(),
-      responseOversized = await handler(new Request(assetUrl, { body: formOversized, method: "POST" }));
+      responseOversized = await handler(
+        new Request(assetUrl, { body: formOversized, method: "POST" }),
+      );
     expect(responseOversized.status).toBe(contentTooLargeStatus);
     expect(await readJsonCode(responseOversized)).toBe("PayloadTooLarge");
   },

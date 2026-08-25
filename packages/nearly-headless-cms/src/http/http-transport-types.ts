@@ -1,7 +1,10 @@
+import type { DeliveryOperation, ManagementOperation } from "./http-contract.ts";
 import type {
-  DeliveryOperation,
-  ManagementOperation,
-} from "./http-contract.ts";
+  ReadonlyTransportAbortSignal,
+  ReadonlyTransportHandlerRequest,
+  ReadonlyTransportRequest,
+  ReadonlyTransportUrl,
+} from "./http-transport-readonly-types.ts";
 import type { CmsError } from "../cms-error.ts";
 import type { ServiceShape as CmsService } from "../cms.ts";
 import type { CompiledSnapshot } from "../content-definition.ts";
@@ -28,7 +31,7 @@ export interface Options {
 }
 
 /** Portable Web-standard request handler used for in-memory contract testing. */
-export type Handler = (request: Request) => Promise<Response>;
+export type Handler = (request: Readonly<ReadonlyTransportHandlerRequest>) => Promise<Response>;
 
 export interface JsonResponseInput {
   readonly cacheControl?: string;
@@ -43,30 +46,33 @@ export type OperationOutcome<Value> =
   | { readonly success: true; readonly value: Value };
 
 export interface RespondWithOutcomeInput<Value> {
-  readonly effect: Effect.Effect<Value, CmsError>;
+  readonly effect: (_void: void) => Effect.Effect<Value, CmsError>;
   readonly requestId: string;
-  readonly signal?: AbortSignal;
-  readonly success: (value: Value) => Response;
+  readonly signal?: ReadonlyTransportAbortSignal;
+  readonly success: (value: Readonly<Value>) => Response;
 }
 
 export interface RouteHandlerContext {
-  readonly cms: CmsService;
+  readonly cms: Readonly<CmsService>;
   readonly fingerprint: string;
   readonly managementBase: string;
   readonly maximumJsonBodyByteLength: number;
   readonly maximumMultipartBodyByteLength: number;
   readonly maximumMultipartFileByteLength: number;
   readonly maximumMultipartMetadataByteLength: number;
-  readonly parseJson: (request: Request, maximumByteLength: number) => Promise<JsonObject>;
-  readonly request: Request;
+  readonly parseJson: (
+    request: Pick<Request, "arrayBuffer" | "headers" | "json" | "method">,
+    maximumByteLength: number,
+  ) => Promise<JsonObject>;
+  readonly request: Readonly<ReadonlyTransportRequest>;
   readonly requestId: string;
-  readonly requestUrl: URL;
-  readonly signal: AbortSignal;
-  readonly snapshot: CompiledSnapshot;
+  readonly requestUrl: Readonly<ReadonlyTransportUrl>;
+  readonly signal: Readonly<ReadonlyTransportAbortSignal>;
+  readonly snapshot: Readonly<CompiledSnapshot>;
   readonly withOutcome: <Value>(
-    effect: Effect.Effect<Value, CmsError>,
+    effect: (_void: void) => Effect.Effect<Value, CmsError>,
     operationRequestId: string,
-    success: (value: Value) => Response,
+    success: (value: Readonly<Value>) => Response,
   ) => Promise<Response>;
 }
 

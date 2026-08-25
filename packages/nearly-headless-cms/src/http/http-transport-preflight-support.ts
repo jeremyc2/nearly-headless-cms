@@ -1,7 +1,14 @@
 import * as HttpApiContract from "./http-api.ts";
 import { type Options, type RouteHandlerContext } from "./http-transport-types.ts";
 import { discovery, headlessPrefix, managementPrefix } from "./http-contract.ts";
-import { RequestFailureError } from "./http-transport-request-failure.ts";
+import {
+  httpStatusForbidden,
+  httpStatusNoContent,
+  httpStatusNotModified,
+  httpStatusOk,
+} from "./http-status-codes.ts";
+import type { ReadonlyTransportRequest } from "./http-transport-readonly-types.ts";
+import transportPreflightLimits from "./http-transport-preflight-limits-support.ts";
 import transportResponse from "./http-transport-response.ts";
 
 interface TransportLimits {
@@ -11,31 +18,17 @@ interface TransportLimits {
 }
 
 const { bodylessResponse, jsonResponse, requestFailureResponse } = transportResponse,
-  acceptsJson = (accept: string | null): boolean => {
-    if (accept === null) {
-      return true;
-    }
-    return accept.split(",").some((mediaRange) => {
-      const mediaType = mediaRange.split(";", 1)[0]?.trim().toLowerCase();
-      return mediaType === "*/*" || mediaType === "application/json";
-    });
-  },
-  computeHeaderByteLength = (request: Request): number =>
-    [...request.headers].reduce(
-      (total, [name, value]) => total + name.length + value.length + 4,
-      0,
-    ),
-  handleCorsPreflight = (
-    request: Request,
+  handleCorsPreflight = <RequestType extends ReadonlyTransportRequest, OptionsType extends Options>(
+    request: Readonly<RequestType>,
     requestId: string,
-    options: Options,
+    options: Readonly<OptionsType>,
   ): Response | undefined => {
     if (request.method !== "OPTIONS" || options.cors === undefined) {
       return undefined;
     }
     const origin = request.headers.get("origin");
     if (origin === null || !options.cors.origins.includes(origin)) {
-      return bodylessResponse(403, requestId);
+      return bodylessResponse(httpStatusForbidden, requestId);
     }
     return new Response(null, {
       headers: {
@@ -45,13 +38,18 @@ const { bodylessResponse, jsonResponse, requestFailureResponse } = transportResp
         vary: "Origin",
         "x-request-id": requestId,
       },
-      status: 204,
+      status: httpStatusNoContent,
     });
   },
-  handleDiscoveryRoute = (
-    context: RouteHandlerContext,
-    operations: NonNullable<Options["deliveryOperations"]>,
-  ): Response | undefined => {
+  handleDiscoveryRoute = <
+    Context extends RouteHandlerContext,
+    Operations extends Readonly<NonNullable<Options["deliveryOperations"]>>,
+  >(
+    context: Readonly<Context>,
+    operations: Operations,
+  ): Operations extends Readonly<NonNullable<Options["deliveryOperations"]>>
+    ? Response | undefined
+    : never => {
     if (
       context.requestUrl.pathname !== `${headlessPrefix}/schema` ||
       context.request.method !== "GET"
@@ -66,18 +64,26 @@ const { bodylessResponse, jsonResponse, requestFailureResponse } = transportResp
     headers.set("content-type", "application/json; charset=utf-8");
     headers.set("etag", `"${context.fingerprint}"`);
     if (context.request.headers.get("if-none-match") === `"${context.fingerprint}"`) {
-      return new Response(null, { headers, status: 304 });
+      return new Response(null, { headers, status: httpStatusNotModified });
     }
     return Response.json(discovery({ operations, snapshot: context.snapshot }), {
       headers,
-      status: 200,
+      status: httpStatusOk,
     });
   },
-  handleOpenApiRoutes = (
-    context: RouteHandlerContext,
-    operations: NonNullable<Options["deliveryOperations"]>,
-    managementOperations: NonNullable<Options["managementOperations"]>,
-  ): Response | undefined => {
+  handleOpenApiRoutes = <
+    Context extends RouteHandlerContext,
+    Operations extends Readonly<NonNullable<Options["deliveryOperations"]>>,
+    ManagementOperations extends Readonly<NonNullable<Options["managementOperations"]>>,
+  >(
+    context: Readonly<Context>,
+    operations: Operations,
+    managementOperations: ManagementOperations,
+  ): Operations extends Readonly<NonNullable<Options["deliveryOperations"]>>
+    ? ManagementOperations extends Readonly<NonNullable<Options["managementOperations"]>>
+      ? Response | undefined
+      : never
+    : never => {
     if (
       context.requestUrl.pathname === `${managementPrefix}/openapi.json` &&
       context.request.method === "GET"
@@ -85,69 +91,47 @@ const { bodylessResponse, jsonResponse, requestFailureResponse } = transportResp
       return jsonResponse({
         fingerprint: context.fingerprint,
         requestId: context.requestId,
-        status: 200,
+        status: httpStatusOk,
         value: HttpApiContract.managementDocument(managementOperations),
       });
     }
-    if (context.requestUrl.pathname === `${headlessPrefix}/openapi.json` && context.request.method === "GET") {
+    if (
+      context.requestUrl.pathname === `${headlessPrefix}/openapi.json` &&
+      context.request.method === "GET"
+    ) {
       return jsonResponse({
         cacheControl: "no-cache",
         fingerprint: context.fingerprint,
         requestId: context.requestId,
-        status: 200,
+        status: httpStatusOk,
         value: HttpApiContract.headlessDocument(operations),
       });
     }
     return undefined;
   },
-  isAssetRequest = (request: Request): boolean => {
-    if (request.method !== "GET" && request.method !== "HEAD") {
-      return false;
-    }
-    return /\/assets\/[^/]+$/u.test(new URL(request.url).pathname);
-  },
-  validateTransportLimits = (
-    request: Request,
+  validateTransportLimits = <
+    RequestType extends ReadonlyTransportRequest,
+    Limits extends TransportLimits,
+  >(
+    request: Readonly<RequestType>,
     requestId: string,
-    limits: TransportLimits,
+    limits: Readonly<Limits>,
   ): Response | undefined => {
     const accept = request.headers.get("accept"),
       declaredBodyByteLength = Number(request.headers.get("content-length")),
-      headerByteLength = computeHeaderByteLength(request);
-    if (request.url.length > limits.maximumUrlLength) {
-      return requestFailureResponse(
-        new RequestFailureError("UriTooLong", "Request URL exceeds the configured limit", 414),
-        requestId,
-      );
-    }
-    if (headerByteLength > limits.maximumHeaderByteLength) {
-      return requestFailureResponse(
-        new RequestFailureError(
-          "HeadersTooLarge",
-          "Request headers exceed the configured limit",
-          431,
+      limitFailures = [
+        transportPreflightLimits.validateUrlLength(request, limits.maximumUrlLength),
+        transportPreflightLimits.validateHeaderByteLength(request, limits.maximumHeaderByteLength),
+        transportPreflightLimits.validateJsonAccept(request, accept),
+        transportPreflightLimits.validateJsonBodyByteLength(
+          declaredBodyByteLength,
+          limits.maximumJsonBodyByteLength,
         ),
-        requestId,
-      );
-    }
-    if (!isAssetRequest(request) && !acceptsJson(accept)) {
-      return requestFailureResponse(
-        new RequestFailureError(
-          "NotAcceptable",
-          "The requested response media type is not available",
-          406,
-        ),
-        requestId,
-      );
-    }
-    if (
-      Number.isFinite(declaredBodyByteLength) &&
-      declaredBodyByteLength > limits.maximumJsonBodyByteLength
-    ) {
-      return requestFailureResponse(
-        new RequestFailureError("PayloadTooLarge", "Request body exceeds the configured limit", 413),
-        requestId,
-      );
+      ];
+    for (const limitFailure of limitFailures) {
+      if (limitFailure !== undefined) {
+        return requestFailureResponse(limitFailure, requestId);
+      }
     }
     return undefined;
   };

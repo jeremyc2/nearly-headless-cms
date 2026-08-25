@@ -6,7 +6,7 @@ const relationship = (
   text = (
     options: Omit<ContentDefinition.TextFieldKind, "kind"> = {},
   ): ContentDefinition.TextFieldKind => ({ kind: "text", ...options }),
-  zDefinitionSnapshot = ContentDefinition.compile({
+  zDefinitionSnapshot = ContentDefinition.compileSnapshot({
     definitionSpaceId: "example-blog",
     definitions: [
       {

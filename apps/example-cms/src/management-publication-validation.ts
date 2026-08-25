@@ -2,8 +2,8 @@ import { type Cms, CmsError, type ContentDefinition } from "nearly-headless-cms"
 import { Effect } from "effect";
 import managementSupport from "./management-support.ts";
 
-interface CollectRichTextPublicationRulesInput {
-  readonly issues: CmsError.ValidationIssue[];
+interface CollectRichTextPublicationRulesInput<Issues extends CmsError.ValidationIssue[]> {
+  readonly issues: Issues;
   readonly path: readonly (string | number)[];
   readonly references: RichTextPublicationReference[];
   readonly value: unknown;
@@ -15,10 +15,10 @@ interface RichTextPublicationReference {
 }
 
 const { isRecord } = managementSupport,
-  collectFeaturedImageAlternativeTextIssue = (
-    issues: CmsError.ValidationIssue[],
-    values: ContentDefinition.JsonObject,
-  ): void => {
+  collectFeaturedImageAlternativeTextIssue = <Issues extends CmsError.ValidationIssue[]>(
+    issues: Issues,
+    values: Readonly<ContentDefinition.JsonObject>,
+  ): Issues => {
     if (
       typeof values["featured-asset"] === "string" &&
       (typeof values["featured-alternative-text"] !== "string" ||
@@ -30,12 +30,16 @@ const { isRecord } = managementSupport,
         reason: "missingAlternativeText",
       });
     }
+    return issues;
   },
-  collectRichTextAssetAlternativeTextIssue = (
-    issues: CmsError.ValidationIssue[],
+  collectRichTextAssetAlternativeTextIssue = <
+    Issues extends CmsError.ValidationIssue[],
+    ObjectValue extends Record<string, unknown>,
+  >(
+    issues: Issues,
     path: readonly (string | number)[],
-    objectValue: Record<string, unknown>,
-  ): void => {
+    objectValue: Readonly<ObjectValue>,
+  ): Issues => {
     const { alternativeText } = objectValue,
       nodeType = objectValue["type"];
     if (
@@ -48,38 +52,57 @@ const { isRecord } = managementSupport,
         reason: "missingAlternativeText",
       });
     }
+    return issues;
   },
-  collectRichTextEntryReference = (
-    objectValue: Record<string, unknown>,
+  collectRichTextEntryReference = <
+    References extends RichTextPublicationReference[],
+    ObjectValue extends Record<string, unknown>,
+  >(
+    objectValue: Readonly<ObjectValue>,
     path: readonly (string | number)[],
-    references: RichTextPublicationReference[],
-  ): void => {
+    references: References,
+  ): References => {
     const entryIdentifier = objectValue["entryId"],
       nodeType = objectValue["type"];
     if (nodeType === "entry-reference" && typeof entryIdentifier === "string") {
       references.push({ entryIdentifier, path: [...path, "entryId"] });
     }
+    return references;
   },
-  collectRichTextPublicationRules = ({
-    issues,
-    path,
-    references,
-    value,
-  }: CollectRichTextPublicationRulesInput): void => {
+  collectRichTextPublicationRules = <
+    Issues extends CmsError.ValidationIssue[],
+    Input extends Readonly<CollectRichTextPublicationRulesInput<Issues>>,
+  >(
+    input: Input,
+  ): Input["issues"] => {
+    const { issues, path, references, value } = input;
     if (Array.isArray(value)) {
       for (const [index, child] of value.entries()) {
         collectRichTextPublicationRules({
           issues,
           path: [...path, index],
           references,
-          value: child,
+          value: child as unknown,
         });
       }
-      return;
+      return issues;
     }
     if (value === null || typeof value !== "object" || !isRecord(value)) {
-      return;
+      return issues;
     }
+    return collectRichTextPublicationRulesForObject({ issues, path, references, value });
+  },
+  collectRichTextPublicationRulesForObject = <
+    Issues extends CmsError.ValidationIssue[],
+    Input extends Readonly<
+      CollectRichTextPublicationRulesInput<Issues> & {
+        readonly value: Record<string, unknown>;
+      }
+    >,
+  >(
+    input: Input,
+  ): Input["issues"] => {
+    const { issues, path, references, value } = input;
     collectRichTextAssetAlternativeTextIssue(issues, path, value);
     collectRichTextEntryReference(value, path, references);
     for (const [key, child] of Object.entries(value)) {
@@ -90,9 +113,10 @@ const { isRecord } = managementSupport,
         value: child,
       });
     }
+    return issues;
   },
-  resolvePublicationReferenceTarget = (
-    cms: Cms.ServiceShape,
+  resolvePublicationReferenceTarget = <CmsService extends Cms.ServiceShape>(
+    cms: Readonly<CmsService>,
     entryIdentifier: string,
   ): Effect.Effect<Cms.ConsistentReadSnapshot["entries"][number] | null, CmsError.CmsError> =>
     Effect.gen(function* resolvePublicationReferenceTargetState() {
@@ -106,9 +130,9 @@ const { isRecord } = managementSupport,
       }
       return null;
     }),
-  validatePostPublication = (
-    cms: Cms.ServiceShape,
-    values: ContentDefinition.JsonObject,
+  validatePostPublication = <CmsService extends Cms.ServiceShape>(
+    cms: Readonly<CmsService>,
+    values: Readonly<ContentDefinition.JsonObject>,
   ): Effect.Effect<void, CmsError.CmsError> =>
     Effect.gen(function* validatePostPublicationState() {
       const issues: CmsError.ValidationIssue[] = [],
@@ -129,11 +153,14 @@ const { isRecord } = managementSupport,
       }
       return yield* Effect.void;
     }),
-  validateRichTextPublicationReferences = (
-    cms: Cms.ServiceShape,
-    issues: CmsError.ValidationIssue[],
+  validateRichTextPublicationReferences = <
+    CmsService extends Cms.ServiceShape,
+    Issues extends CmsError.ValidationIssue[],
+  >(
+    cms: Readonly<CmsService>,
+    issues: Issues,
     references: readonly RichTextPublicationReference[],
-  ): Effect.Effect<void, CmsError.CmsError> =>
+  ): Effect.Effect<Issues, CmsError.CmsError> =>
     Effect.gen(function* validateRichTextPublicationReferenceTargets() {
       for (const reference of references) {
         const target = yield* resolvePublicationReferenceTarget(cms, reference.entryIdentifier);
@@ -148,6 +175,7 @@ const { isRecord } = managementSupport,
           });
         }
       }
+      return issues;
     });
 
 export default {

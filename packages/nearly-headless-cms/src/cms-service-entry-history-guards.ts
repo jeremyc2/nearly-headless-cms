@@ -1,8 +1,4 @@
-import {
-  type CmsError,
-  Conflict,
-  NotFound,
-} from "./cms-error.ts";
+import { type CmsError, Conflict, NotFound } from "./cms-error.ts";
 import type {
   CmsServiceOperationContext,
   CompiledContentType,
@@ -57,8 +53,15 @@ const { attempt, decodeHistoryCursor, entryResource, historyCursor } = cmsSuppor
     contentType: CompiledContentType | undefined,
     current: EntryRecord | undefined,
     input: RestoreInput,
-  ): Effect.Effect<{ readonly contentType: CompiledContentType; readonly current: EntryRecord }, CmsError> => {
-    if (contentType?.definition.history !== true || current === undefined || current.writeToken !== input.writeToken) {
+  ): Effect.Effect<
+    { readonly contentType: CompiledContentType; readonly current: EntryRecord },
+    CmsError
+  > => {
+    if (
+      contentType?.definition.history !== true ||
+      current === undefined ||
+      current.writeToken !== input.writeToken
+    ) {
       if (current === undefined) {
         return Effect.fail(
           NotFound.make({ message: `Entry History ${input.entryId} was not found` }),
@@ -69,7 +72,7 @@ const { attempt, decodeHistoryCursor, entryResource, historyCursor } = cmsSuppor
     return Effect.succeed({ contentType, current });
   },
   authorizeHistoryEntry = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     input: {
       readonly action: "entry.history.purge" | "entry.history.read" | "entry.history.restore";
       readonly contentTypeId: string;
@@ -77,21 +80,19 @@ const { attempt, decodeHistoryCursor, entryResource, historyCursor } = cmsSuppor
     },
   ): Effect.Effect<CompiledSnapshot, CmsError> =>
     Effect.gen(function* authorizeHistoryEntryEffect() {
-      const snapshot = yield* context.currentDefinitionSnapshot;
+      const snapshot = yield* context.readCurrentDefinitionSnapshot();
       yield* context.authorize(
         input.action,
         entryResource(snapshot, input.contentTypeId, input.entryId),
       );
       return snapshot;
     }),
-  buildRevisionPage = (
-    input: {
-      readonly cursor: string | undefined;
-      readonly entryId: string;
-      readonly pageSize: number;
-      readonly revisions: readonly Revision[];
-    },
-  ): Effect.Effect<RevisionPage, CmsError> =>
+  buildRevisionPage = (input: {
+    readonly cursor: string | undefined;
+    readonly entryId: string;
+    readonly pageSize: number;
+    readonly revisions: readonly Revision[];
+  }): Effect.Effect<RevisionPage, CmsError> =>
     Effect.gen(function* buildRevisionPageEffect() {
       const newestFirst = [...input.revisions].toReversed(),
         offset = yield* attempt(() => decodeHistoryCursor(input.cursor, input.entryId)),
@@ -99,7 +100,10 @@ const { attempt, decodeHistoryCursor, entryResource, historyCursor } = cmsSuppor
           .slice(offset, offset + input.pageSize)
           .map(({ values: _values, ...metadata }) => metadata);
       if (offset + pageItems.length < newestFirst.length) {
-        return { items: pageItems, nextCursor: historyCursor(offset + pageItems.length, input.entryId) };
+        return {
+          items: pageItems,
+          nextCursor: historyCursor(offset + pageItems.length, input.entryId),
+        };
       }
       return { items: pageItems };
     }),

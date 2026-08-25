@@ -1,9 +1,8 @@
 import { Effect } from "effect";
+import { readPackageManifest } from "../../../scripts/package-manifest.ts";
 
 const packageDirectory = new URL("..", import.meta.url).pathname,
-  packageManifest = (await Bun.file(`${packageDirectory}/package.json`).json()) as {
-    readonly version: string;
-  },
+  packageManifest = await readPackageManifest(`${packageDirectory}/package.json`),
   repository = new URL("../../../", import.meta.url).pathname,
   repositoryArchivePath =
     Bun.env["PACKAGE_ARCHIVE"] ??

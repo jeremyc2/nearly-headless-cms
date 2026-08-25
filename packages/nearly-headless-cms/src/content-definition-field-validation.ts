@@ -31,13 +31,11 @@ const { createValidationIssue, customIdentifierPattern, emptyLength, validateIde
     path: readonly (string | number)[],
     registration: CustomFieldRegistration,
   ): readonly ValidationIssue[] =>
-    registration
-      .validateConfiguration(configuration)
-      .map((configurationIssue) =>
-        Object.assign(configurationIssue, {
-          path: [...path, "kind", "configuration", ...configurationIssue.path],
-        }),
-      ),
+    registration.validateConfiguration(configuration).map((configurationIssue) =>
+      Object.assign(configurationIssue, {
+        path: [...path, "kind", "configuration", ...configurationIssue.path],
+      }),
+    ),
   validateCustomFieldKindIdentifier = (
     fieldKind: Extract<Field["kind"], { kind: "custom" }>,
     path: readonly (string | number)[],
@@ -108,12 +106,12 @@ const { createValidationIssue, customIdentifierPattern, emptyLength, validateIde
     }
     return [];
   },
-  validateFieldDefaultValuePresence = ({
+  validateFieldDefaultValuePresence = <Input extends ValidateFieldDefaultValuePresenceInput>({
     customRegistrations,
     field,
     issues,
     path,
-  }: ValidateFieldDefaultValuePresenceInput): void => {
+  }: Readonly<Input>): void => {
     if (field.defaultValue !== undefined) {
       issues.push(
         ...validateValue({

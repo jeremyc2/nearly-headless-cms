@@ -7,7 +7,9 @@ import { DevelopmentCms } from "../../src/testing/index.ts";
 const FOURTH_REVISION_NUMBER = 4,
   SECOND_REVISION_NUMBER = 2,
   THIRD_REVISION_NUMBER = 3,
-  run = <Value, Error>(effect: Effect.Effect<Value, Error, Cms.Service>): Promise<Value> => {
+  run = <Error, EffectType extends Effect.Effect<unknown, Error, Cms.Service>>(
+    effect: EffectType,
+  ): Promise<Effect.Success<EffectType>> => {
     const layer = DevelopmentCms.layer({ snapshot }),
       // This test helper is the application entry point for each isolated test run.
       // The layer must be provided here so every run gets a fresh in-memory CMS.

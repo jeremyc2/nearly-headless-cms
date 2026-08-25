@@ -3,6 +3,7 @@ import { type JsonObject, isJsonObject } from "../internal/json.ts";
 import type { RouteHandlerContext, RouteHandlerResult } from "./http-transport-types.ts";
 import type { AppendDefinitionRevisionInput } from "../cms-types.ts";
 import { Effect } from "effect";
+import { httpStatusOk } from "./http-status-codes.ts";
 import transportOperation from "./http-transport-operation.ts";
 import transportResponse from "./http-transport-response.ts";
 
@@ -10,7 +11,11 @@ type Definition = AppendDefinitionRevisionInput["definition"];
 
 const { jsonResponse } = transportResponse,
   { matchPath, requiredPathParameter } = transportOperation,
-  catalogJsonResponse = (context: RouteHandlerContext, status: number, value: unknown): Response =>
+  catalogJsonResponse = (
+    context: Readonly<RouteHandlerContext>,
+    status: number,
+    value: unknown,
+  ): Response =>
     jsonResponse({
       fingerprint: context.fingerprint,
       requestId: context.requestId,
@@ -18,7 +23,7 @@ const { jsonResponse } = transportResponse,
       value,
     }),
   handleDefinitionDetailRoute = (
-    context: RouteHandlerContext,
+    context: Readonly<RouteHandlerContext>,
   ): RouteHandlerResult | Promise<RouteHandlerResult> => {
     const definitionMatch = matchPath(
       `${context.managementBase}/definitions/{definitionId}`,
@@ -28,41 +33,45 @@ const { jsonResponse } = transportResponse,
       return undefined;
     }
     return context.withOutcome(
-      context.cms.readDefinitionCatalog.pipe(
-        Effect.flatMap((state) => {
-          const definition = state.active.input.definitions.find(
-              (candidate) =>
-                candidate.id === requiredPathParameter(definitionMatch, "definitionId"),
-            ),
-            definitionId = requiredPathParameter(definitionMatch, "definitionId");
-          if (definition === undefined) {
-            return Effect.fail(
-              NotFound.make({ message: `Definition ${definitionId} was not found` }),
-            );
-          }
-          return Effect.succeed({
-            catalogVersion: state.version,
-            definition,
-            retired: state.retiredDefinitionIds.has(definitionId),
-          });
-        }),
-      ),
+      () =>
+        context.cms.readDefinitionCatalog().pipe(
+          Effect.flatMap((state) => {
+            const definition = state.active.input.definitions.find(
+                (candidate) =>
+                  candidate.id === requiredPathParameter(definitionMatch, "definitionId"),
+              ),
+              definitionId = requiredPathParameter(definitionMatch, "definitionId");
+            if (definition === undefined) {
+              return Effect.fail(
+                NotFound.make({ message: `Definition ${definitionId} was not found` }),
+              );
+            }
+            return Effect.succeed({
+              catalogVersion: state.version,
+              definition,
+              retired: state.retiredDefinitionIds.has(definitionId),
+            });
+          }),
+        ),
       context.requestId,
-      (value) => catalogJsonResponse(context, 200, value),
+      (value) => catalogJsonResponse(context, httpStatusOk, value),
     );
   },
   handleDefinitionRevisionsListRoute = (
-    context: RouteHandlerContext,
+    context: Readonly<RouteHandlerContext>,
     definitionId: string,
   ): RouteHandlerResult | Promise<RouteHandlerResult> =>
-    context.withOutcome(context.cms.readDefinitionCatalog, context.requestId, (state) =>
-      catalogJsonResponse(context, 200, {
-        catalogVersion: state.version,
-        items: state.revisions.filter((revision) => revision.definitionId === definitionId),
-      }),
+    context.withOutcome(
+      () => context.cms.readDefinitionCatalog(),
+      context.requestId,
+      (state) =>
+        catalogJsonResponse(context, httpStatusOk, {
+          catalogVersion: state.version,
+          items: state.revisions.filter((revision) => revision.definitionId === definitionId),
+        }),
     ),
   handleDefinitionSnapshotDetailRoute = (
-    context: RouteHandlerContext,
+    context: Readonly<RouteHandlerContext>,
   ): RouteHandlerResult | Promise<RouteHandlerResult> => {
     const definitionSnapshotMatch = matchPath(
       `${context.managementBase}/definition-snapshots/{snapshotId}`,
@@ -72,26 +81,27 @@ const { jsonResponse } = transportResponse,
       return undefined;
     }
     return context.withOutcome(
-      context.cms.readDefinitionCatalog.pipe(
-        Effect.flatMap((state) => {
-          const snapshotId = requiredPathParameter(definitionSnapshotMatch, "snapshotId"),
-            snapshotRecord = state.snapshots.find(
-              (candidate) => candidate.compiled.snapshotId === snapshotId,
-            );
-          if (snapshotRecord === undefined) {
-            return Effect.fail(
-              NotFound.make({ message: `Definition Snapshot ${snapshotId} was not found` }),
-            );
-          }
-          return Effect.succeed({
-            ...snapshotRecord.input,
-            activatedAt: snapshotRecord.activatedAt,
-            fingerprint: snapshotRecord.compiled.fingerprint,
-          });
-        }),
-      ),
+      () =>
+        context.cms.readDefinitionCatalog().pipe(
+          Effect.flatMap((state) => {
+            const snapshotId = requiredPathParameter(definitionSnapshotMatch, "snapshotId"),
+              snapshotRecord = state.snapshots.find(
+                (candidate) => candidate.compiled.snapshotId === snapshotId,
+              );
+            if (snapshotRecord === undefined) {
+              return Effect.fail(
+                NotFound.make({ message: `Definition Snapshot ${snapshotId} was not found` }),
+              );
+            }
+            return Effect.succeed({
+              ...snapshotRecord.input,
+              activatedAt: snapshotRecord.activatedAt,
+              fingerprint: snapshotRecord.compiled.fingerprint,
+            });
+          }),
+        ),
       context.requestId,
-      (value) => catalogJsonResponse(context, 200, value),
+      (value) => catalogJsonResponse(context, httpStatusOk, value),
     );
   },
   hasStringField = (value: JsonObject, key: string): boolean =>
@@ -128,7 +138,11 @@ const { jsonResponse } = transportResponse,
       "Definition revision append requires a matching definition and expectedCatalogVersion",
     ),
   }),
-  requireMatchingDefinition = (value: unknown, definitionId: string, message: string): Definition => {
+  requireMatchingDefinition = (
+    value: unknown,
+    definitionId: string,
+    message: string,
+  ): Definition => {
     if (!isMatchingDefinition(value, definitionId)) {
       throw InvalidInput.make({ message });
     }

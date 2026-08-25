@@ -6,10 +6,10 @@ import { Effect } from "effect";
 
 const createVerifiedAuthor = Effect.gen(function* createVerifiedAuthor() {
     const author = yield* Cms.Service.pipe(
-        Effect.flatMap((cms) =>
-          cms.createEntry({ contentTypeId: "author", values: { name: "Ada" } }),
-        ),
-      );
+      Effect.flatMap((cms) =>
+        cms.createEntry({ contentTypeId: "author", values: { name: "Ada" } }),
+      ),
+    );
     expect("writeToken" in author).toBeFalse();
     if ("writeToken" in author) {
       return yield* Effect.die("Author entry unexpectedly returned a write token");
@@ -33,7 +33,10 @@ const createVerifiedAuthor = Effect.gen(function* createVerifiedAuthor() {
     expect(post.entry.values["status"]).toBe("draft");
     return { author, post };
   }),
-  run = <Value, Error>(effect: Effect.Effect<Value, Error, Cms.Service>): Promise<Value> => {
+  firstRevisionNumber = 1,
+  run = <Error, EffectType extends Effect.Effect<unknown, Error, Cms.Service>>(
+    effect: EffectType,
+  ): Promise<Effect.Success<EffectType>> => {
     const layer = DevelopmentCms.layer({ snapshot }),
       // This test helper is the application entry point for each isolated test run.
       // The layer must be provided here so every run gets a fresh in-memory CMS.
@@ -41,6 +44,7 @@ const createVerifiedAuthor = Effect.gen(function* createVerifiedAuthor() {
       providedEffect = effect.pipe(Effect.provide(layer));
     return Effect.runPromise(providedEffect);
   },
+  secondRevisionNumber = 2,
   snapshot: CompiledSnapshot = compileSnapshot({
     definitionSpaceId: "example-blog",
     definitions: [
@@ -100,8 +104,11 @@ const createVerifiedAuthor = Effect.gen(function* createVerifiedAuthor() {
     if (!("writeToken" in publishedPost)) {
       return yield* Effect.die("Expected write token on post update");
     }
-    expect(publishedPost.revisionNumber).toBe(2);
-    expect(revisionListing.items.map((revision) => revision.revisionNumber)).toEqual([2, 1]);
+    expect(publishedPost.revisionNumber).toBe(secondRevisionNumber);
+    expect(revisionListing.items.map((revision) => revision.revisionNumber)).toEqual([
+      secondRevisionNumber,
+      firstRevisionNumber,
+    ]);
     return yield* Effect.void;
   });
 

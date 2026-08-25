@@ -6,7 +6,7 @@ import {
   historyLimit,
   signature,
 } from "./transactions-constants.ts";
-import { RichText } from "nearly-headless-cms";
+import type { RichText } from "nearly-headless-cms";
 import { normalize } from "./transactions-normalize.ts";
 import transactionsSupport from "./transactions-support.ts";
 
@@ -23,7 +23,7 @@ const { conditionalValue } = transactionsSupport,
     return workCommitChangedDocument(state, normalized, selection);
   },
   create = (document: RichText.Document = emptyDocument()): State => {
-    const normalized = normalize(RichText.validate(document));
+    const normalized = normalize(document);
     return {
       cleanSignature: signature(normalized),
       composing: false,

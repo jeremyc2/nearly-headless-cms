@@ -1,8 +1,5 @@
 import { Clock, DateTime, Effect } from "effect";
-import {
-  type CmsError,
-  NotFound,
-} from "./cms-error.ts";
+import { type CmsError, NotFound } from "./cms-error.ts";
 import type { CompiledContentType, CompiledSnapshot } from "./content-definition.ts";
 import type { EntryGeneration, EntryRecord } from "./persistence.ts";
 import type { CmsServiceOperationContext } from "./cms-service-operation-context.ts";
@@ -25,24 +22,20 @@ interface RemoveDeletedEntryRecordInput {
 }
 
 const { applyRetention } = cmsSupport,
-  {
-    assertLiveEntry,
-    assertReferenceDeletionAllowed,
-    assertWriteToken,
-  } = entryOperationSupport,
+  { assertLiveEntry, assertReferenceDeletionAllowed, assertWriteToken } = entryOperationSupport,
   prepareDeleteEntry = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     snapshot: CompiledSnapshot,
     input: DeleteEntryInput,
   ): Effect.Effect<PreparedDeleteEntry, CmsError> =>
     Effect.gen(function* prepareDeleteEntryEffect() {
       const contentType = snapshot.contentTypes.get(input.contentTypeId),
         current = yield* assertLiveEntry(
-          (yield* context.persistence.readGeneration).records.get(input.entryId),
+          (yield* context.persistence.readGeneration()).records.get(input.entryId),
           input.contentTypeId,
           input.entryId,
         ),
-        deleteGeneration = yield* context.persistence.readGeneration;
+        deleteGeneration = yield* context.persistence.readGeneration();
       if (contentType === undefined) {
         return yield* NotFound.make({ message: `Entry ${input.entryId} was not found` });
       }
@@ -56,7 +49,7 @@ const { applyRetention } = cmsSupport,
       };
     }),
   recordDeletedEntry = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     prepared: PreparedDeleteEntry,
     input: DeleteEntryInput,
   ): Effect.Effect<DeletionRecord, CmsError> =>
@@ -81,7 +74,7 @@ const { applyRetention } = cmsSupport,
       return deletionRecord;
     }),
   removeDeletedEntryRecord = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     input: RemoveDeletedEntryRecordInput,
   ): Effect.Effect<void, CmsError> =>
     Effect.gen(function* removeDeletedEntryRecordEffect() {

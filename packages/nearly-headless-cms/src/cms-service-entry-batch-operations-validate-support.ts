@@ -13,7 +13,7 @@ import {
 
 interface ValidateBatchReplaceInput {
   readonly contentType: CompiledContentType;
-  readonly context: CmsServiceOperationContext;
+  readonly context: Readonly<CmsServiceOperationContext>;
   readonly entryId: string;
   readonly generation: EntryGeneration;
   readonly mutation: Extract<EntryBatchMutation, { kind: "replace" }>;
@@ -27,9 +27,13 @@ const { attempt, collectReferences, ensureReferences, ensureUniqueValues } = cms
   ): Effect.Effect<Representation["values"], CmsError> =>
     Effect.gen(function* validateBatchReplaceValuesEffect() {
       const values = yield* attempt(() =>
-        input.snapshot.validateEntry(input.mutation.input.contentTypeId, input.mutation.input.values, {
-          applyDefaults: false,
-        }),
+        input.snapshot.validateEntry(
+          input.mutation.input.contentTypeId,
+          input.mutation.input.values,
+          {
+            applyDefaults: false,
+          },
+        ),
       );
       yield* attempt(() => {
         ensureUniqueValues({

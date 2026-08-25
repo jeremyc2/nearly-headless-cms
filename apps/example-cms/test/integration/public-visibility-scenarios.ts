@@ -66,7 +66,9 @@ const buildPostRequest = (authorIdentifier: string, postNumber: number): Request
       return createManyPublishedPosts(handler, authorIdentifier, postNumber + loopIncrement);
     });
   },
-  createPrivateCategory = (handler: PublicVisibilityHandler): Promise<{
+  createPrivateCategory = (
+    handler: PublicVisibilityHandler,
+  ): Promise<{
     readonly categoryIdentifier: string;
     readonly response: Response;
   }> =>
@@ -90,7 +92,9 @@ const buildPostRequest = (authorIdentifier: string, postNumber: number): Request
     ),
   // Bun's test runner requires an async callback for the native Request and Response promises.
   // oxlint-disable-next-line effecttsgo/async-function -- fixture setup intentionally awaits native filesystem and CMS startup.
-  createPublicVisibilityFixture = async (testDirectory: string): Promise<PublicVisibilityFixture> => {
+  createPublicVisibilityFixture = async (
+    testDirectory: string,
+  ): Promise<PublicVisibilityFixture> => {
     const storageRoot = await createTemporaryStorageRoot(testDirectory),
       system = await createExampleSystem({ seed: true, storageRoot });
     return {
@@ -105,7 +109,9 @@ const buildPostRequest = (authorIdentifier: string, postNumber: number): Request
     };
   },
   createTemporaryStorageRoot = (testDirectory: string): Promise<string> =>
-    Bun.$`mktemp -d ${testDirectory}/.public-visibility-XXXXXX`.text().then((output) => output.trim()),
+    Bun.$`mktemp -d ${testDirectory}/.public-visibility-XXXXXX`
+      .text()
+      .then((output) => output.trim()),
   disposePublicVisibilityFixture = (fixture: PublicVisibilityFixture): Promise<void> =>
     fixture.dispose(),
   readCompleteExportPosts = (
@@ -146,7 +152,7 @@ const buildPostRequest = (authorIdentifier: string, postNumber: number): Request
     };
   }> => {
     const draftPostId = requireDraftPostId(system),
-      {handler} = system;
+      { handler } = system;
     return createPrivateCategory(handler).then((privateCategory) =>
       submitDraftComment(handler, draftPostId).then((commentResponse) => ({
         commentResponse,
@@ -166,10 +172,7 @@ const buildPostRequest = (authorIdentifier: string, postNumber: number): Request
       authorIdentifier: readFirstAuthorId(initialExport),
       initialPosts: readRecordArray(initialExport, "posts"),
     })),
-  submitDraftComment = (
-    handler: PublicVisibilityHandler,
-    draftPostId: string,
-  ): Promise<Response> =>
+  submitDraftComment = (handler: PublicVisibilityHandler, draftPostId: string): Promise<Response> =>
     handler(
       new Request(managementEntriesUrl("comment"), {
         body: JSON.stringify({

@@ -55,8 +55,8 @@ const emptyLength = 0,
       }
     }
   },
-  validateInlineChildren = (
-    children: unknown[],
+  validateInlineChildren = <Children extends readonly unknown[]>(
+    children: Readonly<Children>,
     path: readonly (string | number)[],
   ): readonly ValidationIssue[] =>
     children.flatMap((child, index) => validateInline(child, [...path, index])),
@@ -95,11 +95,7 @@ const emptyLength = 0,
         new Set(marks).size !== marks.length)
     ) {
       issues.push(
-        makeIssue(
-          [...path, "marks"],
-          "invalidMarks",
-          "Marks must be distinct core semantic marks",
-        ),
+        makeIssue([...path, "marks"], "invalidMarks", "Marks must be distinct core semantic marks"),
       );
     }
     return issues;
@@ -119,8 +115,8 @@ const emptyLength = 0,
     }
     return validateText(node, path);
   },
-  validateTextChildren = (
-    children: unknown[],
+  validateTextChildren = <Children extends readonly unknown[]>(
+    children: Readonly<Children>,
     path: readonly (string | number)[],
   ): readonly ValidationIssue[] =>
     children.flatMap((child, index) => validateTextChild(child, [...path, index]));

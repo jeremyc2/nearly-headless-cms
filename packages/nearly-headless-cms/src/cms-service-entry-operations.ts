@@ -6,32 +6,27 @@ import type { CmsServiceOperationContext } from "./cms-service-operation-context
 import type { Effect } from "effect";
 import entryOperationsSupport from "./cms-service-entry-operations-support.ts";
 
-const {
-  runCreateEntry,
-  runDeleteEntry,
-  runGetEntry,
-  runQueryEntries,
-  runUpdateEntry,
-} = entryOperationsSupport,
+const { runCreateEntry, runDeleteEntry, runGetEntry, runQueryEntries, runUpdateEntry } =
+    entryOperationsSupport,
   createEntryMethod =
-    (context: CmsServiceOperationContext) =>
-    (input: CreateInput): Effect.Effect<MutationResult, CmsError> =>
+    (context: Readonly<CmsServiceOperationContext>) =>
+    (input: Readonly<CreateInput>): Effect.Effect<MutationResult, CmsError> =>
       runCreateEntry(context, input),
   deleteEntryMethod =
-    (context: CmsServiceOperationContext) =>
-    (input: DeleteEntryInput): Effect.Effect<DeleteResult, CmsError> =>
+    (context: Readonly<CmsServiceOperationContext>) =>
+    (input: Readonly<DeleteEntryInput>): Effect.Effect<DeleteResult, CmsError> =>
       runDeleteEntry(context, input),
   getEntryMethod =
-    (context: CmsServiceOperationContext) =>
-    (input: ReadInput): Effect.Effect<Representation, CmsError> =>
+    (context: Readonly<CmsServiceOperationContext>) =>
+    (input: Readonly<ReadInput>): Effect.Effect<Representation, CmsError> =>
       runGetEntry(context, input),
   queryEntriesMethod =
-    (context: CmsServiceOperationContext) =>
-    (query: Query): Effect.Effect<QueryPage, CmsError> =>
+    (context: Readonly<CmsServiceOperationContext>) =>
+    (query: Readonly<Query>): Effect.Effect<QueryPage, CmsError> =>
       runQueryEntries(context, query),
   updateEntryMethod =
-    (context: CmsServiceOperationContext) =>
-    (input: UpdateInput): Effect.Effect<MutationResult, CmsError> =>
+    (context: Readonly<CmsServiceOperationContext>) =>
+    (input: Readonly<UpdateInput>): Effect.Effect<MutationResult, CmsError> =>
       runUpdateEntry(context, input);
 
 export default {

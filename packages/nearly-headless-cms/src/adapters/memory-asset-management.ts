@@ -6,15 +6,8 @@ import {
   type StoredAsset,
 } from "../asset.ts";
 import { Effect, Layer, Schema, Stream, SynchronizedRef } from "effect";
-import {
-  Generator,
-  type Kind,
-} from "../identifier.ts";
-import {
-  type InfrastructureFailure,
-  InvalidInput,
-  NotFound,
-} from "../cms-error.ts";
+import { Generator, type Kind } from "../identifier.ts";
+import { type InfrastructureFailure, InvalidInput, NotFound } from "../cms-error.ts";
 import { createHash } from "node:crypto";
 
 /** Bounds for the in-memory development Asset Adapter. */
@@ -46,9 +39,11 @@ const AssetMetadataInput = Schema.Struct({
   DEFAULT_MAXIMUM_BYTE_LENGTH = 25_000_000,
   DEFAULT_MAXIMUM_METADATA_BYTE_LENGTH = 16_384,
   EMPTY_BYTE_LENGTH = 0,
-  collectBytes = (
-    content: Uint8Array | Stream.Stream<Uint8Array, InfrastructureFailure>,
-  ): Effect.Effect<Uint8Array, InfrastructureFailure> => {
+  collectBytes = <Content extends Uint8Array | Stream.Stream<Uint8Array, InfrastructureFailure>>(
+    content: Content,
+  ): Content extends Uint8Array
+    ? Effect.Effect<Uint8Array, InfrastructureFailure>
+    : Effect.Effect<Uint8Array, InfrastructureFailure> => {
     if (content instanceof Uint8Array) {
       return Effect.succeed(content);
     }
@@ -66,16 +61,18 @@ const AssetMetadataInput = Schema.Struct({
       }),
     );
   },
-  createManagementService = (context: MemoryAssetManagementContext) =>
+  createManagementService = <Context extends MemoryAssetManagementContext>(
+    context: Readonly<Context>,
+  ) =>
     Management.of({
       delete: deleteAssetMethod(context.state),
       get: getAssetMethod(context.state),
       ingest: ingestAssetMethod(context),
-      list: listAssetsMethod(context.state),
+      list: (_void: void) => listAssetsMethod(context.state),
       read: readAssetMethod(context.state),
     }),
   deleteAssetMethod =
-    (state: AssetState) =>
+    <State extends AssetState>(state: Readonly<State>) =>
     (assetId: string): Effect.Effect<void, NotFound> =>
       SynchronizedRef.modifyEffect(state, (assets) => {
         if (!assets.has(assetId)) {
@@ -129,7 +126,7 @@ const AssetMetadataInput = Schema.Struct({
       return metadataPayload;
     }),
   getAssetMethod =
-    (state: AssetState) =>
+    <State extends AssetState>(state: Readonly<State>) =>
     (assetId: string): Effect.Effect<Asset, NotFound> =>
       SynchronizedRef.get(state).pipe(
         Effect.flatMap((assets) => {
@@ -141,13 +138,10 @@ const AssetMetadataInput = Schema.Struct({
         }),
       ),
   ingestAssetMethod =
-    (context: MemoryAssetManagementContext) =>
-    (input: IngestInput) =>
+    <Context extends MemoryAssetManagementContext>(context: Readonly<Context>) =>
+    <Input extends IngestInput>(input: Readonly<Input>) =>
       Effect.gen(function* ingest() {
-        if (
-          input.filename.trim().length === EMPTY_BYTE_LENGTH ||
-          !input.mediaType.includes("/")
-        ) {
+        if (input.filename.trim().length === EMPTY_BYTE_LENGTH || !input.mediaType.includes("/")) {
           return yield* InvalidInput.make({
             message: "Asset filename and media type are required",
           });
@@ -161,7 +155,7 @@ const AssetMetadataInput = Schema.Struct({
         }
         return yield* persistIngestedAsset(context, input, bytes);
       }),
-  layer = (options: Options = {}): Layer.Layer<Management, never, Generator> =>
+  layer = (options: Readonly<Options> = {}): Layer.Layer<Management, never, Generator> =>
     Layer.effect(
       Management,
       Effect.gen(function* makeMemoryAssetManagement() {
@@ -178,13 +172,11 @@ const AssetMetadataInput = Schema.Struct({
         });
       }),
     ),
-  listAssetsMethod = (state: AssetState) =>
+  listAssetsMethod = <State extends AssetState>(state: Readonly<State>) =>
     SynchronizedRef.get(state).pipe(
-      Effect.map((assets) =>
-        [...assets.values()].map(({ id, metadata }) => ({ id, metadata })),
-      ),
+      Effect.map((assets) => [...assets.values()].map(({ id, metadata }) => ({ id, metadata }))),
     ),
-  makeMetadata = (
+  makeMetadata = <Bytes extends Uint8Array>(
     input: Readonly<{
       defaultAlternativeText?: string;
       filename: string;
@@ -192,7 +184,7 @@ const AssetMetadataInput = Schema.Struct({
       mediaType: string;
       width?: number;
     }>,
-    bytes: Uint8Array,
+    bytes: Readonly<Bytes>,
     digest: string,
   ): Metadata => {
     const metadata: Metadata = {
@@ -212,10 +204,14 @@ const AssetMetadataInput = Schema.Struct({
     }
     return metadata;
   },
-  persistIngestedAsset = (
-    context: MemoryAssetManagementContext,
-    input: IngestInput,
-    bytes: Uint8Array,
+  persistIngestedAsset = <
+    Context extends MemoryAssetManagementContext,
+    Input extends IngestInput,
+    Bytes extends Uint8Array,
+  >(
+    context: Readonly<Context>,
+    input: Readonly<Input>,
+    bytes: Readonly<Bytes>,
   ) =>
     Effect.gen(function* persistIngestedAssetEffect() {
       const assetIdentifier = yield* context.identifiers.generate("asset"),
@@ -232,7 +228,7 @@ const AssetMetadataInput = Schema.Struct({
       return { id: stored.id, metadata: stored.metadata };
     }),
   readAssetMethod =
-    (state: AssetState) =>
+    <State extends AssetState>(state: Readonly<State>) =>
     (assetId: string): Effect.Effect<StoredAsset, NotFound> =>
       SynchronizedRef.get(state).pipe(
         Effect.flatMap((assets) => {

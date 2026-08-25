@@ -20,18 +20,20 @@ import {
 } from "./bun-filesystem-persistence-support-imports.ts";
 
 const assetStageEndPromise = (stage: {
-  readonly ended: boolean;
-  readonly writer: ReturnType<ReturnType<typeof Bun.file>["writer"]>;
-}): Promise<void> => {
-  if (stage.ended) {
-    return Promise.resolve();
-  }
-  return Promise.resolve(stage.writer.end())
-    .then(() => {})
-    .catch(() => {});
-},
-  cleanupAssetStage = (
-    stage: { ended: boolean; writer: ReturnType<ReturnType<typeof Bun.file>["writer"]> },
+    readonly ended: boolean;
+    readonly writer: ReturnType<ReturnType<typeof Bun.file>["writer"]>;
+  }): Promise<void> => {
+    if (stage.ended) {
+      return Promise.resolve();
+    }
+    return Promise.resolve(stage.writer.end())
+      .then(() => {})
+      .catch(() => {});
+  },
+  cleanupAssetStage = <
+    Stage extends { ended: boolean; writer: ReturnType<ReturnType<typeof Bun.file>["writer"]> },
+  >(
+    stage: Readonly<Stage>,
     stagePath: string,
   ): Promise<void> =>
     assetStageEndPromise(stage).then(() => rm(stagePath, { force: true }).catch(() => {})),
@@ -64,9 +66,9 @@ const assetStageEndPromise = (stage: {
     }
     return { ...clonedState, catalog: cloneCatalog(state.catalog) };
   },
-  commitAssetBlob = (
-    configuration: Configuration,
-    content: IngestInput["content"],
+  commitAssetBlob = <Content extends IngestInput["content"]>(
+    configuration: Readonly<Configuration>,
+    content: Readonly<Content>,
   ): Effect.Effect<
     { readonly byteLength: number; readonly digest: string },
     InfrastructureFailure | InvalidInput
@@ -117,22 +119,22 @@ const assetStageEndPromise = (stage: {
         return rename(input.stagePath, blobPath).then(
           // oxlint-disable-next-line effecttsgo/async-function -- durable blob commits use Promise-based filesystem synchronization.
           async () => {
-          if (input.configuration.acknowledgement === "durable") {
-            await synchronize(input.blobsDirectory);
-          }
-        },
+            if (input.configuration.acknowledgement === "durable") {
+              await synchronize(input.blobsDirectory);
+            }
+          },
         );
       });
   },
-  contentStreamFromInput = (
-    content: IngestInput["content"],
+  contentStreamFromInput = <Content extends IngestInput["content"]>(
+    content: Readonly<Content>,
   ): Stream.Stream<Uint8Array, InfrastructureFailure> => {
     if (content instanceof Uint8Array) {
       return Stream.make(content);
     }
     return content;
   },
-  digest = (bytes: Uint8Array): string => {
+  digest = <Bytes extends Uint8Array>(bytes: Readonly<Bytes>): string => {
     const hasher = new Bun.CryptoHasher("sha256");
     hasher.update(bytes);
     return hasher.digest("hex");
@@ -149,10 +151,12 @@ const assetStageEndPromise = (stage: {
     }
     return undefined;
   },
-  finalizeAssetStaging = (
-    configuration: Configuration,
+  finalizeAssetStaging = <
+    Stage extends { ended: boolean; writer: ReturnType<ReturnType<typeof Bun.file>["writer"]> },
+  >(
+    configuration: Readonly<Configuration>,
     stagePath: string,
-    stage: { ended: boolean; writer: ReturnType<ReturnType<typeof Bun.file>["writer"]> },
+    stage: Readonly<Stage>,
   ): Promise<void> =>
     // oxlint-disable-next-line effecttsgo/async-function -- Asset staging finalization coordinates Bun writer flush and fsync boundaries.
     Promise.resolve(stage.writer.end()).then(async () => {
@@ -185,14 +189,18 @@ const assetStageEndPromise = (stage: {
       await handle.close();
     }
   },
-  writeAssetBlobBody = (input: {
-    readonly blobsDirectory: string;
-    readonly configuration: Configuration;
-    readonly contentStream: Stream.Stream<Uint8Array, InfrastructureFailure>;
-    readonly maximumByteLength: number;
-    readonly stage: { ended: boolean; writer: ReturnType<ReturnType<typeof Bun.file>["writer"]> };
-    readonly stagePath: string;
-  }): Effect.Effect<
+  writeAssetBlobBody = <
+    Input extends {
+      readonly blobsDirectory: string;
+      readonly configuration: Configuration;
+      readonly contentStream: Stream.Stream<Uint8Array, InfrastructureFailure>;
+      readonly maximumByteLength: number;
+      readonly stage: { ended: boolean; writer: ReturnType<ReturnType<typeof Bun.file>["writer"]> };
+      readonly stagePath: string;
+    },
+  >(
+    input: Readonly<Input>,
+  ): Effect.Effect<
     { readonly byteLength: number; readonly digest: string },
     InfrastructureFailure | InvalidInput
   > =>
@@ -212,31 +220,30 @@ const assetStageEndPromise = (stage: {
         () => finalizeAssetStaging(input.configuration, input.stagePath, input.stage),
         "Filesystem Asset staging finalization failed",
       );
-      return yield* fromPromise(
-        () => {
-          const assetDigest = hasher.digest("hex");
-          return commitOrCleanupBlob({
-            assetDigest,
-            blobsDirectory: input.blobsDirectory,
-            configuration: input.configuration,
-            stagePath: input.stagePath,
-          }).then(() => ({ byteLength: byteLength.current, digest: assetDigest }));
-        },
-        "Filesystem Asset Blob commit failed",
-      );
+      return yield* fromPromise(() => {
+        const assetDigest = hasher.digest("hex");
+        return commitOrCleanupBlob({
+          assetDigest,
+          blobsDirectory: input.blobsDirectory,
+          configuration: input.configuration,
+          stagePath: input.stagePath,
+        }).then(() => ({ byteLength: byteLength.current, digest: assetDigest }));
+      }, "Filesystem Asset Blob commit failed");
     }),
-  writeAssetChunk = (input: {
-    readonly byteLength: { current: number };
-    readonly chunk: Uint8Array;
-    readonly hasher: Bun.CryptoHasher;
-    readonly maximumByteLength: number;
-    readonly stage: { ended: boolean; writer: ReturnType<ReturnType<typeof Bun.file>["writer"]> };
-  }): Effect.Effect<void, InfrastructureFailure | InvalidInput> => {
+  writeAssetChunk = <
+    Input extends {
+      readonly byteLength: { current: number };
+      readonly chunk: Uint8Array;
+      readonly hasher: Bun.CryptoHasher;
+      readonly maximumByteLength: number;
+      readonly stage: { ended: boolean; writer: ReturnType<ReturnType<typeof Bun.file>["writer"]> };
+    },
+  >(
+    input: Readonly<Input>,
+  ): Effect.Effect<void, InfrastructureFailure | InvalidInput> => {
     const nextByteLength = input.byteLength.current + input.chunk.byteLength;
     if (nextByteLength > input.maximumByteLength) {
-      return Effect.fail(
-        InvalidInput.make({ message: "Asset bytes exceed the configured limit" }),
-      );
+      return Effect.fail(InvalidInput.make({ message: "Asset bytes exceed the configured limit" }));
     }
     return fromPromise(
       () =>
@@ -251,10 +258,13 @@ const assetStageEndPromise = (stage: {
     );
   },
   // oxlint-disable-next-line effecttsgo/async-function -- Atomic persistence coordinates Bun and node filesystem promises.
-  writeAtomic = async (
+  writeAtomic = async <
+    Acknowledgement extends Configuration["acknowledgement"],
+    Bytes extends Uint8Array,
+  >(
     path: string,
-    bytes: Uint8Array,
-    acknowledgement: Configuration["acknowledgement"],
+    bytes: Readonly<Bytes>,
+    acknowledgement: Readonly<Acknowledgement>,
   ): Promise<void> => {
     const parentDirectory = path.slice(0, Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"))),
       // oxlint-disable-next-line effecttsgo/crypto-random-uuid -- staging paths are built synchronously in Bun's filesystem bridge.

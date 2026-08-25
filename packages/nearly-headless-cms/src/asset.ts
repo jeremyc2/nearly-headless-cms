@@ -42,8 +42,8 @@ export interface StoredAsset extends Asset {
 export class Management extends Context.Service<
   Management,
   {
-    readonly ingest: (
-      input: IngestInput,
+    readonly ingest: <Input extends IngestInput>(
+      input: Readonly<Input>,
     ) => Effect.Effect<Asset, InvalidInput | InfrastructureFailure>;
     readonly get: (assetId: string) => Effect.Effect<Asset, NotFound | InfrastructureFailure>;
     readonly read: (
@@ -52,6 +52,6 @@ export class Management extends Context.Service<
     readonly delete: (
       assetId: string,
     ) => Effect.Effect<void, NotFound | AssetReferenced | InfrastructureFailure>;
-    readonly list: Effect.Effect<readonly Asset[], InfrastructureFailure>;
+    readonly list: (_void: void) => Effect.Effect<readonly Asset[], InfrastructureFailure>;
   }
 >()("nearly-headless-cms/asset/Management") {}

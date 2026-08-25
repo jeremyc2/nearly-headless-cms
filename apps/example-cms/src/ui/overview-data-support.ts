@@ -22,10 +22,25 @@ export interface OverviewState {
   readonly today: string;
 }
 
-const buildOverviewCounts = (
-    queries: ReturnType<typeof useOverviewEntryQueries>,
-    assetCount: number | undefined,
-  ) => {
+interface OverviewRevisionQueryPage {
+  readonly data?: {
+    readonly items: readonly {
+      readonly recordedAt: string;
+    }[];
+  };
+}
+
+type OverviewRevisionQueries = readonly OverviewRevisionQueryPage[];
+
+interface OverviewEntryQueryPage {
+  readonly data?: {
+    readonly items: readonly EntryRepresentation[];
+  };
+}
+
+type OverviewEntryQueries = readonly OverviewEntryQueryPage[];
+
+const buildOverviewCounts = (queries: OverviewEntryQueries, assetCount: number | undefined) => {
     const comments = queries[4]?.data?.items ?? [],
       counts = Object.fromEntries(
         contentTypes.map((contentType, index) => [
@@ -42,6 +57,8 @@ const buildOverviewCounts = (
         .length,
     };
   },
+  overviewRecentCandidateLimit = 12,
+  overviewRecentDisplayLimit = 5,
   useOverviewEntryQueries = () =>
     useQueries({
       queries: contentTypes.map((contentType) => ({
@@ -52,9 +69,11 @@ const buildOverviewCounts = (
         queryKey: ["count", contentType.identifier],
       })),
     }),
-  useOverviewRecentEntries = (queries: ReturnType<typeof useOverviewEntryQueries>) => {
-    const recentCandidates = queries.flatMap((query) => query.data?.items ?? []).slice(0, 12),
-      recentRevisionQueries = useQueries({
+  useOverviewRecentEntries = (queries: OverviewEntryQueries) => {
+    const recentCandidates = queries
+        .flatMap((query) => query.data?.items ?? [])
+        .slice(0, overviewRecentCandidateLimit),
+      recentRevisionQueries: OverviewRevisionQueries = useQueries({
         queries: recentCandidates.map((entry) => ({
           queryFn: () =>
             Effect.runPromise(managementClient.listRevisions(entry.contentTypeId, entry.id)),
@@ -73,7 +92,7 @@ const buildOverviewCounts = (
           candidate.recordedAt !== undefined,
       )
       .toSorted((left, right) => right.recordedAt.localeCompare(left.recordedAt))
-      .slice(0, 5);
+      .slice(0, overviewRecentDisplayLimit);
   },
   useOverviewState = (): OverviewState => {
     const assets = useQuery({

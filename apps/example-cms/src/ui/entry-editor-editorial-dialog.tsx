@@ -1,7 +1,4 @@
-import {
-  editorialConfirmationDescription,
-  editorialConfirmationLabel,
-} from "./main-labels.ts";
+import { editorialConfirmationDescription, editorialConfirmationLabel } from "./main-labels.ts";
 import type { EditorialConfirmationStatus } from "./entry-editor-types.ts";
 
 export const EntryEditorEditorialDialog = ({

@@ -59,7 +59,7 @@ export class DefinitionCatalog extends Context.Service<
       { readonly catalog: CatalogState; readonly entries: EntryGeneration },
       CmsError
     >;
-    readonly read: Effect.Effect<CatalogState, InfrastructureFailure>;
+    readonly read: (_void: void) => Effect.Effect<CatalogState, InfrastructureFailure>;
     readonly replace: (
       expectedVersion: number,
       state: CatalogState,

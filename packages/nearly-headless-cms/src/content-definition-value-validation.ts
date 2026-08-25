@@ -38,7 +38,7 @@ const { createValidationIssue } = validationSupport,
     fieldKind,
     path,
     value,
-  }: ValidateCustomValueInput): readonly ValidationIssue[] => {
+  }: Readonly<ValidateCustomValueInput>): readonly ValidationIssue[] => {
     if (!isJsonValue(value)) {
       return [
         createValidationIssue(
@@ -64,10 +64,10 @@ const { createValidationIssue } = validationSupport,
       .validateValue(value, fieldKind.configuration)
       .map((customIssue) => Object.assign(customIssue, { path: [...path, ...customIssue.path] }));
   },
-  validateListBounds = (
-    fieldKind: ListFieldKind,
+  validateListBounds = <BoundFieldKind extends ListFieldKind>(
+    fieldKind: Readonly<BoundFieldKind>,
     path: readonly (string | number)[],
-    value: unknown[],
+    value: readonly unknown[],
   ): readonly ValidationIssue[] => {
     const issues: ValidationIssue[] = [];
     if (fieldKind.minimumLength !== undefined && value.length < fieldKind.minimumLength) {
@@ -96,17 +96,17 @@ const { createValidationIssue } = validationSupport,
     }
     return issues;
   },
-  validateListElements = ({
-    customRegistrations,
-    fieldKind,
-    path,
-    value,
-  }: ValidateListValueInput & { readonly value: unknown[] }): readonly ValidationIssue[] => {
-    if (fieldKind.element.kind === "fieldGroup") {
-      return [];
+  validateListElements = <
+    Input extends ValidateListValueInput & { readonly value: readonly unknown[] },
+  >(
+    input: Readonly<Input>,
+  ): readonly ValidationIssue[] => {
+    const { customRegistrations, fieldKind, path, value } = input,
+      {element} = fieldKind,
+      issues: ValidationIssue[] = [];
+    if (element.kind === "fieldGroup") {
+      return issues;
     }
-    const issues: ValidationIssue[] = [],
-      { element } = fieldKind;
     for (const [index, child] of value.entries()) {
       issues.push(
         ...validateValue({
@@ -124,7 +124,7 @@ const { createValidationIssue } = validationSupport,
     fieldKind,
     path,
     value,
-  }: ValidateListValueInput): readonly ValidationIssue[] => {
+  }: Readonly<ValidateListValueInput>): readonly ValidationIssue[] => {
     if (!Array.isArray(value)) {
       return [createValidationIssue(path, "expectedList", "Expected a list")];
     }
@@ -133,24 +133,20 @@ const { createValidationIssue } = validationSupport,
       ...validateListElements({ customRegistrations, fieldKind, path, value }),
     ];
   },
-  validateNumericMaximum = ({
-    fieldKind,
-    issues,
-    path,
-    value,
-  }: ValidateNumericBoundInput): void => {
+  validateNumericMaximum = <Input extends ValidateNumericBoundInput>(
+    input: Readonly<Input>,
+  ): void => {
+    const { fieldKind, issues, path, value } = input;
     if (fieldKind.maximum !== undefined && value > fieldKind.maximum) {
       issues.push(
         createValidationIssue(path, "aboveMaximum", `Must be at most ${fieldKind.maximum}`),
       );
     }
   },
-  validateNumericMinimum = ({
-    fieldKind,
-    issues,
-    path,
-    value,
-  }: ValidateNumericBoundInput): void => {
+  validateNumericMinimum = <Input extends ValidateNumericBoundInput>(
+    input: Readonly<Input>,
+  ): void => {
+    const { fieldKind, issues, path, value } = input;
     if (fieldKind.minimum !== undefined && value < fieldKind.minimum) {
       issues.push(
         createValidationIssue(path, "belowMinimum", `Must be at least ${fieldKind.minimum}`),

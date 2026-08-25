@@ -3,8 +3,9 @@ import entryEditorControllerViewSupport, {
 } from "./entry-editor-controller-view-support.ts";
 
 const { entryEditorControllerViewModel } = entryEditorControllerViewSupport,
-  useEntryEditorControllerView = (input: EntryEditorControllerViewInput) =>
-    entryEditorControllerViewModel(input);
+  useEntryEditorControllerView = <Input extends EntryEditorControllerViewInput>(
+    input: Readonly<Input>,
+  ) => entryEditorControllerViewModel(input);
 
 export default {
   useEntryEditorControllerView,

@@ -4,6 +4,7 @@ import type { ServiceShape as CmsService } from "../cms.ts";
 import type { CompiledSnapshot } from "../content-definition.ts";
 import type { DefinitionRequirement } from "../operation.ts";
 import type { JsonValue } from "../internal/json.ts";
+import type { ReadonlyTransportRequest } from "./http-transport-readonly-types.ts";
 
 /** Safe tagged JSON failure representation returned by HTTP endpoints. */
 export interface ErrorDocument {
@@ -15,10 +16,10 @@ export interface ErrorDocument {
 
 /** Request, CMS service, active snapshot, and parameters supplied to an operation. */
 export interface OperationContext {
-  readonly request: Request;
+  readonly request: Readonly<ReadonlyTransportRequest>;
   readonly parameters: Readonly<Record<string, string>>;
-  readonly cms: CmsService;
-  readonly snapshot: CompiledSnapshot;
+  readonly cms: Readonly<CmsService>;
+  readonly snapshot: Readonly<CompiledSnapshot>;
   readonly requestId: string;
 }
 
@@ -49,7 +50,7 @@ export interface DeliveryOperation {
   readonly cacheControl?: string;
   readonly schemas: OperationSchemas;
   readonly successStatus?: typeof successfulResponseStatus | typeof createdResponseStatus;
-  readonly execute: (context: OperationContext) => Effect.Effect<unknown, CmsError>;
+  readonly execute: (context: Readonly<OperationContext>) => Effect.Effect<unknown, CmsError>;
 }
 
 /** A fixed composition-time Builder-specific Management operation declaration. */
@@ -59,7 +60,7 @@ export interface ManagementOperation {
   readonly method: "GET" | "POST" | "PUT" | "DELETE" | "HEAD";
   readonly path: `/${string}`;
   readonly schemas: OperationSchemas;
-  readonly execute: (context: OperationContext) => Effect.Effect<unknown, CmsError>;
+  readonly execute: (context: Readonly<OperationContext>) => Effect.Effect<unknown, CmsError>;
 }
 
 /** Public runtime Definition and operation capabilities advertised to Content Clients. */
@@ -92,15 +93,38 @@ export interface DiscoveryInput {
   readonly snapshot: CompiledSnapshot;
 }
 
-const apiContractVersion = 1,
+const discoveryFieldKindIdentifiers = [
+  "text",
+  "integer",
+  "number",
+  "boolean",
+  "date",
+  "datetime",
+  "url",
+  "email",
+  "enum",
+  "json",
+  "asset",
+  "relationship",
+  "rich-text",
+  "list",
+] as const,
+ discoveryFieldKinds = discoveryFieldKindIdentifiers.map((identifier) => ({
+  identifier,
+  version: 1,
+})),
+
+ apiContractVersion = 1,
   createdResponseStatus = 201,
   definitionFormatVersion = 1,
-  fieldKindVersion = 1,
   headlessPrefix = "/api/v1/headless",
   managementPrefix = "/api/v1/management",
   richTextFormatVersion = 1,
   successfulResponseStatus = 200,
-  zDiscovery = ({ operations, snapshot }: DiscoveryInput): DiscoveryDocument => {
+  zDiscovery = <Input extends DiscoveryInput>({
+    operations,
+    snapshot,
+  }: Readonly<Input>): DiscoveryDocument => {
     const document: DiscoveryDocument = {
       apiContractVersion,
       compilerFormatVersion: snapshot.compilerFormatVersion,
@@ -110,22 +134,7 @@ const apiContractVersion = 1,
       definitions: snapshot.input.definitions.filter((definition) =>
         operations.some((operation) => operation.reachableContentTypeIds.includes(definition.id)),
       ),
-      fieldKinds: [
-        "text",
-        "integer",
-        "number",
-        "boolean",
-        "date",
-        "datetime",
-        "url",
-        "email",
-        "enum",
-        "json",
-        "asset",
-        "relationship",
-        "rich-text",
-        "list",
-      ].map((identifier) => ({ identifier, version: fieldKindVersion })),
+      fieldKinds: discoveryFieldKinds,
       openApiUrl: `${headlessPrefix}/openapi.json`,
       operations: operations.map((operation) => ({
         identifier: operation.identifier,

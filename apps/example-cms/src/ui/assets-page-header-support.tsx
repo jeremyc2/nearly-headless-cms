@@ -1,24 +1,26 @@
-import {
-  type RefObject,
-  type UseMutationResult,
-} from "./assets-page-imports.ts";
+import { type RefObject, type UseMutationResult } from "./assets-page-imports.ts";
 
-const AssetsPageFileInputs = ({
+const AssetsPageFileInputs = <
+    InputRef extends RefObject<HTMLInputElement | null>,
+    ReplacementInputRef extends RefObject<HTMLInputElement | null>,
+    ReplaceMutation extends UseMutationResult<
+      { readonly reassignedEntryCount: number },
+      Error,
+      { readonly assetId: string; readonly file: File }
+    >,
+    UploadMutation extends UseMutationResult<unknown, Error, File>,
+  >({
     input,
     replace,
     replacementAssetId,
     replacementInput,
     upload,
   }: {
-    readonly input: RefObject<HTMLInputElement | null>;
-    readonly replace: UseMutationResult<
-      { readonly reassignedEntryCount: number },
-      Error,
-      { readonly assetId: string; readonly file: File }
-    >;
+    readonly input: Readonly<InputRef>;
+    readonly replace: Readonly<ReplaceMutation>;
     readonly replacementAssetId: string | undefined;
-    readonly replacementInput: RefObject<HTMLInputElement | null>;
-    readonly upload: UseMutationResult<unknown, Error, File>;
+    readonly replacementInput: Readonly<ReplacementInputRef>;
+    readonly upload: Readonly<UploadMutation>;
   }) => (
     <>
       <input
@@ -47,7 +49,16 @@ const AssetsPageFileInputs = ({
       />
     </>
   ),
-  AssetsPageHeader = ({
+  AssetsPageHeader = <
+    InputRef extends RefObject<HTMLInputElement | null>,
+    ReplacementInputRef extends RefObject<HTMLInputElement | null>,
+    ReplaceMutation extends UseMutationResult<
+      { readonly reassignedEntryCount: number },
+      Error,
+      { readonly assetId: string; readonly file: File }
+    >,
+    UploadMutation extends UseMutationResult<unknown, Error, File>,
+  >({
     chooseFile,
     input,
     replace,
@@ -56,15 +67,11 @@ const AssetsPageFileInputs = ({
     upload,
   }: {
     readonly chooseFile: () => void;
-    readonly input: RefObject<HTMLInputElement | null>;
-    readonly replace: UseMutationResult<
-      { readonly reassignedEntryCount: number },
-      Error,
-      { readonly assetId: string; readonly file: File }
-    >;
+    readonly input: Readonly<InputRef>;
+    readonly replace: Readonly<ReplaceMutation>;
     readonly replacementAssetId: string | undefined;
-    readonly replacementInput: RefObject<HTMLInputElement | null>;
-    readonly upload: UseMutationResult<unknown, Error, File>;
+    readonly replacementInput: Readonly<ReplacementInputRef>;
+    readonly upload: Readonly<UploadMutation>;
   }) => (
     <header className="page-header">
       <div>
@@ -84,25 +91,29 @@ const AssetsPageFileInputs = ({
       />
     </header>
   ),
-  AssetsPageStatus = ({
-    deleteImage,
-    replace,
-    upload,
-  }: {
-    readonly deleteImage: UseMutationResult<
+  AssetsPageStatus = <
+    DeleteMutation extends UseMutationResult<
       {
         readonly clearedAuthorCount: number;
         readonly clearedPostCount: number;
       },
       Error,
       string
-    >;
-    readonly replace: UseMutationResult<
+    >,
+    ReplaceMutation extends UseMutationResult<
       { readonly reassignedEntryCount: number },
       Error,
       { readonly assetId: string; readonly file: File }
-    >;
-    readonly upload: UseMutationResult<unknown, Error, File>;
+    >,
+    UploadMutation extends UseMutationResult<unknown, Error, File>,
+  >({
+    deleteImage,
+    replace,
+    upload,
+  }: {
+    readonly deleteImage: Readonly<DeleteMutation>;
+    readonly replace: Readonly<ReplaceMutation>;
+    readonly upload: Readonly<UploadMutation>;
   }) => (
     <>
       {upload.isSuccess && <p role="status">Asset uploaded successfully.</p>}

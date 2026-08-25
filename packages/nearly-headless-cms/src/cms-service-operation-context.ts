@@ -16,13 +16,18 @@ import type { Handler } from "./definition-migration.ts";
 import cmsSupport from "./cms-support.ts";
 
 const { attempt } = cmsSupport,
-  createAuthorize = (
-    authorization: typeof AuthorizationService.Service,
-    currentIdentity: typeof CurrentIdentity.Service,
-  ): CmsServiceOperationContext["authorize"] =>
+  createAuthorize =
+    (
+      authorization: typeof AuthorizationService.Service,
+      currentIdentity: typeof CurrentIdentity.Service,
+    ): CmsServiceOperationContext["authorize"] =>
     (action, resource) =>
       Effect.gen(function* authorizeAction() {
-        const allowed = yield* authorization.authorize(yield* currentIdentity.current, action, resource);
+        const allowed = yield* authorization.authorize(
+          yield* currentIdentity.current(),
+          action,
+          resource,
+        );
         if (!allowed) {
           return yield* Forbidden.make({ message: "The operation is forbidden" });
         }
@@ -32,7 +37,7 @@ const { attempt } = cmsSupport,
     readonly assets: typeof AssetManagement.Service;
     readonly authorization: typeof AuthorizationService.Service;
     readonly catalog: typeof DefinitionCatalog.Service;
-    readonly compileOptions: CompileOptions;
+    readonly compileOptions: Readonly<CompileOptions>;
     readonly currentIdentity: typeof CurrentIdentity.Service;
     readonly identifiers: typeof Generator.Service;
     readonly migrationHandlers: Map<string, Handler>;
@@ -44,21 +49,19 @@ const { attempt } = cmsSupport,
     authorize: createAuthorize(input.authorization, input.currentIdentity),
     catalog: input.catalog,
     compileOptions: input.compileOptions,
-    currentDefinitionSnapshot: createCurrentDefinitionSnapshot(
-      input.catalog,
-      input.operationContracts,
-    ),
     currentIdentity: input.currentIdentity,
     identifiers: input.identifiers,
     migrationHandlers: input.migrationHandlers,
     operationContracts: input.operationContracts,
     persistence: input.persistence,
+    readCurrentDefinitionSnapshot: (_void: void) =>
+      createCurrentDefinitionSnapshot(input.catalog, input.operationContracts),
   }),
   createCurrentDefinitionSnapshot = (
     catalog: typeof DefinitionCatalog.Service,
     operationContracts: readonly DefinitionContract[],
   ): Effect.Effect<CompiledSnapshot, CmsError> =>
-    catalog.read.pipe(
+    catalog.read().pipe(
       Effect.flatMap((state) =>
         attempt(() => {
           validateDefinitionContracts({
@@ -72,10 +75,15 @@ const { attempt } = cmsSupport,
 export interface CmsServiceOperationContext {
   readonly assets: typeof AssetManagement.Service;
   readonly authorization: typeof AuthorizationService.Service;
-  readonly authorize: (action: Action, resource: Resource) => Effect.Effect<void, CmsError>;
+  readonly authorize: (
+    action: Readonly<Action>,
+    resource: Readonly<Resource>,
+  ) => Effect.Effect<void, CmsError>;
   readonly catalog: typeof DefinitionCatalog.Service;
-  readonly compileOptions: CompileOptions;
-  readonly currentDefinitionSnapshot: Effect.Effect<CompiledSnapshot, CmsError>;
+  readonly compileOptions: Readonly<CompileOptions>;
+  readonly readCurrentDefinitionSnapshot: (
+    _void: void,
+  ) => Effect.Effect<CompiledSnapshot, CmsError>;
   readonly currentIdentity: typeof CurrentIdentity.Service;
   readonly identifiers: typeof Generator.Service;
   readonly migrationHandlers: Map<string, Handler>;

@@ -7,9 +7,10 @@ export interface ContentListPredicate {
   readonly value: string;
 }
 
-export const contentListCreateSuffix = (): string =>
+export const contentListCreateIdentifierLength = 8,
+  contentListCreateSuffix = (): string =>
     // oxlint-disable-next-line effecttsgo/crypto-random-uuid -- browser UI labels need a synchronous local identifier.
-    crypto.randomUUID().slice(0, 8),
+    crypto.randomUUID().slice(0, contentListCreateIdentifierLength),
   // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- content list helper is intentionally a direct three-argument operation.
   contentListCreateValues = (
     contentTypeId: string,
@@ -51,8 +52,8 @@ export const contentListCreateSuffix = (): string =>
     }
     return { name: `Untitled ${suffix}`, slug: `untitled-${suffix}` };
   },
-  contentListEntryFromCreateResult = (
-    result: { entry: { id: string } } | { id: string },
+  contentListEntryFromCreateResult = <Result extends { entry: { id: string } } | { id: string }>(
+    result: Readonly<Result>,
   ): { id: string } => {
     if ("entry" in result) {
       return result.entry;
@@ -128,7 +129,7 @@ export const contentListCreateSuffix = (): string =>
     return Promise.resolve(emptyRelatedEntries);
   },
   contentListRelatedEntryId = (
-    relatedEntries: { items: readonly { id: string }[] } | undefined,
+    relatedEntries: { readonly items: readonly { readonly id: string }[] } | undefined,
   ): string | undefined => relatedEntries?.items[0]?.id,
   contentListRequiresRelatedEntry = (contentTypeId: string): boolean =>
     contentTypeId === "comment" || contentTypeId === "post",

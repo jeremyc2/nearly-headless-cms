@@ -43,19 +43,19 @@ const { conditionalProperty, isJsonValueArray, isRecord } = managementSupport,
       ...readReplacementMetadataFields(metadata),
     }));
   },
-  parseReplacementUpload = (request: Request) =>
+  parseReplacementUpload = <RequestType extends Request>(request: Readonly<RequestType>) =>
     Effect.tryPromise({
       catch: () =>
         CmsError.InvalidInput.make({
           message: "Image replacement requires multipart metadata and content",
         }),
       try: () =>
-        request.formData().then((form) =>
-          parseReplacementMetadata(form.get("metadata"), form.get("content")),
-        ),
+        request
+          .formData()
+          .then((form) => parseReplacementMetadata(form.get("metadata"), form.get("content"))),
     }),
-  readReplacementMetadataFields = (
-    metadata: Record<string, unknown>,
+  readReplacementMetadataFields = <Metadata extends Record<string, unknown>>(
+    metadata: Readonly<Metadata>,
   ): {
     defaultAlternativeText?: string;
     filename: string;
@@ -102,13 +102,18 @@ const { conditionalProperty, isJsonValueArray, isRecord } = managementSupport,
     key,
     newAssetId,
     oldAssetId,
-  }: ReplaceRichTextAssetValueInput): ContentDefinition.JsonValue => {
+  }: Readonly<ReplaceRichTextAssetValueInput>): ContentDefinition.JsonValue => {
     if (key === "assetId" && child === oldAssetId) {
       return newAssetId;
     }
     return replaceRichTextAsset(child, oldAssetId, newAssetId);
   },
-  usesAsset = ({ assetId, directField, richTextField, values }: UsesAssetInput): boolean => {
+  usesAsset = ({
+    assetId,
+    directField,
+    richTextField,
+    values,
+  }: Readonly<UsesAssetInput>): boolean => {
     if (values[directField] === assetId) {
       return true;
     }

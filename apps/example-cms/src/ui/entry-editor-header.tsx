@@ -30,12 +30,7 @@ export const EntryEditorHeader = ({
       <button className="secondary-button" type="button">
         Preview readiness
       </button>
-      <button
-        className="primary-button"
-        disabled={saveDisabled}
-        onClick={onSave}
-        type="button"
-      >
+      <button className="primary-button" disabled={saveDisabled} onClick={onSave} type="button">
         Save changes
       </button>
     </div>

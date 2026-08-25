@@ -3,7 +3,9 @@ import type { EntryEditorControllerViewInput } from "./entry-editor-controller-v
 import entryEditorControllerViewActionsSupport from "./entry-editor-controller-view-actions-support.ts";
 
 const { entryEditorControllerConflictActions } = entryEditorControllerViewActionsSupport,
-  entryEditorControllerActions = (input: EntryEditorControllerViewInput) => ({
+  entryEditorControllerActions = <Input extends EntryEditorControllerViewInput>(
+    input: Readonly<Input>,
+  ) => ({
     ...entryEditorControllerConflictActions(input),
     cancelDeletion: () => {
       input.setDeletionDialogOpen(false);
@@ -26,7 +28,10 @@ const { entryEditorControllerConflictActions } = entryEditorControllerViewAction
     },
     requestEditorialConfirmation: input.setEditorialConfirmation,
     returnToList: () => {
-      void input.navigate({ params: { contentTypeId: input.contentTypeId }, to: "/content/$contentTypeId" });
+      void input.navigate({
+        params: { contentTypeId: input.contentTypeId },
+        to: "/content/$contentTypeId",
+      });
     },
     startPurge: () => {
       input.setConfirmPurge(true);
@@ -35,7 +40,9 @@ const { entryEditorControllerConflictActions } = entryEditorControllerViewAction
       input.mutations.deleteEntry.mutate();
     },
   }),
-  entryEditorControllerViewModel = (input: EntryEditorControllerViewInput) => ({
+  entryEditorControllerViewModel = <Input extends EntryEditorControllerViewInput>(
+    input: Readonly<Input>,
+  ) => ({
     ...entryEditorControllerActions(input),
     assets: input.assets,
     authors: input.authors,

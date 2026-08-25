@@ -19,7 +19,7 @@ interface InitialCatalogStateInput {
   readonly snapshot: CompiledSnapshot;
 }
 
-const catalogCloneState = (state: CatalogState): CatalogState => ({
+const catalogCloneState = (state: Readonly<CatalogState>): CatalogState => ({
     ...state,
     active: state.active,
     events: [...state.events],
@@ -44,7 +44,10 @@ const catalogCloneState = (state: CatalogState): CatalogState => ({
     }
     return { ...record, parentRevision: definition.parentRevision };
   },
-  catalogMakeInitialState = ({ activatedAt, snapshot }: InitialCatalogStateInput): CatalogState => {
+  catalogMakeInitialState = ({
+    activatedAt,
+    snapshot,
+  }: Readonly<InitialCatalogStateInput>): CatalogState => {
     const initialSnapshot: DefinitionSnapshotRecord = {
       activatedAt,
       compiled: snapshot,
@@ -68,9 +71,9 @@ const catalogCloneState = (state: CatalogState): CatalogState => ({
       version: catalogInitialVersion,
     };
   },
-  catalogMakeService = (
+  catalogMakeService = <Ref extends SynchronizedRef.SynchronizedRef<CatalogState>>(
     entryPersistence: typeof EntryPersistence.Service,
-    state: SynchronizedRef.SynchronizedRef<CatalogState>,
+    state: Readonly<Ref>,
   ): typeof DefinitionCatalog.Service =>
     DefinitionCatalog.of({
       commitCutover: ({
@@ -96,7 +99,7 @@ const catalogCloneState = (state: CatalogState): CatalogState => ({
               ),
             );
         }),
-      read: SynchronizedRef.get(state).pipe(Effect.map(catalogCloneState)),
+      read: (_void: void) => SynchronizedRef.get(state).pipe(Effect.map(catalogCloneState)),
       replace: (expectedVersion, replacement) =>
         SynchronizedRef.modifyEffect(state, (current) => {
           if (current.version !== expectedVersion) {

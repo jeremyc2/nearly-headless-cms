@@ -1,4 +1,12 @@
 import { type Command, type State, transact } from "./transactions.ts";
+import type {
+  ReadonlyClipboardEvent,
+  ReadonlyCompositionEvent,
+  ReadonlyDragEvent,
+  ReadonlyEditableHost,
+  ReadonlyInputEvent,
+  ReadonlyKeyboardEvent,
+} from "./readonly-dom-types.ts";
 import type { RichText } from "nearly-headless-cms";
 import { emptyIndex } from "./transactions-constants.ts";
 import transactionsEditorAdapterInternals from "./transactions-editor-adapter-internals.ts";
@@ -32,21 +40,21 @@ const {
   };
 
 export interface BrowserAdapterOptions {
-  readonly host: HTMLDivElement;
+  readonly host: ReadonlyEditableHost;
   readonly initialState: State;
   readonly onChange: (document: RichText.Document) => void;
   readonly onRequestLink?: () => void;
 }
 
 export class BrowserAdapter {
-  readonly #host: HTMLDivElement;
+  readonly #host: ReadonlyEditableHost;
   readonly #onChange: (document: RichText.Document) => void;
   readonly #onRequestLink: (() => void) | undefined;
   #state: State;
   readonly #observer: MutationObserver;
   #rendering = false;
 
-  constructor(options: BrowserAdapterOptions) {
+  constructor(options: Readonly<BrowserAdapterOptions>) {
     this.#host = options.host;
     this.#state = options.initialState;
     this.#onChange = options.onChange;
@@ -55,7 +63,9 @@ export class BrowserAdapter {
     this.#observer = createRenderingObserver(
       this.#host,
       () => !this.#rendering && !this.#state.composing,
-      () =>{  this.render(); },
+      () => {
+        this.render();
+      },
     );
     attachBrowserAdapterEventListeners(this.#host, this.#eventHandlers());
     document.addEventListener("selectionchange", this.#handleSelectionChange);
@@ -109,7 +119,9 @@ export class BrowserAdapter {
     this.#state = synchronizeSelectionState(this.#state, this.#host);
   }
 
-  readonly #handleBeforeInput = (event: InputEvent): void => {
+  readonly #handleBeforeInput = <Event extends ReadonlyInputEvent>(
+    event: Readonly<Event>,
+  ): void => {
     if (this.#state.composing) {
       return;
     }
@@ -121,7 +133,7 @@ export class BrowserAdapter {
     }
   };
 
-  readonly #handleKeyDown = (event: KeyboardEvent): void => {
+  readonly #handleKeyDown = <Event extends ReadonlyKeyboardEvent>(event: Readonly<Event>): void => {
     this.#synchronizeSelection();
     if (!event.metaKey) {
       return;
@@ -133,7 +145,9 @@ export class BrowserAdapter {
     event.preventDefault();
     applyMetaKeyEditorAction({
       action,
-      dispatch: (command) =>{  this.dispatch(command); },
+      dispatch: (command) => {
+        this.dispatch(command);
+      },
       onRequestLink: this.#onRequestLink,
     });
   };
@@ -142,18 +156,20 @@ export class BrowserAdapter {
     this.#synchronizeSelection();
     this.dispatch({ active: true, type: "composition" });
   };
-  readonly #handleCompositionEnd = (event: CompositionEvent): void => {
+  readonly #handleCompositionEnd = <Event extends ReadonlyCompositionEvent>(
+    event: Readonly<Event>,
+  ): void => {
     this.dispatch({ active: false, type: "composition" });
     if (event.data.length > emptyIndex) {
       this.dispatch({ text: event.data, type: "insertText" });
     }
   };
-  readonly #handlePaste = (event: ClipboardEvent): void => {
+  readonly #handlePaste = <Event extends ReadonlyClipboardEvent>(event: Readonly<Event>): void => {
     event.preventDefault();
     this.#synchronizeSelection();
     this.dispatch({ text: event.clipboardData?.getData("text/plain") ?? "", type: "insertText" });
   };
-  readonly #handleDrop = (event: DragEvent): void => {
+  readonly #handleDrop = <Event extends ReadonlyDragEvent>(event: Readonly<Event>): void => {
     event.preventDefault();
     this.#synchronizeSelection();
     this.dispatch({ text: event.dataTransfer?.getData("text/plain") ?? "", type: "insertText" });

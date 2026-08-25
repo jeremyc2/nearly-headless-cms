@@ -51,17 +51,17 @@ const readExport = (handler: HeadlessApiHandler): Promise<Readonly<Record<string
     readonly responseFirst: Response;
   }> => {
     const requestComment = () =>
-      new Request(`http://cms.test/api/v1/headless/posts/${postId}/comments`, {
-        body: JSON.stringify({
-          body: "Thoughtful post.",
-          displayName: "Reader",
-          websiteUrl: "https://example.com",
+        new Request(`http://cms.test/api/v1/headless/posts/${postId}/comments`, {
+          body: JSON.stringify({
+            body: "Thoughtful post.",
+            displayName: "Reader",
+            websiteUrl: "https://example.com",
+          }),
+          headers: { "content-type": "application/json", "idempotency-key": "comment-key-1" },
+          method: "POST",
         }),
-        headers: { "content-type": "application/json", "idempotency-key": "comment-key-1" },
-        method: "POST",
-      }),
-     responseFirst = await handler(requestComment()),
-     responseSecond = await handler(requestComment());
+      responseFirst = await handler(requestComment()),
+      responseSecond = await handler(requestComment());
     return {
       receiptFirst: await jsonRecord(responseFirst),
       receiptSecond: await jsonRecord(responseSecond),
@@ -116,7 +116,9 @@ const readExport = (handler: HeadlessApiHandler): Promise<Readonly<Record<string
   // Bun's test runner requires an async callback for the native Request and Response promises.
   // oxlint-disable-next-line effecttsgo/async-function -- HTTP contract assertions intentionally await native promises.
   verifyDraftPostNotFound = async (handler: HeadlessApiHandler): Promise<void> => {
-    const draft = await handler(new Request("http://cms.test/api/v1/headless/posts/the-unfinished-map"));
+    const draft = await handler(
+      new Request("http://cms.test/api/v1/headless/posts/the-unfinished-map"),
+    );
     expect(draft.status).toBe(httpNotFound);
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
@@ -137,11 +139,9 @@ const readExport = (handler: HeadlessApiHandler): Promise<Readonly<Record<string
     }
     expect(posts.length).toBeGreaterThan(firstItemIndex);
     expect(posts.every((post) => isRecord(post) && post["status"] === "published")).toBeTrue();
-    expect(comments.every((comment) => isRecord(comment) && comment["status"] === "approved")).toBeTrue();
+    expect(
+      comments.every((comment) => isRecord(comment) && comment["status"] === "approved"),
+    ).toBeTrue();
   };
 
-export {
-  verifyBoundedListingsAndAssets,
-  verifyCommentIdempotency,
-  verifyPublicExportEligibility,
-};
+export { verifyBoundedListingsAndAssets, verifyCommentIdempotency, verifyPublicExportEligibility };

@@ -21,9 +21,7 @@ const destructiveWorkflowsContext: { fixture: DestructiveWorkflowsFixture | unde
 describe("Example CMS destructive workflows", () => {
   // oxlint-disable-next-line effecttsgo/async-function -- Bun lifecycle hook performs async system setup.
   beforeEach(async () => {
-    destructiveWorkflowsContext.fixture = await createDestructiveWorkflowsFixture(
-      import.meta.dir,
-    );
+    destructiveWorkflowsContext.fixture = await createDestructiveWorkflowsFixture(import.meta.dir);
   });
 
   // oxlint-disable-next-line effecttsgo/async-function -- Bun lifecycle hook performs async cleanup.

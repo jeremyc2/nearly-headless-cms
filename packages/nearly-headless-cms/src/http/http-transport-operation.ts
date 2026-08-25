@@ -1,14 +1,7 @@
-import {
-  type CmsError,
-  DefinitionSnapshotChanged,
-  InvalidInput,
-} from "../cms-error.ts";
-import type {
-  DeliveryOperation,
-  ManagementOperation,
-  OperationSchema,
-} from "./http-contract.ts";
+import { type CmsError, DefinitionSnapshotChanged, InvalidInput } from "../cms-error.ts";
+import type { DeliveryOperation, ManagementOperation, OperationSchema } from "./http-contract.ts";
 import { Effect, Schema } from "effect";
+import type { ReadonlyTransportRequest } from "./http-transport-readonly-types.ts";
 
 const compilePath = (
     path: string,
@@ -18,7 +11,7 @@ const compilePath = (
         .split("/")
         .map((segment) => {
           const match = /^\{(?<parameterName>[^}]+)\}$/u.exec(segment),
-           parameterName = match?.groups?.["parameterName"];
+            parameterName = match?.groups?.["parameterName"];
           if (parameterName !== undefined) {
             names.push(parameterName);
             return "([^/]+)";
@@ -29,7 +22,7 @@ const compilePath = (
     return { expression: new RegExp(`^${pattern}$`, "u"), names };
   },
   ensureFingerprint = (
-    request: Request,
+    request: ReadonlyTransportRequest,
     fingerprint: string,
   ): Effect.Effect<void, DefinitionSnapshotChanged> => {
     const expected = request.headers.get("cms-expected-definition-fingerprint");
@@ -40,9 +33,9 @@ const compilePath = (
     }
     return Effect.void;
   },
-  executeOperation = (
-    operation: DeliveryOperation | ManagementOperation,
-    context: Parameters<DeliveryOperation["execute"]>[0],
+  executeOperation = <Operation extends DeliveryOperation | ManagementOperation>(
+    operation: Readonly<Operation>,
+    context: Readonly<Parameters<DeliveryOperation["execute"]>[0]>,
   ): Effect.Effect<unknown, CmsError> =>
     validateOperationRequest(operation, context.request, context.parameters).pipe(
       Effect.andThen(operation.execute(context)),
@@ -77,9 +70,9 @@ const compilePath = (
     }
     return value;
   },
-  validateOperationRequest = (
-    operation: DeliveryOperation | ManagementOperation,
-    request: Request,
+  validateOperationRequest = <Operation extends DeliveryOperation | ManagementOperation>(
+    operation: Readonly<Operation>,
+    request: ReadonlyTransportRequest,
     parameters: Readonly<Record<string, string>>,
   ): Effect.Effect<void, InvalidInput> =>
     Effect.gen(function* validateDeclaredOperationRequest() {
@@ -108,8 +101,8 @@ const compilePath = (
         );
       }
     }),
-  validateSchema = (
-    schema: OperationSchema,
+  validateSchema = <SchemaType extends OperationSchema>(
+    schema: Readonly<SchemaType>,
     value: unknown,
     message: string,
   ): Effect.Effect<void, InvalidInput> =>

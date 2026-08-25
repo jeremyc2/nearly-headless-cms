@@ -4,7 +4,9 @@ import deliveryPublicAssetResponseSupport, {
 
 const { publicAssetBody, publicAssetHeaders, rangeNotModifiedResponse, rangedAssetResponse } =
     deliveryPublicAssetResponseSupport,
-  publicAssetResponse = (input: PublicAssetResponseInput): Response => {
+  publicAssetResponse = <Input extends PublicAssetResponseInput>(
+    input: Readonly<Input>,
+  ): Response => {
     const { asset, request } = input,
       { etag, headers } = publicAssetHeaders(input),
       ifRangeMismatch = rangeNotModifiedResponse(request, asset, headers),

@@ -23,157 +23,162 @@ interface EntryAssignmentState {
 
 const { conditionalProperty, queryAllEntries } = managementSupport,
   { replaceRichTextAsset, usesAsset } = managementImageUploadSupport,
-  buildImageClearingMutations = (
-  authorStates: readonly EntryAssignmentState[],
-  postStates: readonly EntryAssignmentState[],
-): Cms.EntryBatchMutation[] => [
-  ...postStates.map(
-    (state): Cms.EntryBatchMutation => ({
-      input: {
-        contentTypeId: "post",
-        entryId: state.entry.id,
-        values: {
-          ...state.entry.values,
-          "featured-alternative-text": null,
-          "featured-asset": null,
+  buildImageClearingMutations = <
+    AuthorStates extends readonly EntryAssignmentState[],
+    PostStates extends readonly EntryAssignmentState[],
+  >(
+    authorStates: AuthorStates,
+    postStates: PostStates,
+  ): AuthorStates extends readonly EntryAssignmentState[]
+    ? PostStates extends readonly EntryAssignmentState[]
+      ? Cms.EntryBatchMutation[]
+      : never
+    : never => [
+    ...postStates.map(
+      (state): Cms.EntryBatchMutation => ({
+        input: {
+          contentTypeId: "post",
+          entryId: state.entry.id,
+          values: {
+            ...state.entry.values,
+            "featured-alternative-text": null,
+            "featured-asset": null,
+          },
+          writeToken: state.writeToken,
         },
-        writeToken: state.writeToken,
-      },
-      kind: "replace",
-    }),
-  ),
-  ...authorStates.map(
-    (state): Cms.EntryBatchMutation => ({
-      input: {
-        contentTypeId: "author",
-        entryId: state.entry.id,
-        values: {
-          ...state.entry.values,
-          portrait: null,
-          "portrait-alternative-text": null,
+        kind: "replace",
+      }),
+    ),
+    ...authorStates.map(
+      (state): Cms.EntryBatchMutation => ({
+        input: {
+          contentTypeId: "author",
+          entryId: state.entry.id,
+          values: {
+            ...state.entry.values,
+            portrait: null,
+            "portrait-alternative-text": null,
+          },
+          writeToken: state.writeToken,
         },
-        writeToken: state.writeToken,
-      },
-      kind: "replace",
-    }),
-  ),
-],
-
- buildImageReplacementMutations = ({
-  authorStates,
-  newAssetId,
-  oldAssetId,
-  postStates,
-}: BuildImageReplacementMutationsInput): Cms.EntryBatchMutation[] => [
-  ...postStates.map(
-    (state): Cms.EntryBatchMutation => ({
-      input: {
-        contentTypeId: "post",
-        entryId: state.entry.id,
-        values: {
-          ...state.entry.values,
-          body: replaceRichTextAsset(state.entry.values["body"] ?? null, oldAssetId, newAssetId),
-          ...conditionalProperty(
-            state.entry.values["featured-asset"] === oldAssetId,
-            "featured-asset",
-            newAssetId,
-          ),
+        kind: "replace",
+      }),
+    ),
+  ],
+  buildImageReplacementMutations = <Input extends BuildImageReplacementMutationsInput>(
+    input: Readonly<Input>,
+  ): Cms.EntryBatchMutation[] => [
+    ...input.postStates.map(
+      (state): Cms.EntryBatchMutation => ({
+        input: {
+          contentTypeId: "post",
+          entryId: state.entry.id,
+          values: {
+            ...state.entry.values,
+            body: replaceRichTextAsset(
+              state.entry.values["body"] ?? null,
+              input.oldAssetId,
+              input.newAssetId,
+            ),
+            ...conditionalProperty(
+              state.entry.values["featured-asset"] === input.oldAssetId,
+              "featured-asset",
+              input.newAssetId,
+            ),
+          },
+          writeToken: state.writeToken,
         },
-        writeToken: state.writeToken,
-      },
-      kind: "replace",
-    }),
-  ),
-  ...authorStates.map(
-    (state): Cms.EntryBatchMutation => ({
-      input: {
-        contentTypeId: "author",
-        entryId: state.entry.id,
-        values: {
-          ...state.entry.values,
-          profile: replaceRichTextAsset(
-            state.entry.values["profile"] ?? null,
-            oldAssetId,
-            newAssetId,
-          ),
-          ...conditionalProperty(
-            state.entry.values["portrait"] === oldAssetId,
-            "portrait",
-            newAssetId,
-          ),
+        kind: "replace",
+      }),
+    ),
+    ...input.authorStates.map(
+      (state): Cms.EntryBatchMutation => ({
+        input: {
+          contentTypeId: "author",
+          entryId: state.entry.id,
+          values: {
+            ...state.entry.values,
+            profile: replaceRichTextAsset(
+              state.entry.values["profile"] ?? null,
+              input.oldAssetId,
+              input.newAssetId,
+            ),
+            ...conditionalProperty(
+              state.entry.values["portrait"] === input.oldAssetId,
+              "portrait",
+              input.newAssetId,
+            ),
+          },
+          writeToken: state.writeToken,
         },
-        writeToken: state.writeToken,
-      },
-      kind: "replace",
+        kind: "replace",
+      }),
+    ),
+  ],
+  loadAssetAssignmentStates = (
+    cms: Readonly<Cms.ServiceShape>,
+    assetId: string,
+  ): Effect.Effect<
+    {
+      readonly authorStates: readonly EntryAssignmentState[];
+      readonly postStates: readonly EntryAssignmentState[];
+    },
+    CmsError.CmsError
+  > =>
+    Effect.gen(function* loadAssetAssignmentEntryStates() {
+      const authorStates = yield* Effect.all(
+          (yield* queryAllEntries(cms, { contentTypeId: "author", pageSize: 100 }))
+            .filter((author) => author.values["portrait"] === assetId)
+            .map((author) =>
+              cms.getCurrentEntryState({ contentTypeId: "author", entryId: author.id }),
+            ),
+        ),
+        postStates = yield* Effect.all(
+          (yield* queryAllEntries(cms, { contentTypeId: "post", pageSize: 100 }))
+            .filter((post) => post.values["featured-asset"] === assetId)
+            .map((post) => cms.getCurrentEntryState({ contentTypeId: "post", entryId: post.id })),
+        );
+      return { authorStates, postStates };
     }),
-  ),
-],
-
- loadAssetAssignmentStates = (
-  cms: Cms.ServiceShape,
-  assetId: string,
-): Effect.Effect<
-  {
-    readonly authorStates: readonly EntryAssignmentState[];
-    readonly postStates: readonly EntryAssignmentState[];
-  },
-  CmsError.CmsError
-> =>
-  Effect.gen(function* loadAssetAssignmentEntryStates() {
-    const authorStates = yield* Effect.all(
-        (yield* queryAllEntries(cms, { contentTypeId: "author", pageSize: 100 }))
-          .filter((author) => author.values["portrait"] === assetId)
-          .map((author) =>
-            cms.getCurrentEntryState({ contentTypeId: "author", entryId: author.id }),
-          ),
-      ),
-      postStates = yield* Effect.all(
-        (yield* queryAllEntries(cms, { contentTypeId: "post", pageSize: 100 }))
-          .filter((post) => post.values["featured-asset"] === assetId)
-          .map((post) => cms.getCurrentEntryState({ contentTypeId: "post", entryId: post.id })),
-      );
-    return { authorStates, postStates };
-  }),
-
- loadImageReplacementStates = (
-  cms: Cms.ServiceShape,
-  oldAssetId: string,
-): Effect.Effect<
-  {
-    readonly authorStates: readonly EntryAssignmentState[];
-    readonly postStates: readonly EntryAssignmentState[];
-  },
-  CmsError.CmsError
-> =>
-  Effect.gen(function* loadImageReplacementEntryStates() {
-    const authorStates = yield* Effect.all(
-        (yield* cms.queryEntries({ contentTypeId: "author", pageSize: 100 })).items
-          .filter((author) =>
-            usesAsset({
-              assetId: oldAssetId,
-              directField: "portrait",
-              richTextField: "profile",
-              values: author.values,
-            }),
-          )
-          .map((author) =>
-            cms.getCurrentEntryState({ contentTypeId: "author", entryId: author.id }),
-          ),
-      ),
-      postStates = yield* Effect.all(
-        (yield* cms.queryEntries({ contentTypeId: "post", pageSize: 100 })).items
-          .filter((post) =>
-            usesAsset({
-              assetId: oldAssetId,
-              directField: "featured-asset",
-              richTextField: "body",
-              values: post.values,
-            }),
-          )
-          .map((post) => cms.getCurrentEntryState({ contentTypeId: "post", entryId: post.id })),
-      );
-    return { authorStates, postStates };
-  });
+  loadImageReplacementStates = (
+    cms: Readonly<Cms.ServiceShape>,
+    oldAssetId: string,
+  ): Effect.Effect<
+    {
+      readonly authorStates: readonly EntryAssignmentState[];
+      readonly postStates: readonly EntryAssignmentState[];
+    },
+    CmsError.CmsError
+  > =>
+    Effect.gen(function* loadImageReplacementEntryStates() {
+      const authorStates = yield* Effect.all(
+          (yield* cms.queryEntries({ contentTypeId: "author", pageSize: 100 })).items
+            .filter((author) =>
+              usesAsset({
+                assetId: oldAssetId,
+                directField: "portrait",
+                richTextField: "profile",
+                values: author.values,
+              }),
+            )
+            .map((author) =>
+              cms.getCurrentEntryState({ contentTypeId: "author", entryId: author.id }),
+            ),
+        ),
+        postStates = yield* Effect.all(
+          (yield* cms.queryEntries({ contentTypeId: "post", pageSize: 100 })).items
+            .filter((post) =>
+              usesAsset({
+                assetId: oldAssetId,
+                directField: "featured-asset",
+                richTextField: "body",
+                values: post.values,
+              }),
+            )
+            .map((post) => cms.getCurrentEntryState({ contentTypeId: "post", entryId: post.id })),
+        );
+      return { authorStates, postStates };
+    });
 
 export default {
   buildImageClearingMutations,

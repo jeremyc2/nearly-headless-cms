@@ -25,7 +25,7 @@ export const atomicFilesystemLayer = (root: string) =>
   initialGeneration = 0,
   killSignal = 9,
   readEntryGeneration = Persistence.EntryPersistence.pipe(
-    Effect.flatMap((entries) => entries.readGeneration),
+    Effect.flatMap((entries) => entries.readGeneration()),
   ),
   secondByte = 2,
   seventhByte = 7,

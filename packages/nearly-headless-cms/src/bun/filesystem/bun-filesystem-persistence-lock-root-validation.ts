@@ -108,9 +108,7 @@ const diskCatalogFromGeneration = (catalog: unknown): DiskCatalog | undefined =>
     const assets: unknown = Reflect.get(generation, "assets"),
       catalog: unknown = Reflect.get(generation, "catalog"),
       decodedCatalog = diskCatalogFromGeneration(catalog),
-      decodedEntryGeneration = entryGenerationFromDisk(
-        Reflect.get(generation, "entryGeneration"),
-      ),
+      decodedEntryGeneration = entryGenerationFromDisk(Reflect.get(generation, "entryGeneration")),
       format: unknown = Reflect.get(generation, "format"),
       generationNumber: unknown = Reflect.get(generation, "generation"),
       records: unknown = Reflect.get(generation, "records"),

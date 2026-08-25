@@ -7,10 +7,13 @@ import type { CmsServiceOperationContext } from "./cms-service-operation-context
 import { Effect } from "effect";
 import activationSupport from "./cms-service-definition-activation-support.ts";
 
-const { applyMigrationRecords, commitDefinitionActivation, prepareActivationRecords } = activationSupport,
+const { applyMigrationRecords, commitDefinitionActivation, prepareActivationRecords } =
+    activationSupport,
   activateDefinitionSnapshotOperation =
-    (context: CmsServiceOperationContext) =>
-    (input: ActivateDefinitionSnapshotInput): Effect.Effect<ActivateDefinitionSnapshotResult, CmsError> =>
+    (context: Readonly<CmsServiceOperationContext>) =>
+    (
+      input: Readonly<ActivateDefinitionSnapshotInput>,
+    ): Effect.Effect<ActivateDefinitionSnapshotResult, CmsError> =>
       Effect.gen(function* activateDefinitionSnapshotOperationEffect() {
         yield* context.authorize("definition.activate", {
           definitionSpaceId: input.snapshot.definitionSpaceId,

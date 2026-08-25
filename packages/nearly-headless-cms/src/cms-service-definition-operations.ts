@@ -1,37 +1,41 @@
-import type { AppendDefinitionRevisionInput, AppendMigrationManifestInput, PrepareDefinitionMigrationInput, RetireDefinitionInput } from "./cms-types.ts";
+import type {
+  AppendDefinitionRevisionInput,
+  AppendMigrationManifestInput,
+  PrepareDefinitionMigrationInput,
+  RetireDefinitionInput,
+} from "./cms-types.ts";
 import type { CmsServiceOperationContext } from "./cms-service-operation-context.ts";
 import definitionOperationsSupport from "./cms-service-definition-operations-support.ts";
 
 const {
-  runActiveDefinitionSnapshot,
-  runAppendDefinitionRevision,
-  runAppendMigrationManifest,
-  runPrepareDefinitionMigration,
-  runReadConsistentSnapshot,
-  runReadDefinitionCatalog,
-  runRetireDefinition,
-} = definitionOperationsSupport,
-  activeDefinitionSnapshotMethod = (context: CmsServiceOperationContext) =>
+    runActiveDefinitionSnapshot,
+    runAppendDefinitionRevision,
+    runAppendMigrationManifest,
+    runPrepareDefinitionMigration,
+    runReadConsistentSnapshot,
+    runReadDefinitionCatalog,
+    runRetireDefinition,
+  } = definitionOperationsSupport,
+  activeDefinitionSnapshotMethod = (context: Readonly<CmsServiceOperationContext>) =>
     runActiveDefinitionSnapshot(context),
   appendDefinitionRevisionMethod =
-    (context: CmsServiceOperationContext) =>
-    (input: AppendDefinitionRevisionInput) =>
+    (context: Readonly<CmsServiceOperationContext>) =>
+    (input: Readonly<AppendDefinitionRevisionInput>) =>
       runAppendDefinitionRevision(context, input),
   appendMigrationManifestMethod =
-    (context: CmsServiceOperationContext) =>
-    (input: AppendMigrationManifestInput) =>
+    (context: Readonly<CmsServiceOperationContext>) =>
+    (input: Readonly<AppendMigrationManifestInput>) =>
       runAppendMigrationManifest(context, input),
   prepareDefinitionMigrationMethod =
-    (context: CmsServiceOperationContext) =>
-    (input: PrepareDefinitionMigrationInput) =>
+    (context: Readonly<CmsServiceOperationContext>) =>
+    (input: Readonly<PrepareDefinitionMigrationInput>) =>
       runPrepareDefinitionMigration(context, input),
-  readConsistentSnapshotMethod = (context: CmsServiceOperationContext) =>
+  readConsistentSnapshotMethod = (context: Readonly<CmsServiceOperationContext>) =>
     runReadConsistentSnapshot(context),
-  readDefinitionCatalogMethod = (context: CmsServiceOperationContext) =>
+  readDefinitionCatalogMethod = (context: Readonly<CmsServiceOperationContext>) =>
     runReadDefinitionCatalog(context),
   retireDefinitionMethod =
-    (context: CmsServiceOperationContext) =>
-    (input: RetireDefinitionInput) =>
+    (context: Readonly<CmsServiceOperationContext>) => (input: Readonly<RetireDefinitionInput>) =>
       runRetireDefinition(context, input);
 
 export default {

@@ -1,4 +1,7 @@
-import { type EntryRepresentation, ManagementClientFailure } from "../generated/management-client.ts";
+import {
+  type EntryRepresentation,
+  ManagementClientFailure,
+} from "../generated/management-client.ts";
 import { Schema } from "effect";
 
 export interface EditorialIssue {

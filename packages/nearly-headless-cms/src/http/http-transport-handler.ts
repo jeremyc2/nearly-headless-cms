@@ -1,40 +1,45 @@
 import { Service as CmsService, type ServiceShape as CmsServiceShape } from "../cms.ts";
 import { type DeliveryOperation, type ManagementOperation } from "./http-contract.ts";
 import { type Handler, type Options, type RouteHandlerContext } from "./http-transport-types.ts";
+import {
+  type ReadonlyTransportAbortSignal,
+  type ReadonlyTransportHandlerRequest,
+  type ReadonlyTransportUrl,
+} from "./http-transport-readonly-types.ts";
 import handlerSupport, { type CompiledSnapshot } from "./http-transport-handler-support.ts";
+import transportResponse, { httpStatusNotFound } from "./http-transport-response.ts";
 import { Effect } from "effect";
 import dispatchRouteHandlers from "./http-transport-route-dispatch.ts";
 import handleManagementRoutes from "./http-transport-management-routes.ts";
 import transportDeliveryRoutes from "./http-transport-delivery-routes.ts";
 import transportPreflight from "./http-transport-preflight.ts";
-import transportResponse from "./http-transport-response.ts";
 import wrapHandlerWithTimeout from "./http-transport-request-timeout.ts";
 
 type HandlerBodyLimits = ReturnType<typeof handlerSupport.resolveHandlerOptions>["limits"];
 type ResolvedHandlerOptions = ReturnType<typeof handlerSupport.resolveHandlerOptions>;
 
 interface DispatchMatchedRoutesInput {
-  readonly cms: CmsServiceShape;
+  readonly cms: Readonly<CmsServiceShape>;
   readonly deliveryOperations: readonly DeliveryOperation[];
   readonly limits: HandlerBodyLimits;
   readonly managementOperations: readonly ManagementOperation[];
   readonly operationMatchers: ResolvedHandlerOptions["operationMatchers"];
-  readonly options: Options;
-  readonly request: Request;
+  readonly options: Readonly<Options>;
+  readonly request: ReadonlyTransportHandlerRequest;
   readonly requestId: string;
-  readonly requestUrl: URL;
-  readonly signal: AbortSignal;
-  readonly snapshot: CompiledSnapshot;
+  readonly requestUrl: ReadonlyTransportUrl;
+  readonly signal: ReadonlyTransportAbortSignal;
+  readonly snapshot: Readonly<CompiledSnapshot>;
 }
 
 interface HandleResolvedRequestInput {
-  readonly cms: CmsServiceShape;
-  readonly options: Options;
-  readonly request: Request;
+  readonly cms: Readonly<CmsServiceShape>;
+  readonly options: Readonly<Options>;
+  readonly request: ReadonlyTransportHandlerRequest;
   readonly requestId: string;
   readonly resolved: ResolvedHandlerOptions;
-  readonly signal: AbortSignal;
-  readonly snapshot: CompiledSnapshot;
+  readonly signal: ReadonlyTransportAbortSignal;
+  readonly snapshot: Readonly<CompiledSnapshot>;
 }
 
 const { jsonResponse } = transportResponse,
@@ -42,11 +47,19 @@ const { jsonResponse } = transportResponse,
     transportPreflight,
   { handleCustomManagementOperations, handleDeliveryOperations } = transportDeliveryRoutes,
   { buildRouteContext, resolveActiveSnapshot, resolveHandlerOptions } = handlerSupport,
-  dispatchManagementAndDeliveryRoutes = (
-    routeContext: RouteHandlerContext,
-    managementOperations: readonly ManagementOperation[],
-    operationMatchers: ResolvedHandlerOptions["operationMatchers"],
-  ): Promise<Response | undefined> =>
+  dispatchManagementAndDeliveryRoutes = <
+    Context extends RouteHandlerContext,
+    Operations extends readonly ManagementOperation[],
+    Matchers extends ResolvedHandlerOptions["operationMatchers"],
+  >(
+    routeContext: Readonly<Context>,
+    managementOperations: Operations,
+    operationMatchers: Matchers,
+  ): Operations extends readonly ManagementOperation[]
+    ? Matchers extends ResolvedHandlerOptions["operationMatchers"]
+      ? Promise<Response | undefined>
+      : never
+    : never =>
     dispatchRouteHandlers(
       [
         handleManagementRoutes,
@@ -55,20 +68,23 @@ const { jsonResponse } = transportResponse,
       ],
       routeContext,
     ),
-  dispatchMatchedRoutes = ({
-    cms,
-    deliveryOperations,
-    limits,
-    managementOperations,
-    operationMatchers,
-    options,
-    request,
-    requestId,
-    requestUrl,
-    signal,
-    snapshot,
-  }: DispatchMatchedRoutesInput): Promise<Response | undefined> => {
-    const corsResponse = handleCorsPreflight(request, requestId, options);
+  dispatchMatchedRoutes = <Input extends DispatchMatchedRoutesInput>(
+    input: Readonly<Input>,
+  ): Promise<Response | undefined> => {
+    const {
+        cms,
+        deliveryOperations,
+        limits,
+        managementOperations,
+        operationMatchers,
+        options,
+        request,
+        requestId,
+        requestUrl,
+        signal,
+        snapshot,
+      } = input,
+      corsResponse = handleCorsPreflight(request, requestId, options);
     if (corsResponse !== undefined) {
       return Promise.resolve(corsResponse);
     }
@@ -91,44 +107,45 @@ const { jsonResponse } = transportResponse,
     );
   },
   // oxlint-disable-next-line effecttsgo/async-function -- request handling awaits route dispatch before returning a final response.
-  handleResolvedRequest = async ({
-    cms,
-    options,
-    request,
-    requestId,
-    resolved,
-    signal,
-    snapshot,
-  }: HandleResolvedRequestInput): Promise<Response> => {
-    const matchedResponse = await dispatchMatchedRoutes({
-      cms,
-      deliveryOperations: resolved.deliveryOperations,
-      limits: resolved.limits,
-      managementOperations: resolved.managementOperations,
-      operationMatchers: resolved.operationMatchers,
-      options,
-      request,
-      requestId,
-      requestUrl: new URL(request.url),
-      signal,
-      snapshot,
-    });
+  handleResolvedRequest = async <Input extends HandleResolvedRequestInput>(
+    input: Readonly<Input>,
+  ): Promise<Response> => {
+    const { cms, options, request, requestId, resolved, signal, snapshot } = input,
+      matchedResponse = await dispatchMatchedRoutes({
+        cms,
+        deliveryOperations: resolved.deliveryOperations,
+        limits: resolved.limits,
+        managementOperations: resolved.managementOperations,
+        operationMatchers: resolved.operationMatchers,
+        options,
+        request,
+        requestId,
+        requestUrl: new URL(request.url),
+        signal,
+        snapshot,
+      });
     if (matchedResponse !== undefined) {
       return matchedResponse;
     }
     return jsonResponse({
       requestId,
-      status: 404,
+      status: httpStatusNotFound,
       value: { code: "NotFound", message: "Route not found", requestId },
     });
   },
-  makeHandler = (options: Options = {}): Effect.Effect<Handler, never, CmsService> =>
+  makeHandler = <OptionsType extends Options>(
+    options?: Readonly<OptionsType>,
+  ): Effect.Effect<Handler, never, CmsService> =>
     Effect.gen(function* createHandler() {
       const cms = yield* CmsService,
-        resolved = resolveHandlerOptions(options);
+        resolved = resolveHandlerOptions(options ?? {});
       return wrapHandlerWithTimeout(
         // oxlint-disable-next-line effecttsgo/async-function -- request handling awaits body parsing and Effect execution.
-        async (request: Request, signal: AbortSignal, requestId: string): Promise<Response> => {
+        async (
+          request: ReadonlyTransportHandlerRequest,
+          signal: ReadonlyTransportAbortSignal,
+          requestId: string,
+        ): Promise<Response> => {
           const limitResponse = validateTransportLimits(request, requestId, {
               maximumHeaderByteLength: resolved.maximumHeaderByteLength,
               maximumJsonBodyByteLength: resolved.limits.maximumJsonBodyByteLength,

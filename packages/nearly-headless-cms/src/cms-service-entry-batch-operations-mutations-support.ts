@@ -33,8 +33,10 @@ interface BatchReplaceWithHistoryInput {
 const { applyRetention, attempt, collectReferences, entryResource } = cmsSupport,
   { validateBatchReplaceValues } = batchValidateSupport,
   applyBatchDeleteMutation = (
-    context: CmsServiceOperationContext,
-    input: BatchMutationInput & { readonly mutation: Extract<EntryBatchMutation, { kind: "delete" }> },
+    context: Readonly<CmsServiceOperationContext>,
+    input: BatchMutationInput & {
+      readonly mutation: Extract<EntryBatchMutation, { kind: "delete" }>;
+    },
   ): Effect.Effect<EntryBatchMutationResult, CmsError> => {
     const { contentType, current, entryId, records, snapshot } = input;
     if (contentType.definition.history !== true) {
@@ -55,8 +57,10 @@ const { applyRetention, attempt, collectReferences, entryResource } = cmsSupport
     });
   },
   applyBatchReplaceMutation = (
-    context: CmsServiceOperationContext,
-    input: BatchMutationInput & { readonly mutation: Extract<EntryBatchMutation, { kind: "replace" }> },
+    context: Readonly<CmsServiceOperationContext>,
+    input: BatchMutationInput & {
+      readonly mutation: Extract<EntryBatchMutation, { kind: "replace" }>;
+    },
   ): Effect.Effect<EntryBatchMutationResult, CmsError> =>
     Effect.gen(function* applyBatchReplaceEffect() {
       const { contentType, current, entryId, mutation, records, snapshot } = input,
@@ -120,7 +124,7 @@ const { applyRetention, attempt, collectReferences, entryResource } = cmsSupport
       return yield* Effect.void;
     }),
   authorizeBatchMutation = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     snapshot: CompiledSnapshot,
     mutation: EntryBatchMutation,
   ): Effect.Effect<void, CmsError> =>
@@ -139,7 +143,7 @@ const { applyRetention, attempt, collectReferences, entryResource } = cmsSupport
       );
     }),
   commitBatchReplaceWithHistory = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     input: BatchReplaceWithHistoryInput,
   ): Effect.Effect<MutationResult, CmsError> =>
     Effect.gen(function* commitBatchReplaceWithHistoryEffect() {
@@ -166,7 +170,7 @@ const { applyRetention, attempt, collectReferences, entryResource } = cmsSupport
       (record) => record.deletionRecord === undefined && record.entry.id !== excludedEntryId,
     ),
   processBatchMutation = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     batchInput: BatchMutationInput,
   ): Effect.Effect<EntryBatchMutationResult, CmsError> => {
     if (batchInput.mutation.kind === "replace") {
@@ -181,7 +185,7 @@ const { applyRetention, attempt, collectReferences, entryResource } = cmsSupport
     });
   },
   recordBatchDeletedEntry = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     input: {
       readonly contentType: CompiledContentType;
       readonly contentTypeId: string;

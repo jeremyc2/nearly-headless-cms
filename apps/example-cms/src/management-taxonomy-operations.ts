@@ -3,16 +3,14 @@ import { Effect } from "effect";
 import type { HttpContract } from "nearly-headless-cms/http";
 import managementSupport from "./management-support.ts";
 
-const {
-    requireDeletionRecord,
-    requiredParameter,
-    requiredWriteToken,
-  } = managementSupport,
-  buildTaxonomyDetachmentMutations = (
-    postStates: readonly {
+const { requireDeletionRecord, requiredParameter, requiredWriteToken } = managementSupport,
+  buildTaxonomyDetachmentMutations = <
+    PostState extends {
       entry: { id: string; values: ContentDefinition.JsonObject };
       writeToken: string;
-    }[],
+    },
+  >(
+    postStates: readonly Readonly<PostState>[],
     relationshipField: "categories" | "tags",
     taxonomyEntryId: string,
   ): Cms.EntryBatchMutation[] =>
@@ -66,7 +64,7 @@ const {
         };
       }),
   loadTaxonomyDetachmentState = (
-    cms: Cms.ServiceShape,
+    cms: Readonly<Cms.ServiceShape>,
     parameters: Readonly<Record<string, string | undefined>>,
     relationshipField: "categories" | "tags",
   ) =>

@@ -4,5 +4,9 @@ export { default as entryEditorControllerMutationsSupport } from "./entry-editor
 export { default as entryEditorControllerViewSupport } from "./entry-editor-controller-view.ts";
 export { useEntryEditorQueries } from "./entry-editor-queries.ts";
 export { createFieldUpdater, titleFieldFrom } from "./entry-editor-support.ts";
-export type { DeletionRecord, EditorialConfirmationStatus, EntryConflict } from "./entry-editor-types.ts";
+export type {
+  DeletionRecord,
+  EditorialConfirmationStatus,
+  EntryConflict,
+} from "./entry-editor-types.ts";
 export { stringValue } from "./main-entry-support.ts";

@@ -1,6 +1,21 @@
-import { Asset, Persistence } from "../../src/index.ts";
-import { type CompiledSnapshot, compileSnapshot } from "../../src/content-definition.ts";
-import { DateTime, Deferred, Effect, Exit, Fiber, Layer, Stream } from "effect";
+import {
+  Asset,
+  BunFilesystemPersistence,
+  type CatalogState,
+  type CompiledSnapshot,
+  CryptoIdentifierGenerator,
+  DateTime,
+  Deferred,
+  Effect,
+  type EntryGeneration,
+  Exit,
+  Fiber,
+  Layer,
+  Persistence,
+  type StoredAsset,
+  Stream,
+  compileSnapshot,
+} from "./filesystem-persistence-scenarios-imports.ts";
 import {
   atomicFilesystemLayer,
   boundedFilesystemLayer,
@@ -17,24 +32,20 @@ import {
 // The test exercises the Bun filesystem adapter's on-disk behavior; these helpers have no Bun equivalent.
 // oxlint-disable-next-line effecttsgo/node-builtin-import
 import { mkdtemp, readdir } from "node:fs/promises";
-import { BunFilesystemPersistence } from "../../src/bun/filesystem/index.ts";
-import { CryptoIdentifierGenerator } from "../../src/adapters/index.ts";
 import { expect } from "bun:test";
 // Path joining is host-path setup for this filesystem integration test, outside the Effect service graph.
 // oxlint-disable-next-line effecttsgo/node-builtin-import
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
-const commitDurableCatalogCutoverEffect = (
-    targetSnapshot: CompiledSnapshot,
-  ) =>
+const commitDurableCatalogCutoverEffect = (targetSnapshot: CompiledSnapshot) =>
     Effect.gen(function* commitDurableCatalogCutoverStep() {
       const activatedAt = DateTime.formatIso(yield* DateTime.now),
         catalog = yield* Persistence.DefinitionCatalog,
-        catalogState = yield* catalog.read,
+        catalogState = yield* catalog.read(),
         entries = yield* Persistence.EntryPersistence,
         generationWithEntry = yield* entries.commitGeneration(
-          (yield* entries.readGeneration).generation,
+          (yield* entries.readGeneration()).generation,
           new Map([
             [
               "note-1",
@@ -99,10 +110,26 @@ const commitDurableCatalogCutoverEffect = (
     ],
     snapshotId: "with-slug",
   }),
+  expectRecoveredAsset = <
+    Recovered extends { readonly asset: StoredAsset; readonly generation: EntryGeneration },
+  >(
+    recovered: Readonly<Recovered>,
+  ): void => {
+    expect(recovered.generation.records.get("entry-1")?.entry.values["title"]).toBe("Persisted");
+    expect(new TextDecoder().decode(recovered.asset.bytes)).toBe("asset bytes");
+  },
+  expectRecoveredCatalog = <
+    Recovered extends { readonly catalog: CatalogState; readonly entries: EntryGeneration },
+  >(
+    recovered: Readonly<Recovered>,
+  ): void => {
+    expect(recovered.catalog.active.compiled.snapshotId).toBe("with-slug");
+    expect(recovered.entries.records.get("note-1")?.entry.values["slug"]).toBe("durable");
+  },
   ingestAssetEffect = Effect.gen(function* ingestAssetEffect() {
     const assets = yield* Asset.Management,
       entries = yield* Persistence.EntryPersistence,
-      generation = yield* entries.readGeneration;
+      generation = yield* entries.readGeneration();
     yield* entries.commitGeneration(
       generation.generation,
       new Map([
@@ -153,18 +180,25 @@ const commitDurableCatalogCutoverEffect = (
         entries = yield* Persistence.EntryPersistence;
       return {
         asset: yield* assets.read(assetId),
-        generation: yield* entries.readGeneration,
+        generation: yield* entries.readGeneration(),
       };
     }),
   recoverDurableCatalogCutoverEffect = Effect.gen(function* recoverDurableCatalogCutoverEffect() {
     const catalog = yield* Persistence.DefinitionCatalog,
       entries = yield* Persistence.EntryPersistence;
-    return { catalog: yield* catalog.read, entries: yield* entries.readGeneration };
+    return { catalog: yield* catalog.read(), entries: yield* entries.readGeneration() };
   }),
-  runWithLayer = <Value, EffectError, LayerError, Requirements>(
-    layer: Layer.Layer<Requirements, LayerError>,
-    effect: Effect.Effect<Value, EffectError, Requirements>,
-  ): Promise<Value> =>
+  runWithLayer = <
+    Value,
+    EffectError,
+    LayerError,
+    Requirements,
+    LayerType extends Layer.Layer<Requirements, LayerError>,
+    EffectType extends Effect.Effect<Value, EffectError, Requirements>,
+  >(
+    layer: Readonly<LayerType>,
+    effect: EffectType,
+  ): Promise<Effect.Success<EffectType>> =>
     Effect.runPromise(
       // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer.
       effect.pipe(Effect.provide(layer)),
@@ -206,27 +240,23 @@ const commitDurableCatalogCutoverEffect = (
       const layer = durableCatalogLayer(root);
       return runWithLayer(layer, commitDurableCatalogCutoverEffect(durableCatalogTargetSnapshot))
         .then(() => runWithLayer(layer, recoverDurableCatalogCutoverEffect))
-        .then((recovered) => {
-          expect(recovered.catalog.active.compiled.snapshotId).toBe("with-slug");
-          expect(recovered.entries.records.get("note-1")?.entry.values["slug"]).toBe("durable");
-        });
+        .then(expectRecoveredCatalog);
     }),
   verifyEntryAndAssetRecovery = (): Promise<void> =>
     mkdtemp(join(tmpdir(), "nearly-headless-cms-")).then((root) => {
       const filesystemLayer = atomicFilesystemLayer(root);
       return runWithLayer(filesystemLayer, ingestAssetEffect)
         .then((assetId) => runWithLayer(filesystemLayer, readRecoveredAssetEffect(assetId)))
-        .then((recovered) => {
-          expect(recovered.generation.records.get("entry-1")?.entry.values["title"]).toBe("Persisted");
-          expect(new TextDecoder().decode(recovered.asset.bytes)).toBe("asset bytes");
-        });
+        .then(expectRecoveredAsset);
     }),
   verifyStreamingStageCancellation = (): Promise<void> =>
     mkdtemp(join(tmpdir(), "nearly-headless-cms-stream-stage-")).then((root) =>
-      runWithLayer(atomicFilesystemLayer(root), observeStreamingStageEffect(root)).then((observed) => {
-        expect(observed.stageExistedWhilePending).toBeTrue();
-        expect(observed.stagingAfterCancellation).toEqual([]);
-      }),
+      runWithLayer(atomicFilesystemLayer(root), observeStreamingStageEffect(root)).then(
+        (observed) => {
+          expect(observed.stageExistedWhilePending).toBeTrue();
+          expect(observed.stagingAfterCancellation).toEqual([]);
+        },
+      ),
     ),
   waitForNoStage = (root: string, attempt = 0): Promise<string[]> =>
     readdir(join(root, "blobs")).then((blobNames) => {
@@ -258,4 +288,7 @@ export {
   verifyStreamingStageCancellation,
 };
 
-export { verifyWriterEnforcement, verifyWriterLockRecovery } from "./filesystem-persistence-writer-scenarios.ts";
+export {
+  verifyWriterEnforcement,
+  verifyWriterLockRecovery,
+} from "./filesystem-persistence-writer-scenarios.ts";

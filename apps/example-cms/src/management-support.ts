@@ -7,17 +7,19 @@ import {
 } from "nearly-headless-cms";
 import { Effect } from "effect";
 
-const appendQueryPage = (
-  accumulated: Entry.Representation[],
-  page: { items: readonly Entry.Representation[]; nextCursor?: string },
-): string | undefined => {
-  for (const item of page.items) {
-    accumulated.push(item);
-  }
-  return page.nextCursor;
-},
-
- conditionalProperty = <Value>(
+const   appendQueryPage = <
+    Accumulated extends Entry.Representation[],
+    Page extends { items: readonly Entry.Representation[]; nextCursor?: string },
+  >(
+    accumulated: Accumulated,
+    page: Readonly<Page>,
+  ): { accumulated: Accumulated; nextCursor: Page["nextCursor"] } => {
+    for (const item of page.items) {
+      accumulated.push(item);
+    }
+    return { accumulated, nextCursor: page.nextCursor };
+  },
+  conditionalProperty = <Value>(
     condition: boolean,
     property: string,
     value: Value,
@@ -32,20 +34,23 @@ const appendQueryPage = (
   ): value is readonly ContentDefinition.JsonValue[] => Array.isArray(value),
   isRecord = (value: object): value is Record<string, unknown> =>
     Object.keys(value).every((key) => typeof key === "string"),
-  queryAllEntries = (
-    cms: Cms.ServiceShape,
-    query: Omit<EntryQuery.Query, "cursor">,
+  queryAllEntries = <CmsService extends Cms.ServiceShape>(
+    cms: Readonly<CmsService>,
+    query: Readonly<Omit<EntryQuery.Query, "cursor">>,
   ): Effect.Effect<readonly Entry.Representation[], CmsError.CmsError> =>
     Effect.gen(function* collectAllMatchingEntries() {
       const accumulated: Entry.Representation[] = [];
-      for (let nextCursor = appendQueryPage(accumulated, yield* cms.queryEntries(query)); ; ) {
+      for (
+        let {nextCursor} = appendQueryPage(accumulated, yield* cms.queryEntries(query));
+        ;
+      ) {
         if (nextCursor === undefined) {
           return accumulated;
         }
-        nextCursor = appendQueryPage(
+        ({ nextCursor } = appendQueryPage(
           accumulated,
           yield* cms.queryEntries({ ...query, cursor: nextCursor }),
-        );
+        ));
       }
     }),
   requireDeletionRecord = (
@@ -72,7 +77,9 @@ const appendQueryPage = (
     }
     return value;
   },
-  requiredWriteToken = (request: Request): Effect.Effect<string, CmsError.InvalidInput> => {
+  requiredWriteToken = <RequestType extends Request>(
+    request: Readonly<RequestType>,
+  ): Effect.Effect<string, CmsError.InvalidInput> => {
     const writeToken = request.headers.get("cms-write-token");
     if (writeToken === null || writeToken.length === 0) {
       return Effect.fail(CmsError.InvalidInput.make({ message: "CMS-Write-Token is required" }));

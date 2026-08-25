@@ -21,7 +21,9 @@ const publicationValidationContext: { fixture: PublicationValidationFixture | un
 describe("Example CMS Post publication", () => {
   // oxlint-disable-next-line effecttsgo/async-function -- Bun lifecycle hook performs async system setup.
   beforeAll(async () => {
-    publicationValidationContext.fixture = await createPublicationValidationFixture(import.meta.dir);
+    publicationValidationContext.fixture = await createPublicationValidationFixture(
+      import.meta.dir,
+    );
   });
 
   // oxlint-disable-next-line effecttsgo/async-function -- Bun lifecycle hook performs async cleanup.

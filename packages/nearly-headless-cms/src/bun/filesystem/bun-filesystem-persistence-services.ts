@@ -1,27 +1,45 @@
-import { type CatalogState, type CmsError, type Configuration, Conflict, Context, type DefinitionCatalog, DefinitionCatalogTag, type DiskAsset, Effect, type EntryGeneration, type EntryPersistence, EntryPersistenceTag, type EntryRecord, type Generator, InvalidInput, Management, type Metadata, NotFound, type State, SynchronizedRef, emptyLength, initialVersion, join } from "./bun-filesystem-persistence-services-imports.ts";
+import {
+  type CatalogState,
+  type CmsError,
+  type Configuration,
+  Conflict,
+  Context,
+  type DefinitionCatalog,
+  DefinitionCatalogTag,
+  type DiskAsset,
+  Effect,
+  type EntryGeneration,
+  type EntryPersistence,
+  EntryPersistenceTag,
+  type EntryRecord,
+  type Generator,
+  InvalidInput,
+  Management,
+  NotFound,
+  type State,
+  SynchronizedRef,
+  initialVersion,
+} from "./bun-filesystem-persistence-services-imports.ts";
+import filesystemIngestSupport from "./bun-filesystem-persistence-ingest-support.ts";
 import filesystemLockRoot from "./bun-filesystem-persistence-lock-root.ts";
+import filesystemReadSupport from "./bun-filesystem-persistence-read-support.ts";
 import filesystemSupport from "./bun-filesystem-persistence-support.ts";
 const { persistState } = filesystemLockRoot,
-  { cloneCatalog, cloneState, commitAssetBlob, defaultEntryMaximumByteLength, defaultMetadataMaximumByteLength, digest, encode, failure, fromPromise } = filesystemSupport,
-  buildAssetMetadata = (
-    input: Parameters<Management["Service"]["ingest"]>[0],
-    committedBlob: { readonly byteLength: number; readonly digest: string },
-  ): Metadata => {
-    let metadata: Metadata = {
-      byteLength: committedBlob.byteLength,
-      digest: committedBlob.digest,
-      filename: input.filename,
-      mediaType: input.mediaType,
-    };
-    if (input.width !== undefined) { metadata = { ...metadata, width: input.width }; }
-    if (input.height !== undefined) { metadata = { ...metadata, height: input.height }; }
-    if (input.defaultAlternativeText !== undefined) { metadata = { ...metadata, defaultAlternativeText: input.defaultAlternativeText }; }
-    return metadata;
-  },
-  buildAssetService = (
-    configuration: Configuration,
+  { buildAssetMetadata, validateIngestInput } = filesystemIngestSupport,
+  { readAsset } = filesystemReadSupport,
+  {
+    cloneCatalog,
+    cloneState,
+    commitAssetBlob,
+    defaultEntryMaximumByteLength,
+    encode,
+    failure,
+    fromPromise,
+  } = filesystemSupport,
+  buildAssetService = <Ref extends SynchronizedRef.SynchronizedRef<State>>(
+    configuration: Readonly<Configuration>,
     identifiers: Generator["Service"],
-    state: SynchronizedRef.SynchronizedRef<State>,
+    state: Readonly<Ref>,
   ) =>
     Management.of({
       delete: (assetId) => deleteAsset(configuration, state, assetId),
@@ -36,52 +54,69 @@ const { persistState } = filesystemLockRoot,
           }),
         ),
       ingest: (input) => ingestAsset({ configuration, identifiers, input, state }),
-      list: SynchronizedRef.get(state).pipe(
-        Effect.map((current) =>
-          [...current.assets.values()].map((asset) => structuredClone(asset)),
+      list: (_void: void) =>
+        SynchronizedRef.get(state).pipe(
+          Effect.map((current) =>
+            [...current.assets.values()].map((asset) => structuredClone(asset)),
+          ),
         ),
-      ),
       read: (assetId) => readAsset(configuration, state, assetId),
     }),
-  buildCatalogService = (
-    configuration: Configuration,
-    state: SynchronizedRef.SynchronizedRef<State>,
+  buildCatalogService = <Ref extends SynchronizedRef.SynchronizedRef<State>>(
+    configuration: Readonly<Configuration>,
+    state: Readonly<Ref>,
   ) =>
     DefinitionCatalogTag.of({
       commitCutover: (input) =>
         SynchronizedRef.modifyEffect(state, (current) =>
           commitCatalogCutover(configuration, current, input),
         ),
-      read: SynchronizedRef.get(state).pipe(
-        Effect.flatMap((current) => {
-          if (current.catalog === undefined) {
-            return Effect.fail(missingCatalog());
-          }
-          return Effect.succeed(cloneCatalog(current.catalog));
-        }),
-      ),
+      read: (_void: void) =>
+        SynchronizedRef.get(state).pipe(
+          Effect.flatMap((current) => {
+            if (current.catalog === undefined) {
+              return Effect.fail(missingCatalog());
+            }
+            return Effect.succeed(cloneCatalog(current.catalog));
+          }),
+        ),
       replace: (expectedVersion, replacement) =>
-        SynchronizedRef.modifyEffect(state, replaceCatalog(configuration, expectedVersion, replacement)),
+        SynchronizedRef.modifyEffect(
+          state,
+          replaceCatalog(configuration, expectedVersion, replacement),
+        ),
     }),
-  buildEntryService = (
-    configuration: Configuration,
-    state: SynchronizedRef.SynchronizedRef<State>,
+  buildEntryService = <Ref extends SynchronizedRef.SynchronizedRef<State>>(
+    configuration: Readonly<Configuration>,
+    state: Readonly<Ref>,
   ) =>
     EntryPersistenceTag.of({
       commitGeneration: (expectedGeneration, records) =>
-        SynchronizedRef.modifyEffect(state, commitEntryRecords(configuration, expectedGeneration, records)),
-      readGeneration: SynchronizedRef.get(state).pipe(
-        Effect.map((current) => ({
-          generation: current.entryGeneration,
-          records: cloneState(current).records,
-        })),
-      ),
+        SynchronizedRef.modifyEffect(
+          state,
+          commitEntryRecords(configuration, expectedGeneration, records),
+        ),
+      readGeneration: (_void: void) =>
+        SynchronizedRef.get(state).pipe(
+          Effect.map((current) => ({
+            generation: current.entryGeneration,
+            records: cloneState(current).records,
+          })),
+        ),
     }),
   commitCatalogCutover = (
     configuration: Configuration,
     current: State,
-    input: { readonly catalogState: CatalogState; readonly entryRecords: ReadonlyMap<string, EntryRecord>; readonly expectedCatalogVersion: number; readonly expectedEntryGeneration: number },
-  ): Effect.Effect<readonly [{ readonly catalog: CatalogState; readonly entries: EntryGeneration }, State], CmsError> => {
+    input: {
+      readonly catalogState: CatalogState;
+      readonly entryRecords: ReadonlyMap<string, EntryRecord>;
+      readonly expectedCatalogVersion: number;
+      readonly expectedEntryGeneration: number;
+    },
+  ): Effect.Effect<
+    readonly [{ readonly catalog: CatalogState; readonly entries: EntryGeneration }, State],
+    CmsError
+  > => {
     if (current.catalog === undefined) {
       return Effect.fail(missingCatalog());
     }
@@ -91,7 +126,10 @@ const { persistState } = filesystemLockRoot,
     if (current.entryGeneration !== input.expectedEntryGeneration) {
       return Effect.fail(Conflict.make({ message: "Filesystem Entry generation is stale" }));
     }
-    const catalog = { ...cloneCatalog(input.catalogState), version: input.expectedCatalogVersion + 1 },
+    const catalog = {
+        ...cloneCatalog(input.catalogState),
+        version: input.expectedCatalogVersion + 1,
+      },
       next: State = {
         assets: current.assets,
         catalog,
@@ -113,7 +151,11 @@ const { persistState } = filesystemLockRoot,
     });
   },
   commitEntryRecords =
-    (configuration: Configuration, expectedGeneration: number, records: ReadonlyMap<string, EntryRecord>) =>
+    (
+      configuration: Configuration,
+      expectedGeneration: number,
+      records: ReadonlyMap<string, EntryRecord>,
+    ) =>
     (current: State): Effect.Effect<readonly [EntryGeneration, State], CmsError> => {
       if (current.entryGeneration !== expectedGeneration) {
         return Effect.fail(Conflict.make({ message: "Filesystem Entry generation is stale" }));
@@ -144,14 +186,16 @@ const { persistState } = filesystemLockRoot,
         ] as const,
       });
     },
-  deleteAsset = (
-    configuration: Configuration,
-    state: SynchronizedRef.SynchronizedRef<State>,
+  deleteAsset = <Ref extends SynchronizedRef.SynchronizedRef<State>>(
+    configuration: Readonly<Configuration>,
+    state: Readonly<Ref>,
     assetId: string,
   ) =>
     SynchronizedRef.modifyEffect(
       state,
-      (current): Effect.Effect<readonly [undefined, State], NotFound | ReturnType<typeof failure>> => {
+      (
+        current,
+      ): Effect.Effect<readonly [undefined, State], NotFound | ReturnType<typeof failure>> => {
         if (!current.assets.has(assetId)) {
           return Effect.fail(NotFound.make({ message: `Asset ${assetId} was not found` }));
         }
@@ -170,26 +214,17 @@ const { persistState } = filesystemLockRoot,
         });
       },
     ),
-  ingestAsset = (request: { readonly configuration: Configuration; readonly identifiers: Generator["Service"]; readonly input: Parameters<Management["Service"]["ingest"]>[0]; readonly state: SynchronizedRef.SynchronizedRef<State> }) =>
+  ingestAsset = <
+    Ref extends SynchronizedRef.SynchronizedRef<State>,
+    Input extends Parameters<Management["Service"]["ingest"]>[0],
+  >(request: {
+    readonly configuration: Configuration;
+    readonly identifiers: Generator["Service"];
+    readonly input: Readonly<Input>;
+    readonly state: Readonly<Ref>;
+  }) =>
     Effect.gen(function* ingestAssetMetadata() {
-      if (
-        request.input.filename.trim().length === emptyLength ||
-        !request.input.mediaType.includes("/")
-      ) {
-        return yield* InvalidInput.make({ message: "Asset filename and media type are required" });
-      }
-      if (
-        encode({
-          defaultAlternativeText: request.input.defaultAlternativeText,
-          filename: request.input.filename,
-          height: request.input.height,
-          mediaType: request.input.mediaType,
-          width: request.input.width,
-        }).byteLength >
-        (request.configuration.maximumMetadataByteLength ?? defaultMetadataMaximumByteLength)
-      ) {
-        return yield* InvalidInput.make({ message: "Asset metadata exceeds the configured limit" });
-      }
+      yield* validateIngestInput(request.configuration, request.input);
       const assetId = yield* request.identifiers.generate("asset"),
         committedBlob = yield* commitAssetBlob(request.configuration, request.input.content),
         diskAsset: DiskAsset = {
@@ -233,38 +268,15 @@ const { persistState } = filesystemLockRoot,
     }
     return { catalog };
   },
-  persistTuple = <Tuple extends readonly [unknown, State]>(input: { readonly configuration: Configuration; readonly message: string; readonly next: State; readonly tuple: Tuple }) =>
+  persistTuple = <Tuple extends readonly [unknown, State]>(input: {
+    readonly configuration: Configuration;
+    readonly message: string;
+    readonly next: State;
+    readonly tuple: Tuple;
+  }) =>
     fromPromise(() => persistState(input.configuration, input.next), input.message).pipe(
       Effect.map(() => input.tuple),
     ),
-  readAsset = (
-    configuration: Configuration,
-    state: SynchronizedRef.SynchronizedRef<State>,
-    assetId: string,
-  ) =>
-    Effect.gen(function* readAssetBlob() {
-      const asset = (yield* SynchronizedRef.get(state)).assets.get(assetId);
-      if (asset === undefined) {
-        return yield* NotFound.make({ message: `Asset ${assetId} was not found` });
-      }
-      return yield* fromPromise(
-        () =>
-          Bun.file(join(configuration.root, "blobs", asset.metadata.digest))
-            .arrayBuffer()
-            .then((buffer) => new Uint8Array(buffer)),
-        "Filesystem Asset Blob read failed",
-      ).pipe(
-        Effect.flatMap((bytes) => {
-          if (
-            bytes.byteLength !== asset.metadata.byteLength ||
-            digest(bytes) !== asset.metadata.digest
-          ) {
-            return failure("Filesystem Asset Blob is corrupt", new Error("digest mismatch"));
-          }
-          return Effect.succeed({ bytes, id: asset.id, metadata: asset.metadata });
-        }),
-      );
-    }),
   replaceCatalog =
     (configuration: Configuration, expectedVersion: number, replacement: CatalogState) =>
     (current: State): Effect.Effect<readonly [CatalogState, State], CmsError> => {

@@ -12,7 +12,30 @@ const { EntryEditorContentTypeAssetFields } = storyCanvasAssetsSupport,
     EntryEditorTextAreaFields,
     EntryEditorTitleField,
   } = storyCanvasFieldsSupport,
-  EntryEditorStoryCanvas = ({
+  EntryEditorStoryCanvas = <
+    Values extends Record<string, unknown>,
+    Asset extends AssetRepresentation,
+    UpdateField extends (key: string, value: unknown) => void,
+  >(
+    props: {
+      readonly assets: readonly Readonly<Asset>[] | undefined;
+      readonly contentTypeId: string;
+      readonly onUpdateField: Readonly<UpdateField>;
+      readonly title: string;
+      readonly titleField: string;
+      readonly values: Readonly<Values>;
+    },
+  ) => (
+    <section className="panel story-canvas">
+      <p className="eyebrow">Story canvas</p>
+      <EntryEditorStoryCanvasFields {...props} />
+    </section>
+  ),
+  EntryEditorStoryCanvasFields = <
+    Values extends Record<string, unknown>,
+    Asset extends AssetRepresentation,
+    UpdateField extends (key: string, value: unknown) => void,
+  >({
     assets,
     contentTypeId,
     onUpdateField,
@@ -20,18 +43,17 @@ const { EntryEditorContentTypeAssetFields } = storyCanvasAssetsSupport,
     titleField,
     values,
   }: {
-    readonly assets: readonly AssetRepresentation[] | undefined;
+    readonly assets: readonly Readonly<Asset>[] | undefined;
     readonly contentTypeId: string;
-    readonly onUpdateField: (key: string, value: unknown) => void;
+    readonly onUpdateField: Readonly<UpdateField>;
     readonly title: string;
     readonly titleField: string;
-    readonly values: Record<string, unknown>;
+    readonly values: Readonly<Values>;
   }) => {
     const bodyDocument = richTextDocumentFrom(values["body"]),
       profileDocument = richTextDocumentFrom(values["profile"]);
     return (
-      <section className="panel story-canvas">
-        <p className="eyebrow">Story canvas</p>
+      <>
         <EntryEditorTitleField
           onUpdateField={onUpdateField}
           title={title}
@@ -56,7 +78,7 @@ const { EntryEditorContentTypeAssetFields } = storyCanvasAssetsSupport,
           onUpdateField={onUpdateField}
           values={values}
         />
-      </section>
+      </>
     );
   };
 

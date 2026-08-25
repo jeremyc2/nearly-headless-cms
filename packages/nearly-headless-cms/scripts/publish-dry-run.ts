@@ -1,7 +1,7 @@
+import { readPackageManifest } from "../../../scripts/package-manifest.ts";
+
 const packageDirectory = `${import.meta.dir}/..`,
-  packageManifest = (await Bun.file(`${packageDirectory}/package.json`).json()) as {
-    readonly version: string;
-  },
+  packageManifest = await readPackageManifest(`${packageDirectory}/package.json`),
   repository = `${import.meta.dir}/../../..`,
   repositoryArchivePath =
     Bun.env["PACKAGE_ARCHIVE"] ??

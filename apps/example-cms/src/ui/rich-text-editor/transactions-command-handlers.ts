@@ -1,8 +1,4 @@
-import {
-  type Command,
-  type State,
-  secondHeadingLevel,
-} from "./transactions-types.ts";
+import { type Command, type State, secondHeadingLevel } from "./transactions-types.ts";
 import { emptyIndex, firstIndex } from "./transactions-constants.ts";
 import type { RichText } from "nearly-headless-cms";
 import { selectedText } from "./transactions-selection.ts";
@@ -12,10 +8,10 @@ import transactionsSupport from "./transactions-support.ts";
 
 const { commit, replaceBlock } = transactionsState,
   { conditionalValue } = transactionsSupport,
-  applyComposition = (
-    state: State,
-    command: Extract<Command, { type: "composition" }>,
-  ): State => ({ ...state, composing: command.active }),
+  applyComposition = (state: State, command: Extract<Command, { type: "composition" }>): State => ({
+    ...state,
+    composing: command.active,
+  }),
   applyInsertAssetReference = (
     state: State,
     command: Extract<Command, { type: "insertAssetReference" }>,
@@ -49,24 +45,21 @@ const { commit, replaceBlock } = transactionsState,
     }
     return workInsertEntryReferenceForSelection(state, selected, command);
   },
-  applyInsertText = (
-    state: State,
-    command: Extract<Command, { type: "insertText" }>,
-  ): State => transactionsMutations.insertText(state, command.text),
+  applyInsertText = (state: State, command: Extract<Command, { type: "insertText" }>): State =>
+    transactionsMutations.insertText(state, command.text),
   applyRedo = (state: State): State => {
-    const document = state.history[
-        Math.min(state.history.length - firstIndex, state.historyIndex + firstIndex)
-      ],
+    const document =
+        state.history[Math.min(state.history.length - firstIndex, state.historyIndex + firstIndex)],
       historyIndex = Math.min(state.history.length - firstIndex, state.historyIndex + firstIndex);
     if (document === undefined) {
       throw new Error("Redo history entry is missing");
     }
     return { ...state, document: structuredClone(document), historyIndex };
   },
-  applySelect = (
-    state: State,
-    command: Extract<Command, { type: "select" }>,
-  ): State => ({ ...state, selection: { anchor: command.anchor, focus: command.focus } }),
+  applySelect = (state: State, command: Extract<Command, { type: "select" }>): State => ({
+    ...state,
+    selection: { anchor: command.anchor, focus: command.focus },
+  }),
   applySetBlockKind = (
     state: State,
     command: Extract<Command, { type: "setBlockKind" }>,
@@ -85,10 +78,8 @@ const { commit, replaceBlock } = transactionsState,
     );
   },
   applySplitBlock = (state: State): State => transactionsMutations.splitBlock(state),
-  applyToggleMark = (
-    state: State,
-    command: Extract<Command, { type: "toggleMark" }>,
-  ): State => transactionsMutations.toggleMark(state, command.mark),
+  applyToggleMark = (state: State, command: Extract<Command, { type: "toggleMark" }>): State =>
+    transactionsMutations.toggleMark(state, command.mark),
   applyUndo = (state: State): State => {
     const document = state.history[Math.max(emptyIndex, state.historyIndex - firstIndex)],
       historyIndex = Math.max(emptyIndex, state.historyIndex - firstIndex);
@@ -97,10 +88,7 @@ const { commit, replaceBlock } = transactionsState,
     }
     return { ...state, document: structuredClone(document), historyIndex };
   },
-  applyWrapLink = (
-    state: State,
-    command: Extract<Command, { type: "wrapLink" }>,
-  ): State => {
+  applyWrapLink = (state: State, command: Extract<Command, { type: "wrapLink" }>): State => {
     const selected = selectedText(state);
     if (selected === undefined) {
       return state;

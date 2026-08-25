@@ -19,10 +19,7 @@ export const useContentListCreateMutation = (contentTypeId: string) => {
     // oxlint-disable-next-line effecttsgo/async-function -- entry creation sequences dependent requests.
     mutationFn: async () => {
       const relatedContentTypeId = relatedContentType(contentTypeId),
-        relatedEntries = await contentListQueryRelatedEntries(
-          contentTypeId,
-          relatedContentTypeId,
-        ),
+        relatedEntries = await contentListQueryRelatedEntries(contentTypeId, relatedContentTypeId),
         relatedEntryId = contentListRelatedEntryId(relatedEntries),
         suffix = contentListCreateSuffix(),
         values = contentListCreateValues(contentTypeId, relatedEntryId, suffix);

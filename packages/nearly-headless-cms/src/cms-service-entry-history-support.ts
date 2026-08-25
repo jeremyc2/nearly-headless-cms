@@ -1,8 +1,5 @@
 import type { CatalogState, EntryGeneration } from "./persistence.ts";
-import {
-  type CmsError,
-  InvalidInput,
-} from "./cms-error.ts";
+import { type CmsError, InvalidInput } from "./cms-error.ts";
 import type { CmsServiceOperationContext } from "./cms-service-operation-context.ts";
 import type { CompiledSnapshot } from "./content-definition.ts";
 import { Effect } from "effect";
@@ -36,7 +33,7 @@ interface ResolvedManifestStepInput extends ApplyManifestStepInput {
 const { attempt } = cmsSupport,
   { searchMigrationPath, validateGraph } = migrationHelpers,
   applyManifestStep = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     input: ApplyManifestStepInput,
   ): Effect.Effect<
     { readonly sourceSnapshotId: string; readonly sourceValues: Representation["values"] },
@@ -44,10 +41,7 @@ const { attempt } = cmsSupport,
   > =>
     Effect.gen(function* applyManifestStepEffect() {
       const sourceSnapshot = findSnapshotById(input.catalogState, input.sourceSnapshotId),
-        targetSnapshot = findSnapshotById(
-          input.catalogState,
-          input.manifest.targetSnapshotId,
-        );
+        targetSnapshot = findSnapshotById(input.catalogState, input.manifest.targetSnapshotId);
       if (sourceSnapshot === undefined || targetSnapshot === undefined) {
         return yield* InvalidInput.make({
           message: "Entry Revision migration references an unavailable Definition Snapshot",
@@ -63,14 +57,14 @@ const { attempt } = cmsSupport,
       (snapshotRecord) => snapshotRecord.compiled.snapshotId === snapshotId,
     )?.compiled,
   migrateRevisionValues = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     input: MigrateRevisionValuesInput,
   ): Effect.Effect<Representation["values"], CmsError> =>
     Effect.gen(function* migrateRevisionValuesEffect() {
       if (input.sourceRevision.definitionSnapshotId === input.snapshot.snapshotId) {
         return input.sourceRevision.values;
       }
-      const catalogState = yield* context.catalog.read,
+      const catalogState = yield* context.catalog.read(),
         manifests = yield* attempt(() =>
           resolveMigrationManifests(
             catalogState,
@@ -114,7 +108,7 @@ const { attempt } = cmsSupport,
     return found;
   },
   runManifestStep = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     input: ResolvedManifestStepInput,
   ): Effect.Effect<
     { readonly sourceSnapshotId: string; readonly sourceValues: Representation["values"] },

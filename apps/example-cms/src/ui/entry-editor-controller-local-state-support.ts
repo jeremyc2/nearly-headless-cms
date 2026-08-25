@@ -14,9 +14,12 @@ import {
 } from "./entry-editor-controller-imports.ts";
 
 const { useEntryEditorControllerMutations } = entryEditorControllerMutationsSupport,
-  useEntryEditorControllerFieldBindings = (input: {
-    readonly setValues: Dispatch<SetStateAction<Record<string, unknown>>>;
-    readonly values: Record<string, unknown>;
+  useEntryEditorControllerFieldBindings = <
+    Values extends Record<string, unknown>,
+    SetValues extends Dispatch<SetStateAction<Record<string, unknown>>>,
+  >(input: {
+    readonly setValues: Readonly<SetValues>;
+    readonly values: Readonly<Values>;
   }) => {
     const title = stringValue(input.values[titleFieldFrom(input.values)], ""),
       titleField = titleFieldFrom(input.values),
@@ -58,17 +61,21 @@ const { useEntryEditorControllerMutations } = entryEditorControllerMutationsSupp
       values,
     };
   },
-  useEntryEditorControllerMutationBindings = (input: {
-    readonly contentTypeId: string;
-    readonly deletionRecord: DeletionRecord | undefined;
-    readonly entryId: string;
-    readonly setConflict: (value: EntryConflict | undefined) => void;
-    readonly setDeletionDialogOpen: (value: boolean) => void;
-    readonly setDeletionRecord: (value: DeletionRecord | undefined) => void;
-    readonly setValues: Dispatch<SetStateAction<Record<string, unknown>>>;
-    readonly state: ReturnType<typeof useEntryEditorQueries>["state"];
-    readonly values: Record<string, unknown>;
-  }) => {
+  useEntryEditorControllerMutationBindings = <
+    Input extends {
+      readonly contentTypeId: string;
+      readonly deletionRecord: DeletionRecord | undefined;
+      readonly entryId: string;
+      readonly setConflict: (value: EntryConflict | undefined) => void;
+      readonly setDeletionDialogOpen: (value: boolean) => void;
+      readonly setDeletionRecord: (value: DeletionRecord | undefined) => void;
+      readonly setValues: Dispatch<SetStateAction<Record<string, unknown>>>;
+      readonly state: ReturnType<typeof useEntryEditorQueries>["state"];
+      readonly values: Record<string, unknown>;
+    },
+  >(
+    input: Readonly<Input>,
+  ) => {
     const mutations = useEntryEditorControllerMutations({
         contentTypeId: input.contentTypeId,
         deletionRecord: input.deletionRecord,
@@ -80,16 +87,19 @@ const { useEntryEditorControllerMutations } = entryEditorControllerMutationsSupp
           input.setDeletionDialogOpen(false);
           input.setDeletionRecord(receipt);
         },
-        onSaved: (savedValues) => {
+        onSaved: (savedValues: Readonly<Record<string, unknown>>) => {
           input.setValues(structuredClone(savedValues));
           input.setConflict(undefined);
         },
-        onUpdated: (updatedValues) => {
+        onUpdated: (updatedValues: Readonly<Record<string, unknown>>) => {
           input.setValues(structuredClone(updatedValues));
         },
         writeToken: input.state.data?.writeToken,
       }),
-      saveValues = (replacementValues = input.values, writeToken = input.state.data?.writeToken) => {
+      saveValues = (
+        replacementValues = input.values,
+        writeToken = input.state.data?.writeToken,
+      ) => {
         mutations.save.mutate({ replacementValues, writeToken });
       };
     return { mutations, saveValues };

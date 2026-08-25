@@ -1,69 +1,84 @@
+/* oxlint-disable effecttsgo/missing-pipeable-signature -- Rich Text helpers are not pipeable Effect APIs. */
 import * as Function from "effect/Function";
 import { InvalidInput, type ValidationIssue } from "./cms-error.ts";
 import { type JsonObject, type JsonValue, isJsonObject } from "./internal/json.ts";
 import blockValidation from "./rich-text-validation-block.ts";
 import rendering from "./rich-text-rendering.ts";
 
-/** Stable identifier and serialized format constants for every Rich Text document. */
-const cloneValidatedDocument = (document: Document): Document => structuredClone(document),
-  emptyLength = 0,
+const emptyLength = 0,
   format = "nearly-headless-cms/rich-text",
   formatVersion = 1,
-  headingLevels = [2, 3, 4] as const,
+  serializeRichTextDocumentImpl = (
+    document: Document,
+    options: ValidationOptions = {},
+  ): JsonObject => {
+    validateDocumentImpl(document, options);
+    if (!isJsonObject(document)) {
+      throw InvalidInput.make({ message: "Rich Text document is not JSON-compatible" });
+    }
+    return document;
+  },
+  validateDocumentImpl = (value: unknown, options: ValidationOptions = {}): Document => {
+    if (
+      !blockValidation.isObject(value) ||
+      value["format"] !== format ||
+      value["version"] !== formatVersion ||
+      !Array.isArray(value["children"])
+    ) {
+      throw InvalidInput.make({
+        message: `Rich Text must use ${format} version ${formatVersion}`,
+      });
+    }
+    const extensions = new Map(
+        (options.extensions ?? []).map((extension) => [
+          `${extension.identifier}@${extension.version}`,
+          extension,
+        ]),
+      ),
+      issues = value["children"].flatMap((child, index) =>
+        blockValidation.validateBlock(child, ["children", index], extensions),
+      );
+    if (issues.length > emptyLength) {
+      throw InvalidInput.make({
+        issues,
+        message: issues.at(emptyLength)?.message ?? "Invalid Rich Text",
+      });
+    }
+    return structuredClone({
+      children: value["children"],
+      format,
+      version: formatVersion,
+    });
+  },
+
+ dualInputArity = 2,
+  headingLevelFour = 4,
+  headingLevelThree = 3,
+  headingLevelTwo = 2,
+  headingLevels = [headingLevelTwo, headingLevelThree, headingLevelFour] as const,
+  parseRichTextDocument = validateDocumentImpl,
   /** Collects live references in linear time over the Rich Text tree. */
   references = (document: Document): References => rendering.collectReferences(document),
   /** Renders a validated document through a Content Client-owned Renderer. */
   // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- dual's generic overload is not inferred by the linter for this public helper.
-  render = Function.dual(2, <Result>(document: Document, renderer: Renderer<Result>): readonly Result[] =>
-    rendering.renderDocument(document, renderer),
+  render = Function.dual(
+    dualInputArity,
+    <Result>(document: Document, renderer: Renderer<Result>): readonly Result[] =>
+      rendering.renderDocument(document, renderer),
   ),
-  /** Validates and normalizes a Rich Text value, rejecting unsupported content visibly. */
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- public serialize helper is not a pipeable Effect API.
+  serializeRichTextDocument = serializeRichTextDocumentImpl,
   // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- dual's generic overload is not inferred by the linter for this public helper.
-  toJson = Function.dual(
-    (arguments_) => arguments_.length === 2 || blockValidation.isObject(arguments_[0]),
-    (document: Document, options: ValidationOptions = {}): JsonObject => {
-      validate(document, options);
-      if (!isJsonObject(document)) {
-        throw InvalidInput.make({ message: "Rich Text document is not JSON-compatible" });
-      }
-      return document;
-    },
+  toJsonDual = Function.dual(
+    (arguments_) =>
+      arguments_.length === dualInputArity || blockValidation.isObject(arguments_[0]),
+    serializeRichTextDocumentImpl,
   ),
   // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- dual's generic overload is not inferred by the linter for this public helper.
-  validate = Function.dual(
-    (arguments_) => arguments_.length === 2 || blockValidation.isObject(arguments_[0]),
-    (value: unknown, options: ValidationOptions = {}): Document => {
-      if (
-        !blockValidation.isObject(value) ||
-        value["format"] !== format ||
-        value["version"] !== formatVersion ||
-        !Array.isArray(value["children"])
-      ) {
-        throw InvalidInput.make({
-          message: `Rich Text must use ${format} version ${formatVersion}`,
-        });
-      }
-      const extensions = new Map(
-          (options.extensions ?? []).map((extension) => [
-            `${extension.identifier}@${extension.version}`,
-            extension,
-          ]),
-        ),
-        issues = value["children"].flatMap((child, index) =>
-          blockValidation.validateBlock(child, ["children", index], extensions),
-        );
-      if (issues.length > emptyLength) {
-        throw InvalidInput.make({
-          issues,
-          message: issues.at(emptyLength)?.message ?? "Invalid Rich Text",
-        });
-      }
-      return cloneValidatedDocument({
-        children: value["children"],
-        format,
-        version: formatVersion,
-      });
-    },
+  validateDual = Function.dual(
+    (arguments_) =>
+      arguments_.length === dualInputArity || blockValidation.isObject(arguments_[0]),
+    validateDocumentImpl,
   );
 
 /** The closed core vocabulary of semantic inline text marks. */
@@ -200,4 +215,15 @@ export interface Renderer<Result> {
   readonly extension: (node: ExtensionNode, children: readonly Result[]) => Result;
 }
 
-export { emptyLength, format, formatVersion, headingLevels, references, render, toJson, validate };
+export {
+  emptyLength,
+  format,
+  formatVersion,
+  headingLevels,
+  references,
+  render,
+  validateDual as validate,
+  toJsonDual as toJson,
+  parseRichTextDocument,
+  serializeRichTextDocument,
+};

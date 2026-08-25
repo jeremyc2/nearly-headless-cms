@@ -26,11 +26,8 @@ interface ActivationTarget {
 }
 
 const { attempt, snapshotDefinitionValidationMessage, sourceProperty } = cmsSupport,
-  {
-    resolveActivationPreparation,
-    resolveMigrationManifest,
-    snapshotCompatibility,
-  } = definitionActivationMigrationSupport,
+  { resolveActivationPreparation, resolveMigrationManifest, snapshotCompatibility } =
+    definitionActivationMigrationSupport,
   { validateActivationCatalogState, validateActivationPreparation } =
     definitionActivationValidationSupport,
   buildActivatedCatalogReplacement = (input: {
@@ -55,7 +52,9 @@ const { attempt, snapshotDefinitionValidationMessage, sourceProperty } = cmsSupp
     if (!migrationManifests.some((candidate) => candidate.id === input.activation.manifest.id)) {
       migrationManifests = [...migrationManifests, input.activation.manifest];
     }
-    if (!migrationPreparations.some((candidate) => candidate.id === input.activation.preparation.id)) {
+    if (
+      !migrationPreparations.some((candidate) => candidate.id === input.activation.preparation.id)
+    ) {
       migrationPreparations = [...migrationPreparations, input.activation.preparation];
     }
     return {
@@ -77,7 +76,7 @@ const { attempt, snapshotDefinitionValidationMessage, sourceProperty } = cmsSupp
     };
   },
   commitDefinitionActivation = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     input: {
       readonly activation: ActivationContext;
       readonly expectedCatalogVersion: number;
@@ -110,14 +109,14 @@ const { attempt, snapshotDefinitionValidationMessage, sourceProperty } = cmsSupp
       };
     }),
   compileActivationTarget = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     snapshot: ActivateDefinitionSnapshotInput["snapshot"],
     state: CatalogState,
   ): Effect.Effect<CompiledSnapshot, CmsError> =>
     Effect.gen(function* compileActivationTargetEffect() {
       const definitionValidationMessage = snapshotDefinitionValidationMessage(state, snapshot),
-        target = yield* attempt((): CompiledSnapshot =>
-          compileSnapshot(snapshot, context.compileOptions),
+        target = yield* attempt(
+          (): CompiledSnapshot => compileSnapshot(snapshot, context.compileOptions),
         );
       yield* attempt(() => {
         validateDefinitionContracts({ contracts: context.operationContracts, snapshot: target });
@@ -128,7 +127,7 @@ const { attempt, snapshotDefinitionValidationMessage, sourceProperty } = cmsSupp
       return target;
     }),
   persistActivatedCatalog = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     input: {
       readonly activatedAt: string;
       readonly activation: ActivationContext;
@@ -148,17 +147,15 @@ const { attempt, snapshotDefinitionValidationMessage, sourceProperty } = cmsSupp
       if (input.activation.compatibility === "compatible") {
         return yield* context.catalog.replace(input.expectedCatalogVersion, replacement);
       }
-      return (
-        yield* context.catalog.commitCutover({
-          catalogState: replacement,
-          entryRecords: input.records,
-          expectedCatalogVersion: input.expectedCatalogVersion,
-          expectedEntryGeneration: input.activation.generation.generation,
-        })
-      ).catalog;
+      return (yield* context.catalog.commitCutover({
+        catalogState: replacement,
+        entryRecords: input.records,
+        expectedCatalogVersion: input.expectedCatalogVersion,
+        expectedEntryGeneration: input.activation.generation.generation,
+      })).catalog;
     }),
   prepareActivationRecords = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     input: ActivateDefinitionSnapshotInput,
   ): Effect.Effect<
     {
@@ -180,12 +177,12 @@ const { attempt, snapshotDefinitionValidationMessage, sourceProperty } = cmsSupp
       ),
     ),
   prepareDefinitionActivation = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     input: { readonly input: ActivateDefinitionSnapshotInput; readonly state: CatalogState },
   ): Effect.Effect<ActivationContext, CmsError> =>
     Effect.gen(function* prepareDefinitionActivationEffect() {
       const activationTarget = yield* resolveActivationTarget(context, input),
-        generation = yield* context.persistence.readGeneration,
+        generation = yield* context.persistence.readGeneration(),
         manifest: Manifest = yield* resolveMigrationManifest({
           compatibility: activationTarget.compatibility,
           migrationManifest: input.input.migration?.manifest,
@@ -200,7 +197,10 @@ const { attempt, snapshotDefinitionValidationMessage, sourceProperty } = cmsSupp
           state: input.state,
           target: activationTarget.target,
         });
-      if (activationTarget.compatibility === "migrationRequired" && input.input.migration === undefined) {
+      if (
+        activationTarget.compatibility === "migrationRequired" &&
+        input.input.migration === undefined
+      ) {
         return yield* InvalidInput.make({
           message: "This Definition change requires an explicit Migration Manifest and Handler",
         });
@@ -221,16 +221,16 @@ const { attempt, snapshotDefinitionValidationMessage, sourceProperty } = cmsSupp
       };
     }),
   readValidatedCatalogState = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     input: ActivateDefinitionSnapshotInput,
   ): Effect.Effect<CatalogState, CmsError> =>
     Effect.gen(function* readValidatedCatalogStateEffect() {
-      const state = yield* context.catalog.read;
+      const state = yield* context.catalog.read();
       yield* validateActivationCatalogState(state, input);
       return state;
     }),
   resolveActivationTarget = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     input: { readonly input: ActivateDefinitionSnapshotInput; readonly state: CatalogState },
   ): Effect.Effect<ActivationTarget, CmsError> =>
     Effect.gen(function* resolveActivationTargetEffect() {

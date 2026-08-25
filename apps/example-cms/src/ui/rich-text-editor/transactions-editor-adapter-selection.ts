@@ -1,3 +1,4 @@
+import type { ReadonlyNativeSelection, ReadonlySelectionHost } from "./readonly-dom-types.ts";
 import type { State } from "./transactions-types.ts";
 import { emptyIndex } from "./transactions-constants.ts";
 import { transact } from "./transactions-dispatch.ts";
@@ -5,36 +6,48 @@ import transactionsEditorAdapterSupport from "./transactions-editor-adapter-supp
 
 const { listItemSelectorSuffix, selectionPositionFromNode, textLength } =
     transactionsEditorAdapterSupport,
-  nativeSelectionPositions = (
-    nativeSelection: Selection | null,
-    host: HTMLElement,
-  ): {
-    anchor: NonNullable<ReturnType<typeof selectionPositionFromNode>>;
-    focus: NonNullable<ReturnType<typeof selectionPositionFromNode>>;
-  } | undefined => {
-    if (nativeSelection === null || nativeSelection.rangeCount === emptyIndex) {
+  nativeSelectionPositions = <
+    Input extends {
+      readonly host: ReadonlySelectionHost;
+      readonly nativeSelection: ReadonlyNativeSelection | null;
+    },
+  >(
+    input: Readonly<Input>,
+  ):
+    | {
+        anchor: NonNullable<ReturnType<typeof selectionPositionFromNode>>;
+        focus: NonNullable<ReturnType<typeof selectionPositionFromNode>>;
+      }
+    | undefined => {
+    if (input.nativeSelection === null || input.nativeSelection.rangeCount === emptyIndex) {
       return undefined;
     }
     const anchor = selectionPositionFromNode(
-        nativeSelection.anchorNode,
-        nativeSelection.anchorOffset,
-        host,
+        input.nativeSelection.anchorNode,
+        input.nativeSelection.anchorOffset,
+        input.host,
       ),
       focus = selectionPositionFromNode(
-        nativeSelection.focusNode,
-        nativeSelection.focusOffset,
-        host,
+        input.nativeSelection.focusNode,
+        input.nativeSelection.focusOffset,
+        input.host,
       );
     if (anchor !== undefined && focus !== undefined) {
       return { anchor, focus };
     }
     return undefined;
   },
-  readNativeSelectionPositions = (
-    host: HTMLElement,
-  ): ReturnType<typeof nativeSelectionPositions> =>
-    nativeSelectionPositions(document.getSelection(), host),
-  restoreSelectionRange = (state: State, host: HTMLElement): void => {
+  readNativeSelectionPositions = <Host extends ReadonlySelectionHost>(
+    host: Readonly<Host>,
+  ) =>
+    nativeSelectionPositions({
+      host,
+      nativeSelection: document.getSelection(),
+    }),
+  restoreSelectionRange = <Host extends ReadonlySelectionHost>(
+    state: Readonly<State>,
+    host: Readonly<Host>,
+  ): void => {
     if (!host.isConnected) {
       return;
     }
@@ -64,7 +77,10 @@ const { listItemSelectorSuffix, selectionPositionFromNode, textLength } =
       Math.min(focus.offset, textLength(focusNode.textContent)),
     );
   },
-  synchronizeSelectionState = (state: State, host: HTMLElement): State => {
+  synchronizeSelectionState = <Host extends ReadonlySelectionHost>(
+    state: Readonly<State>,
+    host: Readonly<Host>,
+  ): State => {
     const positions = readNativeSelectionPositions(host);
     if (positions === undefined) {
       return state;

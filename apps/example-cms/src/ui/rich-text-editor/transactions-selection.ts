@@ -4,22 +4,24 @@ import type { State } from "./transactions-types.ts";
 import transactionsSupport from "./transactions-support.ts";
 
 const { asParagraph, conditionalValue } = transactionsSupport,
-  buildSelectedTextContext = ({
+  buildSelectedTextContext = <
+    Input extends {
+      anchor: State["selection"]["anchor"];
+      focus: State["selection"]["focus"];
+      resolved: {
+        readonly block: RichText.ParagraphNode | RichText.HeadingNode;
+        readonly replace: (
+          replacement: RichText.ParagraphNode | RichText.HeadingNode,
+        ) => RichText.BlockNode;
+      };
+      rootBlock: RichText.BlockNode;
+    },
+  >({
     anchor,
     focus,
     resolved,
     rootBlock,
-  }: {
-    anchor: State["selection"]["anchor"];
-    focus: State["selection"]["focus"];
-    resolved: {
-      readonly block: RichText.ParagraphNode | RichText.HeadingNode;
-      readonly replace: (
-        replacement: RichText.ParagraphNode | RichText.HeadingNode,
-      ) => RichText.BlockNode;
-    };
-    rootBlock: RichText.BlockNode;
-  }):
+  }: Readonly<Input>):
     | {
         readonly block: RichText.ParagraphNode | RichText.HeadingNode;
         readonly end: number;
@@ -121,15 +123,17 @@ const { asParagraph, conditionalValue } = transactionsSupport,
     }
     return undefined;
   },
-  resolveSelectedTextContext = ({
+  resolveSelectedTextContext = <
+    Input extends {
+      anchor: State["selection"]["anchor"];
+      focus: State["selection"]["focus"];
+      rootBlock: RichText.BlockNode;
+    },
+  >({
     anchor,
     focus,
     rootBlock,
-  }: {
-    anchor: State["selection"]["anchor"];
-    focus: State["selection"]["focus"];
-    rootBlock: RichText.BlockNode;
-  }):
+  }: Readonly<Input>):
     | {
         readonly block: RichText.ParagraphNode | RichText.HeadingNode;
         readonly end: number;
@@ -147,7 +151,9 @@ const { asParagraph, conditionalValue } = transactionsSupport,
     }
     return buildSelectedTextContext({ anchor, focus, resolved, rootBlock });
   },
-  selectedText = (state: State):
+  selectedText = (
+    state: State,
+  ):
     | {
         readonly block: RichText.ParagraphNode | RichText.HeadingNode;
         readonly end: number;

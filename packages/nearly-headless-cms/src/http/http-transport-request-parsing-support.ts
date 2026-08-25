@@ -1,6 +1,14 @@
 import { Effect, Predicate, Stream } from "effect";
 import { HttpServerRequest, Multipart } from "effect/unstable/http";
 import { InfrastructureFailure, InvalidInput } from "../cms-error.ts";
+import {
+  type ReadonlyTransportAbortSignal,
+  type ReadonlyTransportRequest,
+} from "./http-transport-readonly-types.ts";
+import {
+  httpStatusInternalServerError,
+  httpStatusPayloadTooLarge,
+} from "./http-status-codes.ts";
 // oxlint-disable-next-line effecttsgo/node-builtin-import -- Temporary upload staging requires node fs primitives unavailable in the HTTP FileSystem abstraction.
 import { mkdtemp, open, rm } from "node:fs/promises";
 import type { IngestInput } from "../asset.ts";
@@ -32,15 +40,15 @@ interface StagedAssetUpload {
 interface StageMultipartAssetInput {
   readonly limits: MultipartAssetLimits;
   readonly parseAssetMetadata: (text: string) => Omit<IngestInput, "content">;
-  readonly request: Request;
-  readonly signal: AbortSignal;
+  readonly request: ReadonlyTransportRequest;
+  readonly signal: ReadonlyTransportAbortSignal;
 }
 
 interface BuildMultipartAssetStreamInput {
   readonly contentPath: string;
   readonly limits: MultipartAssetLimits;
   readonly parseAssetMetadata: (text: string) => Omit<IngestInput, "content">;
-  readonly request: Request;
+  readonly request: ReadonlyTransportRequest;
   readonly state: MultipartAssetState;
 }
 
@@ -56,19 +64,16 @@ interface HandleMultipartAssetPartInput {
   readonly contentPath: string;
   readonly maximumFileByteLength: number;
   readonly parseAssetMetadata: (text: string) => Omit<IngestInput, "content">;
-  readonly part: Multipart.Part;
+  readonly part: Readonly<Multipart.Part>;
   readonly state: MultipartAssetState;
 }
 
 const { encodeChunk } = transportResponse,
-  buildMultipartAssetStream = ({
-    contentPath,
-    limits,
-    parseAssetMetadata,
-    request,
-    state,
-  }: BuildMultipartAssetStreamInput): Effect.Effect<void, InvalidInput | RequestFailureError> =>
-    Stream.runForEach(HttpServerRequest.fromWeb(request).multipartStream, (part) =>
+  buildMultipartAssetStream = <Input extends BuildMultipartAssetStreamInput>(
+    input: Readonly<Input>,
+  ): Effect.Effect<void, InvalidInput | RequestFailureError> => {
+    const { contentPath, limits, parseAssetMetadata, request, state } = input;
+    return Stream.runForEach(HttpServerRequest.fromWeb(request).multipartStream, (part) =>
       handleMultipartAssetPart({
         contentPath,
         maximumFileByteLength: limits.file,
@@ -86,14 +91,12 @@ const { encodeChunk } = transportResponse,
         }),
       ),
       Effect.mapError(mapMultipartFailure),
-    ),
-  finalizeStagedAssetUpload = ({
-    contentMediaType,
-    contentPath,
-    contentSeen,
-    directory,
-    metadata,
-  }: FinalizeStagedAssetUploadInput): StagedAssetUpload => {
+    );
+  },
+  finalizeStagedAssetUpload = <Input extends FinalizeStagedAssetUploadInput>(
+    input: Readonly<Input>,
+  ): StagedAssetUpload => {
+    const { contentMediaType, contentPath, contentSeen, directory, metadata } = input;
     if (metadata === undefined || !contentSeen) {
       throw InvalidInput.make({
         message: "Asset upload requires exactly metadata and content parts",
@@ -110,13 +113,10 @@ const { encodeChunk } = transportResponse,
       metadata,
     };
   },
-  handleMultipartAssetPart = ({
-    contentPath,
-    maximumFileByteLength,
-    parseAssetMetadata,
-    part,
-    state,
-  }: HandleMultipartAssetPartInput): Effect.Effect<void, InvalidInput | RequestFailureError> => {
+  handleMultipartAssetPart = <Input extends HandleMultipartAssetPartInput>(
+    input: Readonly<Input>,
+  ): Effect.Effect<void, InvalidInput | RequestFailureError> => {
+    const { contentPath, maximumFileByteLength, parseAssetMetadata, part, state } = input;
     if (Multipart.isField(part)) {
       if (part.key !== "metadata" || state.metadata !== undefined) {
         return Effect.fail(
@@ -138,15 +138,19 @@ const { encodeChunk } = transportResponse,
     state.contentMediaType = part.contentType;
     return stageFilePart(part, contentPath, maximumFileByteLength);
   },
-  mapMultipartFailure = (
-    error: InvalidInput | Multipart.MultipartError | RequestFailureError,
+  mapMultipartFailure = <
+    ErrorType extends InvalidInput | Multipart.MultipartError | RequestFailureError,
+  >(
+    error: Readonly<ErrorType>,
   ): InvalidInput | RequestFailureError => {
     if (error instanceof Multipart.MultipartError) {
       return multipartFailure(error);
     }
     return error;
   },
-  multipartFailure = (error: Multipart.MultipartError): RequestFailureError | InvalidInput => {
+  multipartFailure = <ErrorType extends Multipart.MultipartError>(
+    error: Readonly<ErrorType>,
+  ): RequestFailureError | InvalidInput => {
     if (
       Predicate.isTagged(error.reason, "BodyTooLarge") ||
       Predicate.isTagged(error.reason, "FieldTooLarge") ||
@@ -156,23 +160,32 @@ const { encodeChunk } = transportResponse,
       return new RequestFailureError(
         "PayloadTooLarge",
         "Multipart request exceeds the configured limit",
-        413,
+        httpStatusPayloadTooLarge,
       );
     }
     if (Predicate.isTagged(error.reason, "InternalError")) {
-      return new RequestFailureError("InternalError", "Multipart request processing failed", 500);
+      return new RequestFailureError(
+        "InternalError",
+        "Multipart request processing failed",
+        httpStatusInternalServerError,
+      );
     }
     return InvalidInput.make({ message: "Malformed multipart Asset upload" });
   },
-  stageFilePart = (
-    part: Multipart.File,
+  stageFilePart = <PartType extends Multipart.File>(
+    part: Readonly<PartType>,
     path: string,
     maximumByteLength: number,
   ): Effect.Effect<void, InvalidInput | RequestFailureError> => {
     let byteLength = 0;
     return Effect.acquireUseRelease(
       Effect.tryPromise({
-        catch: () => new RequestFailureError("InternalError", "Upload staging failed", 500),
+        catch: () =>
+          new RequestFailureError(
+            "InternalError",
+            "Upload staging failed",
+            httpStatusInternalServerError,
+          ),
         try: () => open(path, "wx"),
       }),
       (handle) =>
@@ -183,38 +196,21 @@ const { encodeChunk } = transportResponse,
               new RequestFailureError(
                 "PayloadTooLarge",
                 "Multipart request exceeds the configured limit",
-                413,
+                httpStatusPayloadTooLarge,
               ),
             );
           }
-          return Effect.tryPromise({
-            catch: () => new RequestFailureError("InternalError", "Upload staging failed", 500),
-            // oxlint-disable-next-line effecttsgo/async-function -- FileHandle.write is Promise-based and must remain ordered.
-            try: async () => {
-              let offset = 0;
-              while (offset < chunk.byteLength) {
-                // File writes must remain sequential so each offset follows the prior write.
-                // oxlint-disable-next-line no-await-in-loop -- preserve ordered chunk writes.
-                const result = await handle.write(chunk, offset, chunk.byteLength - offset, null);
-                if (result.bytesWritten === 0) {
-                  throw new Error("Upload staging write made no progress");
-                }
-                offset += result.bytesWritten;
-              }
-            },
-          });
+          return writeOrderedFileChunk(handle, chunk);
         }).pipe(Effect.mapError(mapMultipartFailure)),
       (handle) => Effect.promise(() => handle.close().catch(() => {})),
     );
   },
   // oxlint-disable-next-line effecttsgo/async-function, effecttsgo/missing-pipeable-signature -- multipart parsing is Promise-based and this helper is not a pipeable Effect API.
-  stageMultipartAsset = async ({
-    limits,
-    parseAssetMetadata,
-    request,
-    signal,
-  }: StageMultipartAssetInput): Promise<StagedAssetUpload> => {
-    const directory = await mkdtemp(join(tmpdir(), "nearly-headless-cms-upload-")),
+  stageMultipartAsset = async <Input extends StageMultipartAssetInput>(
+    input: Readonly<Input>,
+  ): Promise<StagedAssetUpload> => {
+    const { limits, parseAssetMetadata, request, signal } = input,
+      directory = await mkdtemp(join(tmpdir(), "nearly-headless-cms-upload-")),
       uploadContentPath = join(directory, "content");
     try {
       const holder = {
@@ -251,7 +247,31 @@ const { encodeChunk } = transportResponse,
         message: "Staged multipart Asset read failed",
         retryable: false,
       }),
-    ).pipe(Stream.map((chunk) => encodeChunk(chunk)));
+    ).pipe(Stream.map((chunk) => encodeChunk(chunk))),
+  writeOrderedFileChunk = (
+    handle: Readonly<Awaited<ReturnType<typeof open>>>,
+    chunk: Readonly<Uint8Array>,
+  ): Effect.Effect<void, InvalidInput | RequestFailureError> =>
+    Effect.tryPromise({
+      catch: () =>
+        new RequestFailureError(
+          "InternalError",
+          "Upload staging failed",
+          httpStatusInternalServerError,
+        ),
+      // oxlint-disable-next-line effecttsgo/async-function -- FileHandle.write is Promise-based and must remain ordered.
+      try: async () => {
+        let offset = 0;
+        while (offset < chunk.byteLength) {
+          // oxlint-disable-next-line no-await-in-loop -- preserve ordered chunk writes.
+          const result = await handle.write(chunk, offset, chunk.byteLength - offset, null);
+          if (result.bytesWritten === 0) {
+            throw new Error("Upload staging write made no progress");
+          }
+          offset += result.bytesWritten;
+        }
+      },
+    });
 
 export default {
   stageMultipartAsset,

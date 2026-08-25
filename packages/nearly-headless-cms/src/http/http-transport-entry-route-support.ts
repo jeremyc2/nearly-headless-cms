@@ -2,6 +2,7 @@ import { type JsonObject, isJsonObject } from "../internal/json.ts";
 import type { Predicate, Query, Sort } from "../entry-query.ts";
 import type { RouteHandlerContext, RouteHandlerResult } from "./http-transport-types.ts";
 import { InvalidInput } from "../cms-error.ts";
+import { httpStatusOk } from "./http-status-codes.ts";
 import transportOperation from "./http-transport-operation.ts";
 import transportResponse from "./http-transport-response.ts";
 
@@ -49,7 +50,12 @@ const { jsonResponse } = transportResponse,
     }
     return { ...query, where: optionalWhere };
   },
-  entryJsonResponse = (context: RouteHandlerContext, status: number, value: unknown): Response =>
+  defaultEntryQueryPageSize = 20,
+  entryJsonResponse = (
+    context: Readonly<RouteHandlerContext>,
+    status: number,
+    value: unknown,
+  ): Response =>
     jsonResponse({
       fingerprint: context.fingerprint,
       requestId: context.requestId,
@@ -57,7 +63,7 @@ const { jsonResponse } = transportResponse,
       value,
     }),
   handleEntryRevisionDetailRoute = (
-    context: RouteHandlerContext,
+    context: Readonly<RouteHandlerContext>,
   ): RouteHandlerResult | Promise<RouteHandlerResult> => {
     const revisionMatch = matchPath(
       `${context.managementBase}/content-types/{contentTypeId}/entries/{entryId}/revisions/{revisionNumber}`,
@@ -67,13 +73,13 @@ const { jsonResponse } = transportResponse,
       return undefined;
     }
     return context.withOutcome(
-      context.cms.inspectEntryRevision(readRevisionDetailParameters(revisionMatch)),
+      () => context.cms.inspectEntryRevision(readRevisionDetailParameters(revisionMatch)),
       context.requestId,
-      (revision) => entryJsonResponse(context, 200, revision),
+      (revision) => entryJsonResponse(context, httpStatusOk, revision),
     );
   },
   handleEntryRevisionsListRoute = (
-    context: RouteHandlerContext,
+    context: Readonly<RouteHandlerContext>,
   ): RouteHandlerResult | Promise<RouteHandlerResult> => {
     const revisionsMatch = matchPath(
       `${context.managementBase}/content-types/{contentTypeId}/entries/{entryId}/revisions`,
@@ -83,12 +89,14 @@ const { jsonResponse } = transportResponse,
       return undefined;
     }
     return context.withOutcome(
-      context.cms.listEntryRevisions(readRevisionListParameters(context, revisionsMatch)),
+      () => context.cms.listEntryRevisions(readRevisionListParameters(context, revisionsMatch)),
       context.requestId,
-      (page) => entryJsonResponse(context, 200, page),
+      (page) => entryJsonResponse(context, httpStatusOk, page),
     );
   },
-  handleEntryStateRoute = (context: RouteHandlerContext): RouteHandlerResult | Promise<RouteHandlerResult> => {
+  handleEntryStateRoute = (
+    context: Readonly<RouteHandlerContext>,
+  ): RouteHandlerResult | Promise<RouteHandlerResult> => {
     const stateMatch = matchPath(
       `${context.managementBase}/content-types/{contentTypeId}/entries/{entryId}/state`,
       context.requestUrl.pathname,
@@ -97,12 +105,13 @@ const { jsonResponse } = transportResponse,
       return undefined;
     }
     return context.withOutcome(
-      context.cms.getCurrentEntryState({
-        contentTypeId: requiredPathParameter(stateMatch, "contentTypeId"),
-        entryId: requiredPathParameter(stateMatch, "entryId"),
-      }),
+      () =>
+        context.cms.getCurrentEntryState({
+          contentTypeId: requiredPathParameter(stateMatch, "contentTypeId"),
+          entryId: requiredPathParameter(stateMatch, "entryId"),
+        }),
       context.requestId,
-      (state) => entryJsonResponse(context, 200, state),
+      (state) => entryJsonResponse(context, httpStatusOk, state),
     );
   },
   isFieldPredicateShape = (value: object): boolean =>
@@ -146,10 +155,7 @@ const { jsonResponse } = transportResponse,
     }
     const direction: unknown = Reflect.get(value, "direction"),
       path: unknown = Reflect.get(value, "path");
-    return (
-      typeof path === "string" &&
-      (direction === "ascending" || direction === "descending")
-    );
+    return typeof path === "string" && (direction === "ascending" || direction === "descending");
   },
   readEntryQueryInput = (body: JsonObject, contentTypeId: string): Query =>
     appendOptionalQueryFields(
@@ -196,7 +202,7 @@ const { jsonResponse } = transportResponse,
     if (typeof pageSize === "number" && Number.isSafeInteger(pageSize)) {
       return pageSize;
     }
-    return 20;
+    return defaultEntryQueryPageSize;
   },
   readRevisionDetailParameters = (revisionMatch: Readonly<Record<string, string>>) => {
     const contentTypeId = requiredPathParameter(revisionMatch, "contentTypeId"),
@@ -205,7 +211,7 @@ const { jsonResponse } = transportResponse,
     return { contentTypeId, entryId, revisionNumber };
   },
   readRevisionListParameters = (
-    context: RouteHandlerContext,
+    context: Readonly<RouteHandlerContext>,
     revisionsMatch: Readonly<Record<string, string>>,
   ) => {
     const contentTypeId = requiredPathParameter(revisionsMatch, "contentTypeId"),

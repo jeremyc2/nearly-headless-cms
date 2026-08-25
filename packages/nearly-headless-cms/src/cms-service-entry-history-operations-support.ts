@@ -13,12 +13,13 @@ import type {
   RevisionPage,
 } from "./entry-history.ts";
 import type { EntryGeneration, EntryRecord } from "./persistence.ts";
-import type { PurgeEntryInput, ReadRevisionInput } from "./cms-types.ts";
 import type { ReadInput, Representation } from "./entry.ts";
 import type { CmsServiceOperationContext } from "./cms-service-operation-context.ts";
+import type { ReadRevisionInput } from "./cms-types.ts";
 import { cloneJson } from "./internal/json.ts";
 import cmsSupport from "./cms-support.ts";
 import entryHistoryGuards from "./cms-service-entry-history-guards.ts";
+import entryHistoryPurgeSupport from "./cms-service-entry-history-purge-support.ts";
 import entryHistorySupport from "./cms-service-entry-history-support.ts";
 
 interface CommitRestoredRevisionInput {
@@ -54,18 +55,7 @@ interface RestoreRevisionState {
   readonly snapshot: CompiledSnapshot;
 }
 
-const { applyRetention, attempt, collectReferences, ensureReferences, ensureUniqueValues } =
-    cmsSupport,
-  {
-    assertDeletedEntry,
-    assertHistoryEnabledEntry,
-    assertRestorableEntry,
-    authorizeHistoryEntry,
-    buildRevisionPage,
-    findSourceRevision,
-  } = entryHistoryGuards,
-  { migrateRevisionValues } = entryHistorySupport,
-  commitRestoredRevision = (
+const commitRestoredRevision = (
     context: CmsServiceOperationContext,
     input: CommitRestoredRevisionInput,
   ): Effect.Effect<CurrentState, CmsError> =>
@@ -96,13 +86,14 @@ const { applyRetention, attempt, collectReferences, ensureReferences, ensureUniq
       );
       return { entry: input.entry, revisionNumber, writeToken };
     }),
+  maximumHistoryPageSize = 100,
   prepareRestoreEntryRevision = (
     context: CmsServiceOperationContext,
     input: RestoreInput,
   ): Effect.Effect<PreparedRestoreEntryRevision, CmsError> =>
     Effect.gen(function* prepareRestoreEntryRevisionEffect() {
       const generationSnapshot: RestoreRevisionState = {
-          generation: yield* context.persistence.readGeneration,
+          generation: yield* context.persistence.readGeneration(),
           snapshot: yield* authorizeHistoryEntry(context, {
             action: "entry.history.restore",
             contentTypeId: input.contentTypeId,
@@ -175,7 +166,7 @@ const { applyRetention, attempt, collectReferences, ensureReferences, ensureUniq
         contentTypeId: input.contentTypeId,
         entryId: input.entryId,
       });
-      const generation = yield* context.persistence.readGeneration,
+      const generation = yield* context.persistence.readGeneration(),
         historyEntry = yield* assertHistoryEnabledEntry(
           generation.records.get(input.entryId),
           input.contentTypeId,
@@ -203,7 +194,7 @@ const { applyRetention, attempt, collectReferences, ensureReferences, ensureUniq
         contentTypeId: input.contentTypeId,
         entryId: input.entryId,
       });
-      const generation = yield* context.persistence.readGeneration,
+      const generation = yield* context.persistence.readGeneration(),
         record = generation.records.get(input.entryId),
         revision = record?.revisions.find(
           (candidate) => candidate.revisionNumber === input.revisionNumber,
@@ -229,12 +220,16 @@ const { applyRetention, attempt, collectReferences, ensureReferences, ensureUniq
         contentTypeId: input.contentTypeId,
         entryId: input.entryId,
       });
-      if (!Number.isSafeInteger(input.pageSize) || input.pageSize <= 0 || input.pageSize > 100) {
+      if (
+        !Number.isSafeInteger(input.pageSize) ||
+        input.pageSize <= 0 ||
+        input.pageSize > maximumHistoryPageSize
+      ) {
         return yield* InvalidInput.make({
-          message: "History pageSize must be between 1 and 100",
+          message: `History pageSize must be between 1 and ${maximumHistoryPageSize}`,
         });
       }
-      const generation = yield* context.persistence.readGeneration,
+      const generation = yield* context.persistence.readGeneration(),
         record = generation.records.get(input.entryId);
       if (
         record === undefined ||
@@ -252,24 +247,6 @@ const { applyRetention, attempt, collectReferences, ensureReferences, ensureUniq
         revisions: record.revisions,
       });
     }),
-  runPermanentlyPurgeEntry = (
-    context: CmsServiceOperationContext,
-    input: PurgeEntryInput,
-  ): Effect.Effect<void, CmsError> =>
-    Effect.gen(function* runPermanentlyPurgeEntryEffect() {
-      yield* authorizeHistoryEntry(context, {
-        action: "entry.history.purge",
-        contentTypeId: input.contentTypeId,
-        entryId: input.entryId,
-      });
-      const generation = yield* context.persistence.readGeneration;
-      yield* assertDeletedEntry(generation.records.get(input.entryId), input);
-      yield* context.persistence.commitGeneration(
-        generation.generation,
-        new Map([...generation.records].filter(([entryId]) => entryId !== input.entryId)),
-      );
-      return yield* Effect.void;
-    }),
   runRestoreEntryRevision = (
     context: CmsServiceOperationContext,
     input: RestoreInput,
@@ -286,7 +263,18 @@ const { applyRetention, attempt, collectReferences, ensureReferences, ensureUniq
         snapshot: prepared.snapshot,
         values: prepared.values,
       });
-    });
+    }),
+  { applyRetention, attempt, collectReferences, ensureReferences, ensureUniqueValues } =
+    cmsSupport,
+  {
+    assertHistoryEnabledEntry,
+    assertRestorableEntry,
+    authorizeHistoryEntry,
+    buildRevisionPage,
+    findSourceRevision,
+  } = entryHistoryGuards,
+  { migrateRevisionValues } = entryHistorySupport,
+  { runPermanentlyPurgeEntry } = entryHistoryPurgeSupport;
 
 export default {
   runGetCurrentEntryState,

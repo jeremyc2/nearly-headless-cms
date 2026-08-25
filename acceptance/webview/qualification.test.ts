@@ -8,9 +8,12 @@ const ACCEPTANCE_RUN_COUNT = 10,
   RUN_NUMBER_INCREMENT = 1,
   WAIT_TIMEOUT_MILLISECONDS = 15_000,
   // oxlint-disable-next-line effecttsgo/async-function -- qualification assertions compose awaited WebView navigation and evaluation.
-  assertQualificationPage = async (
-    view: Bun.WebView,
-    consoleErrors: readonly unknown[],
+  assertQualificationPage = async <
+    View extends Bun.WebView,
+    ConsoleErrors extends readonly unknown[],
+  >(
+    view: Readonly<View>,
+    consoleErrors: Readonly<ConsoleErrors>,
   ): Promise<void> => {
     await view.navigate("http://localhost:3000/");
     const heading = await waitFor<string | undefined>(
@@ -32,8 +35,8 @@ const ACCEPTANCE_RUN_COUNT = 10,
     }
     return test.skip;
   },
-  waitFor = <Value>(
-    view: Bun.WebView,
+  waitFor = <Value, View extends Bun.WebView>(
+    view: Readonly<View>,
     expression: string,
     predicate: (value: Value) => boolean,
   ): Promise<Value> => {

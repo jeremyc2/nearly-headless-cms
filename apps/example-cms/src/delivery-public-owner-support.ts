@@ -13,11 +13,11 @@ import {
 const { publicContent } = deliveryPublicContent,
   { publicValue } = deliverySupport,
   publicOwnerBySlug = (
-    cms: Cms.ServiceShape,
+    cms: Readonly<Cms.ServiceShape>,
     contentTypeId: "author" | "category" | "tag",
     slug: string,
   ) =>
-    cms.readConsistentSnapshot.pipe(
+    cms.readConsistentSnapshot().pipe(
       Effect.flatMap((consistentSnapshot) => {
         const content = publicContent(consistentSnapshot),
           entries = publicOwnerEntries(content, contentTypeId),
@@ -34,8 +34,8 @@ const { publicContent } = deliveryPublicContent,
     }
     return taxonomyDefinitionRequirement(contentTypeId);
   },
-  publicOwnerEntries = (
-    content: ReturnType<typeof publicContent>,
+  publicOwnerEntries = <Content extends ReturnType<typeof publicContent>>(
+    content: Readonly<Content>,
     contentTypeId: "author" | "category" | "tag",
   ) => {
     if (contentTypeId === "author") {

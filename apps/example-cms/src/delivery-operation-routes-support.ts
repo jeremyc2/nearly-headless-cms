@@ -54,7 +54,7 @@ const { makeSubmitCommentExecute } = deliveryCommentSubmission,
         execute: ({ cms, parameters, request, requestId, snapshot }) =>
           Effect.gen(function* deliverPublicAsset() {
             const assetIdentifier = requiredParameter(parameters, "assetId"),
-              consistentSnapshot = yield* cms.readConsistentSnapshot,
+              consistentSnapshot = yield* cms.readConsistentSnapshot(),
               content = publicContent(consistentSnapshot);
             if (!publicAssetIds(content.posts, content.authors).has(assetIdentifier)) {
               return yield* CmsError.NotFound.make({ message: "Public Asset was not found" });
@@ -226,7 +226,7 @@ const { makeSubmitCommentExecute } = deliveryCommentSubmission,
     ],
     execute: ({ cms, parameters }) =>
       Effect.gen(function* resolvePublicEntryReference() {
-        const consistentSnapshot = yield* cms.readConsistentSnapshot,
+        const consistentSnapshot = yield* cms.readConsistentSnapshot(),
           content = publicContent(consistentSnapshot),
           entryIdentifier = requiredParameter(parameters, "entryId");
         if (content.reachability.richTextReachableIdentifiers.has(entryIdentifier)) {

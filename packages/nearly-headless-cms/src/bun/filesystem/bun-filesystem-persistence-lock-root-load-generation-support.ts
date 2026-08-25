@@ -19,9 +19,12 @@ const { decodeCatalog } = filesystemLockIo,
     }
     return decodeCatalog(generation.catalog, compileOptions);
   },
-  generationStateFromBytes = (
-    generationBytes: Uint8Array,
-    manifest: ReturnType<typeof validateManifest>,
+  generationStateFromBytes = <
+    Bytes extends Uint8Array,
+    Manifest extends ReturnType<typeof validateManifest>,
+  >(
+    generationBytes: Readonly<Bytes>,
+    manifest: Readonly<Manifest>,
     compileOptions: CompileOptions,
   ): { readonly catalog: CatalogState | undefined; readonly loadedState: State } =>
     generationStateFromValidatedGeneration(
@@ -51,7 +54,7 @@ const { decodeCatalog } = filesystemLockIo,
     }
     return { ...loadedState, catalog };
   },
-  parseGenerationJson = (generationBytes: Uint8Array): unknown =>
+  parseGenerationJson = <Bytes extends Uint8Array>(generationBytes: Readonly<Bytes>): unknown =>
     JSON.parse(new TextDecoder().decode(generationBytes)) as unknown,
   // oxlint-disable-next-line effecttsgo/async-function -- Root initialization coordinates ordered filesystem operations.
   readCommittedGeneration = async (

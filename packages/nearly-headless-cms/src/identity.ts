@@ -21,6 +21,6 @@ export const anonymous: Anonymous = { state: "anonymous" };
 export class CurrentIdentity extends Context.Service<
   CurrentIdentity,
   {
-    readonly current: Effect.Effect<Identity>;
+    readonly current: (_void: void) => Effect.Effect<Identity>;
   }
 >()("nearly-headless-cms/identity/CurrentIdentity") {}

@@ -44,7 +44,7 @@ const {
     pageSize,
     projection,
     queryFingerprint,
-  }: BuildQueryPageInput): QueryPage => {
+  }: Readonly<BuildQueryPageInput>): QueryPage => {
     const items = matchingEntries
         .slice(offset, offset + pageSize)
         .map((entry) => project(entry, projection)),
@@ -100,10 +100,7 @@ const {
     }
     return bCompareEntryIdentifiers(leftEntry, rightEntry);
   },
-  dFilterMatchingEntries = (
-    entries: readonly Representation[],
-    query: Query,
-  ): Representation[] =>
+  dFilterMatchingEntries = (entries: readonly Representation[], query: Query): Representation[] =>
     entries.filter(
       (entry) =>
         entry.contentTypeId === query.contentTypeId &&
@@ -199,7 +196,7 @@ const {
       }
     }
   },
-  mEvaluate = ({ entries, options, query, snapshot }: EvaluationInput): QueryPage => {
+  mEvaluate = ({ entries, options, query, snapshot }: Readonly<EvaluationInput>): QueryPage => {
     const aQueryFingerprint = queryFingerprintFor(query),
       bOffset = gResolveQueryOffset(query, options.generation, aQueryFingerprint),
       cContentType = snapshot.contentTypes.get(query.contentTypeId),
@@ -211,7 +208,9 @@ const {
       throw InvalidInput.make({ message: `Unknown Content Type ${query.contentTypeId}` });
     }
     lValidateQueryPaths(query, cContentType.fields);
-    eMatchingEntries.sort((leftEntry, rightEntry) => cCompareEntries(leftEntry, rightEntry, fSorts));
+    eMatchingEntries.sort((leftEntry, rightEntry) =>
+      cCompareEntries(leftEntry, rightEntry, fSorts),
+    );
     return aBuildQueryPage({
       generation: options.generation,
       matchingEntries: eMatchingEntries,

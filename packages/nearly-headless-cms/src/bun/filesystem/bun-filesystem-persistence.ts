@@ -1,4 +1,8 @@
-import type { Acquired, CmsConfiguration, Configuration } from "./bun-filesystem-persistence-types.ts";
+import type {
+  Acquired,
+  CmsConfiguration,
+  Configuration,
+} from "./bun-filesystem-persistence-types.ts";
 import type { CompileOptions, CompiledSnapshot } from "../../content-definition.ts";
 import type { DefinitionCatalog, EntryPersistence } from "../../persistence.ts";
 import { Effect, Layer } from "effect";
@@ -12,7 +16,8 @@ import filesystemSupport from "./bun-filesystem-persistence-support.ts";
 export type { CmsConfiguration, Configuration } from "./bun-filesystem-persistence-types.ts";
 
 const { makeServices } = filesystemServices,
-  { acquireWriterLock, ensureRootDirectory, initializeRoot, inspectRoot, removeOwnedWriterLock } = filesystemLockRoot,
+  { acquireWriterLock, ensureRootDirectory, initializeRoot, inspectRoot, removeOwnedWriterLock } =
+    filesystemLockRoot,
   { failure, fromPromise } = filesystemSupport,
   acquire = (
     configuration: Configuration,
@@ -64,7 +69,11 @@ const { makeServices } = filesystemServices,
   > =>
     Layer.effectContext(
       Effect.acquireRelease(
-        acquire(configuration, configuration.definitionSnapshot, configuration.compileOptions ?? {}),
+        acquire(
+          configuration,
+          configuration.definitionSnapshot,
+          configuration.compileOptions ?? {},
+        ),
         (acquired) =>
           fromPromise(
             () => removeOwnedWriterLock(acquired.lockPath, acquired.lockToken),
@@ -75,8 +84,10 @@ const { makeServices } = filesystemServices,
   /** Reads a bounded diagnostic snapshot of a filesystem root without mutating it. */
   inspect = (
     root: string,
-  ): Effect.Effect<{ readonly format: string; readonly generation: number }, InfrastructureFailure> =>
-    fromPromise(() => inspectRoot(root), "Filesystem Persistence inspection failed"),
+  ): Effect.Effect<
+    { readonly format: string; readonly generation: number },
+    InfrastructureFailure
+  > => fromPromise(() => inspectRoot(root), "Filesystem Persistence inspection failed"),
   /**
    * Creates Bun-only Entry, Asset, and Definition persistence services for one root.
    * Exactly one writer process may own a root; startup recovers staged generations.

@@ -3,7 +3,7 @@ import { emptyIndex } from "./transactions-constants.ts";
 import transactionsSupport from "./transactions-support.ts";
 
 const { conditionalValue, emptyParagraph, normalizeHeadingLevel, normalizeInlineNodes } =
-  transactionsSupport,
+    transactionsSupport,
   normalize = (document: RichText.Document): RichText.Document => {
     const children = document.children.map((block): RichText.BlockNode => {
       if (block.type === "paragraph") {

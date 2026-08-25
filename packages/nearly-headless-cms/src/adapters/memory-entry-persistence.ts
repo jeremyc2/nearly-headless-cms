@@ -34,7 +34,8 @@ const cloneEntryRecord = (record: EntryRecord): EntryRecord => globalThis.struct
             };
             return Effect.succeed([cloneGeneration(committed), committed] as const);
           }),
-        readGeneration: SynchronizedRef.get(state).pipe(Effect.map(cloneGeneration)),
+        readGeneration: (_void: void) =>
+          SynchronizedRef.get(state).pipe(Effect.map(cloneGeneration)),
       });
     }),
   );

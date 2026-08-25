@@ -20,7 +20,7 @@ const {
     document,
     formatVersion,
     operations,
-  }: GenerateClientSourceInput): GeneratedClientSource => {
+  }: Readonly<GenerateClientSourceInput>): GeneratedClientSource => {
     const componentSchemaNames = listComponentSchemaNames(document),
       inputChunks = renderOperationChunks({
         clientBasename,

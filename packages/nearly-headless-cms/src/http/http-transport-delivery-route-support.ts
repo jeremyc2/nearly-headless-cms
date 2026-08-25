@@ -1,18 +1,24 @@
 import type { DeliveryOperation, ManagementOperation } from "./http-contract.ts";
-import type { Options, RouteHandlerContext } from "./http-transport-types.ts";
+import {
+  httpStatusMethodNotAllowed,
+  httpStatusNoContent,
+  httpStatusOk,
+  httpStatusUnsupportedMediaType,
+} from "./http-status-codes.ts";
 import { InvalidInput } from "../cms-error.ts";
 import { RequestFailureError } from "./http-transport-request-failure.ts";
+import type { RouteHandlerContext } from "./http-transport-types.ts";
 import transportOperation from "./http-transport-operation.ts";
 import transportResponse from "./http-transport-response.ts";
 
-interface CustomManagementMatch {
-  readonly operation: ManagementOperation;
+interface CustomManagementMatch<Operation extends ManagementOperation> {
+  readonly operation: Operation;
   readonly parameters: Readonly<Record<string, string>>;
 }
 
-interface DeliveryMatch {
-  readonly match: RegExpExecArray;
-  readonly matcher: DeliveryOperationMatcher;
+interface DeliveryMatch<Operation extends DeliveryOperation = DeliveryOperation> {
+  readonly captures: readonly string[];
+  readonly matcher: Readonly<DeliveryOperationMatcher<Operation>>;
 }
 
 interface DeliveryOperationResponseOptions {
@@ -20,53 +26,56 @@ interface DeliveryOperationResponseOptions {
   readonly successStatus?: number;
 }
 
-interface DeliveryOperationMatcher {
-  readonly expression: RegExp;
+interface DeliveryOperationMatcher<Operation extends DeliveryOperation = DeliveryOperation> {
+  readonly expression: Readonly<RegExp>;
   readonly names: readonly string[];
-  readonly operation: NonNullable<Options["deliveryOperations"]>[number];
+  readonly operation: Readonly<Operation>;
 }
 
 const { bodylessResponse, errorResponse, jsonResponse, requestFailureResponse } = transportResponse,
   { executeOperation, matchPath } = transportOperation,
-  buildDeliveryParameters = (deliveryMatch: DeliveryMatch): Record<string, string> =>
+  buildDeliveryParameters = <Operation extends DeliveryOperation>(
+    deliveryMatch: Readonly<DeliveryMatch<Operation>>,
+  ): Record<string, string> =>
     Object.fromEntries(
       deliveryMatch.matcher.names.map((name, index) => [
         name,
-        decodeURIComponent(deliveryMatch.match[index + 1] ?? ""),
+        decodeURIComponent(deliveryMatch.captures[index] ?? ""),
       ]),
     ),
   deliveryOperationResponse = (
-    context: RouteHandlerContext,
+    context: Readonly<RouteHandlerContext>,
     value: unknown,
-    options: DeliveryOperationResponseOptions,
+    options: Readonly<DeliveryOperationResponseOptions>,
   ): Response => {
     if (value instanceof Response) {
       return value;
     }
     if (value === undefined) {
-      return bodylessResponse(204, context.requestId, context.fingerprint);
+      return bodylessResponse(httpStatusNoContent, context.requestId, context.fingerprint);
     }
     return jsonResponse({
       cacheControl: options.cacheControl ?? "no-cache",
       fingerprint: context.fingerprint,
       requestId: context.requestId,
-      status: options.successStatus ?? 200,
+      status: options.successStatus ?? httpStatusOk,
       value,
     });
   },
-  executeMatchedDeliveryOperation = (
-    context: RouteHandlerContext,
-    deliveryMatch: DeliveryMatch,
+  executeMatchedDeliveryOperation = <Operation extends DeliveryOperation>(
+    context: Readonly<RouteHandlerContext>,
+    deliveryMatch: Readonly<DeliveryMatch<Operation>>,
   ): Promise<Response> => {
     const parameters = buildDeliveryParameters(deliveryMatch);
     return context.withOutcome(
-      executeOperation(deliveryMatch.matcher.operation, {
-        cms: context.cms,
-        parameters,
-        request: context.request,
-        requestId: context.requestId,
-        snapshot: context.snapshot,
-      }),
+      () =>
+        executeOperation(deliveryMatch.matcher.operation, {
+          cms: context.cms,
+          parameters,
+          request: context.request,
+          requestId: context.requestId,
+          snapshot: context.snapshot,
+        }),
       context.requestId,
       (value) =>
         deliveryOperationResponse(context, value, {
@@ -75,10 +84,10 @@ const { bodylessResponse, errorResponse, jsonResponse, requestFailureResponse } 
         }),
     );
   },
-  findCustomManagementMatch = (
-    context: RouteHandlerContext,
-    managementOperations: readonly ManagementOperation[],
-  ): CustomManagementMatch | undefined => {
+  findCustomManagementMatch = <Operation extends ManagementOperation>(
+    context: Readonly<RouteHandlerContext>,
+    managementOperations: readonly Operation[],
+  ): CustomManagementMatch<Operation> | undefined => {
     for (const managementOperation of managementOperations) {
       const parameters = matchPath(
         `${context.managementBase}${managementOperation.path}`,
@@ -90,21 +99,21 @@ const { bodylessResponse, errorResponse, jsonResponse, requestFailureResponse } 
     }
     return undefined;
   },
-  findDeliveryMatcher = (
-    context: RouteHandlerContext,
-    operationMatchers: readonly DeliveryOperationMatcher[],
-  ): DeliveryMatch | undefined => {
+  findDeliveryMatcher = <Operation extends DeliveryOperation>(
+    context: Readonly<RouteHandlerContext>,
+    operationMatchers: readonly DeliveryOperationMatcher<Operation>[],
+  ): DeliveryMatch<Operation> | undefined => {
     for (const matcher of operationMatchers) {
       const match = matcher.expression.exec(context.requestUrl.pathname);
       if (match !== null && context.request.method === matcher.operation.method) {
-        return { match, matcher };
+        return { captures: match.slice(1), matcher };
       }
     }
     return undefined;
   },
-  handleMatchedDeliveryOperation = (
-    context: RouteHandlerContext,
-    deliveryMatch: DeliveryMatch,
+  handleMatchedDeliveryOperation = <Operation extends DeliveryOperation>(
+    context: Readonly<RouteHandlerContext>,
+    deliveryMatch: Readonly<DeliveryMatch<Operation>>,
   ): Response | Promise<Response> => {
     const validationResponse = validateDeliveryRequest(context, deliveryMatch.matcher.operation);
     if (validationResponse !== undefined) {
@@ -112,40 +121,40 @@ const { bodylessResponse, errorResponse, jsonResponse, requestFailureResponse } 
     }
     return executeMatchedDeliveryOperation(context, deliveryMatch);
   },
-  methodNotAllowedResponse = (context: RouteHandlerContext): Response =>
+  methodNotAllowedResponse = (context: Readonly<RouteHandlerContext>): Response =>
     jsonResponse({
       requestId: context.requestId,
-      status: 405,
+      status: httpStatusMethodNotAllowed,
       value: {
         code: "MethodNotAllowed",
         message: "Method not allowed",
         requestId: context.requestId,
       },
     }),
-  operationResponse = (context: RouteHandlerContext, value: unknown): Response => {
+  operationResponse = (context: Readonly<RouteHandlerContext>, value: unknown): Response => {
     if (value instanceof Response) {
       return value;
     }
     if (value === undefined) {
-      return bodylessResponse(204, context.requestId, context.fingerprint);
+      return bodylessResponse(httpStatusNoContent, context.requestId, context.fingerprint);
     }
     return jsonResponse({
       fingerprint: context.fingerprint,
       requestId: context.requestId,
-      status: 200,
+      status: httpStatusOk,
       value,
     });
   },
-  resolveUnmatchedDeliveryRoute = (
-    context: RouteHandlerContext,
-    operationMatchers: readonly DeliveryOperationMatcher[],
+  resolveUnmatchedDeliveryRoute = <Operation extends DeliveryOperation>(
+    context: Readonly<RouteHandlerContext>,
+    operationMatchers: readonly DeliveryOperationMatcher<Operation>[],
   ): Response | undefined | Promise<Response | undefined> => {
     if (operationMatchers.some((matcher) => matcher.expression.test(context.requestUrl.pathname))) {
       return Promise.resolve(methodNotAllowedResponse(context));
     }
     return undefined;
   },
-  validateDeliveryContentType = (context: RouteHandlerContext): Response | undefined => {
+  validateDeliveryContentType = (context: Readonly<RouteHandlerContext>): Response | undefined => {
     if (
       context.request.method === "POST" &&
       !(context.request.headers.get("content-type") ?? "")
@@ -156,16 +165,18 @@ const { bodylessResponse, errorResponse, jsonResponse, requestFailureResponse } 
         new RequestFailureError(
           "UnsupportedMediaType",
           "Delivery command requires application/json",
-          415,
+          httpStatusUnsupportedMediaType,
         ),
         context.requestId,
       );
     }
     return undefined;
   },
-  validateDeliveryIdempotencyKey = (
-    context: RouteHandlerContext,
-    operation: DeliveryOperation,
+  validateDeliveryIdempotencyKey = <
+    Operation extends Pick<DeliveryOperation, "requiresIdempotencyKey">,
+  >(
+    context: Readonly<RouteHandlerContext>,
+    operation: Readonly<Operation>,
   ): Response | undefined => {
     if (
       operation.requiresIdempotencyKey === true &&
@@ -178,9 +189,9 @@ const { bodylessResponse, errorResponse, jsonResponse, requestFailureResponse } 
     }
     return undefined;
   },
-  validateDeliveryRequest = (
-    context: RouteHandlerContext,
-    operation: DeliveryOperation,
+  validateDeliveryRequest = <Operation extends Pick<DeliveryOperation, "requiresIdempotencyKey">>(
+    context: Readonly<RouteHandlerContext>,
+    operation: Readonly<Operation>,
   ): Response | undefined => {
     const contentTypeResponse = validateDeliveryContentType(context);
     if (contentTypeResponse !== undefined) {

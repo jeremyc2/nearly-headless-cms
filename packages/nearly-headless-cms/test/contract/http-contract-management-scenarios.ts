@@ -1,16 +1,6 @@
-import {
-  Effect,
-  Layer,
-  Schema,
-} from "effect";
-import {
-  HttpRouter,
-  HttpServer,
-} from "effect/unstable/http";
-import {
-  HttpTransport,
-  OpenApi,
-} from "../../src/http/index.ts";
+import { Effect, Layer, Schema } from "effect";
+import { HttpRouter, HttpServer } from "effect/unstable/http";
+import { HttpTransport, OpenApi } from "../../src/http/index.ts";
 import {
   createdStatus,
   isRecord,
@@ -21,10 +11,12 @@ import {
 import { DevelopmentCms } from "../../src/testing/index.ts";
 import { expect } from "bun:test";
 
-type ManagementHandler = (request: Request) => Response | Promise<Response>;
+type ManagementHandler = <RequestType extends Request>(
+  request: Readonly<RequestType>,
+) => Response | Promise<Response>;
 
 const makeManagementHandler = (): Promise<ManagementHandler> => {
-    const handlerEffect = HttpTransport.makeHandler().pipe(
+    const handlerEffect = HttpTransport.makeHandler({}).pipe(
       // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer.
       Effect.provide(DevelopmentCms.layer({ snapshot })),
     );
@@ -68,7 +60,7 @@ const makeManagementHandler = (): Promise<ManagementHandler> => {
   runVersionedManagementContract = async (): Promise<void> => {
     const handler = await makeManagementHandler();
     await verifyVersionedManagementRequests(handler);
-    expect(OpenApi.management().openapi).toBe("3.1.0");
+    expect(OpenApi.management([]).openapi).toBe("3.1.0");
     expect(OpenApi.headless([]).paths).not.toHaveProperty("/content-types/{contentTypeId}/entries");
   },
   verifyPortableHttpApiRoutes = (): Promise<void> => runPortableRoutesContract(),

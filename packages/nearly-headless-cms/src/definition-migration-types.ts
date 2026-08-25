@@ -24,7 +24,7 @@ export interface HandlerInput {
 export interface Handler {
   readonly identifier: string;
   readonly version: number;
-  readonly transform: (input: HandlerInput) => JsonObject;
+  readonly transform: (input: Readonly<HandlerInput>) => JsonObject;
 }
 
 /** Inputs for staging and validating a complete Definition migration. */

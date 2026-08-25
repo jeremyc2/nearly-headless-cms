@@ -6,14 +6,14 @@ import type { HttpContract } from "nearly-headless-cms/http";
 export type PublicValue = ContentDefinition.JsonObject;
 
 export interface FindBySlugInput {
-  readonly cms: Cms.ServiceShape;
+  readonly cms: Readonly<Cms.ServiceShape>;
   readonly contentTypeId: string;
   readonly publicOnly?: boolean;
   readonly slug: string;
 }
 
 export interface QueryEntriesInput {
-  readonly cms: Cms.ServiceShape;
+  readonly cms: Readonly<Cms.ServiceShape>;
   readonly contentTypeId: string;
   readonly sort?: readonly EntryQuery.Sort[];
   readonly where?: EntryQuery.Predicate;
@@ -23,12 +23,14 @@ export interface QueryPageInput extends QueryEntriesInput {
   readonly request: Request;
 }
 
-const requestUrlSearchParameter = (parameterName: string, request: Request): string | undefined => {
-  const requestUrl = new URL(request.url);
-  return requestUrl.searchParams.get(parameterName) ?? undefined;
-},
-
- DEFAULT_PAGE_SIZE = 20,
+const requestUrlSearchParameter = <RequestType extends Request>(
+    parameterName: string,
+    request: Readonly<RequestType>,
+  ): string | undefined => {
+    const requestUrl = new URL(request.url);
+    return requestUrl.searchParams.get(parameterName) ?? undefined;
+  },
+  DEFAULT_PAGE_SIZE = 20,
   FIRST_INDEX = 0,
   MAX_PUBLIC_EXPORT_BYTES = 5_000_000,
   MAX_QUERY_PAGE_SIZE = 100,
@@ -43,7 +45,7 @@ const requestUrlSearchParameter = (parameterName: string, request: Request): str
         .map(([key, child]) => [key, canonicalizeJsonValue(child)]),
     );
   },
-  findBySlug = ({ cms, contentTypeId, publicOnly = false, slug }: FindBySlugInput) => {
+  findBySlug = ({ cms, contentTypeId, publicOnly = false, slug }: Readonly<FindBySlugInput>) => {
     let where: EntryQuery.Predicate = { operator: "equals", path: "slug", value: slug };
     if (publicOnly) {
       where = {
@@ -65,17 +67,21 @@ const requestUrlSearchParameter = (parameterName: string, request: Request): str
   },
   lowerCamelCase = (key: string): string =>
     key.replaceAll(/-(?<letter>[a-z])/gu, (_match, letter: string) => letter.toUpperCase()),
-  mapQueryPage = (page: {
-    items: readonly Cms.ConsistentReadSnapshot["entries"][number][];
-    nextCursor?: string;
-  }) => {
+  mapQueryPage = <
+    Page extends {
+      items: readonly Cms.ConsistentReadSnapshot["entries"][number][];
+      nextCursor?: string;
+    },
+  >(
+    page: Readonly<Page>,
+  ) => {
     if (page.nextCursor !== undefined) {
       return { items: page.items.map(publicValue), nextCursor: page.nextCursor };
     }
     return { items: page.items.map(publicValue) };
   },
-  parseBody = (
-    request: Request,
+  parseBody = <RequestType extends Request>(
+    request: Readonly<RequestType>,
   ): Effect.Effect<ContentDefinition.JsonObject, CmsError.InvalidInput> =>
     Effect.tryPromise({
       catch: (cause) => {
@@ -112,7 +118,7 @@ const requestUrlSearchParameter = (parameterName: string, request: Request): str
     contentTypeId,
     sort,
     where,
-  }: QueryEntriesInput): Effect.Effect<
+  }: Readonly<QueryEntriesInput>): Effect.Effect<
     readonly Cms.ConsistentReadSnapshot["entries"][number][],
     CmsError.CmsError
   > =>
@@ -134,8 +140,9 @@ const requestUrlSearchParameter = (parameterName: string, request: Request): str
         }
       }
     }),
-  queryPage = ({ cms, contentTypeId, request, sort, where }: QueryPageInput) => {
-    const cursor = requestUrlSearchParameter("cursor", request),
+  queryPage = <Input extends QueryPageInput>(input: Readonly<Input>) => {
+    const { cms, contentTypeId, request, sort, where } = input,
+      cursor = requestUrlSearchParameter("cursor", request),
       pageSize = Number(
         requestUrlSearchParameter("pageSize", request) ?? String(DEFAULT_PAGE_SIZE),
       );
@@ -144,9 +151,12 @@ const requestUrlSearchParameter = (parameterName: string, request: Request): str
       .pipe(Effect.map(mapQueryPage));
   },
   // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- local schema adapter is intentionally direct-call only.
-  readSchemas = (
-    response: HttpContract.OperationSchema,
-    pathParameters: Readonly<Record<string, HttpContract.OperationSchema>> = {},
+  readSchemas = <
+    ResponseSchema extends HttpContract.OperationSchema,
+    PathParameters extends Record<string, HttpContract.OperationSchema>,
+  >(
+    response: Readonly<ResponseSchema>,
+    pathParameters: Readonly<PathParameters> = {},
     includePagination = false,
   ): HttpContract.OperationSchemas => {
     if (includePagination) {
@@ -154,8 +164,8 @@ const requestUrlSearchParameter = (parameterName: string, request: Request): str
     }
     return { pathParameters, request: EmptyRequest, response };
   },
-  requiredParameter = (
-    parameters: Readonly<Record<string, string | undefined>>,
+  requiredParameter = <Parameters extends Readonly<Record<string, string | undefined>>>(
+    parameters: Readonly<Parameters>,
     name: string,
   ): string => {
     const value = parameters[name];
@@ -165,13 +175,7 @@ const requestUrlSearchParameter = (parameterName: string, request: Request): str
     return value;
   };
 
-export {
-  DEFAULT_PAGE_SIZE,
-  FIRST_INDEX,
-  MAX_PUBLIC_EXPORT_BYTES,
-  MAX_QUERY_PAGE_SIZE,
-  ONE_ITEM,
-};
+export { DEFAULT_PAGE_SIZE, FIRST_INDEX, MAX_PUBLIC_EXPORT_BYTES, MAX_QUERY_PAGE_SIZE, ONE_ITEM };
 
 export default {
   canonicalizeJsonValue,

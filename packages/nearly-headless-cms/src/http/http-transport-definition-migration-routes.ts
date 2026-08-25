@@ -1,4 +1,5 @@
 import type { RouteHandlerContext, RouteHandlerResult } from "./http-transport-types.ts";
+import { httpStatusCreated, httpStatusOk } from "./http-status-codes.ts";
 import { InvalidInput } from "../cms-error.ts";
 import dispatchRouteHandlers from "./http-transport-route-dispatch.ts";
 import migrationRouteSupport from "./http-transport-definition-migration-route-support.ts";
@@ -17,7 +18,7 @@ const { invalidRequestResponse, jsonResponse } = transportResponse,
   } = migrationRouteSupport,
   // oxlint-disable-next-line effecttsgo/async-function -- route handlers await JSON body parsing before Effect execution.
   handleDefinitionActivationRoute = async (
-    context: RouteHandlerContext,
+    context: Readonly<RouteHandlerContext>,
   ): Promise<RouteHandlerResult> => {
     if (
       context.requestUrl.pathname !== `${context.managementBase}/definition-snapshot-activations` ||
@@ -28,20 +29,21 @@ const { invalidRequestResponse, jsonResponse } = transportResponse,
     try {
       const body = await context.parseJson(context.request, context.maximumJsonBodyByteLength);
       return await context.withOutcome(
-        buildActivationEffect(
-          context,
-          body,
-          requireSafeInteger(
-            body["expectedCatalogVersion"],
-            "Definition activation requires snapshot and expectedCatalogVersion",
+        () =>
+          buildActivationEffect(
+            context,
+            body,
+            requireSafeInteger(
+              body["expectedCatalogVersion"],
+              "Definition activation requires snapshot and expectedCatalogVersion",
+            ),
           ),
-        ),
         context.requestId,
         (result) =>
           jsonResponse({
             fingerprint: result.snapshot.fingerprint,
             requestId: context.requestId,
-            status: 201,
+            status: httpStatusCreated,
             value: {
               catalogVersion: result.catalogVersion,
               fingerprint: result.snapshot.fingerprint,
@@ -51,14 +53,19 @@ const { invalidRequestResponse, jsonResponse } = transportResponse,
           }),
       );
     } catch (error) {
-      return invalidRequestResponse(error, "Invalid Definition activation request", context.requestId);
+      return invalidRequestResponse(
+        error,
+        "Invalid Definition activation request",
+        context.requestId,
+      );
     }
   },
-  handleDefinitionMigrationRoutes = (context: RouteHandlerContext): Promise<RouteHandlerResult> =>
-    dispatchRouteHandlers(migrationRouteHandlers, context),
+  handleDefinitionMigrationRoutes = (
+    context: Readonly<RouteHandlerContext>,
+  ): Promise<RouteHandlerResult> => dispatchRouteHandlers(migrationRouteHandlers, context),
   // oxlint-disable-next-line effecttsgo/async-function -- route handlers await JSON body parsing before Effect execution.
   handleMigrationManifestAppendRoute = async (
-    context: RouteHandlerContext,
+    context: Readonly<RouteHandlerContext>,
   ): Promise<RouteHandlerResult> => {
     if (
       context.requestUrl.pathname !== `${context.managementBase}/migration-manifests` ||
@@ -69,19 +76,20 @@ const { invalidRequestResponse, jsonResponse } = transportResponse,
     try {
       const body = await context.parseJson(context.request, context.maximumJsonBodyByteLength);
       return await context.withOutcome(
-        context.cms.appendMigrationManifest({
-          expectedCatalogVersion: requireSafeInteger(
-            body["expectedCatalogVersion"],
-            "Migration Manifest append requires manifest and expectedCatalogVersion",
-          ),
-          manifest: requireMigrationManifest(
-            body["manifest"],
-            "Migration Manifest append requires manifest and expectedCatalogVersion",
-          ),
-        }),
+        () =>
+          context.cms.appendMigrationManifest({
+            expectedCatalogVersion: requireSafeInteger(
+              body["expectedCatalogVersion"],
+              "Migration Manifest append requires manifest and expectedCatalogVersion",
+            ),
+            manifest: requireMigrationManifest(
+              body["manifest"],
+              "Migration Manifest append requires manifest and expectedCatalogVersion",
+            ),
+          }),
         context.requestId,
         (state) =>
-          migrationJsonResponse(context, 201, { catalogVersion: state.version }),
+          migrationJsonResponse(context, httpStatusCreated, { catalogVersion: state.version }),
       );
     } catch (error) {
       return invalidRequestResponse(
@@ -91,23 +99,28 @@ const { invalidRequestResponse, jsonResponse } = transportResponse,
       );
     }
   },
-  handleMigrationManifestListRoute = (context: RouteHandlerContext): RouteHandlerResult | Promise<RouteHandlerResult> => {
+  handleMigrationManifestListRoute = (
+    context: Readonly<RouteHandlerContext>,
+  ): RouteHandlerResult | Promise<RouteHandlerResult> => {
     if (
       context.requestUrl.pathname !== `${context.managementBase}/migration-manifests` ||
       context.request.method !== "GET"
     ) {
       return undefined;
     }
-    return context.withOutcome(context.cms.readDefinitionCatalog, context.requestId, (state) =>
-      migrationJsonResponse(context, 200, {
-        catalogVersion: state.version,
-        items: state.migrationManifests,
-      }),
+    return context.withOutcome(
+      () => context.cms.readDefinitionCatalog(),
+      context.requestId,
+      (state) =>
+        migrationJsonResponse(context, httpStatusOk, {
+          catalogVersion: state.version,
+          items: state.migrationManifests,
+        }),
     );
   },
   // oxlint-disable-next-line effecttsgo/async-function -- route handlers await JSON body parsing before Effect execution.
   handleMigrationPreparationCreateRoute = async (
-    context: RouteHandlerContext,
+    context: Readonly<RouteHandlerContext>,
   ): Promise<RouteHandlerResult> => {
     if (
       context.requestUrl.pathname !== `${context.managementBase}/migration-preparations` ||
@@ -125,22 +138,27 @@ const { invalidRequestResponse, jsonResponse } = transportResponse,
         });
       }
       return await context.withOutcome(
-        context.cms.prepareDefinitionMigration({
-          expectedCatalogVersion: requireSafeInteger(
-            body["expectedCatalogVersion"],
-            "Migration Preparation requires manifestId, snapshot, and expectedCatalogVersion",
-          ),
-          manifestId,
-          snapshot: requireSnapshotInput(
-            body["snapshot"],
-            "Migration Preparation requires manifestId, snapshot, and expectedCatalogVersion",
-          ),
-        }),
+        () =>
+          context.cms.prepareDefinitionMigration({
+            expectedCatalogVersion: requireSafeInteger(
+              body["expectedCatalogVersion"],
+              "Migration Preparation requires manifestId, snapshot, and expectedCatalogVersion",
+            ),
+            manifestId,
+            snapshot: requireSnapshotInput(
+              body["snapshot"],
+              "Migration Preparation requires manifestId, snapshot, and expectedCatalogVersion",
+            ),
+          }),
         context.requestId,
-        (preparation) => migrationJsonResponse(context, 200, preparation),
+        (preparation) => migrationJsonResponse(context, httpStatusOk, preparation),
       );
     } catch (error) {
-      return invalidRequestResponse(error, "Invalid Migration Preparation request", context.requestId);
+      return invalidRequestResponse(
+        error,
+        "Invalid Migration Preparation request",
+        context.requestId,
+      );
     }
   },
   migrationRouteHandlers = [

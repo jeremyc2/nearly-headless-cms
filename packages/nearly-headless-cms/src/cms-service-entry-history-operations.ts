@@ -13,31 +13,31 @@ import type { ReadInput } from "./entry.ts";
 import entryHistoryOperationsSupport from "./cms-service-entry-history-operations-support.ts";
 
 const {
-  runGetCurrentEntryState,
-  runInspectEntryRevision,
-  runListEntryRevisions,
-  runPermanentlyPurgeEntry,
-  runRestoreEntryRevision,
-} = entryHistoryOperationsSupport,
+    runGetCurrentEntryState,
+    runInspectEntryRevision,
+    runListEntryRevisions,
+    runPermanentlyPurgeEntry,
+    runRestoreEntryRevision,
+  } = entryHistoryOperationsSupport,
   getCurrentEntryStateMethod =
-    (context: CmsServiceOperationContext) =>
+    (context: Readonly<CmsServiceOperationContext>) =>
     (input: Pick<ReadInput, "contentTypeId" | "entryId">): Effect.Effect<CurrentState, CmsError> =>
       runGetCurrentEntryState(context, input),
   inspectEntryRevisionMethod =
-    (context: CmsServiceOperationContext) =>
-    (input: ReadRevisionInput): Effect.Effect<Revision, CmsError> =>
+    (context: Readonly<CmsServiceOperationContext>) =>
+    (input: Readonly<ReadRevisionInput>): Effect.Effect<Revision, CmsError> =>
       runInspectEntryRevision(context, input),
   listEntryRevisionsMethod =
-    (context: CmsServiceOperationContext) =>
-    (input: ListRevisionsInput): Effect.Effect<RevisionPage, CmsError> =>
+    (context: Readonly<CmsServiceOperationContext>) =>
+    (input: Readonly<ListRevisionsInput>): Effect.Effect<RevisionPage, CmsError> =>
       runListEntryRevisions(context, input),
   permanentlyPurgeEntryMethod =
-    (context: CmsServiceOperationContext) =>
-    (input: PurgeEntryInput): Effect.Effect<void, CmsError> =>
+    (context: Readonly<CmsServiceOperationContext>) =>
+    (input: Readonly<PurgeEntryInput>): Effect.Effect<void, CmsError> =>
       runPermanentlyPurgeEntry(context, input),
   restoreEntryRevisionMethod =
-    (context: CmsServiceOperationContext) =>
-    (input: RestoreInput): Effect.Effect<CurrentState, CmsError> =>
+    (context: Readonly<CmsServiceOperationContext>) =>
+    (input: Readonly<RestoreInput>): Effect.Effect<CurrentState, CmsError> =>
       runRestoreEntryRevision(context, input);
 
 export default {

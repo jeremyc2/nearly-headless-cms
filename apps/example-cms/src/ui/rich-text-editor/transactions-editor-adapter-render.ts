@@ -11,9 +11,9 @@ type RenderBlock = (
 
 const { blockElementName } = transactionsEditorAdapterSupport,
   { conditionalValue } = transactionsSupport,
-  applyTextMarks = (
+  applyTextMarks = <Text extends HTMLSpanElement>(
     marks: readonly RichText.Mark[] | undefined,
-    text: HTMLSpanElement,
+    text: Readonly<Text>,
   ): void => {
     if (marks?.includes("bold") === true) {
       text.style.fontWeight = "700";
@@ -25,17 +25,20 @@ const { blockElementName } = transactionsEditorAdapterSupport,
       text.className = "rich-inline-code";
     }
   },
-  assignTextSpanIndices = ({
+  assignTextSpanIndices = <
+    Text extends HTMLSpanElement,
+    Input extends {
+      readonly blockIndex: number;
+      readonly inlineIndex: number;
+      readonly listItemIndex: number | undefined;
+      readonly text: Readonly<Text>;
+    },
+  >({
     blockIndex,
     inlineIndex,
     listItemIndex,
     text,
-  }: {
-    readonly blockIndex: number;
-    readonly inlineIndex: number;
-    readonly listItemIndex: number | undefined;
-    readonly text: HTMLSpanElement;
-  }): void => {
+  }: Readonly<Input>): void => {
     text.dataset["blockIndex"] = String(blockIndex);
     text.dataset["inlineIndex"] = String(inlineIndex);
     if (listItemIndex !== undefined) {
@@ -64,19 +67,22 @@ const { blockElementName } = transactionsEditorAdapterSupport,
     }
     return element;
   },
-  renderBlockChildren = ({
+  renderBlockChildren = <
+    RenderBlockType extends RenderBlock,
+    Input extends {
+      readonly block: RichText.BlockNode;
+      readonly blockIndex: number | undefined;
+      readonly element: HTMLElement;
+      readonly listItemIndex: number | undefined;
+      readonly renderBlock: Readonly<RenderBlockType>;
+    },
+  >({
     block,
     blockIndex,
     element,
     listItemIndex,
     renderBlock,
-  }: {
-    readonly block: RichText.BlockNode;
-    readonly blockIndex: number | undefined;
-    readonly element: HTMLElement;
-    readonly listItemIndex: number | undefined;
-    readonly renderBlock: RenderBlock;
-  }): void => {
+  }: Readonly<Input>): void => {
     if (!("children" in block)) {
       return;
     }
@@ -92,7 +98,13 @@ const { blockElementName } = transactionsEditorAdapterSupport,
     }
     const element = document.createElement(blockElementName(block));
     element.dataset["nodeType"] = block.type;
-    renderBlockChildren({ block, blockIndex, element, listItemIndex, renderBlock: renderBlockElement });
+    renderBlockChildren({
+      block,
+      blockIndex,
+      element,
+      listItemIndex,
+      renderBlock: renderBlockElement,
+    });
     return element;
   },
   renderInlineChild = ({
@@ -167,11 +179,7 @@ const { blockElementName } = transactionsEditorAdapterSupport,
     if (blockIndex !== undefined) {
       assignTextSpanIndices({ blockIndex, inlineIndex, listItemIndex, text });
     }
-    text.textContent = conditionalValue(
-      child.text.length === emptyIndex,
-      "\u200B",
-      child.text,
-    );
+    text.textContent = conditionalValue(child.text.length === emptyIndex, "\u200B", child.text);
     applyTextMarks(child.marks, text);
     return text;
   },

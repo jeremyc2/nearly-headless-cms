@@ -21,12 +21,15 @@ export interface EntryEditorControllerViewInput {
   readonly entryId: string;
   readonly mutations: ReturnType<typeof useEntryEditorControllerMutations>;
   readonly navigate: ReturnType<typeof useNavigate>;
-  readonly saveValues: (replacementValues?: Record<string, unknown>, writeToken?: string) => void;
+  readonly saveValues: <Values extends Record<string, unknown>>(
+    replacementValues?: Readonly<Values>,
+    writeToken?: string,
+  ) => void;
   readonly setConfirmPurge: (value: boolean) => void;
   readonly setConflict: (value: EntryConflict | undefined) => void;
   readonly setDeletionDialogOpen: (value: boolean) => void;
   readonly setEditorialConfirmation: (value: EditorialConfirmationStatus | undefined) => void;
-  readonly setValues: (value: Record<string, unknown>) => void;
+  readonly setValues: <Values extends Record<string, unknown>>(value: Readonly<Values>) => void;
   readonly state: ReturnType<typeof useEntryEditorQueries>["state"];
   readonly tags: ReturnType<typeof useEntryEditorQueries>["tags"];
   readonly title: string;

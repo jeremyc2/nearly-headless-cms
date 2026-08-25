@@ -143,7 +143,7 @@ const emptyItemCount = 0,
     method,
     operation,
     path,
-  }: OperationInput): GeneratedOperation => {
+  }: Readonly<OperationInput>): GeneratedOperation => {
     const requestBody = validatedRequestBody(operation, identifier),
       requestContent = validatedContent(requestBody?.["content"], "request"),
       sharedOperation: GeneratedOperation = {
@@ -167,7 +167,7 @@ const emptyItemCount = 0,
     identifiers,
     methods,
     path,
-  }: PathOperationsInput): readonly GeneratedOperation[] =>
+  }: Readonly<PathOperationsInput>): readonly GeneratedOperation[] =>
     sortedValues(Object.entries(methods), ([leftMethod], [rightMethod]) =>
       leftMethod.localeCompare(rightMethod),
     ).map(([method, operationValue]) => {

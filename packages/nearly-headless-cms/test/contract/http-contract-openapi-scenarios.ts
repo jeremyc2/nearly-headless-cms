@@ -85,7 +85,7 @@ const commentSubmissionOperation = {
   },
   verifyManagementEntryCreationOpenApiPath = (): void => {
     expect(
-      OpenApi.management().paths[
+      OpenApi.management([]).paths[
         "/api/v1/management/definition-spaces/{definitionSpaceId}/content-types/{contentTypeId}/entries"
       ],
     ).toMatchObject({
@@ -113,7 +113,7 @@ const commentSubmissionOperation = {
   },
   verifyManagementEntryDeletionOpenApiPath = (): void => {
     expect(
-      OpenApi.management().paths[
+      OpenApi.management([]).paths[
         "/api/v1/management/definition-spaces/{definitionSpaceId}/content-types/{contentTypeId}/entries/{entryId}"
       ],
     ).toMatchObject({

@@ -9,8 +9,8 @@ const { ONE, valueAtPath } = entryQuerySupport,
     }
     return {};
   },
-  bAssignProjectedSegment = (
-    projected: Record<string, JsonValue>,
+  bAssignProjectedSegment = <Projected extends Record<string, JsonValue>>(
+    projected: Readonly<Projected>,
     segments: readonly string[],
     value: JsonValue,
   ): void => {

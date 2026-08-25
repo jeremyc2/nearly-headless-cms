@@ -5,6 +5,21 @@ import {
   managementPrefix,
 } from "./http-contract.ts";
 import type { Options, RouteHandlerContext } from "./http-transport-types.ts";
+import {
+  type ReadonlyTransportAbortSignal,
+  type ReadonlyTransportHandlerRequest,
+  type ReadonlyTransportRequest,
+  type ReadonlyTransportUrl,
+} from "./http-transport-readonly-types.ts";
+import {
+  defaultMaximumHeaderByteLength,
+  defaultMaximumJsonBodyByteLength,
+  defaultMaximumMultipartBodyByteLength,
+  defaultMaximumMultipartFileByteLength,
+  defaultMaximumMultipartMetadataByteLength,
+  defaultMaximumUrlLength,
+  defaultRequestTimeoutMilliseconds,
+} from "./http-status-codes.ts";
 import type { CmsError } from "../cms-error.ts";
 import type { ServiceShape as CmsServiceShape } from "../cms.ts";
 import type { CompiledSnapshot } from "../content-definition.ts";
@@ -36,27 +51,27 @@ interface ResolvedHandlerOptions {
 }
 
 interface ResolveActiveSnapshotInput {
-  readonly cms: CmsServiceShape;
-  readonly request: Request;
+  readonly cms: Readonly<CmsServiceShape>;
+  readonly request: ReadonlyTransportRequest;
   readonly requestId: string;
-  readonly signal: AbortSignal;
+  readonly signal: ReadonlyTransportAbortSignal;
 }
 
 interface BuildRouteContextInput {
-  readonly cms: CmsServiceShape;
-  readonly limits: HandlerBodyLimits;
-  readonly request: Request;
+  readonly cms: Readonly<CmsServiceShape>;
+  readonly limits: Readonly<HandlerBodyLimits>;
+  readonly request: ReadonlyTransportHandlerRequest;
   readonly requestId: string;
-  readonly requestUrl: URL;
-  readonly signal: AbortSignal;
-  readonly snapshot: CompiledSnapshot;
+  readonly requestUrl: ReadonlyTransportUrl;
+  readonly signal: ReadonlyTransportAbortSignal;
+  readonly snapshot: Readonly<CompiledSnapshot>;
 }
 
 interface EnsureSnapshotFingerprintInput {
-  readonly request: Request;
+  readonly request: ReadonlyTransportRequest;
   readonly requestId: string;
-  readonly signal: AbortSignal;
-  readonly snapshot: CompiledSnapshot;
+  readonly signal: ReadonlyTransportAbortSignal;
+  readonly snapshot: Readonly<CompiledSnapshot>;
 }
 
 interface ReadInterruptibleValueInput<Value> {
@@ -64,55 +79,51 @@ interface ReadInterruptibleValueInput<Value> {
   readonly missingValueMessage: string;
   readonly operationFailureMessage: string;
   readonly requestId: string;
-  readonly signal: AbortSignal;
+  readonly signal: ReadonlyTransportAbortSignal;
 }
 
 const { errorResponse, respondWithOutcome, runOperationInterruptibly } = transportResponse,
   { compilePath, ensureFingerprint } = transportOperation,
   { parseJson } = transportRequestParsing,
-  buildRouteContext = ({
-    cms,
-    limits,
-    request,
-    requestId,
-    requestUrl,
-    signal,
-    snapshot,
-  }: BuildRouteContextInput): RouteHandlerContext => ({
-    cms,
-    fingerprint: snapshot.fingerprint,
-    managementBase: `${managementPrefix}/definition-spaces/${encodeURIComponent(snapshot.definitionSpaceId)}`,
-    maximumJsonBodyByteLength: limits.maximumJsonBodyByteLength,
-    maximumMultipartBodyByteLength: limits.maximumMultipartBodyByteLength,
-    maximumMultipartFileByteLength: limits.maximumMultipartFileByteLength,
-    maximumMultipartMetadataByteLength: limits.maximumMultipartMetadataByteLength,
-    parseJson,
-    request,
-    requestId,
-    requestUrl,
-    signal,
-    snapshot,
-    withOutcome: <Value>(
-      effect: Effect.Effect<Value, CmsError>,
-      operationRequestId: string,
-      success: (value: Value) => Response,
-    ): Promise<Response> => respondWithOutcome({ effect, requestId: operationRequestId, signal, success }),
-  }),
-  compileOperationMatcher = (operation: DeliveryOperation) => {
+  buildRouteContext = <Input extends BuildRouteContextInput>(
+    input: Readonly<Input>,
+  ): RouteHandlerContext => {
+    const { cms, limits, request, requestId, requestUrl, signal, snapshot } = input;
+    return {
+      cms,
+      fingerprint: snapshot.fingerprint,
+      managementBase: `${managementPrefix}/definition-spaces/${encodeURIComponent(snapshot.definitionSpaceId)}`,
+      maximumJsonBodyByteLength: limits.maximumJsonBodyByteLength,
+      maximumMultipartBodyByteLength: limits.maximumMultipartBodyByteLength,
+      maximumMultipartFileByteLength: limits.maximumMultipartFileByteLength,
+      maximumMultipartMetadataByteLength: limits.maximumMultipartMetadataByteLength,
+      parseJson,
+      request,
+      requestId,
+      requestUrl,
+      signal,
+      snapshot,
+      withOutcome: <Value>(
+        effect: (_void: void) => Effect.Effect<Value, CmsError>,
+        operationRequestId: string,
+        success: (value: Readonly<Value>) => Response,
+      ): Promise<Response> =>
+        respondWithOutcome({ effect, requestId: operationRequestId, signal, success }),
+    };
+  },
+  compileOperationMatcher = <Operation extends DeliveryOperation>(operation: Operation) => {
     const compiled = compilePath(`${headlessPrefix}${operation.path}`);
     return { expression: compiled.expression, names: compiled.names, operation };
   },
   // oxlint-disable-next-line effecttsgo/async-function -- fingerprint validation awaits interruptible Effect execution.
-  ensureSnapshotFingerprint = async ({
-    request,
-    requestId,
-    signal,
-    snapshot,
-  }: EnsureSnapshotFingerprintInput): Promise<Response | undefined> => {
-    const fingerprintOutcome = await runOperationInterruptibly(
-      ensureFingerprint(request, snapshot.fingerprint),
-      signal,
-    );
+  ensureSnapshotFingerprint = async <Input extends EnsureSnapshotFingerprintInput>(
+    input: Readonly<Input>,
+  ): Promise<Response | undefined> => {
+    const { request, requestId, signal, snapshot } = input,
+      fingerprintOutcome = await runOperationInterruptibly(
+        ensureFingerprint(request, snapshot.fingerprint),
+        signal,
+      );
     if (!fingerprintOutcome.success) {
       if (fingerprintOutcome.error === undefined) {
         throw new Error("Fingerprint operation failed without an error");
@@ -122,13 +133,13 @@ const { errorResponse, respondWithOutcome, runOperationInterruptibly } = transpo
     return undefined;
   },
   // oxlint-disable-next-line effecttsgo/async-function -- interruptible outcomes are awaited before routing continues.
-  readInterruptibleValue = async <Value>({
+  readInterruptibleValue = async <Value, Input extends ReadInterruptibleValueInput<Value>>({
     effect,
     missingValueMessage,
     operationFailureMessage,
     requestId,
     signal,
-  }: ReadInterruptibleValueInput<Value>): Promise<Value | Response> => {
+  }: Readonly<Input>): Promise<Value | Response> => {
     const outcome = await runOperationInterruptibly(effect, signal);
     if (!outcome.success) {
       if (outcome.error === undefined) {
@@ -142,19 +153,17 @@ const { errorResponse, respondWithOutcome, runOperationInterruptibly } = transpo
     return outcome.value;
   },
   // oxlint-disable-next-line effecttsgo/async-function -- snapshot resolution awaits interruptible Effect execution before routing.
-  resolveActiveSnapshot = async ({
-    cms,
-    request,
-    requestId,
-    signal,
-  }: ResolveActiveSnapshotInput): Promise<CompiledSnapshot | Response> => {
-    const snapshotResult = await readInterruptibleValue({
-      effect: cms.activeDefinitionSnapshot,
-      missingValueMessage: "Operation succeeded without a value",
-      operationFailureMessage: "Operation failed without an error",
-      requestId,
-      signal,
-    });
+  resolveActiveSnapshot = async <Input extends ResolveActiveSnapshotInput>(
+    input: Readonly<Input>,
+  ): Promise<CompiledSnapshot | Response> => {
+    const { cms, request, requestId, signal } = input,
+      snapshotResult = await readInterruptibleValue({
+        effect: cms.activeDefinitionSnapshot(),
+        missingValueMessage: "Operation succeeded without a value",
+        operationFailureMessage: "Operation failed without an error",
+        requestId,
+        signal,
+      });
     if (snapshotResult instanceof Response) {
       return snapshotResult;
     }
@@ -167,24 +176,31 @@ const { errorResponse, respondWithOutcome, runOperationInterruptibly } = transpo
       })) ?? snapshotResult
     );
   },
-  resolveHandlerOptions = (options: Options): ResolvedHandlerOptions => {
+  resolveHandlerOptions = <OptionsType extends Options>(
+    options: Readonly<OptionsType>,
+  ): ResolvedHandlerOptions => {
     const deliveryOperations = options.deliveryOperations ?? [],
       managementOperations = options.managementOperations ?? [];
     return {
       deliveryOperations,
       limits: {
-        maximumJsonBodyByteLength: options.maximumJsonBodyByteLength ?? 1_000_000,
-        maximumMultipartBodyByteLength: options.maximumMultipartBodyByteLength ?? 25_000_000,
-        maximumMultipartFileByteLength: options.maximumMultipartFileByteLength ?? 20_000_000,
-        maximumMultipartMetadataByteLength: options.maximumMultipartMetadataByteLength ?? 64_000,
+        maximumJsonBodyByteLength:
+          options.maximumJsonBodyByteLength ?? defaultMaximumJsonBodyByteLength,
+        maximumMultipartBodyByteLength:
+          options.maximumMultipartBodyByteLength ?? defaultMaximumMultipartBodyByteLength,
+        maximumMultipartFileByteLength:
+          options.maximumMultipartFileByteLength ?? defaultMaximumMultipartFileByteLength,
+        maximumMultipartMetadataByteLength:
+          options.maximumMultipartMetadataByteLength ?? defaultMaximumMultipartMetadataByteLength,
       },
       managementOperations,
-      maximumHeaderByteLength: options.maximumHeaderByteLength ?? 32_768,
-      maximumUrlLength: options.maximumUrlLength ?? 8192,
+      maximumHeaderByteLength: options.maximumHeaderByteLength ?? defaultMaximumHeaderByteLength,
+      maximumUrlLength: options.maximumUrlLength ?? defaultMaximumUrlLength,
       operationMatchers: deliveryOperations.map((operation) => compileOperationMatcher(operation)),
       // oxlint-disable-next-line effecttsgo/crypto-random-uuid -- default request IDs are generated synchronously before Effect execution.
       requestIdentifier: options.requestIdentifier ?? (() => crypto.randomUUID()),
-      requestTimeoutMilliseconds: options.requestTimeoutMilliseconds ?? 30_000,
+      requestTimeoutMilliseconds:
+        options.requestTimeoutMilliseconds ?? defaultRequestTimeoutMilliseconds,
     };
   };
 

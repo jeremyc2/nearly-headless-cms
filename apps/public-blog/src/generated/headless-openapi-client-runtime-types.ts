@@ -5,7 +5,7 @@ import type { OperationSpecification } from "./headless-openapi-client-specifica
 export interface RequestOperationInput<Identifier extends keyof OperationInputs> {
   readonly baseAddress: string;
   readonly input: OperationInputs[Identifier];
-  readonly signal?: AbortSignal;
+  readonly signal?: Pick<AbortSignal, keyof AbortSignal>;
   readonly specification: OperationSpecification;
 }
 
@@ -13,8 +13,13 @@ export interface OperationFetchRequest {
   readonly body: BodyInit | undefined;
   readonly headers: Headers;
   readonly method: string;
-  readonly requestUrl: URL;
-  readonly signal: AbortSignal | undefined;
+  readonly requestUrl: Pick<URL, "pathname" | "searchParams">;
+  readonly signal:
+    | Pick<
+        AbortSignal,
+        "aborted" | "addEventListener" | "reason" | "removeEventListener" | "throwIfAborted"
+      >
+    | undefined;
 }
 
 export interface OperationSuccessParseInput {
@@ -27,6 +32,11 @@ export interface OperationSuccessParseInput {
 export interface OperationRequestInput {
   readonly baseAddress: string;
   readonly input: OperationInputs[keyof OperationInputs];
-  readonly signal: AbortSignal | undefined;
+  readonly signal:
+    | Pick<
+        AbortSignal,
+        "aborted" | "addEventListener" | "reason" | "removeEventListener" | "throwIfAborted"
+      >
+    | undefined;
   readonly specification: OperationSpecification;
 }

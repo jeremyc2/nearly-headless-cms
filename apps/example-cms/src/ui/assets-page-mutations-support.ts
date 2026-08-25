@@ -1,9 +1,4 @@
-import {
-  Effect,
-  managementClient,
-  queryClient,
-  useMutation,
-} from "./assets-page-imports.ts";
+import { Effect, managementClient, queryClient, useMutation } from "./assets-page-imports.ts";
 
 export const useAssetsPageMutations = (input: {
   readonly setDeletionAssetId: (assetId: string | undefined) => void;

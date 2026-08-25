@@ -51,7 +51,9 @@ const { expandFieldGroup } = fieldGroupSupport,
   { groupExpansionPaths } = pathGroupingSupport,
   { expandRelationshipEntryId, expandRelationshipField } = relationshipSupport,
   { relationshipKind } = referencesSupport,
-  expandNestedFieldGroup = (input: ExpandObjectFieldInput & ResolvedExpandableField): void => {
+  expandNestedFieldGroup = <Input extends ExpandObjectFieldInput & ResolvedExpandableField>(
+    input: Readonly<Input>,
+  ): void => {
     const {
       ancestorEntryIds,
       expansion,
@@ -91,18 +93,19 @@ const { expandFieldGroup } = fieldGroupSupport,
       values,
     });
   },
-  expandObject = ({
-    ancestorEntryIds,
-    expansion,
-    fields,
-    generation,
-    object,
-    parentPath = "",
-    snapshot,
-  }: ExpandObjectInput): JsonObject => {
-    const values: Record<string, JsonValue> = Object.fromEntries(
-      Object.entries(object).map(([key, value]) => [key, cloneJson(value)]),
-    );
+  expandObject = <Input extends ExpandObjectInput>(input: Readonly<Input>): JsonObject => {
+    const {
+        ancestorEntryIds,
+        expansion,
+        fields,
+        generation,
+        object,
+        parentPath = "",
+        snapshot,
+      } = input,
+      values: Record<string, JsonValue> = Object.fromEntries(
+        Object.entries(object).map(([key, value]) => [key, cloneJson(value)]),
+      );
     for (const [fieldKey, nestedPaths] of groupExpansionPaths(expansion)) {
       expandObjectField({
         ancestorEntryIds,
@@ -119,7 +122,7 @@ const { expandFieldGroup } = fieldGroupSupport,
     }
     return values;
   },
-  expandObjectField = (input: ExpandObjectFieldInput): void => {
+  expandObjectField = <Input extends ExpandObjectFieldInput>(input: Readonly<Input>): void => {
     const resolvedField = resolveExpandableField(input);
     if (resolvedField === undefined) {
       return;
@@ -146,17 +149,14 @@ const { expandFieldGroup } = fieldGroupSupport,
       values: input.values,
     });
   },
-  expandRepresentation = ({
-    ancestorEntryIds = new Set(),
-    entry,
-    expansion,
-    generation,
-    snapshot,
-  }: ExpandRepresentationInput): Representation => {
+  expandRepresentation = <Input extends ExpandRepresentationInput>(
+    input: Readonly<Input>,
+  ): Representation => {
+    const { ancestorEntryIds = new Set(), entry, expansion, generation, snapshot } = input,
+      contentType = snapshot.contentTypes.get(entry.contentTypeId);
     if (expansion === undefined || expansion.length === 0) {
       return structuredClone(entry);
     }
-    const contentType = snapshot.contentTypes.get(entry.contentTypeId);
     if (contentType === undefined) {
       throw InvalidInput.make({ message: `Unknown Content Type ${entry.contentTypeId}` });
     }
@@ -173,17 +173,12 @@ const { expandFieldGroup } = fieldGroupSupport,
       }),
     };
   },
-  resolveExpandableField = ({
-    fieldKey,
-    fields,
-    parentPath,
-    values,
-  }: ExpandObjectFieldInput): ResolvedExpandableField | undefined => {
-    let fieldPath = fieldKey;
-    if (parentPath.length > 0) {
-      fieldPath = `${parentPath}.${fieldKey}`;
-    }
-    const field = fields.find((candidate) => candidate.key === fieldKey),
+  resolveExpandableField = <Input extends ExpandObjectFieldInput>(
+    input: Readonly<Input>,
+  ): ResolvedExpandableField | undefined => {
+    const { fieldKey, fields, parentPath, values } = input,
+      field = fields.find((candidate) => candidate.key === fieldKey),
+      fieldPath = [parentPath, fieldKey].filter((segment) => segment.length > 0).join("."),
       value = values[fieldKey];
     if (field === undefined) {
       throw InvalidInput.make({ message: `Field ${fieldPath} is not expandable` });

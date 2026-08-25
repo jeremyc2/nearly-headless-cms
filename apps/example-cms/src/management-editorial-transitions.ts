@@ -25,7 +25,7 @@ const { requiredParameter } = managementSupport,
     currentValues,
     status,
     values,
-  }: ApplyPublishedTimestampInput): Effect.Effect<ContentDefinition.JsonObject> =>
+  }: Readonly<ApplyPublishedTimestampInput>): Effect.Effect<ContentDefinition.JsonObject> =>
     Effect.gen(function* applyPublishedTimestampToValues() {
       if (
         contentTypeId === "post" &&
@@ -41,7 +41,7 @@ const { requiredParameter } = managementSupport,
     contentTypeId,
     entryId,
     status,
-  }: LoadTransitionEntryInput) =>
+  }: Readonly<LoadTransitionEntryInput>) =>
     Effect.gen(function* loadTransitionEntryState() {
       const current = yield* cms.getEntry({ contentTypeId, entryId });
       if (contentTypeId === "post" && status === "published") {

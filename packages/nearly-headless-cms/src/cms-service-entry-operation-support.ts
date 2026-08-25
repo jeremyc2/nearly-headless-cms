@@ -1,10 +1,5 @@
 import { Clock, DateTime, Effect } from "effect";
-import {
-  type CmsError,
-  Conflict,
-  NotFound,
-  ReferenceBlockedDeletion,
-} from "./cms-error.ts";
+import { type CmsError, Conflict, NotFound, ReferenceBlockedDeletion } from "./cms-error.ts";
 import type {
   CmsServiceOperationContext,
   CompiledContentType,
@@ -19,7 +14,7 @@ import { cloneJson } from "./internal/json.ts";
 import cmsSupport from "./cms-support.ts";
 
 interface CommitEntryWithoutHistoryInput {
-  readonly context: CmsServiceOperationContext;
+  readonly context: Readonly<CmsServiceOperationContext>;
   readonly entry: Representation;
   readonly generation: number;
   readonly records: Map<string, EntryRecord>;
@@ -83,7 +78,7 @@ const { applyRetention, attempt, collectReferences, liveRecords } = cmsSupport,
     return Effect.void;
   },
   commitEntryWithHistory = (
-    context: CmsServiceOperationContext,
+    context: Readonly<CmsServiceOperationContext>,
     input: HistoryCommitInput,
   ): Effect.Effect<MutationResult, CmsError> =>
     Effect.gen(function* commitWithHistory() {
@@ -108,7 +103,7 @@ const { applyRetention, attempt, collectReferences, liveRecords } = cmsSupport,
     entry,
     generation,
     records,
-  }: CommitEntryWithoutHistoryInput): Effect.Effect<Representation, CmsError> =>
+  }: Readonly<CommitEntryWithoutHistoryInput>): Effect.Effect<Representation, CmsError> =>
     Effect.gen(function* commitWithoutHistory() {
       records.set(entry.id, { entry, revisions: [] });
       yield* context.persistence.commitGeneration(generation, records);

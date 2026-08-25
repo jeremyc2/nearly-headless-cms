@@ -1,4 +1,12 @@
 import { type JsonObject, isJsonObject } from "../internal/json.ts";
+import type {
+  ReadonlyTransportAbortSignal,
+  ReadonlyTransportRequest,
+} from "./http-transport-readonly-types.ts";
+import {
+  httpStatusPayloadTooLarge,
+  httpStatusUnsupportedMediaType,
+} from "./http-status-codes.ts";
 import type { IngestInput } from "../asset.ts";
 import { InvalidInput } from "../cms-error.ts";
 import { RequestFailureError } from "./http-transport-request-failure.ts";
@@ -16,12 +24,12 @@ const alternativeTextProperty = (
     }
     return { defaultAlternativeText: value };
   },
-  assertJsonMediaType = (request: Request): void => {
+  assertJsonMediaType = (request: Pick<Request, "headers">): void => {
     if (!(request.headers.get("content-type") ?? "").toLowerCase().startsWith("application/json")) {
       throw new RequestFailureError(
         "UnsupportedMediaType",
         "Expected application/json request media",
-        415,
+        httpStatusUnsupportedMediaType,
       );
     }
   },
@@ -89,12 +97,15 @@ const alternativeTextProperty = (
     return parsed;
   },
   // oxlint-disable-next-line effecttsgo/async-function, effecttsgo/missing-pipeable-signature -- Web Request.arrayBuffer is Promise-based and this helper is not a pipeable Effect API.
-  parseJson = async (request: Request, maximumByteLength: number): Promise<JsonObject> => {
+  parseJson = async (
+    request: Pick<Request, "arrayBuffer" | "headers" | "json" | "method">,
+    maximumByteLength: number,
+  ): Promise<JsonObject> => {
     assertJsonMediaType(request);
     const bytes = await readBoundedJsonBytes(request, maximumByteLength);
     return parseJsonObjectFromBytes(bytes);
   },
-  parseJsonObjectFromBytes = (bytes: Uint8Array): JsonObject => {
+  parseJsonObjectFromBytes = <Bytes extends Uint8Array>(bytes: Readonly<Bytes>): JsonObject => {
     let value: unknown = undefined;
     try {
       value = JSON.parse(new TextDecoder().decode(bytes));
@@ -106,14 +117,17 @@ const alternativeTextProperty = (
     }
     return value;
   },
-  readBoundedJsonBytes = (request: Request, maximumByteLength: number): Promise<Uint8Array> =>
+  readBoundedJsonBytes = (
+    request: Pick<Request, "arrayBuffer">,
+    maximumByteLength: number,
+  ): Promise<Uint8Array> =>
     request.arrayBuffer().then((buffer) => {
       const bytes = new Uint8Array(buffer);
       if (bytes.byteLength > maximumByteLength) {
         throw new RequestFailureError(
           "PayloadTooLarge",
           "JSON request body exceeds the configured limit",
-          413,
+          httpStatusPayloadTooLarge,
         );
       }
       return bytes;
@@ -155,8 +169,8 @@ const alternativeTextProperty = (
   },
   // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- multipart parsing is Promise-based and this helper is not a pipeable Effect API.
   stageMultipartAsset = (
-    request: Request,
-    signal: AbortSignal,
+    request: ReadonlyTransportRequest,
+    signal: ReadonlyTransportAbortSignal,
     limits: MultipartAssetLimits,
   ): ReturnType<typeof requestParsingSupport.stageMultipartAsset> =>
     requestParsingSupport.stageMultipartAsset({
@@ -182,4 +196,7 @@ export default {
 
 export { parseJson, stageMultipartAsset };
 
-export type { MultipartAssetLimits, StagedAssetUpload } from "./http-transport-request-parsing-support.ts";
+export type {
+  MultipartAssetLimits,
+  StagedAssetUpload,
+} from "./http-transport-request-parsing-support.ts";
