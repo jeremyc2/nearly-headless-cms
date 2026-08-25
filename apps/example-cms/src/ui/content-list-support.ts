@@ -52,8 +52,9 @@ export const contentListCreateIdentifierLength = 8,
     }
     return { name: `Untitled ${suffix}`, slug: `untitled-${suffix}` };
   },
-  contentListEntryFromCreateResult = <Result extends { entry: { id: string } } | { id: string }>(
-    result: Readonly<Result>,
+  contentListEntryFromCreateResult = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- create results use CMS mutation response union shapes.
+    result: { entry: { id: string } } | { id: string },
   ): { id: string } => {
     if ("entry" in result) {
       return result.entry;

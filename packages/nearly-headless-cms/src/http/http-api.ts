@@ -116,24 +116,24 @@ const firstPathCharacterIndex = 0,
     HttpApi.make(identifier)
       .add(zGroupFromDocument(groupIdentifier, document))
       .annotate(EffectOpenApi.Transform, (): ContractOpenApi.Document => ({ ...document })),
-  zMakeHeadless = <Operations extends readonly DeliveryOperation[]>(
-    operations: Operations,
-  ): Operations extends readonly DeliveryOperation[]
-    ? ContractApi<"headlessApi", "headless">
-    : never => zMakeApi("headlessApi", "headless", ContractOpenApi.headless(operations)),
-  zMakeHeadlessDocument = <Operations extends readonly DeliveryOperation[]>(
-    operations: Operations,
-  ): Operations extends readonly DeliveryOperation[] ? EffectOpenApi.OpenAPISpec : never =>
-    EffectOpenApi.fromApi(zMakeHeadless(operations)),
-  zMakeManagement = <Operations extends readonly ManagementOperation[]>(
-    operations: Operations,
-  ): Operations extends readonly ManagementOperation[]
-    ? ContractApi<"managementApi", "management">
-    : never => zMakeApi("managementApi", "management", ContractOpenApi.management(operations)),
-  zMakeManagementDocument = <Operations extends readonly ManagementOperation[]>(
-    operations: Operations,
-  ): Operations extends readonly ManagementOperation[] ? EffectOpenApi.OpenAPISpec : never =>
-    EffectOpenApi.fromApi(zMakeManagement(operations));
+  zMakeHeadless = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- OpenAPI operation descriptors are read while building Effect HTTP API declarations.
+    operations: readonly DeliveryOperation[],
+  ): ContractApi<"headlessApi", "headless"> =>
+    zMakeApi("headlessApi", "headless", ContractOpenApi.headless(operations)),
+  zMakeHeadlessDocument = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- OpenAPI operation descriptors are read while building Effect HTTP API declarations.
+    operations: readonly DeliveryOperation[],
+  ): EffectOpenApi.OpenAPISpec => EffectOpenApi.fromApi(zMakeHeadless(operations)),
+  zMakeManagement = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- OpenAPI operation descriptors are read while building Effect HTTP API declarations.
+    operations: readonly ManagementOperation[],
+  ): ContractApi<"managementApi", "management"> =>
+    zMakeApi("managementApi", "management", ContractOpenApi.management(operations)),
+  zMakeManagementDocument = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- OpenAPI operation descriptors are read while building Effect HTTP API declarations.
+    operations: readonly ManagementOperation[],
+  ): EffectOpenApi.OpenAPISpec => EffectOpenApi.fromApi(zMakeManagement(operations));
 
 /** Effect HTTP API declarations and canonical OpenAPI documents. */
 export {

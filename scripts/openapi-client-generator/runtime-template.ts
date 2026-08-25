@@ -107,7 +107,12 @@ const runtimeAfterMakeGeneratedClient = `
     });
   }
   `,
-  runtimeBeforeSpecifications = `const appendQueryParameters = (
+  runtimeBeforeSpecifications = `const toAbortSignal = (
+    signal: Pick<AbortSignal, "aborted" | "addEventListener" | "reason" | "removeEventListener" | "throwIfAborted">,
+  ): AbortSignal =>
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- fetch requires AbortSignal; generated clients pass the runtime signal.
+    signal as unknown as AbortSignal,
+  appendQueryParameters = (
     requestUrl: Pick<URL, "pathname" | "searchParams">,
     queryParameters: Readonly<Record<string, unknown>>,
   ): void => {
@@ -163,7 +168,7 @@ const runtimeAfterMakeGeneratedClient = `
     baseAddress: string,
     identifier: Identifier,
   ): ((
-    input: Readonly<OperationInputs[Identifier]>,
+    input: OperationInputs[Identifier],
     signal?: Pick<AbortSignal, "aborted" | "addEventListener" | "reason" | "removeEventListener" | "throwIfAborted">,
   ) => Effect.Effect<
     OperationResponses[Identifier],
@@ -177,12 +182,15 @@ const runtimeAfterMakeGeneratedClient = `
         specification: operationSpecifications[identifier],
       }),
   /* oxlint-disable effecttsgo/global-fetch, effecttsgo/global-fetch-in-effect -- generated clients intentionally use the platform fetch boundary so callers can supply the browser or server runtime. */
-  fetchOperationResponse = (request: Readonly<OperationFetchRequest>): Promise<Response> =>
+  fetchOperationResponse = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- OperationFetchRequest carries optional readonly abort signal bridge fields.
+    request: Readonly<OperationFetchRequest>,
+  ): Promise<Response> =>
     fetch(request.requestUrl, {
       body: request.body,
       headers: request.headers,
       method: request.method,
-      signal: request.signal,
+      signal: request.signal === undefined ? undefined : toAbortSignal(request.signal),
     }).catch((error) => {
       throw TransportFailure.make({ message: connectionFailureMessage(error) });
     }),
@@ -230,7 +238,7 @@ function requestOperation({
   runtimeTypes = `export interface RequestOperationInput<Identifier extends keyof OperationInputs> {
   readonly baseAddress: string;
   readonly input: OperationInputs[Identifier];
-  readonly signal?: Pick<AbortSignal, keyof AbortSignal>;
+  readonly signal?: Pick<AbortSignal, "aborted" | "addEventListener" | "reason" | "removeEventListener" | "throwIfAborted">;
   readonly specification: OperationSpecification;
 }
 
@@ -238,7 +246,7 @@ export interface OperationFetchRequest {
   readonly body: BodyInit | undefined;
   readonly headers: Headers;
   readonly method: string;
-  readonly requestUrl: Pick<URL, "pathname" | "searchParams">;
+  readonly requestUrl: URL;
   readonly signal: Pick<AbortSignal, "aborted" | "addEventListener" | "reason" | "removeEventListener" | "throwIfAborted"> | undefined;
 }
 

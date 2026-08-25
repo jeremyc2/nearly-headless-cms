@@ -1,4 +1,6 @@
+/* oxlint-disable eslint/sort-imports -- export route imports follow dependency grouping. */
 import { type Cms, CmsError } from "nearly-headless-cms";
+import type { HttpContract, ReadonlyTransportRequest } from "nearly-headless-cms/http";
 import { Effect, Schema } from "effect";
 import {
   authorDefinitionRequirement,
@@ -6,14 +8,13 @@ import {
   postDefinitionRequirement,
   taxonomyDefinitionRequirement,
 } from "./delivery-definition-requirements.ts";
-import deliverySupport, { MAX_PUBLIC_EXPORT_BYTES } from "./delivery-support.ts";
-import type { HttpContract } from "nearly-headless-cms/http";
-import { PublicBlogExport } from "./wire-schemas.ts";
 import deliveryPublicContent from "./delivery-public-content.ts";
+import deliverySupport, { MAX_PUBLIC_EXPORT_BYTES } from "./delivery-support.ts";
+import { PublicBlogExport } from "./wire-schemas.ts";
 
 interface ExportPublicBlogResponseInput {
   readonly bytes: Uint8Array;
-  readonly request: Request;
+  readonly request: ReadonlyTransportRequest;
   readonly requestId: string;
   readonly snapshot: Cms.ConsistentReadSnapshot["definitionSnapshot"];
 }

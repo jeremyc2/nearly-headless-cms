@@ -58,7 +58,8 @@ useEntryEditorEditorialMutation = ({
 }: {
   readonly contentTypeId: string;
   readonly entryId: string;
-  readonly onUpdated: (values: Readonly<Record<string, unknown>>) => void;
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- React callbacks receive mutable draft value maps from the editor.
+  readonly onUpdated: (values: Record<string, unknown>) => void;
   readonly writeToken?: string;
 }) =>
   useMutation({
@@ -125,7 +126,8 @@ useEntryEditorSaveMutation = ({
     readonly revisionNumber: number;
     readonly writeToken: string;
   }) => void;
-  readonly onSaved: (values: Readonly<Record<string, unknown>>) => void;
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- React callbacks receive mutable draft value maps from the editor.
+  readonly onSaved: (values: Record<string, unknown>) => void;
 }) =>
   useMutation({
     mutationFn: ({

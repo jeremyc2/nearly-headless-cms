@@ -2,6 +2,7 @@ import type { RichText } from "nearly-headless-cms";
 import { emptyIndex } from "./transactions-constants.ts";
 import transactionsEditorAdapterSupport from "./transactions-editor-adapter-support.ts";
 import transactionsSupport from "./transactions-support.ts";
+/* oxlint-disable typescript/no-unnecessary-type-parameters -- React panel helpers preserve local prop aliases for component call sites. */
 
 type RenderBlock = (
   block: RichText.BlockNode,
@@ -11,9 +12,10 @@ type RenderBlock = (
 
 const { blockElementName } = transactionsEditorAdapterSupport,
   { conditionalValue } = transactionsSupport,
-  applyTextMarks = <Text extends HTMLSpanElement>(
+  applyTextMarks = (
     marks: readonly RichText.Mark[] | undefined,
-    text: Readonly<Text>,
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- DOM spans are mutated while applying rich-text marks.
+    text: HTMLSpanElement,
   ): void => {
     if (marks?.includes("bold") === true) {
       text.style.fontWeight = "700";
@@ -25,20 +27,16 @@ const { blockElementName } = transactionsEditorAdapterSupport,
       text.className = "rich-inline-code";
     }
   },
-  assignTextSpanIndices = <
-    Text extends HTMLSpanElement,
-    Input extends {
-      readonly blockIndex: number;
-      readonly inlineIndex: number;
-      readonly listItemIndex: number | undefined;
-      readonly text: Readonly<Text>;
-    },
-  >({
-    blockIndex,
-    inlineIndex,
-    listItemIndex,
-    text,
-  }: Readonly<Input>): void => {
+  assignTextSpanIndices = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- DOM spans are mutated while assigning editor selection indices.
+    input: {
+    readonly blockIndex: number;
+    readonly inlineIndex: number;
+    readonly listItemIndex: number | undefined;
+    readonly text: HTMLSpanElement;
+  },
+  ): void => {
+    const { blockIndex, inlineIndex, listItemIndex, text } = input;
     text.dataset["blockIndex"] = String(blockIndex);
     text.dataset["inlineIndex"] = String(inlineIndex);
     if (listItemIndex !== undefined) {
@@ -74,7 +72,7 @@ const { blockElementName } = transactionsEditorAdapterSupport,
       readonly blockIndex: number | undefined;
       readonly element: HTMLElement;
       readonly listItemIndex: number | undefined;
-      readonly renderBlock: Readonly<RenderBlockType>;
+      readonly renderBlock: RenderBlockType;
     },
   >({
     block,
@@ -192,3 +190,4 @@ const { blockElementName } = transactionsEditorAdapterSupport,
 export default {
   renderBlockElement,
 };
+

@@ -4,6 +4,7 @@ import {
 } from "./entry-editor-story-canvas-imports.ts";
 import storyCanvasAssetsSupport from "./entry-editor-story-canvas-assets-support.tsx";
 import storyCanvasFieldsSupport from "./entry-editor-story-canvas-fields-support.tsx";
+/* oxlint-disable typescript/no-unnecessary-type-parameters -- React panel helpers preserve local prop aliases for component call sites. */
 
 const { EntryEditorContentTypeAssetFields } = storyCanvasAssetsSupport,
   {
@@ -20,7 +21,7 @@ const { EntryEditorContentTypeAssetFields } = storyCanvasAssetsSupport,
     props: {
       readonly assets: readonly Readonly<Asset>[] | undefined;
       readonly contentTypeId: string;
-      readonly onUpdateField: Readonly<UpdateField>;
+      readonly onUpdateField: UpdateField;
       readonly title: string;
       readonly titleField: string;
       readonly values: Readonly<Values>;
@@ -45,7 +46,7 @@ const { EntryEditorContentTypeAssetFields } = storyCanvasAssetsSupport,
   }: {
     readonly assets: readonly Readonly<Asset>[] | undefined;
     readonly contentTypeId: string;
-    readonly onUpdateField: Readonly<UpdateField>;
+    readonly onUpdateField: UpdateField;
     readonly title: string;
     readonly titleField: string;
     readonly values: Readonly<Values>;
@@ -83,3 +84,4 @@ const { EntryEditorContentTypeAssetFields } = storyCanvasAssetsSupport,
   };
 
 export { EntryEditorStoryCanvas };
+

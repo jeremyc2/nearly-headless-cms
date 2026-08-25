@@ -4,6 +4,7 @@ import {
 } from "./entry-editor-publication-panel-imports.ts";
 import publicationPanelFieldsSupport from "./entry-editor-publication-panel-fields-support.tsx";
 import publicationPanelSectionsSupport from "./entry-editor-publication-panel-sections-support.tsx";
+/* oxlint-disable typescript/no-unnecessary-type-parameters -- React panel helpers preserve local prop aliases for component call sites. */
 
 const { EntryEditorPublicationHeader } = publicationPanelFieldsSupport,
   { EntryEditorPublicationPanelSections } = publicationPanelSectionsSupport,
@@ -21,8 +22,8 @@ const { EntryEditorPublicationHeader } = publicationPanelFieldsSupport,
     readonly contentTypeId: string;
     readonly editorialError?: Readonly<ErrorType>;
     readonly isEditorialPending: boolean;
-    readonly onRequestEditorialConfirmation: Readonly<RequestConfirmation>;
-    readonly onUpdateField: Readonly<UpdateField>;
+    readonly onRequestEditorialConfirmation: RequestConfirmation;
+    readonly onUpdateField: UpdateField;
     readonly tags: readonly Readonly<Tag>[] | undefined;
     readonly values: Readonly<Values>;
   }) => (
@@ -33,3 +34,4 @@ const { EntryEditorPublicationHeader } = publicationPanelFieldsSupport,
   );
 
 export { EntryEditorPublicationPanel };
+

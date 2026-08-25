@@ -10,13 +10,10 @@ if (Bun.env["ACCEPTANCE_SERVERS_READY"] === "1") {
 }
 const baselineDirectory = join(import.meta.dir, "baselines"),
   // oxlint-disable-next-line effecttsgo/async-function -- screenshot and filesystem APIs are Promise-based Bun platform operations.
-  captureAndCheckBaseline = async <
-    View extends Bun.WebView,
-    Viewport extends { readonly height: number; readonly width: number },
-  >(
+  captureAndCheckBaseline = async <View extends Bun.WebView>(
     view: Readonly<View>,
     pageName: string,
-    viewport: Readonly<Viewport>,
+    viewport: { readonly height: number; readonly width: number },
   ): Promise<void> => {
     const baselinePath = join(
         baselineDirectory,

@@ -9,7 +9,8 @@ const listComponentSchemaNames = (document: Readonly<Record<string, unknown>>): 
     if (value === null || typeof value !== "object" || Array.isArray(value)) {
       throw new Error(`OpenAPI generator expected ${description}`);
     }
-    return value;
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- OpenAPI schema objects are validated as non-null objects before use.
+    return value as Readonly<Record<string, unknown>>;
   };
 
 export { listComponentSchemaNames };

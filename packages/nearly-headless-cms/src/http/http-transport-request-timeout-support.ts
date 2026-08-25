@@ -86,23 +86,15 @@ const { requestFailureResponse } = transportResponse,
   },
   // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- Web handler timeout wrapper is not a pipeable Effect API.
   wrapHandlerWithTimeout =
-    <
-      HandleRequest extends (
+    (
+      handleRequest: (
         request: ReadonlyTransportHandlerRequest,
         signal: ReadonlyTransportAbortSignal,
         requestId: string,
       ) => Promise<Response>,
-    >(
-      handleRequest: HandleRequest,
       requestIdentifier: () => string,
       requestTimeoutMilliseconds: number,
-    ): HandleRequest extends (
-      request: ReadonlyTransportHandlerRequest,
-      signal: ReadonlyTransportAbortSignal,
-      requestId: string,
-    ) => Promise<Response>
-      ? Handler
-      : never =>
+    ): Handler =>
     // oxlint-disable-next-line effecttsgo/async-function -- Handler is a Web-standard Promise<Response> callback.
     async (request): Promise<Response> => {
       const controller = new AbortController(),

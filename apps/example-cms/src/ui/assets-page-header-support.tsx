@@ -1,4 +1,5 @@
 import { type RefObject, type UseMutationResult } from "./assets-page-imports.ts";
+/* oxlint-disable typescript/no-unnecessary-type-parameters -- React panel helpers preserve local prop aliases for component call sites. */
 
 const AssetsPageFileInputs = <
     InputRef extends RefObject<HTMLInputElement | null>,
@@ -17,10 +18,10 @@ const AssetsPageFileInputs = <
     upload,
   }: {
     readonly input: Readonly<InputRef>;
-    readonly replace: Readonly<ReplaceMutation>;
+    readonly replace: ReplaceMutation;
     readonly replacementAssetId: string | undefined;
     readonly replacementInput: Readonly<ReplacementInputRef>;
-    readonly upload: Readonly<UploadMutation>;
+    readonly upload: UploadMutation;
   }) => (
     <>
       <input
@@ -68,10 +69,10 @@ const AssetsPageFileInputs = <
   }: {
     readonly chooseFile: () => void;
     readonly input: Readonly<InputRef>;
-    readonly replace: Readonly<ReplaceMutation>;
+    readonly replace: ReplaceMutation;
     readonly replacementAssetId: string | undefined;
     readonly replacementInput: Readonly<ReplacementInputRef>;
-    readonly upload: Readonly<UploadMutation>;
+    readonly upload: UploadMutation;
   }) => (
     <header className="page-header">
       <div>
@@ -111,9 +112,9 @@ const AssetsPageFileInputs = <
     replace,
     upload,
   }: {
-    readonly deleteImage: Readonly<DeleteMutation>;
-    readonly replace: Readonly<ReplaceMutation>;
-    readonly upload: Readonly<UploadMutation>;
+    readonly deleteImage: DeleteMutation;
+    readonly replace: ReplaceMutation;
+    readonly upload: UploadMutation;
   }) => (
     <>
       {upload.isSuccess && <p role="status">Asset uploaded successfully.</p>}
@@ -143,3 +144,4 @@ const AssetsPageFileInputs = <
   );
 
 export { AssetsPageHeader, AssetsPageStatus };
+

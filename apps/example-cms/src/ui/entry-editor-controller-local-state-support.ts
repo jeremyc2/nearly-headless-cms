@@ -12,13 +12,14 @@ import {
   useRef,
   useState,
 } from "./entry-editor-controller-imports.ts";
+/* oxlint-disable typescript/no-unnecessary-type-parameters -- React panel helpers preserve local prop aliases for component call sites. */
 
 const { useEntryEditorControllerMutations } = entryEditorControllerMutationsSupport,
   useEntryEditorControllerFieldBindings = <
     Values extends Record<string, unknown>,
     SetValues extends Dispatch<SetStateAction<Record<string, unknown>>>,
   >(input: {
-    readonly setValues: Readonly<SetValues>;
+    readonly setValues: SetValues;
     readonly values: Readonly<Values>;
   }) => {
     const title = stringValue(input.values[titleFieldFrom(input.values)], ""),
@@ -110,3 +111,4 @@ export default {
   useEntryEditorControllerLocalState,
   useEntryEditorControllerMutationBindings,
 };
+

@@ -11,6 +11,7 @@ import {
   stringArrayValue,
   stringValue,
 } from "./entry-editor-publication-panel-imports.ts";
+/* oxlint-disable typescript/no-unnecessary-type-parameters -- React panel helpers preserve local prop aliases for component call sites. */
 
 const EntryEditorAuthorField = <
     Values extends Record<string, unknown>,
@@ -22,7 +23,7 @@ const EntryEditorAuthorField = <
     values,
   }: {
     readonly authors: readonly Readonly<Author>[] | undefined;
-    readonly onUpdateField: Readonly<UpdateField>;
+    readonly onUpdateField: UpdateField;
     readonly values: Readonly<Values>;
   }) => (
     <label className="field">
@@ -52,7 +53,7 @@ const EntryEditorAuthorField = <
     values,
   }: {
     readonly categories: readonly Readonly<Category>[] | undefined;
-    readonly onUpdateField: Readonly<UpdateField>;
+    readonly onUpdateField: UpdateField;
     readonly values: Readonly<Values>;
   }) => (
     <label className="field">
@@ -82,7 +83,7 @@ const EntryEditorAuthorField = <
     onRequestEditorialConfirmation,
   }: {
     readonly isEditorialPending: boolean;
-    readonly onRequestEditorialConfirmation: Readonly<RequestConfirmation>;
+    readonly onRequestEditorialConfirmation: RequestConfirmation;
   }) => (
     <div className="editor-actions">
       <button
@@ -140,7 +141,7 @@ const EntryEditorAuthorField = <
     values,
   }: {
     readonly isEditorialPending: boolean;
-    readonly onRequestEditorialConfirmation: Readonly<RequestConfirmation>;
+    readonly onRequestEditorialConfirmation: RequestConfirmation;
     readonly values: Readonly<Values>;
   }) => (
     <button
@@ -169,7 +170,7 @@ const EntryEditorAuthorField = <
   }: {
     readonly authors: readonly Readonly<Author>[] | undefined;
     readonly categories: readonly Readonly<Category>[] | undefined;
-    readonly onUpdateField: Readonly<UpdateField>;
+    readonly onUpdateField: UpdateField;
     readonly tags: readonly Readonly<Tag>[] | undefined;
     readonly values: Readonly<Values>;
   }) => (
@@ -225,7 +226,7 @@ const EntryEditorAuthorField = <
     tags,
     values,
   }: {
-    readonly onUpdateField: Readonly<UpdateField>;
+    readonly onUpdateField: UpdateField;
     readonly tags: readonly Readonly<Tag>[] | undefined;
     readonly values: Readonly<Values>;
   }) => (
@@ -259,3 +260,4 @@ export default {
   EntryEditorPublicationHeader,
   EntryEditorPublicationStatusField,
 };
+

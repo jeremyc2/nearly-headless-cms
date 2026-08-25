@@ -8,7 +8,6 @@ import type {
   ReadonlyCompositionEvent,
   ReadonlyDragEvent,
   ReadonlyEditableHost,
-  ReadonlyHtmlElement,
   ReadonlyInputEvent,
   ReadonlyKeyboardEvent,
 } from "./readonly-dom-types.ts";
@@ -38,7 +37,7 @@ const { conditionalValue } = transactionsSupport,
     }
     return undefined;
   },
-  blockElementName = <Block extends RichText.BlockNode>(block: Readonly<Block>): string => {
+  blockElementName = (block: RichText.BlockNode): string => {
     switch (block.type) {
       case "asset-reference": {
         return "figure";
@@ -86,7 +85,8 @@ const { conditionalValue } = transactionsSupport,
         render();
       }
     });
-    observer.observe(host, browserAdapterObserverOptions);
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- ReadonlyEditableHost is a Pick view of the editable div passed at runtime.
+    observer.observe(host as unknown as Node, browserAdapterObserverOptions);
     return observer;
   },
   detachBrowserAdapterEventListeners = (
@@ -126,8 +126,9 @@ const { conditionalValue } = transactionsSupport,
     }
     return undefined;
   },
-  resolveElementFromNode = <NodeType extends globalThis.Node | null>(
-    node: Readonly<NodeType>,
+  resolveElementFromNode = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- DOM selection nodes are inspected without retaining references.
+    node: globalThis.Node | null,
   ): globalThis.Element | null | undefined => {
     if (node === null) {
       return undefined;
@@ -140,23 +141,23 @@ const { conditionalValue } = transactionsSupport,
     }
     return undefined;
   },
-  selectionPositionFromNode = <
-    NodeType extends globalThis.Node | null,
-    Host extends ReadonlyHtmlElement,
-  >(
-    node: Readonly<NodeType>,
+  selectionPositionFromNode = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- DOM selection nodes are inspected without retaining references.
+    node: globalThis.Node | null,
     offset: number,
-    host: Readonly<Host>,
+    host: ReadonlyEditableHost,
   ): SelectionPosition | undefined => {
     const element = resolveElementFromNode(node),
-      text = element?.closest<ReadonlyHtmlElement>("[data-block-index][data-inline-index]");
-    if (text === undefined || text === null || !host.contains(text)) {
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- closest runs on the runtime Element resolved from the selection node.
+      text = element?.closest("[data-block-index][data-inline-index]") as HTMLElement | null;
+    if (text === null || !host.contains(text)) {
       return undefined;
     }
     return selectionPositionFromResolvedText(text, offset);
   },
-  selectionPositionFromResolvedText = <Text extends ReadonlyHtmlElement>(
-    text: Readonly<Text>,
+  selectionPositionFromResolvedText = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- DOM text spans are read while mapping native selection offsets.
+    text: HTMLElement,
     offset: number,
   ): SelectionPosition => {
     const blockIndex = Number(text.dataset["blockIndex"]),

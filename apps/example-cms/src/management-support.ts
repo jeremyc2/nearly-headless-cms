@@ -5,6 +5,7 @@ import {
   type Entry,
   type EntryQuery,
 } from "nearly-headless-cms";
+import { type ReadonlyTransportRequest, toWebRequest } from "nearly-headless-cms/http";
 import { Effect } from "effect";
 
 const   appendQueryPage = <
@@ -77,10 +78,10 @@ const   appendQueryPage = <
     }
     return value;
   },
-  requiredWriteToken = <RequestType extends Request>(
-    request: Readonly<RequestType>,
+  requiredWriteToken = (
+    request: ReadonlyTransportRequest,
   ): Effect.Effect<string, CmsError.InvalidInput> => {
-    const writeToken = request.headers.get("cms-write-token");
+    const writeToken = toWebRequest(request).headers.get("cms-write-token");
     if (writeToken === null || writeToken.length === 0) {
       return Effect.fail(CmsError.InvalidInput.make({ message: "CMS-Write-Token is required" }));
     }

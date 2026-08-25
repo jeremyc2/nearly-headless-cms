@@ -6,6 +6,7 @@ import {
   dialogHeading,
   richTextInsertDialogSupport,
 } from "./entry-editor-rich-text-insert-dialog-bindings.ts";
+/* oxlint-disable typescript/no-unnecessary-type-parameters -- React panel helpers preserve local prop aliases for component call sites. */
 
 const { InsertDialogActions, RichTextAssetFields, RichTextEntryFields, RichTextLinkFields } =
     richTextInsertDialogSupport,
@@ -23,7 +24,7 @@ const { InsertDialogActions, RichTextAssetFields, RichTextEntryFields, RichTextL
     readonly adapter: Readonly<AdapterRef>;
     readonly assets: readonly AssetRepresentation[] | undefined;
     readonly closeDialog: () => void;
-    readonly dialog: Readonly<Dialog>;
+    readonly dialog: Dialog;
     readonly entryOptions: readonly {
       readonly identifier: string;
       readonly label: string;
@@ -59,3 +60,4 @@ const { InsertDialogActions, RichTextAssetFields, RichTextEntryFields, RichTextL
   );
 
 export { EntryEditorRichTextInsertDialog };
+

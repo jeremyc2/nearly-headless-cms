@@ -97,10 +97,9 @@ const { canonicalizeJsonValue, parseBody, requiredParameter } = deliverySupport,
           postIdentifier,
         });
       }),
-  pendingCommentReceipt = <
-    Result extends { id: string } | { entry: { id: string }; writeToken: string },
-  >(
-    result: Readonly<Result>,
+  pendingCommentReceipt = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- mutation receipts use discriminated union shapes from CMS operations.
+    result: { id: string } | { entry: { id: string }; writeToken: string },
   ): { status: "pending"; submissionId: string } => ({
     status: "pending",
     submissionId: submissionIdentifier(result),
@@ -175,15 +174,16 @@ const { canonicalizeJsonValue, parseBody, requiredParameter } = deliverySupport,
         postIdentifier: input.postIdentifier,
       });
     }),
-  validateCommentFields = <Body extends Record<string, unknown>>(
-    body: Readonly<Body>,
+  validateCommentFields = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- comment submission bodies are validated as loosely typed JSON records.
+    body: Record<string, unknown>,
   ): Effect.Effect<
     { commentBody: string; displayName: string; websiteUrl: string | null | undefined },
     CmsError.InvalidInput
   > => {
     const commentBody = body["body"],
-      { displayName } = body,
-      { websiteUrl } = body;
+      {displayName} = body,
+      {websiteUrl} = body;
     if (
       typeof displayName !== "string" ||
       typeof commentBody !== "string" ||

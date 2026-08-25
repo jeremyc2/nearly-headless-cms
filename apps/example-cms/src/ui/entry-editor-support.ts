@@ -18,12 +18,11 @@ export const createFieldUpdater =
         return replacement;
       });
     },
-  normalizeSaveResult = <
-    Result extends
+  normalizeSaveResult = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- save results may return entry values directly or nested under entry.
+    result:
       | { readonly entry: { readonly values: Record<string, unknown> } }
       | { readonly values: Record<string, unknown> },
-  >(
-    result: Readonly<Result>,
   ): { readonly entry: { readonly values: Record<string, unknown> } } => {
     if ("entry" in result) {
       return result;

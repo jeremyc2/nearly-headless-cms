@@ -86,22 +86,20 @@ const { customDescriptor, descriptor } = openApiOperationSupport,
       post: descriptor("prepareDefinitionMigration"),
     },
   }),
-  dCustomManagementPaths = <Operations extends readonly ManagementOperation[]>(
-    operations: Operations,
-  ): Operations extends readonly ManagementOperation[]
-    ? Readonly<Record<string, Readonly<Record<string, OperationDescriptor>>>>
-    : never =>
+  dCustomManagementPaths = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- OpenAPI operation descriptors are read while building path maps.
+    operations: readonly ManagementOperation[],
+  ): Readonly<Record<string, Readonly<Record<string, OperationDescriptor>>>> =>
     Object.fromEntries(
       operations.map((operation) => [
         `${managementPrefix}/definition-spaces/{definitionSpaceId}${operation.path}`,
         { [operation.method.toLowerCase()]: customDescriptor(operation) },
       ]),
     ),
-  eManagementPaths = <Operations extends readonly ManagementOperation[]>(
-    operations: Operations,
-  ): Operations extends readonly ManagementOperation[]
-    ? Readonly<Record<string, Readonly<Record<string, OperationDescriptor>>>>
-    : never => ({
+  eManagementPaths = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- OpenAPI operation descriptors are read while building path maps.
+    operations: readonly ManagementOperation[],
+  ): Readonly<Record<string, Readonly<Record<string, OperationDescriptor>>>> => ({
     ...aEntryManagementPaths(),
     ...bAssetManagementPaths(),
     ...cDefinitionManagementPaths(),

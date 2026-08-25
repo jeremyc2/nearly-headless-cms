@@ -8,7 +8,11 @@ const customDescriptor = <Operation extends DeliveryOperation | ManagementOperat
       operationIdentifier: operation.identifier,
       schemas: operation.schemas,
     };
-    if ("successStatus" in operation && operation.successStatus !== undefined) {
+    if (
+      "successStatus" in operation &&
+      typeof operation.successStatus === "number" &&
+      operation.successStatus !== undefined
+    ) {
       return { ...operationDescriptor, successStatus: operation.successStatus };
     }
     return operationDescriptor;

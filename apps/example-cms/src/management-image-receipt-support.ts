@@ -3,6 +3,7 @@ import {
   type CommandReceiptStore,
   Effect,
 } from "./management-image-receipt-support-imports.ts";
+import { type ReadonlyTransportRequest } from "nearly-headless-cms/http";
 
 interface CommandReceiptInput {
   readonly commandKey: string;
@@ -30,8 +31,8 @@ const readCommandReceipt = ({
         }),
       ),
     ),
-  requireIdempotencyKey = <RequestType extends Request>(
-    request: Readonly<RequestType>,
+  requireIdempotencyKey = (
+    request: ReadonlyTransportRequest,
   ): Effect.Effect<string, CmsError.InvalidInput> => {
     const commandKey = request.headers.get("idempotency-key");
     if (commandKey === null || commandKey.length === 0) {

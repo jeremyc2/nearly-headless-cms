@@ -8,6 +8,7 @@ import {
   managementImageUploadSupport,
   managementSupport,
 } from "./management-image-operations-imports.ts";
+import type { ReadonlyTransportRequest } from "nearly-headless-cms/http";
 
 interface ClearImageAssignmentsInput {
   readonly assetId: string;
@@ -54,21 +55,19 @@ const { requiredParameter } = managementSupport,
         postStates,
       });
     }),
-  completeImageReplacement = <
-    Input extends {
-      readonly cms: Readonly<Cms.ServiceShape>;
-      readonly commandKey: string;
-      readonly commandReceiptStore: CommandReceiptStore;
-      readonly oldAssetId: string;
-      readonly request: Request;
-    },
-  >({
+  completeImageReplacement = ({
     cms,
     commandKey,
     commandReceiptStore,
     oldAssetId,
     request,
-  }: Readonly<Input>) =>
+  }: {
+    readonly cms: Readonly<Cms.ServiceShape>;
+    readonly commandKey: string;
+    readonly commandReceiptStore: CommandReceiptStore;
+    readonly oldAssetId: string;
+    readonly request: ReadonlyTransportRequest;
+  }) =>
     Effect.gen(function* completeImageReplacementWorkflow() {
       const assignmentStates = yield* loadImageReplacementStates(cms, oldAssetId),
         imageAsset = yield* cms.ingestAsset(yield* parseReplacementUpload(request)),

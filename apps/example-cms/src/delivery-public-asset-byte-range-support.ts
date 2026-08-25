@@ -24,8 +24,8 @@ const byteRangeEndFromMatch = <Match extends RegExpExecArray>(
     }
     return Number(match.groups?.["start"]);
   },
-  parseByteRange = <Range extends string>(
-    range: Readonly<Range>,
+  parseByteRange = (
+    range: string,
     byteLength: number,
   ): ParsedByteRange | "invalid" | "unsatisfiable" => {
     const match = byteRangePattern.exec(range);

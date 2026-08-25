@@ -15,21 +15,15 @@ const argumentIndex = 2,
   releaseConfirmation = `nearly-headless-cms@${packageManifest.version}`,
   releasePublishRequested = releaseArguments.includes("--publish"),
   releaseTag = releaseArguments.find((argument) => argument.startsWith("v")),
-  run = <
-    Command extends readonly string[],
-    Options extends {
+  run = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- Bun.spawn requires a mutable string command argv.
+    command: readonly string[],
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- spawn options include mutable environment maps.
+    options?: Readonly<{
       readonly cwd?: string;
       readonly environment?: Record<string, string>;
-    },
-  >(
-    command: Readonly<Command>,
-    options?: Options,
-  ): Options extends {
-    readonly cwd?: string;
-    readonly environment?: Record<string, string>;
-  }
-    ? Promise<void>
-    : never =>
+    }>,
+  ): Promise<void> =>
     Bun.write(Bun.stdout, `\n→ ${command.join(" ")}\n`).then(() => {
       const child = Bun.spawn([...command], {
         cwd: options?.cwd ?? monorepoRoot,

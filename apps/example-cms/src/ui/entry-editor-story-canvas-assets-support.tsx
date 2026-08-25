@@ -3,6 +3,7 @@ import {
   assetSelectValue,
   stringValue,
 } from "./entry-editor-story-canvas-imports.ts";
+/* oxlint-disable typescript/no-unnecessary-type-parameters -- React panel helpers preserve local prop aliases for component call sites. */
 
 const EntryEditorContentTypeAssetFields = <
     Values extends Record<string, unknown>,
@@ -16,7 +17,7 @@ const EntryEditorContentTypeAssetFields = <
   }: {
     readonly assets: readonly Readonly<Asset>[] | undefined;
     readonly contentTypeId: string;
-    readonly onUpdateField: Readonly<UpdateField>;
+    readonly onUpdateField: UpdateField;
     readonly values: Readonly<Values>;
   }) => (
     <>
@@ -38,7 +39,7 @@ const EntryEditorContentTypeAssetFields = <
     values,
   }: {
     readonly assets: readonly Readonly<Asset>[] | undefined;
-    readonly onUpdateField: Readonly<UpdateField>;
+    readonly onUpdateField: UpdateField;
     readonly values: Readonly<Values>;
   }) => (
     <fieldset className="field-group full">
@@ -64,7 +65,7 @@ const EntryEditorContentTypeAssetFields = <
     onUpdateField,
     values,
   }: {
-    readonly onUpdateField: Readonly<UpdateField>;
+    readonly onUpdateField: UpdateField;
     readonly values: Readonly<Values>;
   }) => (
     <label className="field full">
@@ -88,7 +89,7 @@ const EntryEditorContentTypeAssetFields = <
     values,
   }: {
     readonly assets: readonly Readonly<Asset>[] | undefined;
-    readonly onUpdateField: Readonly<UpdateField>;
+    readonly onUpdateField: UpdateField;
     readonly values: Readonly<Values>;
   }) => (
     <label className="field">
@@ -123,7 +124,7 @@ const EntryEditorContentTypeAssetFields = <
     values,
   }: {
     readonly assets: readonly Readonly<Asset>[] | undefined;
-    readonly onUpdateField: Readonly<UpdateField>;
+    readonly onUpdateField: UpdateField;
     readonly values: Readonly<Values>;
   }) => (
     <fieldset className="field-group full">
@@ -134,7 +135,7 @@ const EntryEditorContentTypeAssetFields = <
           onChange={(event) => {
             onUpdateField("portrait", event.target.value || null);
           }}
-          value={assetSelectValue(values.portrait)}
+          value={assetSelectValue(values["portrait"])}
         >
           <option value="">No portrait</option>
           {assets?.map((asset) => (
@@ -183,3 +184,4 @@ const EntryEditorContentTypeAssetFields = <
 export default {
   EntryEditorContentTypeAssetFields,
 };
+

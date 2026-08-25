@@ -4,6 +4,7 @@ import {
   stringValue,
   suggestedSlug,
 } from "./entry-editor-story-canvas-imports.ts";
+/* oxlint-disable typescript/no-unnecessary-type-parameters -- React panel helpers preserve local prop aliases for component call sites. */
 
 const EntryEditorAuthorProfileField = ({
     onUpdateField,
@@ -32,7 +33,7 @@ const EntryEditorAuthorProfileField = ({
     values,
   }: {
     readonly bodyDocument: RichText.Document | undefined;
-    readonly onUpdateField: Readonly<UpdateField>;
+    readonly onUpdateField: UpdateField;
     readonly values: Readonly<Values>;
   }) => (
     <>
@@ -66,7 +67,7 @@ const EntryEditorAuthorProfileField = ({
     onUpdateField,
     values,
   }: {
-    readonly onUpdateField: Readonly<UpdateField>;
+    readonly onUpdateField: UpdateField;
     readonly values: Readonly<Values>;
   }) => (
     <>
@@ -117,7 +118,7 @@ const EntryEditorAuthorProfileField = ({
     titleField,
     values,
   }: {
-    readonly onUpdateField: Readonly<UpdateField>;
+    readonly onUpdateField: UpdateField;
     readonly title: string;
     readonly titleField: string;
     readonly values: Readonly<Values>;
@@ -162,3 +163,4 @@ export default {
   EntryEditorTextAreaFields,
   EntryEditorTitleField,
 };
+

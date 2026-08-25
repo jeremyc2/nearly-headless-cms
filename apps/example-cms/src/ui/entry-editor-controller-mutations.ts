@@ -7,11 +7,7 @@ import {
   useEntryEditorSaveMutation,
 } from "./entry-editor-controller-mutations-imports.ts";
 
-export const useEntryEditorControllerMutations = <
-  Values extends Record<string, unknown>,
-  OnSaved extends (values: Values) => void,
-  OnUpdated extends (values: Values) => void,
->({
+export const useEntryEditorControllerMutations = ({
   contentTypeId,
   deletionRecord,
   entryId,
@@ -26,8 +22,10 @@ export const useEntryEditorControllerMutations = <
   readonly entryId: string;
   readonly onConflict: (latest: EntryConflict["latest"]) => void;
   readonly onDeleted: (receipt: DeletionRecord) => void;
-  readonly onSaved: Readonly<OnSaved>;
-  readonly onUpdated: Readonly<OnUpdated>;
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- React callbacks receive mutable draft value maps from the editor.
+  readonly onSaved: (values: Record<string, unknown>) => void;
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- React callbacks receive mutable draft value maps from the editor.
+  readonly onUpdated: (values: Record<string, unknown>) => void;
   readonly writeToken?: string;
 }) => {
   const deleteEntry = useEntryEditorDeleteMutation({

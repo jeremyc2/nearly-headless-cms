@@ -1,4 +1,4 @@
-import type { ReadonlyNativeSelection, ReadonlySelectionHost } from "./readonly-dom-types.ts";
+import type { ReadonlyEditableHost, ReadonlyNativeSelection } from "./readonly-dom-types.ts";
 import type { State } from "./transactions-types.ts";
 import { emptyIndex } from "./transactions-constants.ts";
 import { transact } from "./transactions-dispatch.ts";
@@ -8,7 +8,7 @@ const { listItemSelectorSuffix, selectionPositionFromNode, textLength } =
     transactionsEditorAdapterSupport,
   nativeSelectionPositions = <
     Input extends {
-      readonly host: ReadonlySelectionHost;
+      readonly host: ReadonlyEditableHost;
       readonly nativeSelection: ReadonlyNativeSelection | null;
     },
   >(
@@ -37,26 +37,28 @@ const { listItemSelectorSuffix, selectionPositionFromNode, textLength } =
     }
     return undefined;
   },
-  readNativeSelectionPositions = <Host extends ReadonlySelectionHost>(
-    host: Readonly<Host>,
+  readNativeSelectionPositions = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- editable hosts are queried for live native selection state.
+    host: HTMLElement,
   ) =>
     nativeSelectionPositions({
       host,
       nativeSelection: document.getSelection(),
     }),
-  restoreSelectionRange = <Host extends ReadonlySelectionHost>(
+  restoreSelectionRange = (
     state: Readonly<State>,
-    host: Readonly<Host>,
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- editable hosts are mutated while restoring native selection ranges.
+    host: HTMLElement,
   ): void => {
     if (!host.isConnected) {
       return;
     }
     const { anchor, focus } = state.selection,
-      anchorElement = host.querySelector<HTMLElement>(
+      anchorElement = host.querySelector(
         `[data-block-index="${anchor.blockIndex}"][data-inline-index="${anchor.inlineIndex}"]${listItemSelectorSuffix(anchor.listItemIndex)}`,
       ),
       anchorNode = anchorElement?.firstChild,
-      focusElement = host.querySelector<HTMLElement>(
+      focusElement = host.querySelector(
         `[data-block-index="${focus.blockIndex}"][data-inline-index="${focus.inlineIndex}"]${listItemSelectorSuffix(focus.listItemIndex)}`,
       ),
       focusNode = focusElement?.firstChild,
@@ -77,9 +79,10 @@ const { listItemSelectorSuffix, selectionPositionFromNode, textLength } =
       Math.min(focus.offset, textLength(focusNode.textContent)),
     );
   },
-  synchronizeSelectionState = <Host extends ReadonlySelectionHost>(
+  synchronizeSelectionState = (
     state: Readonly<State>,
-    host: Readonly<Host>,
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- editable hosts are queried while synchronizing editor selection state.
+    host: HTMLElement,
   ): State => {
     const positions = readNativeSelectionPositions(host);
     if (positions === undefined) {

@@ -5,6 +5,7 @@ import {
   assetDimensions,
 } from "./assets-page-imports.ts";
 import assetsPageDialogsSupport from "./assets-page-dialogs-support.tsx";
+/* oxlint-disable typescript/no-unnecessary-type-parameters -- React panel helpers preserve local prop aliases for component call sites. */
 
 const { AssetsPageDeleteDialog, AssetsPageReplaceDialog } = assetsPageDialogsSupport, AssetsPageAssetCard = <
     Asset extends AssetRepresentation,
@@ -24,10 +25,10 @@ const { AssetsPageDeleteDialog, AssetsPageReplaceDialog } = assetsPageDialogsSup
     setReplacementConfirmationAssetId,
   }: {
     readonly asset: Readonly<Asset>;
-    readonly deleteImage: Readonly<DeleteImage>;
-    readonly replace: Readonly<Replace>;
-    readonly setDeletionAssetId: Readonly<SetDeletionAssetId>;
-    readonly setReplacementConfirmationAssetId: Readonly<SetReplacementConfirmationAssetId>;
+    readonly deleteImage: DeleteImage;
+    readonly replace: Replace;
+    readonly setDeletionAssetId: SetDeletionAssetId;
+    readonly setReplacementConfirmationAssetId: SetReplacementConfirmationAssetId;
   }) => (
     <article className="asset-card">
       <AssetsPageAssetPreview asset={asset} />
@@ -63,10 +64,10 @@ const { AssetsPageDeleteDialog, AssetsPageReplaceDialog } = assetsPageDialogsSup
     setReplacementConfirmationAssetId,
   }: {
     readonly asset: Readonly<Asset>;
-    readonly deleteImage: Readonly<DeleteImage>;
-    readonly replace: Readonly<Replace>;
-    readonly setDeletionAssetId: Readonly<SetDeletionAssetId>;
-    readonly setReplacementConfirmationAssetId: Readonly<SetReplacementConfirmationAssetId>;
+    readonly deleteImage: DeleteImage;
+    readonly replace: Replace;
+    readonly setDeletionAssetId: SetDeletionAssetId;
+    readonly setReplacementConfirmationAssetId: SetReplacementConfirmationAssetId;
   }) => (
     <div className="asset-actions">
       <button
@@ -124,12 +125,12 @@ const { AssetsPageDeleteDialog, AssetsPageReplaceDialog } = assetsPageDialogsSup
     setDeletionAssetId,
     setReplacementConfirmationAssetId,
   }: {
-    readonly assets: Readonly<Assets>;
+    readonly assets: Assets;
     readonly chooseFile: () => void;
-    readonly deleteImage: Readonly<DeleteImage>;
-    readonly replace: Readonly<Replace>;
-    readonly setDeletionAssetId: Readonly<SetDeletionAssetId>;
-    readonly setReplacementConfirmationAssetId: Readonly<SetReplacementConfirmationAssetId>;
+    readonly deleteImage: DeleteImage;
+    readonly replace: Replace;
+    readonly setDeletionAssetId: SetDeletionAssetId;
+    readonly setReplacementConfirmationAssetId: SetReplacementConfirmationAssetId;
   }) => (
     <section className="asset-grid">
       {assets.data?.map((asset) => (
@@ -153,3 +154,4 @@ export default {
   AssetsPageGrid,
   AssetsPageReplaceDialog,
 };
+

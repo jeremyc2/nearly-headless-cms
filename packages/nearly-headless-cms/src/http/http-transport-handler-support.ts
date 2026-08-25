@@ -11,6 +11,7 @@ import {
   type ReadonlyTransportRequest,
   type ReadonlyTransportUrl,
 } from "./http-transport-readonly-types.ts";
+/* oxlint-disable eslint/one-var -- helpers with readonly disables must stay as separate const declarations. */
 import {
   defaultMaximumHeaderByteLength,
   defaultMaximumJsonBodyByteLength,
@@ -133,13 +134,15 @@ const { errorResponse, respondWithOutcome, runOperationInterruptibly } = transpo
     return undefined;
   },
   // oxlint-disable-next-line effecttsgo/async-function -- interruptible outcomes are awaited before routing continues.
-  readInterruptibleValue = async <Value, Input extends ReadInterruptibleValueInput<Value>>({
+  readInterruptibleValue = async <Value>(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- Effect programs are executed by runOperationInterruptibly without mutation.
+    {
     effect,
     missingValueMessage,
     operationFailureMessage,
     requestId,
     signal,
-  }: Readonly<Input>): Promise<Value | Response> => {
+  }: Readonly<ReadInterruptibleValueInput<Value>>): Promise<Value | Response> => {
     const outcome = await runOperationInterruptibly(effect, signal);
     if (!outcome.success) {
       if (outcome.error === undefined) {
@@ -153,11 +156,11 @@ const { errorResponse, respondWithOutcome, runOperationInterruptibly } = transpo
     return outcome.value;
   },
   // oxlint-disable-next-line effecttsgo/async-function -- snapshot resolution awaits interruptible Effect execution before routing.
-  resolveActiveSnapshot = async <Input extends ResolveActiveSnapshotInput>(
-    input: Readonly<Input>,
+  resolveActiveSnapshot = async (
+    input: Readonly<ResolveActiveSnapshotInput>,
   ): Promise<CompiledSnapshot | Response> => {
     const { cms, request, requestId, signal } = input,
-      snapshotResult = await readInterruptibleValue({
+      snapshotResult = await readInterruptibleValue<CompiledSnapshot>({
         effect: cms.activeDefinitionSnapshot(),
         missingValueMessage: "Operation succeeded without a value",
         operationFailureMessage: "Operation failed without an error",

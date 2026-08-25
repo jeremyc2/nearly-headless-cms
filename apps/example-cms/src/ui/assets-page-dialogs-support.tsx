@@ -1,4 +1,5 @@
 import { type RefObject, type UseMutationResult, deleteImageLabel } from "./assets-page-imports.ts";
+/* oxlint-disable typescript/no-unnecessary-type-parameters -- React panel helpers preserve local prop aliases for component call sites. */
 
 const AssetsPageDeleteDialog = <
     DeleteImage extends UseMutationResult<
@@ -15,9 +16,9 @@ const AssetsPageDeleteDialog = <
     deletionAssetId,
     setDeletionAssetId,
   }: {
-    readonly deleteImage: Readonly<DeleteImage>;
+    readonly deleteImage: DeleteImage;
     readonly deletionAssetId: string;
-    readonly setDeletionAssetId: Readonly<SetDeletionAssetId>;
+    readonly setDeletionAssetId: SetDeletionAssetId;
   }) => (
     <AssetsPageDestructiveDialog
       eyebrow="Confirm deletion"
@@ -50,9 +51,9 @@ const AssetsPageDeleteDialog = <
     deletionAssetId,
     setDeletionAssetId,
   }: {
-    readonly deleteImage: Readonly<DeleteImage>;
+    readonly deleteImage: DeleteImage;
     readonly deletionAssetId: string;
-    readonly setDeletionAssetId: Readonly<SetDeletionAssetId>;
+    readonly setDeletionAssetId: SetDeletionAssetId;
   }) => (
     <div className="editor-actions">
       <button
@@ -82,7 +83,7 @@ const AssetsPageDeleteDialog = <
     title,
     titleId,
   }: {
-    readonly children: Readonly<Children>;
+    readonly children: Children;
     readonly eyebrow: string;
     readonly title: string;
     readonly titleId: string;
@@ -112,8 +113,8 @@ const AssetsPageDeleteDialog = <
   }: {
     readonly replacementConfirmationAssetId: string;
     readonly replacementInput: Readonly<ReplacementInput>;
-    readonly setReplacementAssetId: Readonly<SetReplacementAssetId>;
-    readonly setReplacementConfirmationAssetId: Readonly<SetReplacementConfirmationAssetId>;
+    readonly setReplacementAssetId: SetReplacementAssetId;
+    readonly setReplacementConfirmationAssetId: SetReplacementConfirmationAssetId;
   }) => (
     <AssetsPageDestructiveDialog
       eyebrow="Confirm replacement"
@@ -153,3 +154,4 @@ export default {
   AssetsPageDeleteDialog,
   AssetsPageReplaceDialog,
 };
+

@@ -1,7 +1,7 @@
 import { type Cms, CmsError, type ContentDefinition, type EntryQuery } from "nearly-headless-cms";
 import { Effect, Schema } from "effect";
 import { EmptyRequest, PageQuery } from "./wire-schemas.ts";
-import type { HttpContract } from "nearly-headless-cms/http";
+import { type HttpContract, type ReadonlyTransportRequest, toWebRequest } from "nearly-headless-cms/http";
 
 export type PublicValue = ContentDefinition.JsonObject;
 
@@ -20,14 +20,14 @@ export interface QueryEntriesInput {
 }
 
 export interface QueryPageInput extends QueryEntriesInput {
-  readonly request: Request;
+  readonly request: ReadonlyTransportRequest;
 }
 
-const requestUrlSearchParameter = <RequestType extends Request>(
+const requestUrlSearchParameter = (
     parameterName: string,
-    request: Readonly<RequestType>,
+    request: ReadonlyTransportRequest,
   ): string | undefined => {
-    const requestUrl = new URL(request.url);
+    const requestUrl = new URL(toWebRequest(request).url);
     return requestUrl.searchParams.get(parameterName) ?? undefined;
   },
   DEFAULT_PAGE_SIZE = 20,
@@ -80,8 +80,8 @@ const requestUrlSearchParameter = <RequestType extends Request>(
     }
     return { items: page.items.map(publicValue) };
   },
-  parseBody = <RequestType extends Request>(
-    request: Readonly<RequestType>,
+  parseBody = (
+    request: ReadonlyTransportRequest,
   ): Effect.Effect<ContentDefinition.JsonObject, CmsError.InvalidInput> =>
     Effect.tryPromise({
       catch: (cause) => {
@@ -91,12 +91,13 @@ const requestUrlSearchParameter = <RequestType extends Request>(
         return CmsError.InvalidInput.make({ message: "Malformed Comment submission" });
       },
       try: () => {
-        if (!(request.headers.get("content-type") ?? "").startsWith("application/json")) {
+        const webRequest = toWebRequest(request);
+        if (!(webRequest.headers.get("content-type") ?? "").startsWith("application/json")) {
           return Promise.reject(
             CmsError.InvalidInput.make({ message: "Comment submission requires application/json" }),
           );
         }
-        return request.json().then((value: unknown) => {
+        return webRequest.json().then((value: unknown) => {
           if (!Schema.is(Schema.JsonObject)(value)) {
             throw CmsError.InvalidInput.make({ message: "Comment submission must be an object" });
           }
@@ -151,12 +152,11 @@ const requestUrlSearchParameter = <RequestType extends Request>(
       .pipe(Effect.map(mapQueryPage));
   },
   // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- local schema adapter is intentionally direct-call only.
-  readSchemas = <
-    ResponseSchema extends HttpContract.OperationSchema,
-    PathParameters extends Record<string, HttpContract.OperationSchema>,
-  >(
-    response: Readonly<ResponseSchema>,
-    pathParameters: Readonly<PathParameters> = {},
+  readSchemas = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- OperationSchema values include Effect Schema classes that are not deeply readonly.
+    response: HttpContract.OperationSchema,
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- path parameter schemas include Effect Schema classes that are not deeply readonly.
+    pathParameters: Record<string, HttpContract.OperationSchema> = {},
     includePagination = false,
   ): HttpContract.OperationSchemas => {
     if (includePagination) {

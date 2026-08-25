@@ -93,9 +93,14 @@ export class BrowserAdapter {
       fragment.append(renderBlockElement(block, blockIndex));
     }
     this.#host.replaceChildren(fragment);
-    this.#observer.observe(this.#host, browserAdapterObserverOptions);
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- MutationObserver.observe requires Node; the editable host is a runtime HTMLElement.
+    this.#observer.observe(this.#host as unknown as Node, browserAdapterObserverOptions);
     this.#rendering = false;
-    restoreSelectionRange(this.#state, this.#host);
+    restoreSelectionRange(
+      this.#state,
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- restoreSelectionRange reads selection anchors from the runtime editable host.
+      this.#host as unknown as HTMLElement,
+    );
   }
 
   destroy(): void {
@@ -116,7 +121,11 @@ export class BrowserAdapter {
   }
 
   #synchronizeSelection(): void {
-    this.#state = synchronizeSelectionState(this.#state, this.#host);
+    this.#state = synchronizeSelectionState(
+      this.#state,
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- synchronizeSelectionState queries the runtime editable host for the current DOM selection.
+      this.#host as unknown as HTMLElement,
+    );
   }
 
   readonly #handleBeforeInput = <Event extends ReadonlyInputEvent>(

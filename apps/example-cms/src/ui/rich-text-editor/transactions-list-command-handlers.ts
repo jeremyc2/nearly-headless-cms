@@ -8,7 +8,7 @@ import transactionsSupport from "./transactions-support.ts";
 
 const { commit, replaceBlock } = transactionsState,
   { conditionalValue } = transactionsSupport,
-  applyDeleteBackward = <StateType extends State>(state: StateType): StateType => {
+  applyDeleteBackward = (state: State): State => {
     const selected = selectedText(state);
     if (selected === undefined) {
       return state;
@@ -22,10 +22,10 @@ const { commit, replaceBlock } = transactionsState,
     }
     return workDeleteBackwardForSelection(state, selected);
   },
-  applyToggleList = <StateType extends State>(
-    state: StateType,
+  applyToggleList = (
+    state: State,
     command: Extract<Command, { type: "toggleList" }>,
-  ): StateType => {
+  ): State => {
     const rootBlock = state.document.children[state.selection.anchor.blockIndex];
     if (rootBlock === undefined) {
       return state;
@@ -62,10 +62,15 @@ const { commit, replaceBlock } = transactionsState,
           emptyIndex,
         [] as readonly RichText.BlockNode[],
         [
+          // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- list replacement preserves list node shape after item removal.
           {
             ...listBlock,
-            children: listBlock.children.filter((_listItem, index) => index !== listItemIndex),
-          },
+            children:
+              // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- list item filtering preserves list-item node shapes within the editor document.
+              listBlock.children.filter(
+                (_listItem, index) => index !== listItemIndex,
+              ) as RichText.ListItemNode[],
+          } as RichText.ListNode,
         ],
       ),
       nextBlockIndex =
@@ -149,8 +154,10 @@ const { commit, replaceBlock } = transactionsState,
         [
           {
             ...listBlock,
-            children: listBlock.children.filter((_listItem, index) => index !== listItemIndex),
-          },
+            children: listBlock.children.filter(
+              (_listItem, index) => index !== listItemIndex,
+            ),
+          } as RichText.ListNode,
         ],
       ),
       nextBlockIndex =
@@ -175,14 +182,14 @@ const { commit, replaceBlock } = transactionsState,
       { anchor: position, focus: position },
     );
   },
-  workDeleteBackwardAtListStart = <StateType extends State>(
-    state: StateType,
+  workDeleteBackwardAtListStart = (
+    state: State,
     selected: SelectedTextContext,
-  ): StateType => outdentListItem({ selected, state }),
-  workDeleteBackwardForSelection = <StateType extends State>(
-    state: StateType,
+  ): State => outdentListItem({ selected, state }),
+  workDeleteBackwardForSelection = (
+    state: State,
     selected: NonNullable<ReturnType<typeof selectedText>>,
-  ): StateType => {
+  ): State => {
     const { insertText } = transactionsMutations,
       selection = {
         anchor: {
@@ -216,7 +223,14 @@ const { commit, replaceBlock } = transactionsState,
       list: RichText.ListNode = {
         children: [
           {
-            children: [{ children: rootBlock.children, type: "paragraph" }],
+            children: [
+              {
+                children:
+                  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- paragraph children inherit inline nodes from the lifted block root.
+                  rootBlock.children as RichText.InlineNode[],
+                type: "paragraph",
+              },
+            ],
             type: "list-item",
           },
         ],

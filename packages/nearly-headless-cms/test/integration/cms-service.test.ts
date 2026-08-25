@@ -34,9 +34,10 @@ const createVerifiedAuthor = Effect.gen(function* createVerifiedAuthor() {
     return { author, post };
   }),
   firstRevisionNumber = 1,
-  run = <Error, EffectType extends Effect.Effect<unknown, Error, Cms.Service>>(
-    effect: EffectType,
-  ): Promise<Effect.Success<EffectType>> => {
+  run = <Value, Failure>(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- Effect programs are executed by runPromise without mutation.
+    effect: Readonly<Effect.Effect<Value, Failure, Cms.Service>>,
+  ): Promise<Value> => {
     const layer = DevelopmentCms.layer({ snapshot }),
       // This test helper is the application entry point for each isolated test run.
       // The layer must be provided here so every run gets a fresh in-memory CMS.

@@ -1,9 +1,12 @@
+/* oxlint-disable eslint/sort-imports -- history panel imports follow UI dependency grouping. */
+import { useMutation, useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { DateTime, Effect } from "effect";
-import { managementClient, queryClient } from "./main-shared.ts";
-import { revisionClass, revisionLabel } from "./main-labels.ts";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { EntryEditorRevisionInspection } from "./entry-editor-revision-inspection.tsx";
 import { useState } from "react";
+import type { RevisionPage } from "../generated/management-openapi-client-component-types.ts";
+import { EntryEditorRevisionInspection } from "./entry-editor-revision-inspection.tsx";
+import { revisionClass, revisionLabel } from "./main-labels.ts";
+import { managementClient, queryClient } from "./main-shared.ts";
+/* oxlint-disable typescript/no-unnecessary-type-parameters -- React panel helpers preserve local prop aliases for component call sites. */
 
 interface EntryEditorRevisionSummary {
   readonly recordedAt: string;
@@ -44,17 +47,8 @@ const EntryEditorHistoryPanelBody = ({
       />
     );
   },
-  EntryEditorHistoryPanelView = <
-    Restore extends ReturnType<typeof useEntryEditorRestoreMutation>,
-    Revisions extends ReturnType<
-      typeof useQuery<
-        Awaited<ReturnType<typeof managementClient.listRevisions>>,
-        Error,
-        Awaited<ReturnType<typeof managementClient.listRevisions>>,
-        readonly ["revisions", string, string]
-      >
-    >,
-  >({
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- React Query mutation and query objects expose mutable status while rendering history.
+  EntryEditorHistoryPanelView = ({
     contentTypeId,
     entryId,
     restore,
@@ -65,8 +59,8 @@ const EntryEditorHistoryPanelBody = ({
   }: {
     readonly contentTypeId: string;
     readonly entryId: string;
-    readonly restore: Readonly<Restore>;
-    readonly revisions: Readonly<Revisions>;
+    readonly restore: ReturnType<typeof useEntryEditorRestoreMutation>;
+    readonly revisions: UseQueryResult<RevisionPage>;
     readonly selectedRevisionNumber: number | undefined;
     readonly setSelectedRevisionNumber: (revisionNumber: number | undefined) => void;
     readonly writeToken?: string;
@@ -105,7 +99,7 @@ const EntryEditorHistoryPanelBody = ({
   }: {
     readonly contentTypeId: string;
     readonly entryId: string;
-    readonly restore: Readonly<Restore>;
+    readonly restore: Restore;
     readonly selectedRevisionNumber: number | undefined;
     readonly setSelectedRevisionNumber: (revisionNumber: number | undefined) => void;
     readonly writeToken?: string;
@@ -190,3 +184,4 @@ const EntryEditorHistoryPanelBody = ({
     });
 
 export { EntryEditorHistoryPanelBody as EntryEditorHistoryPanel };
+

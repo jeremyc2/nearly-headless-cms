@@ -47,19 +47,13 @@ const { jsonResponse } = transportResponse,
     transportPreflight,
   { handleCustomManagementOperations, handleDeliveryOperations } = transportDeliveryRoutes,
   { buildRouteContext, resolveActiveSnapshot, resolveHandlerOptions } = handlerSupport,
-  dispatchManagementAndDeliveryRoutes = <
-    Context extends RouteHandlerContext,
-    Operations extends readonly ManagementOperation[],
-    Matchers extends ResolvedHandlerOptions["operationMatchers"],
-  >(
-    routeContext: Readonly<Context>,
-    managementOperations: Operations,
-    operationMatchers: Matchers,
-  ): Operations extends readonly ManagementOperation[]
-    ? Matchers extends ResolvedHandlerOptions["operationMatchers"]
-      ? Promise<Response | undefined>
-      : never
-    : never =>
+  dispatchManagementAndDeliveryRoutes = (
+    routeContext: Readonly<RouteHandlerContext>,
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- route handlers inspect operation metadata without mutating configured operations.
+    managementOperations: readonly ManagementOperation[],
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- route handlers inspect operation metadata without mutating configured operations.
+    operationMatchers: ResolvedHandlerOptions["operationMatchers"],
+  ): Promise<Response | undefined> =>
     dispatchRouteHandlers(
       [
         handleManagementRoutes,
@@ -133,8 +127,9 @@ const { jsonResponse } = transportResponse,
       value: { code: "NotFound", message: "Route not found", requestId },
     });
   },
-  makeHandler = <OptionsType extends Options>(
-    options?: Readonly<OptionsType>,
+  makeHandler = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- handler Options includes requestIdentifier callbacks.
+    options?: Options,
   ): Effect.Effect<Handler, never, CmsService> =>
     Effect.gen(function* createHandler() {
       const cms = yield* CmsService,
@@ -160,7 +155,7 @@ const { jsonResponse } = transportResponse,
           }
           return handleResolvedRequest({
             cms,
-            options,
+            options: options ?? {},
             request,
             requestId,
             resolved,

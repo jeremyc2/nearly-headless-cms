@@ -41,15 +41,11 @@ const { bodylessResponse, jsonResponse, requestFailureResponse } = transportResp
       status: httpStatusNoContent,
     });
   },
-  handleDiscoveryRoute = <
-    Context extends RouteHandlerContext,
-    Operations extends Readonly<NonNullable<Options["deliveryOperations"]>>,
-  >(
-    context: Readonly<Context>,
-    operations: Operations,
-  ): Operations extends Readonly<NonNullable<Options["deliveryOperations"]>>
-    ? Response | undefined
-    : never => {
+  handleDiscoveryRoute = (
+    context: Readonly<RouteHandlerContext>,
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- discovery routes read configured operations without mutation.
+    operations: Readonly<NonNullable<Options["deliveryOperations"]>>,
+  ): Response | undefined => {
     if (
       context.requestUrl.pathname !== `${headlessPrefix}/schema` ||
       context.request.method !== "GET"
@@ -71,19 +67,13 @@ const { bodylessResponse, jsonResponse, requestFailureResponse } = transportResp
       status: httpStatusOk,
     });
   },
-  handleOpenApiRoutes = <
-    Context extends RouteHandlerContext,
-    Operations extends Readonly<NonNullable<Options["deliveryOperations"]>>,
-    ManagementOperations extends Readonly<NonNullable<Options["managementOperations"]>>,
-  >(
-    context: Readonly<Context>,
-    operations: Operations,
-    managementOperations: ManagementOperations,
-  ): Operations extends Readonly<NonNullable<Options["deliveryOperations"]>>
-    ? ManagementOperations extends Readonly<NonNullable<Options["managementOperations"]>>
-      ? Response | undefined
-      : never
-    : never => {
+  handleOpenApiRoutes = (
+    context: Readonly<RouteHandlerContext>,
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- OpenAPI routes read configured operations without mutation.
+    operations: Readonly<NonNullable<Options["deliveryOperations"]>>,
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- OpenAPI routes read configured operations without mutation.
+    managementOperations: Readonly<NonNullable<Options["managementOperations"]>>,
+  ): Response | undefined => {
     if (
       context.requestUrl.pathname === `${managementPrefix}/openapi.json` &&
       context.request.method === "GET"

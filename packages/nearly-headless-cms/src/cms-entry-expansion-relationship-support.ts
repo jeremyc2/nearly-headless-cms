@@ -11,6 +11,8 @@ import {
   capabilitiesFor,
   cloneJson,
 } from "./cms-entry-expansion-relationship-imports.ts";
+/* oxlint-disable eslint/one-var -- helpers with readonly disables must stay as separate const declarations. */
+/* oxlint-disable eslint/sort-vars -- helper declaration order follows dependency order. */
 
 interface ExpandRelationshipEntryIdInput {
   readonly ancestorEntryIds: ReadonlySet<string>;
@@ -45,10 +47,38 @@ interface ExpandRelationshipFieldInput {
   readonly relationship: RelationshipFieldKind;
   readonly snapshot: CompiledSnapshot;
   readonly value: JsonValue;
-  readonly values: Record<string, JsonValue>;
+  values: Record<string, JsonValue>;
 }
 
-const expandRelationshipEntryId = ({
+const expandedEntryValue = (entry: Readonly<Representation>): JsonObject => ({
+  contentTypeId: entry.contentTypeId,
+  id: entry.id,
+  values: cloneJson(entry.values),
+}),
+
+ loadRelationshipTarget = (input: {
+  readonly entryId: string;
+  readonly generation: EntryGeneration;
+  readonly relationship: RelationshipFieldKind;
+}): NonNullable<ReturnType<EntryGeneration["records"]["get"]>> => {
+  const { entryId, generation, relationship } = input,
+   target = generation.records.get(entryId);
+  if (
+    target === undefined ||
+    target.deletionRecord !== undefined ||
+    !relationship.targetContentTypeIds.includes(target.entry.contentTypeId)
+  ) {
+    throw InvalidInput.make({
+      message: `Relationship target ${entryId} does not exist in an allowed Content Type`,
+    });
+  }
+  return target;
+},
+
+ expandRelationshipEntryId = (
+  input: Readonly<ExpandRelationshipEntryIdInput>,
+): JsonValue => {
+  const {
     ancestorEntryIds,
     entryId,
     expandRepresentation,
@@ -57,33 +87,38 @@ const expandRelationshipEntryId = ({
     nestedPaths,
     relationship,
     snapshot,
-  }: Readonly<ExpandRelationshipEntryIdInput>): JsonValue => {
-    if (typeof entryId !== "string") {
-      throw InvalidInput.make({
-        message: `Relationship ${fieldPath} contains an invalid Entry ID`,
-      });
-    }
-    if (ancestorEntryIds.has(entryId)) {
-      return entryId;
-    }
-    const target = loadRelationshipTarget({
-      entryId,
-      generation,
-      relationship,
+  } = input;
+  if (typeof entryId !== "string") {
+    throw InvalidInput.make({
+      message: `Relationship ${fieldPath} contains an invalid Entry ID`,
     });
-    let expandedTarget: Representation = structuredClone(target.entry);
-    if (nestedPaths.length > 0) {
-      expandedTarget = expandRepresentation({
-        ancestorEntryIds,
-        entry: target.entry,
-        expansion: nestedPaths,
-        generation,
-        snapshot,
-      });
-    }
-    return expandedEntryValue(expandedTarget);
-  },
-  expandRelationshipField = <Input extends ExpandRelationshipFieldInput>({
+  }
+  if (ancestorEntryIds.has(entryId)) {
+    return entryId;
+  }
+  const target = loadRelationshipTarget({
+    entryId,
+    generation,
+    relationship,
+  });
+  let expandedTarget: Representation = structuredClone(target.entry);
+  if (nestedPaths.length > 0) {
+    expandedTarget = expandRepresentation({
+      ancestorEntryIds,
+      entry: target.entry,
+      expansion: nestedPaths,
+      generation,
+      snapshot,
+    });
+  }
+  return expandedEntryValue(expandedTarget);
+},
+
+ expandRelationshipField = (
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- mutable values out-param is bundled in input interface.
+  input: Readonly<ExpandRelationshipFieldInput>,
+): void => {
+  const {
     ancestorEntryIds,
     expandRelationshipEntryId: resolveRelationshipEntryId,
     fieldKind,
@@ -95,56 +130,33 @@ const expandRelationshipEntryId = ({
     snapshot,
     value,
     values,
-  }: Readonly<Input>): void => {
-    if (
-      fieldKind.capabilities?.expandable === false ||
-      (fieldKind.capabilities === undefined &&
-        fieldKind.kind !== "list" &&
-        capabilitiesFor(fieldKind).expandable !== true)
-    ) {
-      throw UnsupportedQueryCapability.make({
-        message: `Field ${fieldPath} does not support Relationship Expansion`,
-      });
-    }
-    const expandEntryId = (candidateEntryId: JsonValue): JsonValue =>
-      resolveRelationshipEntryId({
-        ancestorEntryIds,
-        entryId: candidateEntryId,
-        fieldPath,
-        generation,
-        nestedPaths,
-        relationship,
-        snapshot,
-      });
-    if (Array.isArray(value)) {
-      values[fieldKey] = value.map((item: JsonValue) => expandEntryId(item));
-      return;
-    }
-    values[fieldKey] = expandEntryId(value);
-  },
-  expandedEntryValue = (entry: Representation): JsonObject => ({
-    contentTypeId: entry.contentTypeId,
-    id: entry.id,
-    values: cloneJson(entry.values),
-  }),
-  loadRelationshipTarget = (input: {
-    readonly entryId: string;
-    readonly generation: EntryGeneration;
-    readonly relationship: RelationshipFieldKind;
-  }): NonNullable<ReturnType<EntryGeneration["records"]["get"]>> => {
-    const { entryId, generation, relationship } = input,
-      target = generation.records.get(entryId);
-    if (
-      target === undefined ||
-      target.deletionRecord !== undefined ||
-      !relationship.targetContentTypeIds.includes(target.entry.contentTypeId)
-    ) {
-      throw InvalidInput.make({
-        message: `Relationship target ${entryId} does not exist in an allowed Content Type`,
-      });
-    }
-    return target;
-  };
+  } = input;
+  if (
+    fieldKind.capabilities?.expandable === false ||
+    (fieldKind.capabilities === undefined &&
+      fieldKind.kind !== "list" &&
+      capabilitiesFor(fieldKind).expandable !== true)
+  ) {
+    throw UnsupportedQueryCapability.make({
+      message: `Field ${fieldPath} does not support Relationship Expansion`,
+    });
+  }
+  const expandEntryId = (candidateEntryId: JsonValue): JsonValue =>
+    resolveRelationshipEntryId({
+      ancestorEntryIds,
+      entryId: candidateEntryId,
+      fieldPath,
+      generation,
+      nestedPaths,
+      relationship,
+      snapshot,
+    });
+  if (Array.isArray(value)) {
+    values[fieldKey] = value.map((item: JsonValue) => expandEntryId(item));
+    return;
+  }
+  values[fieldKey] = expandEntryId(value);
+};
 
 export default {
   expandRelationshipEntryId,

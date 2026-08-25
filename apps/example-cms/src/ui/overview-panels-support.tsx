@@ -7,11 +7,12 @@ import {
   rebuildLabel,
 } from "./overview-imports.ts";
 import type { OverviewState } from "./overview-data-support.ts";
+/* oxlint-disable typescript/no-unnecessary-type-parameters -- React panel helpers preserve local prop aliases for component call sites. */
 
 const OverviewBuildPanel = <Rebuild extends OverviewState["rebuild"]>({
     rebuild,
   }: {
-    readonly rebuild: Readonly<Rebuild>;
+    readonly rebuild: Rebuild;
   }): React.JSX.Element => (
     <section className="panel">
       <div className="panel-heading">
@@ -167,3 +168,4 @@ export default {
   OverviewRecentEntries,
   OverviewSignalGrid,
 };
+

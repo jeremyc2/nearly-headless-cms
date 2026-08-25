@@ -1,4 +1,4 @@
-import { readPackageManifest } from "../../../scripts/package-manifest.ts";
+import { readPackageManifest } from "./package-manifest.ts";
 
 const packageDirectory = `${import.meta.dir}/..`,
   packageManifest = await readPackageManifest(`${packageDirectory}/package.json`),

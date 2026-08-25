@@ -35,7 +35,7 @@ const ACCEPTANCE_RUN_COUNT = 10,
     }
     return test.skip;
   },
-  waitFor = <Value, View extends Bun.WebView>(
+  waitFor = <Value, View extends Bun.WebView = Bun.WebView>(
     view: Readonly<View>,
     expression: string,
     predicate: (value: Value) => boolean,

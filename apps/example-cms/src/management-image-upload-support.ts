@@ -1,4 +1,5 @@
 import { CmsError, type ContentDefinition } from "nearly-headless-cms";
+import { type ReadonlyTransportRequest, toWebRequest } from "nearly-headless-cms/http";
 import { Effect } from "effect";
 import managementSupport from "./management-support.ts";
 
@@ -43,14 +44,14 @@ const { conditionalProperty, isJsonValueArray, isRecord } = managementSupport,
       ...readReplacementMetadataFields(metadata),
     }));
   },
-  parseReplacementUpload = <RequestType extends Request>(request: Readonly<RequestType>) =>
+  parseReplacementUpload = (request: ReadonlyTransportRequest) =>
     Effect.tryPromise({
       catch: () =>
         CmsError.InvalidInput.make({
           message: "Image replacement requires multipart metadata and content",
         }),
       try: () =>
-        request
+        toWebRequest(request)
           .formData()
           .then((form) => parseReplacementMetadata(form.get("metadata"), form.get("content"))),
     }),

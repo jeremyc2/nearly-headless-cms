@@ -1,4 +1,4 @@
-import { readPackageManifest } from "../../../scripts/package-manifest.ts";
+import { readPackageManifest } from "./package-manifest.ts";
 
 const archiveValue = Bun.env["PACKAGE_ARCHIVE"],
   packageDirectory = `${import.meta.dir}/..`,

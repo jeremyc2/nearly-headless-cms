@@ -1,5 +1,5 @@
 import { Effect } from "effect";
-import { readPackageManifest } from "../../../scripts/package-manifest.ts";
+import { readPackageManifest } from "./package-manifest.ts";
 
 const allowedTopLevel = new Set([
     "package/package.json",

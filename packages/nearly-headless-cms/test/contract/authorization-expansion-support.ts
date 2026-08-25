@@ -54,16 +54,13 @@ const makeLayer = <Actions extends Operation.Action[]>(
 },
 
 // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- test helper is not a pipeable Effect API.
- runAuthorizationExpansion = <
-  Value,
-  Error,
-  EffectType extends Effect.Effect<Value, Error, Cms.Service>,
-  Actions extends Operation.Action[],
->(
-  effect: EffectType,
-  actions: Actions,
-  deniedAction: Readonly<{ current?: Actions[number] }>,
-): Promise<Effect.Success<EffectType>> => {
+ runAuthorizationExpansion = <Value, Failure>(
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- Effect programs are executed by runPromise without mutation.
+  effect: Readonly<Effect.Effect<Value, Failure, Cms.Service>>,
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- action log must remain mutable for assertions.
+  actions: Operation.Action[],
+  deniedAction: Readonly<{ current?: Operation.Action }>,
+): Promise<Value> => {
   const layer = makeLayer(actions, deniedAction),
     // This test helper is the application entry point for each isolated test run.
     // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer per run.

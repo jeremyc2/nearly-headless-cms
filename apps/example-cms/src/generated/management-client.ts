@@ -254,12 +254,10 @@ const buildAssetFormData = (file: File): FormData => {
     };
   },
   makeTaggedErrorClass = Schema.TaggedError,
-  mapFailure = <
-    Failure extends { readonly message: string },
-    OperationType extends Effect.Effect<unknown, Failure>,
-  >(
-    operation: OperationType,
-  ): Effect.Effect<Effect.Success<OperationType>, ManagementClientFailure> =>
+  mapFailure = <Success, Failure extends { readonly message: string }>(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- Effect programs are mapped without mutation.
+    operation: Effect.Effect<Success, Failure>,
+  ): Effect.Effect<Success, ManagementClientFailure> =>
     operation.pipe(
       Effect.mapError((failure) => {
         const failureProperties: {

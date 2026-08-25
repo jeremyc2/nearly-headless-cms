@@ -66,9 +66,10 @@ const assetStageEndPromise = (stage: {
     }
     return { ...clonedState, catalog: cloneCatalog(state.catalog) };
   },
-  commitAssetBlob = <Content extends IngestInput["content"]>(
+  commitAssetBlob = (
     configuration: Readonly<Configuration>,
-    content: Readonly<Content>,
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- ingest content may be a Uint8Array or Effect Stream consumed during commit.
+    content: IngestInput["content"],
   ): Effect.Effect<
     { readonly byteLength: number; readonly digest: string },
     InfrastructureFailure | InvalidInput
@@ -126,8 +127,9 @@ const assetStageEndPromise = (stage: {
         );
       });
   },
-  contentStreamFromInput = <Content extends IngestInput["content"]>(
-    content: Readonly<Content>,
+  contentStreamFromInput = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- ingest content may be a Uint8Array or Effect Stream consumed during commit.
+    content: IngestInput["content"],
   ): Stream.Stream<Uint8Array, InfrastructureFailure> => {
     if (content instanceof Uint8Array) {
       return Stream.make(content);
@@ -151,12 +153,11 @@ const assetStageEndPromise = (stage: {
     }
     return undefined;
   },
-  finalizeAssetStaging = <
-    Stage extends { ended: boolean; writer: ReturnType<ReturnType<typeof Bun.file>["writer"]> },
-  >(
+  finalizeAssetStaging = (
     configuration: Readonly<Configuration>,
     stagePath: string,
-    stage: Readonly<Stage>,
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- staging writer state is mutated while finalizing blob writes.
+    stage: { ended: boolean; writer: ReturnType<ReturnType<typeof Bun.file>["writer"]> },
   ): Promise<void> =>
     // oxlint-disable-next-line effecttsgo/async-function -- Asset staging finalization coordinates Bun writer flush and fsync boundaries.
     Promise.resolve(stage.writer.end()).then(async () => {
@@ -258,13 +259,11 @@ const assetStageEndPromise = (stage: {
     );
   },
   // oxlint-disable-next-line effecttsgo/async-function -- Atomic persistence coordinates Bun and node filesystem promises.
-  writeAtomic = async <
-    Acknowledgement extends Configuration["acknowledgement"],
-    Bytes extends Uint8Array,
-  >(
+  writeAtomic = async (
     path: string,
-    bytes: Readonly<Bytes>,
-    acknowledgement: Readonly<Acknowledgement>,
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- byte buffers are passed to Bun.write without retaining references.
+    bytes: Uint8Array,
+    acknowledgement: Configuration["acknowledgement"],
   ): Promise<void> => {
     const parentDirectory = path.slice(0, Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"))),
       // oxlint-disable-next-line effecttsgo/crypto-random-uuid -- staging paths are built synchronously in Bun's filesystem bridge.

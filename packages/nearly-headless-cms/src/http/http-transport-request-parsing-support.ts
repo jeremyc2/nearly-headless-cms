@@ -4,7 +4,10 @@ import { InfrastructureFailure, InvalidInput } from "../cms-error.ts";
 import {
   type ReadonlyTransportAbortSignal,
   type ReadonlyTransportRequest,
+  toAbortSignal,
+  toWebRequest,
 } from "./http-transport-readonly-types.ts";
+/* oxlint-disable eslint/one-var -- helpers with readonly disables must stay as separate const declarations. */
 import {
   httpStatusInternalServerError,
   httpStatusPayloadTooLarge,
@@ -64,7 +67,7 @@ interface HandleMultipartAssetPartInput {
   readonly contentPath: string;
   readonly maximumFileByteLength: number;
   readonly parseAssetMetadata: (text: string) => Omit<IngestInput, "content">;
-  readonly part: Readonly<Multipart.Part>;
+  part: Multipart.Part;
   readonly state: MultipartAssetState;
 }
 
@@ -73,7 +76,7 @@ const { encodeChunk } = transportResponse,
     input: Readonly<Input>,
   ): Effect.Effect<void, InvalidInput | RequestFailureError> => {
     const { contentPath, limits, parseAssetMetadata, request, state } = input;
-    return Stream.runForEach(HttpServerRequest.fromWeb(request).multipartStream, (part) =>
+    return Stream.runForEach(HttpServerRequest.fromWeb(toWebRequest(request)).multipartStream, (part) =>
       handleMultipartAssetPart({
         contentPath,
         maximumFileByteLength: limits.file,
@@ -113,8 +116,9 @@ const { encodeChunk } = transportResponse,
       metadata,
     };
   },
-  handleMultipartAssetPart = <Input extends HandleMultipartAssetPartInput>(
-    input: Readonly<Input>,
+  handleMultipartAssetPart = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- multipart state is mutated while parsing asset parts.
+    input: Readonly<HandleMultipartAssetPartInput>,
   ): Effect.Effect<void, InvalidInput | RequestFailureError> => {
     const { contentPath, maximumFileByteLength, parseAssetMetadata, part, state } = input;
     if (Multipart.isField(part)) {
@@ -138,18 +142,18 @@ const { encodeChunk } = transportResponse,
     state.contentMediaType = part.contentType;
     return stageFilePart(part, contentPath, maximumFileByteLength);
   },
-  mapMultipartFailure = <
-    ErrorType extends InvalidInput | Multipart.MultipartError | RequestFailureError,
-  >(
-    error: Readonly<ErrorType>,
+  mapMultipartFailure = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- multipart errors are inspected via instanceof and Predicate.isTagged without mutation.
+    error: InvalidInput | Multipart.MultipartError | RequestFailureError,
   ): InvalidInput | RequestFailureError => {
     if (error instanceof Multipart.MultipartError) {
       return multipartFailure(error);
     }
     return error;
   },
-  multipartFailure = <ErrorType extends Multipart.MultipartError>(
-    error: Readonly<ErrorType>,
+  multipartFailure = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- multipart errors are inspected via Predicate.isTagged without mutation.
+    error: Multipart.MultipartError,
   ): RequestFailureError | InvalidInput => {
     if (
       Predicate.isTagged(error.reason, "BodyTooLarge") ||
@@ -172,8 +176,9 @@ const { encodeChunk } = transportResponse,
     }
     return InvalidInput.make({ message: "Malformed multipart Asset upload" });
   },
-  stageFilePart = <PartType extends Multipart.File>(
-    part: Readonly<PartType>,
+  stageFilePart = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- multipart file parts expose mutable content streams for staging writes.
+    part: Multipart.File,
     path: string,
     maximumByteLength: number,
   ): Effect.Effect<void, InvalidInput | RequestFailureError> => {
@@ -227,7 +232,7 @@ const { encodeChunk } = transportResponse,
           request,
           state: holder.state,
         });
-      await Effect.runPromise(parse, { signal });
+      await Effect.runPromise(parse, { signal: toAbortSignal(signal) });
       return finalizeStagedAssetUpload({
         contentMediaType: holder.state.contentMediaType,
         contentPath: uploadContentPath,

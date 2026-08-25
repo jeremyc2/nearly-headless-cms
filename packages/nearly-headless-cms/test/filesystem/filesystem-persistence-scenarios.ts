@@ -188,17 +188,12 @@ const commitDurableCatalogCutoverEffect = (targetSnapshot: CompiledSnapshot) =>
       entries = yield* Persistence.EntryPersistence;
     return { catalog: yield* catalog.read(), entries: yield* entries.readGeneration() };
   }),
-  runWithLayer = <
-    Value,
-    EffectError,
-    LayerError,
-    Requirements,
-    LayerType extends Layer.Layer<Requirements, LayerError>,
-    EffectType extends Effect.Effect<Value, EffectError, Requirements>,
-  >(
-    layer: Readonly<LayerType>,
-    effect: EffectType,
-  ): Promise<Effect.Success<EffectType>> =>
+  runWithLayer = <Value, EffectError, Requirements>(
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- Layer values are provided to runPromise without mutation.
+    layer: Layer.Layer<Requirements, EffectError>,
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- Effect programs are executed by runPromise without mutation.
+    effect: Readonly<Effect.Effect<Value, EffectError, Requirements>>,
+  ): Promise<Value> =>
     Effect.runPromise(
       // oxlint-disable-next-line effecttsgo/strict-effect-provide -- test entry point needs a fresh isolated layer.
       effect.pipe(Effect.provide(layer)),

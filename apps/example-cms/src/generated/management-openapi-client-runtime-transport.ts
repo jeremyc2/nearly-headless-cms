@@ -13,14 +13,67 @@ import type { OperationSpecification } from "./management-openapi-client-specifi
 import { ProtocolFailure } from "./protocol-failure.ts";
 import { TransportFailure } from "./transport-failure.ts";
 import { operationSpecifications } from "./management-openapi-client-runtime-specifications.ts";
-import transportRequestSupport from "./management-openapi-client-runtime-transport-request-support.ts";
 
-const {
-    appendQueryParameters,
-    buildRequestBody,
-    buildRequestHeaders,
-    buildRequestUrl,
-  } = transportRequestSupport,
+/* oxlint-disable effecttsgo/async-function -- generated clients expose a Promise-backed transport boundary. */
+/* oxlint-disable typescript/prefer-readonly-parameter-types -- generated operation inputs include platform types that cannot satisfy deep readonly. */
+/* oxlint-disable eslint/sort-vars -- generated runtime helpers are ordered for readability. */
+/* oxlint-disable eslint/max-lines -- generated transport runtime exceeds local module line budget. */
+/* oxlint-disable eslint/no-ternary -- generated fetch bridge keeps compact signal fallback. */
+
+const toAbortSignal = (
+    signal: Pick<
+      AbortSignal,
+      "aborted" | "addEventListener" | "reason" | "removeEventListener" | "throwIfAborted"
+    >,
+  ): AbortSignal =>
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- fetch requires AbortSignal; generated clients pass the runtime signal.
+    signal as unknown as AbortSignal,
+  appendQueryParameters = (
+    requestUrl: Pick<URL, "pathname" | "searchParams">,
+    queryParameters: Readonly<Record<string, unknown>>,
+  ): void => {
+    for (const [name, value] of Object.entries(queryParameters)) {
+      if (value !== undefined) {
+        if (
+          typeof value === "string" ||
+          typeof value === "number" ||
+          typeof value === "boolean" ||
+          typeof value === "bigint"
+        ) {
+          requestUrl.searchParams.set(name, String(value));
+        } else {
+          requestUrl.searchParams.set(name, JSON.stringify(value));
+        }
+      }
+    }
+  },
+  buildRequestBody = (
+    input: Readonly<OperationInputs[keyof OperationInputs]>,
+    headers: Headers,
+    specification: Readonly<OperationSpecification>,
+  ): BodyInit | undefined => {
+    if (!("body" in input) || input.body === undefined) {
+      return undefined;
+    }
+    const { body: requestBody } = input;
+    if (requestBody instanceof FormData) {
+      return requestBody;
+    }
+    headers.set("content-type", specification.requestMediaType ?? "application/json");
+    // oxlint-disable-next-line effecttsgo/prefer-schema-over-json -- request bodies are OpenAPI-generated unknown shapes and must be serialized using the browser JSON boundary.
+    return JSON.stringify(requestBody);
+  },
+  buildRequestHeaders = (input: Readonly<OperationInputs[keyof OperationInputs]>): Headers => {
+    if ("headers" in input) {
+      return new Headers(input.headers);
+    }
+    return new Headers();
+  },
+  buildRequestUrl = (baseAddress: string, path: string): URL =>
+    new URL(
+      `${baseAddress}${path}`,
+      baseAddress || globalThis.location?.origin || "http://localhost",
+    ),
   connectionFailureMessage = (cause: unknown): string => {
     if (cause instanceof Error) {
       return cause.message;
@@ -32,7 +85,7 @@ const {
       baseAddress: string,
       identifier: Identifier,
     ): ((
-      input: Readonly<OperationInputs[Identifier]>,
+      input: OperationInputs[Identifier],
       signal?: Pick<
         AbortSignal,
         "aborted" | "addEventListener" | "reason" | "removeEventListener" | "throwIfAborted"
@@ -49,12 +102,15 @@ const {
         specification: operationSpecifications[identifier],
       }),
   /* oxlint-disable effecttsgo/global-fetch, effecttsgo/global-fetch-in-effect -- generated clients intentionally use the platform fetch boundary so callers can supply the browser or server runtime. */
-  fetchOperationResponse = (request: Readonly<OperationFetchRequest>): Promise<Response> =>
+  fetchOperationResponse = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- OperationFetchRequest carries optional readonly abort signal bridge fields.
+    request: Readonly<OperationFetchRequest>,
+  ): Promise<Response> =>
     fetch(request.requestUrl, {
       body: request.body,
       headers: request.headers,
       method: request.method,
-      signal: request.signal,
+      signal: request.signal === undefined ? undefined : toAbortSignal(request.signal),
     }).catch((error) => {
       throw TransportFailure.make({ message: connectionFailureMessage(error) });
     }),

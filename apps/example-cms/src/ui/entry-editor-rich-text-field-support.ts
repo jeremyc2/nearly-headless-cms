@@ -15,6 +15,7 @@ import {
   useState,
 } from "./entry-editor-rich-text-field-imports.ts";
 import type { EntryRepresentation, QueryPage } from "../generated/management-client.ts";
+/* oxlint-disable typescript/no-unnecessary-type-parameters -- React panel helpers preserve local prop aliases for component call sites. */
 
 const applyRichTextFieldAdapterEffect = <
     AdapterRef extends { current: BrowserAdapter | null },
@@ -28,11 +29,11 @@ const applyRichTextFieldAdapterEffect = <
     onChangeReference,
     setDialog,
   }: {
-    readonly adapter: Readonly<AdapterRef>;
-    readonly host: Readonly<HostRef>;
+    readonly adapter: AdapterRef;
+    readonly host: HostRef;
     readonly initialValue: RichText.Document;
-    readonly onChangeReference: Readonly<OnChangeRef>;
-    readonly setDialog: Readonly<SetDialog>;
+    readonly onChangeReference: OnChangeRef;
+    readonly setDialog: SetDialog;
   }) => {
     useEffect(() => {
       const cleanup = (() => {
@@ -63,8 +64,8 @@ const applyRichTextFieldAdapterEffect = <
     OnChangeRef extends { current: (document: RichText.Document) => void },
     OnChange extends (document: RichText.Document) => void,
   >(
-    onChangeReference: Readonly<OnChangeRef>,
-    onChange: Readonly<OnChange>,
+    onChangeReference: OnChangeRef,
+    onChange: OnChange,
   ) => {
     useEffect(() => {
       onChangeReference.current = onChange;
@@ -120,3 +121,4 @@ const applyRichTextFieldAdapterEffect = <
   };
 
 export default { useEntryEditorRichTextFieldState };
+

@@ -13,15 +13,11 @@ const { executeOperation } = transportOperation,
     operationResponse,
     resolveUnmatchedDeliveryRoute,
   } = deliveryRouteSupport,
-  handleCustomManagementOperations = <
-    Context extends RouteHandlerContext,
-    Operations extends NonNullable<Options["managementOperations"]>,
-  >(
-    context: Readonly<Context>,
-    managementOperations: Operations,
-  ): Operations extends NonNullable<Options["managementOperations"]>
-    ? Response | undefined | Promise<Response | undefined>
-    : never => {
+  handleCustomManagementOperations = (
+    context: Readonly<RouteHandlerContext>,
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- route handlers inspect operation metadata without mutating configured operations.
+    managementOperations: NonNullable<Options["managementOperations"]>,
+  ): Response | undefined | Promise<Response | undefined> => {
     const match = findCustomManagementMatch(context, managementOperations);
     if (match === undefined) {
       return undefined;
@@ -52,23 +48,15 @@ const { executeOperation } = transportOperation,
       (value) => operationResponse(context, value),
     );
   },
-  handleDeliveryOperations = <
-    Context extends RouteHandlerContext,
-    Matchers extends readonly {
+  handleDeliveryOperations = (
+    context: Readonly<RouteHandlerContext>,
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- route handlers inspect operation metadata without mutating configured operations.
+    operationMatchers: readonly {
       readonly expression: RegExp;
       readonly names: readonly string[];
       readonly operation: NonNullable<Options["deliveryOperations"]>[number];
     }[],
-  >(
-    context: Readonly<Context>,
-    operationMatchers: Matchers,
-  ): Matchers extends readonly {
-    readonly expression: RegExp;
-    readonly names: readonly string[];
-    readonly operation: NonNullable<Options["deliveryOperations"]>[number];
-  }[]
-    ? Response | undefined | Promise<Response | undefined>
-    : never => {
+  ): Response | undefined | Promise<Response | undefined> => {
     const deliveryMatch = findDeliveryMatcher(context, operationMatchers);
     if (deliveryMatch === undefined) {
       return resolveUnmatchedDeliveryRoute(context, operationMatchers);

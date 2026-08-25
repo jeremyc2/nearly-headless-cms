@@ -1,11 +1,14 @@
 import { Cms, type Operation } from "../../src/index.ts";
+/* oxlint-disable eslint/sort-vars -- test constants follow scenario narrative order. */
 import { Effect, Exit } from "effect";
 import { describe, expect, test } from "bun:test";
 import { runAuthorizationExpansion } from "./authorization-expansion-support.ts";
 
-const createVerifyDeniedExpansion = <Actions extends Operation.Action[]>(
-    actions: Actions,
-    deniedAction: Readonly<{ current?: Actions[number] }>,
+const createVerifyDeniedExpansion = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- action log must remain mutable for assertions.
+    actions: Operation.Action[],
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- deniedAction.current is mutated to simulate authorization denial.
+    deniedAction: { current?: Operation.Action },
   ) =>
     Effect.gen(function* verifyDeniedExpansion() {
       const { adaEntry, cms, graceEntry } = yield* createVerifyNestedRelationshipExpansion(
@@ -25,8 +28,10 @@ const createVerifyDeniedExpansion = <Actions extends Operation.Action[]>(
             expansion: ["friend"],
           }),
         );
-      expect(Exit.isFailure(denied)).toBeTrue();
-      expect(actions).toEqual(["entry.read", "entry.expand"]);
+      expect(Exit.isFailure(denied)).toBe(true);
+      expect(actions.length).toBe(expectedDeniedExpansionActionCount);
+      expect(actions[0]).toBe("entry.read");
+      expect(actions[1]).toBe("entry.expand");
       return { adaEntry, cms, graceEntry };
     }),
   createVerifyExpandedPerson = (
@@ -51,7 +56,7 @@ const createVerifyDeniedExpansion = <Actions extends Operation.Action[]>(
         id: adaEntry.id,
         values: { friend: null, name: "Ada" },
       });
-      expect(actions).toEqual(["entry.read", "entry.expand"]);
+      expect(actions).toEqual(["entry.read", "entry.expand"] as Operation.Action[]);
       return { adaEntry, cms, graceEntry };
     }),
   createVerifyListRelationshipExpansion = (
@@ -126,6 +131,7 @@ const createVerifyDeniedExpansion = <Actions extends Operation.Action[]>(
       return { adaEntry, cms, graceEntry };
     }),
   emptyCollectionLength = 0,
+  expectedDeniedExpansionActionCount = 2,
   entryFromCreateResult = <Entry extends { id: string }>(
     result: Readonly<{ entry: Entry } | Entry>,
   ): Entry => {

@@ -1,4 +1,5 @@
 import {
+  type ReadonlyTransportRequest,
   httpStatusOk,
   httpStatusPartialContent,
   httpStatusRangeNotSatisfiable,
@@ -10,7 +11,7 @@ import deliveryPublicAssetByteRangeSupport from "./delivery-public-asset-byte-ra
 export interface PublicAssetResponseInput {
   readonly asset: Asset.StoredAsset;
   readonly definitionFingerprint: string;
-  readonly request: Request;
+  readonly request: ReadonlyTransportRequest;
   readonly requestId: string;
 }
 
@@ -18,13 +19,13 @@ interface RangedAssetResponseInput {
   readonly asset: Asset.StoredAsset;
   readonly headers: Headers;
   readonly range: string;
-  readonly request: Request;
+  readonly request: ReadonlyTransportRequest;
 }
 
 const { parseByteRange } = deliveryPublicAssetByteRangeSupport,
-  publicAssetBody = <RequestType extends Request, Bytes extends Uint8Array>(
-    request: Readonly<RequestType>,
-    bytes: Readonly<Bytes>,
+  publicAssetBody = (
+    request: Readonly<ReadonlyTransportRequest>,
+    bytes: Readonly<Uint8Array>,
   ): ArrayBuffer | null => {
     if (request.method === "HEAD") {
       return null;
@@ -51,14 +52,11 @@ const { parseByteRange } = deliveryPublicAssetByteRangeSupport,
       });
     return { etag, headers };
   },
-  rangeNotModifiedResponse = <
-    RequestType extends Request,
-    AssetType extends Asset.StoredAsset,
-    HeaderType extends Headers,
-  >(
-    request: Readonly<RequestType>,
-    asset: Readonly<AssetType>,
-    headers: Readonly<HeaderType>,
+  rangeNotModifiedResponse = (
+    request: Readonly<ReadonlyTransportRequest>,
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- stored asset bytes are read without mutation when serving range requests.
+    asset: Readonly<Asset.StoredAsset>,
+    headers: Readonly<Headers>,
   ): Response | undefined => {
     const etag = headers.get("etag"),
       ifRange = request.headers.get("if-range"),

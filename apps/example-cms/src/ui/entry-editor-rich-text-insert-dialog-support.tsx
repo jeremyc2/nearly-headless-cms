@@ -5,6 +5,7 @@ import {
   type RichTextInsertDialog,
   assetCaption,
 } from "./entry-editor-rich-text-insert-dialog-imports.ts";
+/* oxlint-disable typescript/no-unnecessary-type-parameters -- React panel helpers preserve local prop aliases for component call sites. */
 
 const InsertDialogActions = <
     AdapterRef extends RefObject<BrowserAdapter | null>,
@@ -16,7 +17,7 @@ const InsertDialogActions = <
   }: {
     readonly adapter: Readonly<AdapterRef>;
     readonly closeDialog: () => void;
-    readonly dialog: Readonly<Dialog>;
+    readonly dialog: Dialog;
   }) => (
     <div className="editor-actions">
       <button className="secondary-button" onClick={closeDialog} type="button">
@@ -192,3 +193,4 @@ export default {
   RichTextEntryFields,
   RichTextLinkFields,
 };
+

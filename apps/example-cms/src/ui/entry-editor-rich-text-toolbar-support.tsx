@@ -2,6 +2,7 @@ import type { ReactNode, RefObject } from "react";
 import type { BrowserAdapter } from "./rich-text-editor/index.ts";
 import { headingLevel } from "./main-labels.ts";
 import { preserveSelection } from "./main-shared.ts";
+/* oxlint-disable typescript/no-unnecessary-type-parameters -- React panel helpers preserve local prop aliases for component call sites. */
 
 const RichTextBlockPicker = <Adapter extends RefObject<BrowserAdapter | null>>({
     adapter,
@@ -38,8 +39,8 @@ const RichTextBlockPicker = <Adapter extends RefObject<BrowserAdapter | null>>({
   }: {
     readonly adapter: Readonly<Adapter>;
     readonly ariaLabel: string;
-    readonly children: Readonly<Content>;
-    readonly mark: Readonly<Mark>;
+    readonly children: Content;
+    readonly mark: Mark;
   }) => (
     <button
       aria-label={ariaLabel}
@@ -98,9 +99,9 @@ const RichTextBlockPicker = <Adapter extends RefObject<BrowserAdapter | null>>({
       </button>
     </>
   ),
-  dispatchBlockKind = <Adapter extends RefObject<BrowserAdapter | null>, BlockType extends string>(
-    adapter: Readonly<Adapter>,
-    blockType: Readonly<BlockType>,
+  dispatchBlockKind = <Adapter extends RefObject<BrowserAdapter | null>>(
+    adapter: Adapter,
+    blockType: string,
   ): void => {
     if (blockType === "heading-2" || blockType === "heading-3" || blockType === "heading-4") {
       adapter.current?.dispatch({
@@ -121,3 +122,4 @@ export {
   RichTextToolbarHistoryButtons,
   RichTextToolbarListButtons,
 };
+

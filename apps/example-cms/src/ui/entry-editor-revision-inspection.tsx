@@ -1,6 +1,7 @@
+import { type UseQueryResult, useQuery } from "@tanstack/react-query";
 import { Effect } from "effect";
+import type { Revision } from "../generated/management-openapi-client-component-types.ts";
 import { managementClient } from "./main-shared.ts";
-import { useQuery } from "@tanstack/react-query";
 
 const EntryEditorRevisionInspection = ({
     contentTypeId,
@@ -38,13 +39,8 @@ const EntryEditorRevisionInspection = ({
       </div>
     );
   },
-  EntryEditorRevisionInspectionCard = <
-    InspectedRevision extends {
-      readonly data?: { readonly values: Record<string, unknown> };
-      readonly error: Error | null;
-      readonly isLoading: boolean;
-    },
-  >({
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- React Query results expose mutable status fields while rendering revision details.
+  EntryEditorRevisionInspectionCard = ({
     inspectedRevision,
     isRestoring,
     onClose,
@@ -52,7 +48,7 @@ const EntryEditorRevisionInspection = ({
     restoreDisabled,
     revisionNumber,
   }: {
-    readonly inspectedRevision: Readonly<InspectedRevision>;
+    readonly inspectedRevision: UseQueryResult<Revision>;
     readonly isRestoring: boolean;
     readonly onClose: () => void;
     readonly onRestore: () => void;

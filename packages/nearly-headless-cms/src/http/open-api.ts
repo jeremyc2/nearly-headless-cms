@@ -24,11 +24,10 @@ const { managementPaths } = openApiManagementPaths,
       aSortedEntries(value).map(([key, child]) => [key, bSortValue(child)]),
     );
   },
-  cHeadlessPaths = <Operations extends readonly DeliveryOperation[]>(
-    operations: Operations,
-  ): Operations extends readonly DeliveryOperation[]
-    ? Readonly<Record<string, Readonly<Record<string, OperationDescriptor>>>>
-    : never =>
+  cHeadlessPaths = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- OpenAPI operation descriptors are read while building path maps.
+    operations: readonly DeliveryOperation[],
+  ): Readonly<Record<string, Readonly<Record<string, OperationDescriptor>>>> =>
     operations.reduce<Record<string, Record<string, OperationDescriptor>>>(
       (paths, operation) => {
         const path = `${headlessPrefix}${operation.path}`;
@@ -45,18 +44,20 @@ const { managementPaths } = openApiManagementPaths,
       },
     ),
   /** Builds an OpenAPI document containing only declared Headless Delivery Operations. */
-  headless = <Operations extends readonly DeliveryOperation[]>(
-    operations: Operations,
-  ): Operations extends readonly DeliveryOperation[] ? Document : never => ({
+  headless = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- OpenAPI operation descriptors are read while building path maps.
+    operations: readonly DeliveryOperation[],
+  ): Document => ({
     components: { schemas },
     info: { title: "Nearly Headless CMS Headless API", version: "1.0.0" },
     openapi: "3.1.0",
     paths: completePaths(cHeadlessPaths(operations)),
   }),
   /** Builds the complete generic plus Builder-defined Management OpenAPI document. */
-  management = <Operations extends readonly ManagementOperation[]>(
-    operations: Operations,
-  ): Operations extends readonly ManagementOperation[] ? Document : never => ({
+  management = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- OpenAPI operation descriptors are read while building path maps.
+    operations: readonly ManagementOperation[],
+  ): Document => ({
     components: { schemas },
     info: { title: "Nearly Headless CMS Management API", version: "1.0.0" },
     openapi: "3.1.0",
