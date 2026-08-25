@@ -170,7 +170,11 @@ const coreNodeTypesSet = coreNodeTypes,
     }
     if (extension.allowedChildren === "none" && node["children"].length > emptyLength) {
       return [
-        makeIssue([...path, "children"], "childrenNotAllowed", "Extension does not permit children"),
+        makeIssue(
+          [...path, "children"],
+          "childrenNotAllowed",
+          "Extension does not permit children",
+        ),
       ];
     }
     if (extension.allowedChildren === "inline") {
@@ -281,9 +285,7 @@ const coreNodeTypesSet = coreNodeTypes,
   ): readonly ValidationIssue[] => {
     const nodeType = node["type"];
     if (typeof nodeType === "string" && coreNodeTypes.has(nodeType)) {
-      return [
-        makeIssue(path, "invalidBlockNode", `Node ${nodeType} is not allowed as a block`),
-      ];
+      return [makeIssue(path, "invalidBlockNode", `Node ${nodeType} is not allowed as a block`)];
     }
     return validateExtensionBlock(node, path, extensions);
   };

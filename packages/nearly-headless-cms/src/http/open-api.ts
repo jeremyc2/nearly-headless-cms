@@ -47,22 +47,24 @@ const { managementPaths } = openApiManagementPaths,
   headless = (
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-194] OpenAPI operation descriptors are read while building path maps.
     operations: readonly DeliveryOperation[],
-  ): Document => ({
-    components: { schemas },
-    info: { title: "Nearly Headless CMS Headless API", version: "1.0.0" },
-    openapi: "3.1.0",
-    paths: completePaths(cHeadlessPaths(operations)),
-  }),
+  ): Document =>
+    ({
+      components: { schemas },
+      info: { title: "Nearly Headless CMS Headless API", version: "1.0.0" },
+      openapi: "3.1.0",
+      paths: completePaths(cHeadlessPaths(operations)),
+    }),
   /** Builds the complete generic plus Builder-defined Management OpenAPI document. */
   management = (
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-194] OpenAPI operation descriptors are read while building path maps.
     operations: readonly ManagementOperation[],
-  ): Document => ({
-    components: { schemas },
-    info: { title: "Nearly Headless CMS Management API", version: "1.0.0" },
-    openapi: "3.1.0",
-    paths: completePaths(managementPaths(operations)),
-  }),
+  ): Document =>
+    ({
+      components: { schemas },
+      info: { title: "Nearly Headless CMS Management API", version: "1.0.0" },
+      openapi: "3.1.0",
+      paths: completePaths(managementPaths(operations)),
+    }),
   /** Serializes an OpenAPI document with deterministic recursively sorted object keys. */
   stringify = (document: Document): string =>
     `${JSON.stringify(bSortValue(document), null, indentationSpaces)}\n`;

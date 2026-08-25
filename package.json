@@ -24,6 +24,7 @@
     "test:filesystem": "bun test packages/nearly-headless-cms/test/filesystem",
     "test:webview": "bun test acceptance/webview/qualification.test.ts && bun test acceptance/webview/journey.test.ts",
     "test:visual": "bun test acceptance/visual",
+    "test:journeys": "bun test acceptance/journeys",
     "check:generated": "bun run scripts/check-generated.ts",
     "check:architecture": "bun run scripts/check-architecture.ts",
     "check:escape-hatches": "bun run scripts/escape-hatches.ts verify",

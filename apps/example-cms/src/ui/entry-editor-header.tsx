@@ -36,4 +36,3 @@ export const EntryEditorHeader = ({
     </div>
   </header>
 );
-

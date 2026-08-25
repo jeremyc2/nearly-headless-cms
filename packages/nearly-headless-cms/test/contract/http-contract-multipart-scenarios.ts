@@ -164,9 +164,7 @@ const assetUrl = "http://cms.test/api/v1/management/definition-spaces/example-bl
   ): Promise<void> => {
     const assetHeadResponse = await handler(new Request(contentUrl, { method: "HEAD" })),
       headBody = await assetHeadResponse.arrayBuffer(),
-      rangeResponse = await handler(
-        new Request(contentUrl, { headers: { range: "bytes=1-3" } }),
-      );
+      rangeResponse = await handler(new Request(contentUrl, { headers: { range: "bytes=1-3" } }));
     expect(assetHeadResponse.status).toBe(successStatus);
     expect(assetHeadResponse.headers.get("content-length")).toBe(String(payloadByteFive));
     expect(headBody.byteLength).toBe(0);

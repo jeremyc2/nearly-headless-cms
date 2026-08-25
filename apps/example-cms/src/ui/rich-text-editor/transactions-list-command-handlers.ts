@@ -22,10 +22,7 @@ const { commit, replaceBlock } = transactionsState,
     }
     return workDeleteBackwardForSelection(state, selected);
   },
-  applyToggleList = (
-    state: State,
-    command: Extract<Command, { type: "toggleList" }>,
-  ): State => {
+  applyToggleList = (state: State, command: Extract<Command, { type: "toggleList" }>): State => {
     const rootBlock = state.document.children[state.selection.anchor.blockIndex];
     if (rootBlock === undefined) {
       return state;
@@ -157,9 +154,7 @@ const { commit, replaceBlock } = transactionsState,
         [
           {
             ...listBlock,
-            children: listBlock.children.filter(
-              (_listItem, index) => index !== listItemIndex,
-            ),
+            children: listBlock.children.filter((_listItem, index) => index !== listItemIndex),
           } as RichText.ListNode,
         ],
       ),
@@ -185,10 +180,8 @@ const { commit, replaceBlock } = transactionsState,
       { anchor: position, focus: position },
     );
   },
-  workDeleteBackwardAtListStart = (
-    state: State,
-    selected: SelectedTextContext,
-  ): State => outdentListItem({ selected, state }),
+  workDeleteBackwardAtListStart = (state: State, selected: SelectedTextContext): State =>
+    outdentListItem({ selected, state }),
   workDeleteBackwardForSelection = (
     state: State,
     selected: NonNullable<ReturnType<typeof selectedText>>,

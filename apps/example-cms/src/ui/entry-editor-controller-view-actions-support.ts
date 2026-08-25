@@ -11,17 +11,18 @@ const entryEditorControllerConflictActions = <
   setConflict,
   setValues,
   values,
-}: Readonly<Input>) => ({
-  discardConflict: (latestValues: Readonly<LatestValues>) => {
-    setValues(structuredClone(latestValues));
-    setConflict(undefined);
-  },
-  reapplyConflict: () => {
-    if (conflict !== undefined) {
-      saveValues(values, conflict.latest.writeToken);
-    }
-  },
-});
+}: Readonly<Input>) =>
+  ({
+    discardConflict: (latestValues: Readonly<LatestValues>) => {
+      setValues(structuredClone(latestValues));
+      setConflict(undefined);
+    },
+    reapplyConflict: () => {
+      if (conflict !== undefined) {
+        saveValues(values, conflict.latest.writeToken);
+      }
+    },
+  });
 
 export default {
   entryEditorControllerConflictActions,

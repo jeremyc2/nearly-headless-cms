@@ -74,4 +74,3 @@ const { conditionalValue } = transactionsSupport,
 
 export { create, isDirty, load, markClean, persistedDocument };
 export default { commit, replaceBlock };
-

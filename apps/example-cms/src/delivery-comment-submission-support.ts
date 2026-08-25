@@ -100,10 +100,11 @@ const { canonicalizeJsonValue, parseBody, requiredParameter } = deliverySupport,
   pendingCommentReceipt = (
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-192] mutation receipts use discriminated union shapes from CMS operations.
     result: { id: string } | { entry: { id: string }; writeToken: string },
-  ): { status: "pending"; submissionId: string } => ({
-    status: "pending",
-    submissionId: submissionIdentifier(result),
-  }),
+  ): { status: "pending"; submissionId: string } =>
+    ({
+      status: "pending",
+      submissionId: submissionIdentifier(result),
+    }),
   readStoredCommentReceipt = (
     commandReceiptStore: CommandReceiptStore,
     postIdentifier: string,
@@ -137,7 +138,9 @@ const { canonicalizeJsonValue, parseBody, requiredParameter } = deliverySupport,
     return Effect.succeed(prior.receipt);
   },
   submissionIdentifier = (
-    result: { readonly id: string } | { readonly entry: { readonly id: string }; readonly writeToken: string },
+    result:
+      | { readonly id: string }
+      | { readonly entry: { readonly id: string }; readonly writeToken: string },
   ): string => {
     if ("writeToken" in result) {
       return result.entry.id;
@@ -182,8 +185,8 @@ const { canonicalizeJsonValue, parseBody, requiredParameter } = deliverySupport,
     CmsError.InvalidInput
   > => {
     const commentBody = body["body"],
-      {displayName} = body,
-      {websiteUrl} = body;
+      { displayName } = body,
+      { websiteUrl } = body;
     if (
       typeof displayName !== "string" ||
       typeof commentBody !== "string" ||

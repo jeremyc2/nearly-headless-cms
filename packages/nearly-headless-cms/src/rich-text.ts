@@ -49,8 +49,7 @@ const emptyLength = 0,
       version: formatVersion,
     });
   },
-
- dualInputArity = 2,
+  dualInputArity = 2,
   headingLevelFour = 4,
   headingLevelThree = 3,
   headingLevelTwo = 2,
@@ -70,14 +69,12 @@ const emptyLength = 0,
   serializeRichTextDocument = serializeRichTextDocumentImpl,
   // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-086] dual's generic overload is not inferred by the linter for this public helper.
   toJsonDual = Function.dual(
-    (arguments_) =>
-      arguments_.length === dualInputArity || blockValidation.isObject(arguments_[0]),
+    (arguments_) => arguments_.length === dualInputArity || blockValidation.isObject(arguments_[0]),
     serializeRichTextDocumentImpl,
   ),
   // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-086] dual's generic overload is not inferred by the linter for this public helper.
   validateDual = Function.dual(
-    (arguments_) =>
-      arguments_.length === dualInputArity || blockValidation.isObject(arguments_[0]),
+    (arguments_) => arguments_.length === dualInputArity || blockValidation.isObject(arguments_[0]),
     validateDocumentImpl,
   );
 

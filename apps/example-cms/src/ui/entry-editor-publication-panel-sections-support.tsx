@@ -5,13 +5,13 @@ import {
 import publicationPanelFieldsSupport from "./entry-editor-publication-panel-fields-support.tsx";
 
 const {
-  EntryEditorCommentActions,
-  EntryEditorEditorialError,
-  EntryEditorPostEditorialButton,
-  EntryEditorPostRelationships,
-  EntryEditorPublicationBoundaryNote,
-  EntryEditorPublicationStatusField,
-} = publicationPanelFieldsSupport,
+    EntryEditorCommentActions,
+    EntryEditorEditorialError,
+    EntryEditorPostEditorialButton,
+    EntryEditorPostRelationships,
+    EntryEditorPublicationBoundaryNote,
+    EntryEditorPublicationStatusField,
+  } = publicationPanelFieldsSupport,
   EntryEditorPublicationPanelEditorial = <
     // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     Values extends Record<string, unknown>,

@@ -14,16 +14,16 @@ interface AppendRequestBodyInput {
 }
 
 const appendParameterGroup = <Input extends AppendParameterGroupInput>(
-  input: Readonly<Input>,
-): void => {
-  const { fields, group, name } = input;
-  if (group === null) {
-    return;
-  }
-  fields.push(
-    `readonly ${sourceOperationRenderer.propertyField(name, group.type, group.required)}`,
-  );
-},
+    input: Readonly<Input>,
+  ): void => {
+    const { fields, group, name } = input;
+    if (group === null) {
+      return;
+    }
+    fields.push(
+      `readonly ${sourceOperationRenderer.propertyField(name, group.type, group.required)}`,
+    );
+  },
   appendRequestBody = <Input extends AppendRequestBodyInput>(input: Readonly<Input>): void => {
     const { fields, operation } = input;
     if (operation.requestBodySchema === undefined) {

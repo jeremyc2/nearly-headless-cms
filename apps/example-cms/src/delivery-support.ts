@@ -1,7 +1,11 @@
 import { type Cms, CmsError, type ContentDefinition, type EntryQuery } from "nearly-headless-cms";
 import { Effect, Schema } from "effect";
 import { EmptyRequest, PageQuery } from "./wire-schemas.ts";
-import { type HttpContract, type ReadonlyTransportRequest, toWebRequest } from "nearly-headless-cms/http";
+import {
+  type HttpContract,
+  type ReadonlyTransportRequest,
+  toWebRequest,
+} from "nearly-headless-cms/http";
 
 export type PublicValue = ContentDefinition.JsonObject;
 

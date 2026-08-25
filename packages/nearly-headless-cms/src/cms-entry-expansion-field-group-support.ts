@@ -41,53 +41,10 @@ interface ExpandFieldGroupListInput {
 }
 
 const expandFieldGroupList = (
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-191] mutable values out-param is bundled in input interface.
-  input: Readonly<ExpandFieldGroupListInput>,
-): void => {
-  const {
-    expandObject,
-    expandObjectInput,
-    fieldKey,
-    fieldPath,
-    nestedFields,
-    nestedPaths,
-    value,
-    values,
-  } = input;
-  if (!Array.isArray(value)) {
-    throw InvalidInput.make({
-      message: `Field Group List ${fieldPath} contains an invalid value`,
-    });
-  }
-  values[fieldKey] = value.map((item) => {
-    if (!isJsonObject(item)) {
-      throw InvalidInput.make({
-        message: `Field Group List ${fieldPath} contains an invalid item`,
-      });
-    }
-    return expandObject({
-      ...expandObjectInput,
-      expansion: nestedPaths,
-      fields: nestedFields,
-      object: item,
-      parentPath: fieldPath,
-    });
-  });
-},
-
- // oxlint-disable-next-line eslint/sort-vars -- [EH-131] helper declaration order follows dependency order.
- expandFieldGroup = (
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-191] mutable values out-param is bundled in input interface.
-  input: Readonly<ExpandFieldGroupInput>,
-): void => {
-  const { expandObject, expandObjectInput, field, fieldKey, fieldPath, nestedPaths, value, values } =
-    input,
-   { nestedFields } = field;
-  if (nestedFields === undefined) {
-    throw InvalidInput.make({ message: `Field Group ${fieldPath} has no nested fields` });
-  }
-  if (field.kind.kind === "list") {
-    expandFieldGroupList({
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-191] mutable values out-param is bundled in input interface.
+    input: Readonly<ExpandFieldGroupListInput>,
+  ): void => {
+    const {
       expandObject,
       expandObjectInput,
       fieldKey,
@@ -96,20 +53,70 @@ const expandFieldGroupList = (
       nestedPaths,
       value,
       values,
+    } = input;
+    if (!Array.isArray(value)) {
+      throw InvalidInput.make({
+        message: `Field Group List ${fieldPath} contains an invalid value`,
+      });
+    }
+    values[fieldKey] = value.map((item) => {
+      if (!isJsonObject(item)) {
+        throw InvalidInput.make({
+          message: `Field Group List ${fieldPath} contains an invalid item`,
+        });
+      }
+      return expandObject({
+        ...expandObjectInput,
+        expansion: nestedPaths,
+        fields: nestedFields,
+        object: item,
+        parentPath: fieldPath,
+      });
     });
-    return;
-  }
-  if (!isJsonObject(value)) {
-    throw InvalidInput.make({ message: `Field Group ${fieldPath} contains an invalid value` });
-  }
-  values[fieldKey] = expandObject({
-    ...expandObjectInput,
-    expansion: nestedPaths,
-    fields: nestedFields,
-    object: value,
-    parentPath: fieldPath,
-  });
-};
+  },
+  // oxlint-disable-next-line eslint/sort-vars -- [EH-131] helper declaration order follows dependency order.
+  expandFieldGroup = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-191] mutable values out-param is bundled in input interface.
+    input: Readonly<ExpandFieldGroupInput>,
+  ): void => {
+    const {
+        expandObject,
+        expandObjectInput,
+        field,
+        fieldKey,
+        fieldPath,
+        nestedPaths,
+        value,
+        values,
+      } = input,
+      { nestedFields } = field;
+    if (nestedFields === undefined) {
+      throw InvalidInput.make({ message: `Field Group ${fieldPath} has no nested fields` });
+    }
+    if (field.kind.kind === "list") {
+      expandFieldGroupList({
+        expandObject,
+        expandObjectInput,
+        fieldKey,
+        fieldPath,
+        nestedFields,
+        nestedPaths,
+        value,
+        values,
+      });
+      return;
+    }
+    if (!isJsonObject(value)) {
+      throw InvalidInput.make({ message: `Field Group ${fieldPath} contains an invalid value` });
+    }
+    values[fieldKey] = expandObject({
+      ...expandObjectInput,
+      expansion: nestedPaths,
+      fields: nestedFields,
+      object: value,
+      parentPath: fieldPath,
+    });
+  };
 
 export default { expandFieldGroup };
 export type { ExpandObjectInput };

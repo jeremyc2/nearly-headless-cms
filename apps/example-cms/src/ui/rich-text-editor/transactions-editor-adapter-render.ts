@@ -29,11 +29,11 @@ const { blockElementName } = transactionsEditorAdapterSupport,
   assignTextSpanIndices = (
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-167] DOM spans are mutated while assigning editor selection indices.
     input: {
-    readonly blockIndex: number;
-    readonly inlineIndex: number;
-    readonly listItemIndex: number | undefined;
-    readonly text: HTMLSpanElement;
-  },
+      readonly blockIndex: number;
+      readonly inlineIndex: number;
+      readonly listItemIndex: number | undefined;
+      readonly text: HTMLSpanElement;
+    },
   ): void => {
     const { blockIndex, inlineIndex, listItemIndex, text } = input;
     text.dataset["blockIndex"] = String(blockIndex);

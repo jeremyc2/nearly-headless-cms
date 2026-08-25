@@ -1,10 +1,6 @@
 import { Effect, Stream } from "effect";
 
-const oneShot = <
-  Bytes extends Uint8Array,
-  Failure,
-  Content extends Stream.Stream<Bytes, Failure>,
->(
+const oneShot = <Bytes extends Uint8Array, Failure, Content extends Stream.Stream<Bytes, Failure>>(
   content: Readonly<Content>,
   repeatedConsumptionFailure: () => Failure,
 ): Stream.Stream<Bytes, Failure> => {

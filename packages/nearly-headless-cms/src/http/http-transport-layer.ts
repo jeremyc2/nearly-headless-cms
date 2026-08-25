@@ -12,7 +12,9 @@ const buildApiHandlers = <OptionsType extends Options>(options: Readonly<Options
     const headlessApi = HttpApiContract.headless(options.deliveryOperations ?? []),
       headlessHandlers = HttpApiBuilder.group(headlessApi, "headless", (handlers) =>
         makeHandler(options).pipe(
-          Effect.map((handler) => handlers.handleAll(buildEndpointMap({ api: headlessApi, handler }))),
+          Effect.map((handler) =>
+            handlers.handleAll(buildEndpointMap({ api: headlessApi, handler })),
+          ),
         ),
       ),
       managementApi = HttpApiContract.management(options.managementOperations ?? []),
@@ -74,7 +76,12 @@ const buildApiHandlers = <OptionsType extends Options>(options: Readonly<Options
       })();
     return Layer.merge(declaredRoutes, crossCuttingRoutes);
   },
-  respond = <Input extends { readonly handler: Handler; readonly request: HttpServerRequest.HttpServerRequest }>(
+  respond = <
+    Input extends {
+      readonly handler: Handler;
+      readonly request: HttpServerRequest.HttpServerRequest;
+    },
+  >(
     input: Readonly<Input>,
   ) =>
     HttpServerRequest.toWeb(input.request).pipe(

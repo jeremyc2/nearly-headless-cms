@@ -9,4 +9,3 @@ export { EntryEditorDangerPanel } from "./entry-editor-danger-panel.tsx";
 export { EntryEditorHistoryPanel } from "./entry-editor-history-panel.tsx";
 export { EntryEditorPublicationPanel } from "./entry-editor-publication-panel.tsx";
 export { EntryEditorStoryCanvas } from "./entry-editor-story-canvas.tsx";
-

@@ -217,11 +217,12 @@ const { persistState } = filesystemLockRoot,
   ingestAsset = (
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-207] SynchronizedRef state is mutated while persisting ingested assets.
     request: {
-    readonly configuration: Configuration;
-    readonly identifiers: Generator["Service"];
-    readonly input: Parameters<Management["Service"]["ingest"]>[0];
-    readonly state: SynchronizedRef.SynchronizedRef<State>;
-  }) =>
+      readonly configuration: Configuration;
+      readonly identifiers: Generator["Service"];
+      readonly input: Parameters<Management["Service"]["ingest"]>[0];
+      readonly state: SynchronizedRef.SynchronizedRef<State>;
+    },
+  ) =>
     Effect.gen(function* ingestAssetMetadata() {
       yield* validateIngestInput(request.configuration, request.input);
       const assetId = yield* request.identifiers.generate("asset"),

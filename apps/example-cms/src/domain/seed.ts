@@ -1,9 +1,4 @@
-import {
-  Cms,
-  type CmsError,
-  type ContentDefinition,
-  RichText,
-} from "nearly-headless-cms";
+import { Cms, type CmsError, type ContentDefinition, RichText } from "nearly-headless-cms";
 import { Effect } from "effect";
 
 export interface SeedResult {

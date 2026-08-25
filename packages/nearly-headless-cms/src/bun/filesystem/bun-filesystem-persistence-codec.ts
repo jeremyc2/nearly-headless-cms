@@ -3,7 +3,6 @@ const digest = <Bytes extends Uint8Array>(bytes: Readonly<Bytes>): string => {
     hasher.update(bytes);
     return hasher.digest("hex");
   },
-  encode = (value: unknown): Uint8Array =>
-    new TextEncoder().encode(`${JSON.stringify(value)}\n`);
+  encode = (value: unknown): Uint8Array => new TextEncoder().encode(`${JSON.stringify(value)}\n`);
 
 export { digest, encode };

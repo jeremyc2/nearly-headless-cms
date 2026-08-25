@@ -107,7 +107,7 @@ const EntryEditorHistoryPanelBody = ({
     readonly selectedRevisionNumber: number | undefined;
     readonly setSelectedRevisionNumber: (revisionNumber: number | undefined) => void;
     readonly writeToken?: string;
-  }  ) =>
+  }) =>
     selectedRevisionNumber !== undefined && (
       <EntryEditorRevisionInspection
         contentTypeId={contentTypeId}

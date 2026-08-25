@@ -1,9 +1,4 @@
-import {
-  type Asset,
-  type IngestInput,
-  Management,
-  type Metadata,
-} from "../asset.ts";
+import { type Asset, type IngestInput, Management, type Metadata } from "../asset.ts";
 import { Effect, Layer, Schema, Stream, SynchronizedRef } from "effect";
 import { Generator, type Kind } from "../identifier.ts";
 import { InfrastructureFailure, InvalidInput, NotFound } from "../cms-error.ts";

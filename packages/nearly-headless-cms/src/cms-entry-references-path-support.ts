@@ -6,7 +6,12 @@ import type {
   ResolvedField,
   Resource,
 } from "./cms-entry-references-types.ts";
-import { type JsonObject, type JsonValue, cloneJson, isJsonObject } from "./cms-entry-references-imports.ts";
+import {
+  type JsonObject,
+  type JsonValue,
+  cloneJson,
+  isJsonObject,
+} from "./cms-entry-references-imports.ts";
 
 interface SetProjectedValueInput {
   segments: readonly string[];
@@ -14,7 +19,10 @@ interface SetProjectedValueInput {
   values: Record<string, JsonValue>;
 }
 
-const valueAtPath = (values: Readonly<JsonObject>, path: readonly string[]): JsonValue | undefined => {
+const valueAtPath = (
+    values: Readonly<JsonObject>,
+    path: readonly string[],
+  ): JsonValue | undefined => {
     let current: JsonValue | undefined = values;
     for (const segment of path) {
       if (!isJsonObject(current)) {
@@ -99,4 +107,11 @@ const valueAtPath = (values: Readonly<JsonObject>, path: readonly string[]): Jso
     return { contentTypeId: entry.contentTypeId, id: entry.id, values };
   };
 
-export default { entryResource, fieldsAtPaths, liveRecords, project, setProjectedValue, valueAtPath };
+export default {
+  entryResource,
+  fieldsAtPaths,
+  liveRecords,
+  project,
+  setProjectedValue,
+  valueAtPath,
+};

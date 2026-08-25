@@ -24,22 +24,6 @@ interface RangedAssetResponseInput {
 }
 
 const { parseByteRange } = deliveryPublicAssetByteRangeSupport,
-  ifNoneMatchMatches = (headerValue: string | null, etag: string): boolean => {
-    if (headerValue === null) {
-      return false;
-    }
-    const validators = headerValue.match(/(?:W\/)?"[^"]*"|\*/gu) ?? [];
-    return validators.some((validator) => {
-      if (validator === "*") {
-        return true;
-      }
-      let normalizedValidator = validator;
-      if (normalizedValidator.startsWith("W/")) {
-        normalizedValidator = normalizedValidator.slice("W/".length);
-      }
-      return normalizedValidator === etag;
-    });
-  },
   publicAssetBody = <Content extends Asset.StoredAsset["content"]>(
     request: Readonly<ReadonlyTransportRequest>,
     content: Readonly<Content>,
@@ -128,27 +112,29 @@ const { parseByteRange } = deliveryPublicAssetByteRangeSupport,
     end: number,
   ): Asset.StoredAsset["content"] =>
     content.pipe(
-      Stream.mapAccum(() => 0, (offset, bytes) => {
-        const chunkEnd = offset + bytes.byteLength,
-          selectedEnd = Math.min(bytes.byteLength, end - offset + ONE_ITEM),
-          selectedStart = Math.max(0, start - offset);
-        return [
-          chunkEnd,
-          [
-            {
-              bytes: bytes.slice(selectedStart, Math.max(selectedStart, selectedEnd)),
-              reachedEnd: chunkEnd > end,
-            },
-          ],
-        ] as const;
-      }),
+      Stream.mapAccum(
+        () => 0,
+        (offset, bytes) => {
+          const chunkEnd = offset + bytes.byteLength,
+            selectedEnd = Math.min(bytes.byteLength, end - offset + ONE_ITEM),
+            selectedStart = Math.max(0, start - offset);
+          return [
+            chunkEnd,
+            [
+              {
+                bytes: bytes.slice(selectedStart, Math.max(selectedStart, selectedEnd)),
+                reachedEnd: chunkEnd > end,
+              },
+            ],
+          ] as const;
+        },
+      ),
       Stream.takeUntil((chunk) => chunk.reachedEnd),
       Stream.map((chunk) => chunk.bytes),
       Stream.filter((bytes) => bytes.byteLength > 0),
     );
 
 export default {
-  ifNoneMatchMatches,
   publicAssetBody,
   publicAssetHeaders,
   rangeNotModifiedResponse,

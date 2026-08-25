@@ -8,6 +8,7 @@ import {
 } from "./http-status-codes.ts";
 import type { Service as CmsService } from "../cms.ts";
 import type { ReadonlyTransportRequest } from "./http-transport-readonly-types.ts";
+import httpEtagSupport from "./http-etag-support.ts";
 
 type StoredAsset = Awaited<
   ReturnType<CmsService["Service"]["readAsset"]> extends Effect.Effect<infer Value, unknown>
@@ -15,7 +16,8 @@ type StoredAsset = Awaited<
     : never
 >;
 
-const assetContentResponse = <Asset extends StoredAsset>(
+const { ifNoneMatchMatches } = httpEtagSupport,
+  assetContentResponse = <Asset extends StoredAsset>(
     storedAsset: Readonly<Asset>,
     request: ReadonlyTransportRequest,
     requestId: string,
@@ -78,10 +80,7 @@ const assetContentResponse = <Asset extends StoredAsset>(
     baseHeaders.set("content-type", storedAsset.metadata.mediaType);
     return baseHeaders;
   },
-  buildAssetRangeBody = <
-    Failure,
-    Content extends Stream.Stream<Uint8Array, Failure>,
-  >(
+  buildAssetRangeBody = <Failure, Content extends Stream.Stream<Uint8Array, Failure>>(
     request: ReadonlyTransportRequest,
     content: Readonly<Content>,
   ): BodyInit | null => {
@@ -157,22 +156,6 @@ const assetContentResponse = <Asset extends StoredAsset>(
       return undefined;
     }
     return { end, start };
-  },
-  ifNoneMatchMatches = (headerValue: string | null, etag: string): boolean => {
-    if (headerValue === null) {
-      return false;
-    }
-    const validators = headerValue.match(/(?:W\/)?"[^"]*"|\*/gu) ?? [];
-    return validators.some((validator) => {
-      if (validator === "*") {
-        return true;
-      }
-      let normalizedValidator = validator;
-      if (normalizedValidator.startsWith("W/")) {
-        normalizedValidator = normalizedValidator.slice("W/".length);
-      }
-      return normalizedValidator === etag;
-    });
   },
   invalidInputDetails = <ErrorType extends CmsError>(
     error: Readonly<ErrorType>,
@@ -266,20 +249,23 @@ const assetContentResponse = <Asset extends StoredAsset>(
   ): { readonly boundedEnd: number; readonly content: Asset["content"] } => {
     const boundedEnd = Math.min(bounds.end, storedAsset.metadata.byteLength - 1),
       content = storedAsset.content.pipe(
-        Stream.mapAccum(() => 0, (offset, bytes) => {
-          const chunkEnd = offset + bytes.byteLength,
-            selectedEnd = Math.min(bytes.byteLength, boundedEnd - offset + 1),
-            selectedStart = Math.max(0, bounds.start - offset);
-          return [
-            chunkEnd,
-            [
-              {
-                bytes: bytes.slice(selectedStart, Math.max(selectedStart, selectedEnd)),
-                reachedEnd: chunkEnd > boundedEnd,
-              },
-            ],
-          ] as const;
-        }),
+        Stream.mapAccum(
+          () => 0,
+          (offset, bytes) => {
+            const chunkEnd = offset + bytes.byteLength,
+              selectedEnd = Math.min(bytes.byteLength, boundedEnd - offset + 1),
+              selectedStart = Math.max(0, bounds.start - offset);
+            return [
+              chunkEnd,
+              [
+                {
+                  bytes: bytes.slice(selectedStart, Math.max(selectedStart, selectedEnd)),
+                  reachedEnd: chunkEnd > boundedEnd,
+                },
+              ],
+            ] as const;
+          },
+        ),
         Stream.takeUntil((chunk) => chunk.reachedEnd),
         Stream.map((chunk) => chunk.bytes),
         Stream.filter((bytes) => bytes.byteLength > 0),

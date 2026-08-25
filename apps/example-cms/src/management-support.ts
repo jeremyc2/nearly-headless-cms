@@ -8,7 +8,7 @@ import {
 import { type ReadonlyTransportRequest, toWebRequest } from "nearly-headless-cms/http";
 import { Effect } from "effect";
 
-const   appendQueryPage = <
+const appendQueryPage = <
     Accumulated extends Entry.Representation[],
     Page extends { items: readonly Entry.Representation[]; nextCursor?: string },
   >(
@@ -41,10 +41,7 @@ const   appendQueryPage = <
   ): Effect.Effect<readonly Entry.Representation[], CmsError.CmsError> =>
     Effect.gen(function* collectAllMatchingEntries() {
       const accumulated: Entry.Representation[] = [];
-      for (
-        let {nextCursor} = appendQueryPage(accumulated, yield* cms.queryEntries(query));
-        ;
-      ) {
+      for (let { nextCursor } = appendQueryPage(accumulated, yield* cms.queryEntries(query)); ; ) {
         if (nextCursor === undefined) {
           return accumulated;
         }

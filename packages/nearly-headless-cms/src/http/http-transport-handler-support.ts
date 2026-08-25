@@ -136,12 +136,13 @@ const { errorResponse, respondWithOutcome, runOperationInterruptibly } = transpo
   readInterruptibleValue = async <Value>(
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-172] Effect programs are executed by runOperationInterruptibly without mutation.
     {
-    effect,
-    missingValueMessage,
-    operationFailureMessage,
-    requestId,
-    signal,
-  }: Readonly<ReadInterruptibleValueInput<Value>>): Promise<Value | Response> => {
+      effect,
+      missingValueMessage,
+      operationFailureMessage,
+      requestId,
+      signal,
+    }: Readonly<ReadInterruptibleValueInput<Value>>,
+  ): Promise<Value | Response> => {
     const outcome = await runOperationInterruptibly(effect, signal);
     if (!outcome.success) {
       if (outcome.error === undefined) {

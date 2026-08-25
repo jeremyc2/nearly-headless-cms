@@ -33,4 +33,3 @@ export const useContentListEntriesQuery = ({
       ),
     queryKey: ["entries", contentTypeId, cursor, filterText, sortDirection, statusFilter],
   });
-

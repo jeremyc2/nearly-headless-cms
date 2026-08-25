@@ -123,4 +123,3 @@ const buildOverviewCounts = (queries: OverviewEntryQueries, assetCount: number |
   };
 
 export { useOverviewState };
-

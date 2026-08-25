@@ -31,4 +31,3 @@ export const EntryEditorDeletionDialog = (properties: EntryEditorDeletionDialogP
     </div>
   </div>
 );
-

@@ -10,4 +10,3 @@ const { entryEditorControllerViewModel } = entryEditorControllerViewSupport,
 export default {
   useEntryEditorControllerView,
 };
-

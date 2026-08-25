@@ -156,13 +156,13 @@ Transport options include request bounds and timeouts, CORS policy, request iden
 
 ## Public entry points
 
-| Import | Purpose |
-| --- | --- |
-| `nearly-headless-cms` | `Cms`, `ContentDefinition`, `Entry`, `EntryQuery`, `EntryHistory`, `Asset`, `RichText`, `DefinitionMigration`, `Operation`, `Identity`, `Authorization`, `Persistence`, `Identifier`, `Transport`, and `CmsError` |
-| `nearly-headless-cms/http` | `HttpTransport`, `HttpContract`, deterministic `OpenApi` generation, and shared HTTP types |
-| `nearly-headless-cms/adapters` | In-memory persistence and assets, anonymous/open-access development Layers, and cryptographic identifiers |
-| `nearly-headless-cms/bun/filesystem` | Bun-only immutable-generation filesystem persistence |
-| `nearly-headless-cms/testing` | The fully composed `DevelopmentCms` Layer |
+| Import                               | Purpose                                                                                                                                                                                                           |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `nearly-headless-cms`                | `Cms`, `ContentDefinition`, `Entry`, `EntryQuery`, `EntryHistory`, `Asset`, `RichText`, `DefinitionMigration`, `Operation`, `Identity`, `Authorization`, `Persistence`, `Identifier`, `Transport`, and `CmsError` |
+| `nearly-headless-cms/http`           | `HttpTransport`, `HttpContract`, deterministic `OpenApi` generation, and shared HTTP types                                                                                                                        |
+| `nearly-headless-cms/adapters`       | In-memory persistence and assets, anonymous/open-access development Layers, and cryptographic identifiers                                                                                                         |
+| `nearly-headless-cms/bun/filesystem` | Bun-only immutable-generation filesystem persistence                                                                                                                                                              |
+| `nearly-headless-cms/testing`        | The fully composed `DevelopmentCms` Layer                                                                                                                                                                         |
 
 Import from these explicit entry points rather than package internals. Only the documented entry points are part of the public package contract.
 

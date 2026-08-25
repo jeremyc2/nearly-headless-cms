@@ -1,7 +1,4 @@
-import type {
-  OperationSchema,
-  OperationSchemas,
-} from "./http-contract.ts";
+import type { OperationSchema, OperationSchemas } from "./http-contract.ts";
 import type { OperationDescriptor } from "./open-api-types.ts";
 import { Schema } from "effect";
 import buildCompletedOperation from "./open-api-operation-completion-support.ts";

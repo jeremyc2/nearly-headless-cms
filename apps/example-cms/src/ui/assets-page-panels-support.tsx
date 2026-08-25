@@ -6,7 +6,8 @@ import {
 } from "./assets-page-imports.ts";
 import assetsPageDialogsSupport from "./assets-page-dialogs-support.tsx";
 
-const { AssetsPageDeleteDialog, AssetsPageReplaceDialog } = assetsPageDialogsSupport, AssetsPageAssetCard = <
+const { AssetsPageDeleteDialog, AssetsPageReplaceDialog } = assetsPageDialogsSupport,
+  AssetsPageAssetCard = <
     // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     Asset extends AssetRepresentation,
     // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.

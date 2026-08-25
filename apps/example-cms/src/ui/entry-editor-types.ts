@@ -25,4 +25,3 @@ export type RichTextInsertDialog =
       readonly caption: string;
       readonly type: "asset";
     };
-

@@ -68,6 +68,7 @@ await run(["bun", "run", "test:types"]);
 await run(["bun", "run", "test:contract"]);
 await run(["bun", "run", "test:integration"]);
 await run(["bun", "run", "test:filesystem"]);
+await run(["bun", "test", "acceptance/journeys"]);
 
 acceptanceServers.exampleCms = Bun.spawn(["bun", "run", "--cwd", "apps/example-cms", "start"], {
   cwd: monorepoRoot,

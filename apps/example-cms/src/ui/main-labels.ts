@@ -106,10 +106,7 @@ const activeStatusClass = (value: unknown): string => {
   },
   headingLevel = (
     blockType: string,
-  ):
-    | typeof headingLevelValueTwo
-    | typeof headingLevelValueThree
-    | typeof headingLevelValueFour => {
+  ): typeof headingLevelValueTwo | typeof headingLevelValueThree | typeof headingLevelValueFour => {
     if (blockType.endsWith("2")) {
       return headingLevelValueTwo;
     }

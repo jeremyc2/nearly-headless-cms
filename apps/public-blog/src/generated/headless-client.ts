@@ -247,7 +247,9 @@ const apiContractVersion = 1,
           .exportPublicBlog({
             headers: { "CMS-Expected-Definition-Fingerprint": expectedFingerprint },
           })
-          .pipe(Effect.flatMap((value) => decodeResponse({ schema: schemaPublicBlogZExport, value }))),
+          .pipe(
+            Effect.flatMap((value) => decodeResponse({ schema: schemaPublicBlogZExport, value })),
+          ),
       submitComment: (postId, input, idempotencyKey) =>
         generatedClient.submitComment({
           body: input,

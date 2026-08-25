@@ -40,4 +40,3 @@ export const EntryEditorEditorialDialog = ({
     </div>
   </div>
 );
-

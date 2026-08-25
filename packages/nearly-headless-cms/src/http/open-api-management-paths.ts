@@ -99,11 +99,12 @@ const { customDescriptor, descriptor } = openApiOperationSupport,
   eManagementPaths = (
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-194] OpenAPI operation descriptors are read while building path maps.
     operations: readonly ManagementOperation[],
-  ): Readonly<Record<string, Readonly<Record<string, OperationDescriptor>>>> => ({
-    ...aEntryManagementPaths(),
-    ...bAssetManagementPaths(),
-    ...cDefinitionManagementPaths(),
-    ...dCustomManagementPaths(operations),
-  });
+  ): Readonly<Record<string, Readonly<Record<string, OperationDescriptor>>>> =>
+    ({
+      ...aEntryManagementPaths(),
+      ...bAssetManagementPaths(),
+      ...cDefinitionManagementPaths(),
+      ...dCustomManagementPaths(operations),
+    });
 
 export default { managementPaths: eManagementPaths };

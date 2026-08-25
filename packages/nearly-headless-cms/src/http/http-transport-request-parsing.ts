@@ -3,10 +3,7 @@ import type {
   ReadonlyTransportAbortSignal,
   ReadonlyTransportRequest,
 } from "./http-transport-readonly-types.ts";
-import {
-  httpStatusPayloadTooLarge,
-  httpStatusUnsupportedMediaType,
-} from "./http-status-codes.ts";
+import { httpStatusPayloadTooLarge, httpStatusUnsupportedMediaType } from "./http-status-codes.ts";
 import type { IngestInput } from "../asset.ts";
 import { InvalidInput } from "../cms-error.ts";
 import { RequestFailureError } from "./http-transport-request-failure.ts";

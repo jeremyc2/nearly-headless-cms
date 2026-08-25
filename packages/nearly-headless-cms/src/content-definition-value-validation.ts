@@ -102,7 +102,7 @@ const { createValidationIssue } = validationSupport,
     input: Readonly<Input>,
   ): readonly ValidationIssue[] => {
     const { customRegistrations, fieldKind, path, value } = input,
-      {element} = fieldKind,
+      { element } = fieldKind,
       issues: ValidationIssue[] = [];
     if (element.kind === "fieldGroup") {
       return issues;

@@ -7,10 +7,7 @@ import {
   toAbortSignal,
   toWebRequest,
 } from "./http-transport-readonly-types.ts";
-import {
-  httpStatusInternalServerError,
-  httpStatusPayloadTooLarge,
-} from "./http-status-codes.ts";
+import { httpStatusInternalServerError, httpStatusPayloadTooLarge } from "./http-status-codes.ts";
 // oxlint-disable-next-line effecttsgo/node-builtin-import -- [EH-103] Temporary upload staging requires node fs primitives unavailable in the HTTP FileSystem abstraction.
 import { mkdtemp, open, rm } from "node:fs/promises";
 import type { IngestInput } from "../asset.ts";
@@ -77,14 +74,16 @@ const { encodeChunk } = transportResponse,
     input: Readonly<Input>,
   ): Effect.Effect<void, InvalidInput | RequestFailureError> => {
     const { contentPath, limits, parseAssetMetadata, request, state } = input;
-    return Stream.runForEach(HttpServerRequest.fromWeb(toWebRequest(request)).multipartStream, (part) =>
-      handleMultipartAssetPart({
-        contentPath,
-        maximumFileByteLength: limits.file,
-        parseAssetMetadata,
-        part,
-        state,
-      }),
+    return Stream.runForEach(
+      HttpServerRequest.fromWeb(toWebRequest(request)).multipartStream,
+      (part) =>
+        handleMultipartAssetPart({
+          contentPath,
+          maximumFileByteLength: limits.file,
+          parseAssetMetadata,
+          part,
+          state,
+        }),
     ).pipe(
       Effect.provide(
         Multipart.limitsServices({
@@ -247,14 +246,12 @@ const { encodeChunk } = transportResponse,
     }
   },
   stagedContent = (path: string): Stream.Stream<Uint8Array, InfrastructureFailure> =>
-    Stream.fromAsyncIterable<Uint8Array, InfrastructureFailure>(
-      createReadStream(path),
-      (cause) =>
-        InfrastructureFailure.make({
-          cause,
-          message: "Staged multipart Asset read failed",
-          retryable: false,
-        }),
+    Stream.fromAsyncIterable<Uint8Array, InfrastructureFailure>(createReadStream(path), (cause) =>
+      InfrastructureFailure.make({
+        cause,
+        message: "Staged multipart Asset read failed",
+        retryable: false,
+      }),
     ).pipe(Stream.map((chunk) => encodeChunk(chunk))),
   writeOrderedFileChunk = (
     handle: Readonly<Awaited<ReturnType<typeof open>>>,

@@ -44,6 +44,7 @@ if (releaseTag !== undefined) {
 }
 
 await run(["bun", "run", "scripts/run-acceptance.ts"]);
+await run(["bun", "run", "scripts/record-release-evidence.ts"]);
 await run(["bun", "run", "publish:dry-run"], {
   cwd: packageDirectory,
   environment: { PACKAGE_ARCHIVE: packageVersionArchive },

@@ -19,16 +19,14 @@ const { EntryEditorContentTypeAssetFields } = storyCanvasAssetsSupport,
     Asset extends AssetRepresentation,
     // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
     UpdateField extends (key: string, value: unknown) => void,
-  >(
-    props: {
-      readonly assets: readonly Readonly<Asset>[] | undefined;
-      readonly contentTypeId: string;
-      readonly onUpdateField: UpdateField;
-      readonly title: string;
-      readonly titleField: string;
-      readonly values: Readonly<Values>;
-    },
-  ) => (
+  >(props: {
+    readonly assets: readonly Readonly<Asset>[] | undefined;
+    readonly contentTypeId: string;
+    readonly onUpdateField: UpdateField;
+    readonly title: string;
+    readonly titleField: string;
+    readonly values: Readonly<Values>;
+  }) => (
     <section className="panel story-canvas">
       <p className="eyebrow">Story canvas</p>
       <EntryEditorStoryCanvasFields {...props} />

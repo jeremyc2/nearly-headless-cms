@@ -28,38 +28,39 @@ const { conditionalProperty, queryAllEntries } = managementSupport,
     authorStates: Readonly<readonly EntryAssignmentState[]>,
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-154] assignment states include mutable entry value maps.
     postStates: Readonly<readonly EntryAssignmentState[]>,
-  ): Cms.EntryBatchMutation[] => [
-    ...postStates.map(
-      (state): Cms.EntryBatchMutation => ({
-        input: {
-          contentTypeId: "post",
-          entryId: state.entry.id,
-          values: {
-            ...state.entry.values,
-            "featured-alternative-text": null,
-            "featured-asset": null,
+  ): Cms.EntryBatchMutation[] =>
+    [
+      ...postStates.map(
+        (state): Cms.EntryBatchMutation => ({
+          input: {
+            contentTypeId: "post",
+            entryId: state.entry.id,
+            values: {
+              ...state.entry.values,
+              "featured-alternative-text": null,
+              "featured-asset": null,
+            },
+            writeToken: state.writeToken,
           },
-          writeToken: state.writeToken,
-        },
-        kind: "replace",
-      }),
-    ),
-    ...authorStates.map(
-      (state): Cms.EntryBatchMutation => ({
-        input: {
-          contentTypeId: "author",
-          entryId: state.entry.id,
-          values: {
-            ...state.entry.values,
-            portrait: null,
-            "portrait-alternative-text": null,
+          kind: "replace",
+        }),
+      ),
+      ...authorStates.map(
+        (state): Cms.EntryBatchMutation => ({
+          input: {
+            contentTypeId: "author",
+            entryId: state.entry.id,
+            values: {
+              ...state.entry.values,
+              portrait: null,
+              "portrait-alternative-text": null,
+            },
+            writeToken: state.writeToken,
           },
-          writeToken: state.writeToken,
-        },
-        kind: "replace",
-      }),
-    ),
-  ],
+          kind: "replace",
+        }),
+      ),
+    ],
   buildImageReplacementMutations = <Input extends BuildImageReplacementMutationsInput>(
     input: Readonly<Input>,
   ): Cms.EntryBatchMutation[] => [

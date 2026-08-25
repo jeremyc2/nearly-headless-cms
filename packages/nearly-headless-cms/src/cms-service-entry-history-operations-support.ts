@@ -1,9 +1,5 @@
 import { Clock, DateTime, Effect } from "effect";
-import {
-  type CmsError,
-  InvalidInput,
-  NotFound,
-} from "./cms-error.ts";
+import { type CmsError, InvalidInput, NotFound } from "./cms-error.ts";
 import type { CompiledContentType, CompiledSnapshot } from "./content-definition.ts";
 import type {
   CurrentState,
@@ -68,7 +64,7 @@ const commitRestoredRevision = (
           revisionNumber: (input.current.revisions.at(-1)?.revisionNumber ?? 0) + 1,
           values: cloneJson(input.values),
         },
-        {revisionNumber} = revision,
+        { revisionNumber } = revision,
         writeToken = yield* context.identifiers.generate("write-token");
       yield* context.persistence.commitGeneration(
         input.generation.generation,
@@ -78,7 +74,11 @@ const commitRestoredRevision = (
             input.entryId,
             {
               entry: input.entry,
-              revisions: applyRetention([...input.current.revisions, revision], input.contentType, now),
+              revisions: applyRetention(
+                [...input.current.revisions, revision],
+                input.contentType,
+                now,
+              ),
               writeToken,
             },
           ],
@@ -264,8 +264,7 @@ const commitRestoredRevision = (
         values: prepared.values,
       });
     }),
-  { applyRetention, attempt, collectReferences, ensureReferences, ensureUniqueValues } =
-    cmsSupport,
+  { applyRetention, attempt, collectReferences, ensureReferences, ensureUniqueValues } = cmsSupport,
   {
     assertHistoryEnabledEntry,
     assertRestorableEntry,

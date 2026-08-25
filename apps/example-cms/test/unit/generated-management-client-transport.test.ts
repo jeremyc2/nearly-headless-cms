@@ -5,12 +5,12 @@ import { makeGeneratedClient } from "../../src/generated/management-openapi-clie
 test("generated JSON requests send their declared media type", () => {
   let receivedContentType: string | null = null;
   const server = Bun.serve({
-      fetch: (request) => {
-        receivedContentType = request.headers.get("content-type");
-        return Response.json({ items: [] });
-      },
-      port: 0,
-    });
+    fetch: (request) => {
+      receivedContentType = request.headers.get("content-type");
+      return Response.json({ items: [] });
+    },
+    port: 0,
+  });
 
   return makeGeneratedClient(server.url.href)
     .queryEntries({

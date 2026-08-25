@@ -45,11 +45,11 @@ The Public Blog is an Astro static site. Its build fetches one validated public 
 
 This Bun monorepo intentionally contains exactly three workspaces:
 
-| Workspace | Role | Published? |
-| --- | --- | --- |
-| [`packages/nearly-headless-cms`](packages/nearly-headless-cms) | Typed, ESM-only Effect library and portable/Bun Adapters | Yes, as `nearly-headless-cms` |
-| [`apps/example-cms`](apps/example-cms) | React/Effect/Bun reference CMS Builder application | No |
-| [`apps/public-blog`](apps/public-blog) | Astro static Content Client consuming only the Headless API | No |
+| Workspace                                                      | Role                                                        | Published?                    |
+| -------------------------------------------------------------- | ----------------------------------------------------------- | ----------------------------- |
+| [`packages/nearly-headless-cms`](packages/nearly-headless-cms) | Typed, ESM-only Effect library and portable/Bun Adapters    | Yes, as `nearly-headless-cms` |
+| [`apps/example-cms`](apps/example-cms)                         | React/Effect/Bun reference CMS Builder application          | No                            |
+| [`apps/public-blog`](apps/public-blog)                         | Astro static Content Client consuming only the Headless API | No                            |
 
 The package supports portable Bun and Node.js consumers. The monorepo itself uses Bun for dependency management, scripts, builds, tests, and release tooling.
 
@@ -87,19 +87,19 @@ The build reads from `EXAMPLE_CMS_URL`, which defaults to `http://localhost:3000
 
 ## Development commands
 
-| Command | Purpose |
-| --- | --- |
-| `bun run build` | Build every workspace |
-| `bun run verify` | Run lint, typecheck, tests, and escape-hatch verification |
-| `bun run test:unit` | Run focused pure unit suites |
-| `bun run test:types` | Verify the public TypeScript package contract |
-| `bun run test:contract` | Exercise HTTP and authorization contracts |
-| `bun run test:integration` | Exercise composed library and application behavior |
-| `bun run test:filesystem` | Exercise the real Bun filesystem Adapter |
+| Command                      | Purpose                                                                     |
+| ---------------------------- | --------------------------------------------------------------------------- |
+| `bun run build`              | Build every workspace                                                       |
+| `bun run verify`             | Run lint, typecheck, tests, and escape-hatch verification                   |
+| `bun run test:unit`          | Run focused pure unit suites                                                |
+| `bun run test:types`         | Verify the public TypeScript package contract                               |
+| `bun run test:contract`      | Exercise HTTP and authorization contracts                                   |
+| `bun run test:integration`   | Exercise composed library and application behavior                          |
+| `bun run test:filesystem`    | Exercise the real Bun filesystem Adapter                                    |
 | `bun run check:architecture` | Enforce workspace, import, dependency, route, and generated-code boundaries |
-| `bun run check:generated` | Verify checked-in generated artifacts are current |
-| `bun run acceptance` | Run the complete automated v0.1 acceptance coordinator |
-| `bun run release` | Build and verify the exact npm release artifact without publishing it |
+| `bun run check:generated`    | Verify checked-in generated artifacts are current                           |
+| `bun run acceptance`         | Run the complete automated v0.1 acceptance coordinator                      |
+| `bun run release`            | Build and verify the exact npm release artifact without publishing it       |
 
 Run a workspace command with Bun's `--cwd` option when working on only the package or one application. For example:
 

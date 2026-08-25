@@ -165,4 +165,3 @@ export const ContentList = () => {
       </label>
     </div>
   );
-

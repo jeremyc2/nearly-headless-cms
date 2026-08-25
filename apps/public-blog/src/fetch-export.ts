@@ -67,9 +67,40 @@ const assetExtension = (mediaType: string): string => {
       ),
     );
   },
+  fixtureAssetsDirectory = new URL("../fixtures/generated-assets/", import.meta.url).pathname,
+  fixtureDirectory = new URL("../fixtures/", import.meta.url).pathname,
+  fixtureSnapshotPath = `${fixtureDirectory}public-export.json`,
   generatedDirectory = new URL("../.generated/", import.meta.url).pathname,
   generatedSnapshotPath = `${generatedDirectory}public-export.json`,
   generatedStageSnapshotPath = `${generatedDirectory}.public-export.stage.json`,
+  // oxlint-disable-next-line eslint/sort-vars -- [EH-133] fixture install helpers are declared before the export programs that call them.
+  installFixtureExport = (): Effect.Effect<void, FetchExportFailure> =>
+    Effect.gen(function* installFixtureExportEffect() {
+      const fixtureSnapshot = yield* Effect.tryPromise({
+        catch: (cause) =>
+          FetchExportFailure.make({ cause, message: "Public export fixture read failed" }),
+        try: () => Bun.file(fixtureSnapshotPath).text(),
+      });
+      yield* Effect.tryPromise({
+        catch: (cause) =>
+          FetchExportFailure.make({ cause, message: "Public export fixture asset copy failed" }),
+        try: () => Bun.$`mkdir -p ${generatedDirectory} ${assetsDirectory}`.quiet(),
+      });
+      yield* Effect.tryPromise({
+        catch: (cause) =>
+          FetchExportFailure.make({
+            cause,
+            message: "Public export fixture snapshot write failed",
+          }),
+        try: () => Bun.write(generatedSnapshotPath, `${fixtureSnapshot.trim()}\n`),
+      });
+      yield* Effect.tryPromise({
+        catch: (cause) =>
+          FetchExportFailure.make({ cause, message: "Public export fixture asset copy failed" }),
+        try: () => Bun.$`cp -R ${fixtureAssetsDirectory}. ${assetsDirectory}`.quiet(),
+      });
+      return yield* Effect.log("Installed committed Public Blog export fixture");
+    }),
   noItemsCount = 0,
   readPublicExport = Effect.gen(function* readPublicExportEffect() {
     const discovery = yield* cmsClient.discover;
@@ -86,6 +117,20 @@ const assetExtension = (mediaType: string): string => {
         });
       }
       return exported;
+    }
+  }),
+  useCommittedFixture = Bun.env.PUBLIC_BLOG_USE_FIXTURE === "1",
+  // oxlint-disable-next-line eslint/sort-vars -- [EH-133] export programs are declared before the runtime that executes them.
+  fetchPublicExportProgram = Effect.gen(function* fetchPublicExport() {
+    const exported = yield* readPublicExport;
+    yield* Effect.promise(() => Bun.$`mkdir -p ${generatedDirectory} ${assetsDirectory}`.quiet());
+    {
+      const assets = yield* Effect.forEach(exported.assets, fetchAsset, {
+          concurrency: "unbounded",
+        }),
+        snapshot: PublicBlogExport = { ...exported, assets };
+      yield* writePublicSnapshot(snapshot);
+      return yield* Effect.log(`Fetched coherent public export ${snapshot.definitionFingerprint}`);
     }
   }),
   writePublicSnapshot = (snapshot: PublicBlogExport): Effect.Effect<void, FetchExportFailure> =>
@@ -113,19 +158,12 @@ const assetExtension = (mediaType: string): string => {
         Effect.asVoid,
       );
     }),
-  zProgram = Effect.gen(function* fetchPublicExport() {
-    const exported = yield* readPublicExport;
-    yield* Effect.promise(() => Bun.$`mkdir -p ${generatedDirectory} ${assetsDirectory}`.quiet());
-    {
-      const assets = yield* Effect.forEach(exported.assets, fetchAsset, {
-          concurrency: "unbounded",
-        }),
-        snapshot: PublicBlogExport = { ...exported, assets };
-      yield* writePublicSnapshot(snapshot);
-      return yield* Effect.log(`Fetched coherent public export ${snapshot.definitionFingerprint}`);
-    }
-  }),
   zRuntime = ManagedRuntime.make(FetchHttpClient.layer);
+
+let zProgram = fetchPublicExportProgram;
+if (useCommittedFixture) {
+  zProgram = installFixtureExport();
+}
 
 try {
   await zRuntime.runPromise(zProgram);

@@ -70,9 +70,8 @@ const arrayJsonValuePredicate = (value: JsonValue): value is readonly JsonValue[
     }
     return JSON.stringify(canonicalizeJsonValue(value));
   },
-  serializedJsonFingerprint = (value: unknown): string => 
-    createHash("sha256").update(serializeCanonicalJson(value)).digest("hex")
-  ,
+  serializedJsonFingerprint = (value: unknown): string =>
+    createHash("sha256").update(serializeCanonicalJson(value)).digest("hex"),
   validatedJsonObjectPredicate = (value: unknown): value is JsonObject =>
     jsonValuePredicate(value) &&
     value !== null &&

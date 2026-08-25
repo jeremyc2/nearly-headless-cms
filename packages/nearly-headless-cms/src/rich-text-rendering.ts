@@ -17,7 +17,10 @@ const collectReferences = (document: Document) => {
     for (const child of document.children) {
       visitReferences(child, referenceIds);
     }
-    return { assetIds: [...new Set(referenceIds.assetIds)], entryIds: [...new Set(referenceIds.entryIds)] };
+    return {
+      assetIds: [...new Set(referenceIds.assetIds)],
+      entryIds: [...new Set(referenceIds.entryIds)],
+    };
   },
   coreBlockNodeTypes = new Set([
     "asset-reference",
