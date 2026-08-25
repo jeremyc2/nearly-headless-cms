@@ -44,6 +44,6 @@
   },
   "dependencies": {
     "effect": "4.0.0-rc.111",
-    "nearly-headless-cms": "/Users/jeremy/Documents/personal/nearly-headless-cms/.artifacts/npm/nearly-headless-cms-0.1.0.tgz"
+    "nearly-headless-cms": "workspace:*"
   }
 }

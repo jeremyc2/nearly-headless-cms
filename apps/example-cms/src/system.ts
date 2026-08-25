@@ -69,6 +69,13 @@ const makeExampleCompositionInternal = (options: ExampleSystemOptions = {}): Exa
       transportOptions: storageRootTransportOptions,
     };
   },
+  makeSeededExampleCompositionFromEnvironment = (): ExampleComposition => {
+    const storageRoot = Bun.env["EXAMPLE_CMS_STORAGE_ROOT"];
+    if (storageRoot === undefined) {
+      return makeExampleCompositionInternal({ seed: true });
+    }
+    return makeExampleCompositionInternal({ seed: true, storageRoot });
+  },
   zCreateExampleSystem = (options: ExampleSystemOptions = {}): Promise<ExampleSystem> => {
     const composition = makeExampleCompositionInternal(options),
       runtime = ManagedRuntime.make(composition.cmsLayer);
@@ -92,4 +99,5 @@ const makeExampleCompositionInternal = (options: ExampleSystemOptions = {}): Exa
 export {
   zCreateExampleSystem as createExampleSystem,
   makeExampleCompositionInternal as makeExampleComposition,
+  makeSeededExampleCompositionFromEnvironment,
 };

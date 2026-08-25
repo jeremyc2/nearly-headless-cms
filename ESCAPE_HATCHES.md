@@ -349,6 +349,7 @@ Sorted by escape-hatch code (`EH-###`).
 - **EH-347** (`eslint/sort-vars`): controlled input updates precede conflict preparation despite alphabetical ordering.
 - **EH-348** (`effecttsgo/async-function`): journey orchestration follows helper dependency order despite alphabetical ordering.
 - **EH-349** (`eslint/sort-vars`): journey orchestration follows helper dependency order despite alphabetical ordering.
+- **EH-350** (`eslint/sort-vars`): acceptance CMS storage path depends on the resolved monorepo root.
 
 ## Justification Registry
 
@@ -1135,13 +1136,13 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 **Locations:**
 
 - `scripts/compatibility-matrix.ts:17`
-- `scripts/run-acceptance.ts:22`
+- `scripts/run-acceptance.ts:24`
 
 #### EH-014: CLI readiness polling requires awaited retries.
 
 **Locations:**
 
-- `scripts/run-acceptance.ts:39`
+- `scripts/run-acceptance.ts:41`
 
 #### EH-015: definition routes delegate to catalog and migration handlers sequentially.
 
@@ -1453,7 +1454,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `scripts/run-acceptance.ts:44`
+- `scripts/run-acceptance.ts:46`
 
 #### EH-054: request handling awaits body parsing and Effect execution.
 
@@ -1718,13 +1719,13 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `scripts/run-acceptance.ts:106`
+- `scripts/run-acceptance.ts:115`
 
 #### EH-076: acceptance progress is intentionally emitted to CLI stdout.
 
 **Locations:**
 
-- `scripts/run-acceptance.ts:27`
+- `scripts/run-acceptance.ts:29`
 
 #### EH-077: escape hatch registry CLI reports to stdout and stderr.
 
@@ -1753,7 +1754,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `scripts/run-acceptance.ts:50`
+- `scripts/run-acceptance.ts:52`
 
 #### EH-235: generated clients intentionally use the platform fetch boundary so callers can supply the browser or server runtime.
 
@@ -2814,6 +2815,12 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 **Locations:**
 
 - `acceptance/webview/journey.test.ts:150`
+
+#### EH-350: acceptance CMS storage path depends on the resolved monorepo root.
+
+**Locations:**
+
+- `scripts/run-acceptance.ts:14`
 
 ### ESLint · `no-await-in-loop`
 

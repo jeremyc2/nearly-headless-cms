@@ -11,6 +11,8 @@ const acceptanceServers: {
     publicBlog: undefined,
   },
   monorepoRoot = path.join(import.meta.dir, ".."),
+  // oxlint-disable-next-line eslint/sort-vars -- [EH-350] acceptance CMS storage path depends on the resolved monorepo root.
+  acceptanceCmsStorageRoot = path.join(monorepoRoot, ".artifacts/acceptance/example-cms"),
   packageManifest = await readPackageManifest(
     path.join(monorepoRoot, "packages/nearly-headless-cms/package.json"),
   ),
@@ -70,8 +72,12 @@ await run(["bun", "run", "test:integration"]);
 await run(["bun", "run", "test:filesystem"]);
 await run(["bun", "test", "acceptance/journeys"]);
 
+await Bun.$`rm -rf ${acceptanceCmsStorageRoot}`.quiet();
+await Bun.$`mkdir -p ${acceptanceCmsStorageRoot}`.quiet();
+
 acceptanceServers.exampleCms = Bun.spawn(["bun", "run", "--cwd", "apps/example-cms", "start"], {
   cwd: monorepoRoot,
+  env: { ...process.env, EXAMPLE_CMS_STORAGE_ROOT: acceptanceCmsStorageRoot },
   stderr: "inherit",
   stdout: "inherit",
 });

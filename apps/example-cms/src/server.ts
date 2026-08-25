@@ -3,7 +3,7 @@ import { Effect, Layer, Schema } from "effect";
 import { HttpRouter, HttpServerResponse, HttpStaticServer } from "effect/unstable/http";
 import { DashboardBuildFailure } from "./dashboard-build-failure.ts";
 import { HttpTransport } from "nearly-headless-cms/http";
-import { makeExampleComposition } from "./system.ts";
+import { makeSeededExampleCompositionFromEnvironment } from "./system.ts";
 import { seed } from "./domain/seed.ts";
 import tailwind from "bun-plugin-tailwind";
 
@@ -12,7 +12,7 @@ const applicationBaseDirectory = new URL("..", import.meta.url).pathname,
   applicationDashboardEntrypoint = `${applicationBaseDirectory}/src/index.html`,
   applicationDashboardIndexPath = `${applicationDashboardDirectory}/index.html`,
   applicationPort = Number(Bun.env["EXAMPLE_CMS_PORT"] ?? "3000"),
-  composition = makeExampleComposition({ seed: true }),
+  composition = makeSeededExampleCompositionFromEnvironment(),
   failureFreeExitCode = 0,
   failureResponseStatus = 500,
   redirectResponseStatus = 302,
