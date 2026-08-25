@@ -3,11 +3,11 @@ import {
   type IngestInput,
   Management,
   type Metadata,
-  type StoredAsset,
 } from "../asset.ts";
 import { Effect, Layer, Schema, Stream, SynchronizedRef } from "effect";
 import { Generator, type Kind } from "../identifier.ts";
-import { type InfrastructureFailure, InvalidInput, NotFound } from "../cms-error.ts";
+import { InfrastructureFailure, InvalidInput, NotFound } from "../cms-error.ts";
+import assetStream from "../asset-stream.ts";
 import { createHash } from "node:crypto";
 
 /** Bounds for the in-memory development Asset Adapter. */
@@ -16,7 +16,11 @@ export interface Options {
   readonly maximumMetadataByteLength?: number;
 }
 
-type AssetState = SynchronizedRef.SynchronizedRef<ReadonlyMap<string, StoredAsset>>;
+interface BufferedAsset extends Asset {
+  readonly bytes: Uint8Array;
+}
+
+type AssetState = SynchronizedRef.SynchronizedRef<ReadonlyMap<string, BufferedAsset>>;
 
 interface IdentifierGenerator {
   readonly generate: (kind: Kind) => Effect.Effect<string, InfrastructureFailure>;
@@ -39,6 +43,7 @@ const AssetMetadataInput = Schema.Struct({
   DEFAULT_MAXIMUM_BYTE_LENGTH = 25_000_000,
   DEFAULT_MAXIMUM_METADATA_BYTE_LENGTH = 16_384,
   EMPTY_BYTE_LENGTH = 0,
+  { oneShot } = assetStream,
   collectBytes = <Content extends Uint8Array | Stream.Stream<Uint8Array, InfrastructureFailure>>(
     content: Content,
   ): Content extends Uint8Array
@@ -163,7 +168,7 @@ const AssetMetadataInput = Schema.Struct({
           maximumByteLength = options.maximumByteLength ?? DEFAULT_MAXIMUM_BYTE_LENGTH,
           maximumMetadataByteLength =
             options.maximumMetadataByteLength ?? DEFAULT_MAXIMUM_METADATA_BYTE_LENGTH,
-          state = yield* SynchronizedRef.make<ReadonlyMap<string, StoredAsset>>(new Map());
+          state = yield* SynchronizedRef.make<ReadonlyMap<string, BufferedAsset>>(new Map());
         return createManagementService({
           identifiers,
           maximumByteLength,
@@ -176,6 +181,10 @@ const AssetMetadataInput = Schema.Struct({
     SynchronizedRef.get(state).pipe(
       Effect.map((assets) => [...assets.values()].map(({ id, metadata }) => ({ id, metadata }))),
     ),
+  makeAssetContent = <Bytes extends Uint8Array>(bytes: Readonly<Bytes>) => {
+    const content = Stream.make(new Uint8Array(bytes));
+    return oneShot(content, repeatedAssetContentFailure);
+  },
   makeMetadata = <Bytes extends Uint8Array>(
     input: Readonly<{
       defaultAlternativeText?: string;
@@ -217,7 +226,7 @@ const AssetMetadataInput = Schema.Struct({
       const assetIdentifier = yield* context.identifiers.generate("asset"),
         digest = createHash("sha256").update(bytes).digest("hex"),
         metadata = makeMetadata(input, bytes, digest),
-        stored: StoredAsset = {
+        stored: BufferedAsset = {
           bytes,
           id: assetIdentifier,
           metadata,
@@ -229,15 +238,26 @@ const AssetMetadataInput = Schema.Struct({
     }),
   readAssetMethod =
     <State extends AssetState>(state: Readonly<State>) =>
-    (assetId: string): Effect.Effect<StoredAsset, NotFound> =>
+    (assetId: string) =>
       SynchronizedRef.get(state).pipe(
         Effect.flatMap((assets) => {
           const asset = assets.get(assetId);
           if (asset === undefined) {
             return Effect.fail(NotFound.make({ message: `Asset ${assetId} was not found` }));
           }
-          return Effect.succeed({ ...asset, bytes: new Uint8Array(asset.bytes) });
+          return Effect.succeed({
+            content: makeAssetContent(asset.bytes),
+            id: asset.id,
+            metadata: asset.metadata,
+          });
         }),
-      );
+      ),
+  repeatedAssetContentFailure = (): InfrastructureFailure =>
+    InfrastructureFailure.make({
+      cause: new Error("stream already consumed"),
+      message: "Asset content stream has already been consumed",
+      retryable: false,
+    });
 
+/** Creates a bounded process-local Asset Management Layer. */
 export { layer };

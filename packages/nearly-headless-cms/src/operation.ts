@@ -73,6 +73,7 @@ export interface DefinitionContract {
   readonly identifier: string;
 }
 
+/** Inputs for validating composed operation contracts against a Snapshot. */
 export interface ValidateDefinitionContractsInput {
   readonly contracts: readonly DefinitionContract[];
   readonly snapshot: CompiledSnapshot;

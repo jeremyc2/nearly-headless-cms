@@ -24,7 +24,7 @@ const buildEntryFile = (clientBasename: string): string =>
     `${generatedFileBanner}export { DeclaredFailure } from "./declared-failure.ts";
 export { ProtocolFailure } from "./protocol-failure.ts";
 export { TransportFailure } from "./transport-failure.ts";
-export * from "./${clientBasename}-component-types.ts";
+export type * from "./${clientBasename}-component-types.ts";
 export type { OperationInputs } from "./${clientBasename}-operation-inputs.ts";
 export type { OperationResponses } from "./${clientBasename}-operation-responses.ts";
 export { generatorFormatVersion, makeGeneratedClient } from "./${clientBasename}-runtime-transport.ts";

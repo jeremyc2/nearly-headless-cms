@@ -1,4 +1,4 @@
-export type { StoredAsset } from "./asset.ts";
+export type { Asset } from "./asset.ts";
 export type { CmsError } from "./cms-error.ts";
 export type { CmsServiceOperationContext } from "./cms-service-operation-context.ts";
 export type { PrepareDefinitionMigrationInput } from "./cms-types.ts";

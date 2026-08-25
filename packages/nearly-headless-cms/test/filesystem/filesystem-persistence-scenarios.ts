@@ -109,12 +109,18 @@ const commitDurableCatalogCutoverEffect = (targetSnapshot: CompiledSnapshot) =>
     snapshotId: "with-slug",
   }),
   expectRecoveredAsset = <
-    Recovered extends { readonly asset: StoredAsset; readonly generation: EntryGeneration },
+    Recovered extends {
+      readonly asset: Omit<StoredAsset, "content">;
+      readonly bytes: Uint8Array;
+      readonly generation: EntryGeneration;
+      readonly repeatedReadExit: Exit.Exit<Uint8Array, unknown>;
+    },
   >(
     recovered: Readonly<Recovered>,
   ): void => {
     expect(recovered.generation.records.get("entry-1")?.entry.values["title"]).toBe("Persisted");
-    expect(new TextDecoder().decode(recovered.asset.bytes)).toBe("asset bytes");
+    expect(new TextDecoder().decode(recovered.bytes)).toBe("asset bytes");
+    expect(Exit.isFailure(recovered.repeatedReadExit)).toBeTrue();
   },
   expectRecoveredCatalog = <
     Recovered extends { readonly catalog: CatalogState; readonly entries: EntryGeneration },
@@ -140,11 +146,11 @@ const commitDurableCatalogCutoverEffect = (targetSnapshot: CompiledSnapshot) =>
         ],
       ]),
     );
-    return (yield* assets.ingest({
+    return yield* assets.ingest({
       content: new TextEncoder().encode("asset bytes"),
       filename: "pixel.txt",
       mediaType: "text/plain",
-    })).id;
+    });
   }),
   observeStreamingStageEffect = (root: string) =>
     Effect.gen(function* observeStreamingStageStep() {
@@ -175,10 +181,15 @@ const commitDurableCatalogCutoverEffect = (targetSnapshot: CompiledSnapshot) =>
   readRecoveredAssetEffect = (assetId: string) =>
     Effect.gen(function* readRecoveredAssetStep() {
       const assets = yield* Asset.Management,
-        entries = yield* Persistence.EntryPersistence;
+        { content, ...asset } = yield* assets.read(assetId),
+        bytes = yield* Stream.mkUint8Array(content),
+        entries = yield* Persistence.EntryPersistence,
+        repeatedReadExit = yield* Effect.exit(Stream.mkUint8Array(content));
       return {
-        asset: yield* assets.read(assetId),
+        asset,
+        bytes,
         generation: yield* entries.readGeneration(),
+        repeatedReadExit,
       };
     }),
   recoverDurableCatalogCutoverEffect = Effect.gen(function* recoverDurableCatalogCutoverEffect() {
@@ -239,7 +250,7 @@ const commitDurableCatalogCutoverEffect = (targetSnapshot: CompiledSnapshot) =>
     mkdtemp(join(tmpdir(), "nearly-headless-cms-")).then((root) => {
       const filesystemLayer = atomicFilesystemLayer(root);
       return runWithLayer(filesystemLayer, ingestAssetEffect)
-        .then((assetId) => runWithLayer(filesystemLayer, readRecoveredAssetEffect(assetId)))
+        .then((asset) => runWithLayer(filesystemLayer, readRecoveredAssetEffect(asset.id)))
         .then(expectRecoveredAsset);
     }),
   verifyStreamingStageCancellation = (): Promise<void> =>
@@ -285,3 +296,5 @@ export {
   verifyWriterEnforcement,
   verifyWriterLockRecovery,
 } from "./filesystem-persistence-writer-scenarios.ts";
+
+export { verifyCorruptAssetClassification } from "./filesystem-persistence-corruption-scenarios.ts";

@@ -31,7 +31,7 @@ const { publicAssetIds, publicContent } = deliveryPublicContent,
       artifact: {
         assets: consistentSnapshot.assets
           .filter((asset) => publicAssetIds(content.posts, content.authors).has(asset.id))
-          .map(({ bytes: _bytes, ...asset }) => asset),
+          .map((asset) => asset),
         authors: content.authors.map(publicValue),
         categories: content.categories.map(publicValue),
         comments: content.comments.map(publicValue),

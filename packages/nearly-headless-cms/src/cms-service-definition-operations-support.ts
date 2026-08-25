@@ -172,7 +172,7 @@ const { attempt, liveRecords, parentRevisionProperty, sourceProperty } = cmsSupp
     Effect.gen(function* runReadConsistentSnapshotEffect() {
       const snapshotData = yield* readConsistentSnapshotData(context);
       return {
-        assets: snapshotData.storedAssets,
+        assets: snapshotData.assets,
         definitionSnapshot: snapshotData.definitionSnapshot,
         entries: liveRecords(snapshotData.entryGeneration).map((record) =>
           structuredClone(record.entry),

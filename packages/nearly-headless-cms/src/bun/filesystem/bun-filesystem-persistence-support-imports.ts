@@ -1,5 +1,6 @@
 export type { IngestInput } from "../../asset.ts";
 export { InfrastructureFailure, InvalidInput } from "../../cms-error.ts";
+export type { InfrastructureFailureKind } from "../../cms-error/infrastructure-failure.ts";
 export type { CatalogState } from "../../persistence.ts";
 export {
   type Configuration,

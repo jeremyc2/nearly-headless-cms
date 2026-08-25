@@ -6,6 +6,7 @@ import {
 } from "nearly-headless-cms/http";
 import type { Asset } from "nearly-headless-cms";
 import { ONE_ITEM } from "./delivery-support.ts";
+import { Stream } from "effect";
 import deliveryPublicAssetByteRangeSupport from "./delivery-public-asset-byte-range-support.ts";
 
 export interface PublicAssetResponseInput {
@@ -23,14 +24,30 @@ interface RangedAssetResponseInput {
 }
 
 const { parseByteRange } = deliveryPublicAssetByteRangeSupport,
-  publicAssetBody = (
+  ifNoneMatchMatches = (headerValue: string | null, etag: string): boolean => {
+    if (headerValue === null) {
+      return false;
+    }
+    const validators = headerValue.match(/(?:W\/)?"[^"]*"|\*/gu) ?? [];
+    return validators.some((validator) => {
+      if (validator === "*") {
+        return true;
+      }
+      let normalizedValidator = validator;
+      if (normalizedValidator.startsWith("W/")) {
+        normalizedValidator = normalizedValidator.slice("W/".length);
+      }
+      return normalizedValidator === etag;
+    });
+  },
+  publicAssetBody = <Content extends Asset.StoredAsset["content"]>(
     request: Readonly<ReadonlyTransportRequest>,
-    bytes: Readonly<Uint8Array>,
-  ): ArrayBuffer | null => {
+    content: Readonly<Content>,
+  ): BodyInit | null => {
     if (request.method === "HEAD") {
       return null;
     }
-    return new Uint8Array(bytes).buffer;
+    return Stream.toReadableStream(content);
   },
   publicAssetHeaders = <
     Input extends Omit<PublicAssetResponseInput, "request"> & { readonly asset: Asset.StoredAsset },
@@ -64,7 +81,7 @@ const { parseByteRange } = deliveryPublicAssetByteRangeSupport,
     if (range === null || ifRange === null || ifRange === etag) {
       return undefined;
     }
-    return new Response(publicAssetBody(request, new Uint8Array(asset.bytes)), {
+    return new Response(publicAssetBody(request, asset.content), {
       headers,
       status: httpStatusOk,
     });
@@ -73,9 +90,9 @@ const { parseByteRange } = deliveryPublicAssetByteRangeSupport,
     input: Readonly<Input>,
   ): Response => {
     const { asset, headers, range, request } = input,
-      parsedRange = parseByteRange(range, asset.bytes.byteLength);
+      parsedRange = parseByteRange(range, asset.metadata.byteLength);
     if (parsedRange === "invalid" || parsedRange === "unsatisfiable") {
-      headers.set("content-range", `bytes */${asset.bytes.byteLength}`);
+      headers.set("content-range", `bytes */${asset.metadata.byteLength}`);
       headers.delete("content-length");
       return new Response(null, { headers, status: httpStatusRangeNotSatisfiable });
     }
@@ -89,23 +106,49 @@ const { parseByteRange } = deliveryPublicAssetByteRangeSupport,
     parsedRange: Readonly<ParsedRange>,
   ): Response => {
     const { asset, headers, request } = input,
-      bytes = asset.bytes.slice(
+      content = slicePublicAssetContent(
+        asset.content,
         parsedRange.start,
-        Math.min(parsedRange.end, asset.bytes.byteLength - ONE_ITEM) + ONE_ITEM,
+        Math.min(parsedRange.end, asset.metadata.byteLength - ONE_ITEM),
       ),
-      sliceEnd = Math.min(parsedRange.end, asset.bytes.byteLength - ONE_ITEM);
+      sliceEnd = Math.min(parsedRange.end, asset.metadata.byteLength - ONE_ITEM);
     headers.set(
       "content-range",
-      `bytes ${parsedRange.start}-${sliceEnd}/${asset.bytes.byteLength}`,
+      `bytes ${parsedRange.start}-${sliceEnd}/${asset.metadata.byteLength}`,
     );
-    headers.set("content-length", String(bytes.byteLength));
-    return new Response(publicAssetBody(request, new Uint8Array(bytes)), {
+    headers.set("content-length", String(sliceEnd - parsedRange.start + ONE_ITEM));
+    return new Response(publicAssetBody(request, content), {
       headers,
       status: httpStatusPartialContent,
     });
-  };
+  },
+  slicePublicAssetContent = <Content extends Asset.StoredAsset["content"]>(
+    content: Readonly<Content>,
+    start: number,
+    end: number,
+  ): Asset.StoredAsset["content"] =>
+    content.pipe(
+      Stream.mapAccum(() => 0, (offset, bytes) => {
+        const chunkEnd = offset + bytes.byteLength,
+          selectedEnd = Math.min(bytes.byteLength, end - offset + ONE_ITEM),
+          selectedStart = Math.max(0, start - offset);
+        return [
+          chunkEnd,
+          [
+            {
+              bytes: bytes.slice(selectedStart, Math.max(selectedStart, selectedEnd)),
+              reachedEnd: chunkEnd > end,
+            },
+          ],
+        ] as const;
+      }),
+      Stream.takeUntil((chunk) => chunk.reachedEnd),
+      Stream.map((chunk) => chunk.bytes),
+      Stream.filter((bytes) => bytes.byteLength > 0),
+    );
 
 export default {
+  ifNoneMatchMatches,
   publicAssetBody,
   publicAssetHeaders,
   rangeNotModifiedResponse,

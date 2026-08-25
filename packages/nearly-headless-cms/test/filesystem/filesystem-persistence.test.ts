@@ -1,6 +1,7 @@
 import { describe, test } from "bun:test";
 import {
   verifyBoundedAssetStream,
+  verifyCorruptAssetClassification,
   verifyDurableCatalogCutover,
   verifyEntryAndAssetRecovery,
   verifyStreamingStageCancellation,
@@ -17,6 +18,9 @@ describe("BunFilesystemPersistence", () => {
 
   test("interrupts an oversized Asset stream at the configured bound", () =>
     verifyBoundedAssetStream());
+
+  test("classifies committed Asset corruption when the byte stream is consumed", () =>
+    verifyCorruptAssetClassification());
 
   test("stages Asset chunks before the source completes and removes the stage on cancellation", () =>
     verifyStreamingStageCancellation());

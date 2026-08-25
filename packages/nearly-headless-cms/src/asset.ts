@@ -33,9 +33,9 @@ export interface IngestInput {
   readonly defaultAlternativeText?: string;
 }
 
-/** A complete Asset value including its verified bytes. */
+/** An Asset value with a one-shot stream of verified bytes. */
 export interface StoredAsset extends Asset {
-  readonly bytes: Uint8Array;
+  readonly content: Stream.Stream<Uint8Array, InfrastructureFailure>;
 }
 
 /** Builder-supplied Asset persistence and retrieval capability. */

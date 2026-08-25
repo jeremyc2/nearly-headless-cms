@@ -30,7 +30,7 @@ import type { Effect } from "effect";
 export type MutationResult = Representation | CurrentState;
 export type DeleteResult = void | DeletionRecord;
 export interface ConsistentReadSnapshot {
-  readonly assets: readonly StoredAsset[];
+  readonly assets: readonly AssetValue[];
   readonly definitionSnapshot: CompiledSnapshot;
   readonly entries: readonly Representation[];
   readonly generation: number;

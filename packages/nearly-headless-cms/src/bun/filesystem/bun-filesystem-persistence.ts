@@ -13,6 +13,7 @@ import filesystemLockRoot from "./bun-filesystem-persistence-lock-root.ts";
 import filesystemServices from "./bun-filesystem-persistence-services.ts";
 import filesystemSupport from "./bun-filesystem-persistence-support.ts";
 
+/** Bun filesystem Adapter configuration types. */
 export type { CmsConfiguration, Configuration } from "./bun-filesystem-persistence-types.ts";
 
 const { makeServices } = filesystemServices,
@@ -104,4 +105,5 @@ const { makeServices } = filesystemServices,
       ).pipe(Effect.map((acquired) => acquired.context)),
     );
 
+/** Bun filesystem CMS composition, diagnostics, and persistence Layer constructors. */
 export { cmsLayer, inspect, layer };

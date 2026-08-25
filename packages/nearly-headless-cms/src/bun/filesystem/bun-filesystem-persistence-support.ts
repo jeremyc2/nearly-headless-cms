@@ -18,8 +18,11 @@ import {
   rm,
   stagingPrefix,
 } from "./bun-filesystem-persistence-support-imports.ts";
+import { digest, encode } from "./bun-filesystem-persistence-codec.ts";
+import filesystemFailure from "./bun-filesystem-persistence-failure.ts";
 
-const assetStageEndPromise = (stage: {
+const { filesystemErrorCode, filesystemFailureKind } = filesystemFailure,
+  assetStageEndPromise = (stage: {
     readonly ended: boolean;
     readonly writer: ReturnType<ReturnType<typeof Bun.file>["writer"]>;
   }): Promise<void> => {
@@ -136,22 +139,18 @@ const assetStageEndPromise = (stage: {
     }
     return content;
   },
-  digest = <Bytes extends Uint8Array>(bytes: Readonly<Bytes>): string => {
-    const hasher = new Bun.CryptoHasher("sha256");
-    hasher.update(bytes);
-    return hasher.digest("hex");
-  },
-  encode = (value: unknown): Uint8Array => new TextEncoder().encode(`${JSON.stringify(value)}\n`),
-  failure = (message: string, cause: unknown, retryable = false): InfrastructureFailure =>
-    InfrastructureFailure.make({ cause, message, retryable }),
-  filesystemErrorCode = (error: unknown): string | undefined => {
-    if (typeof error !== "object" || error === null || !("code" in error)) {
-      return undefined;
+  failure = (message: string, cause: unknown, retryable = false): InfrastructureFailure => {
+    const failureInput: {
+        cause: unknown;
+        kind?: InfrastructureFailure["kind"];
+        message: string;
+        retryable: boolean;
+      } = { cause, message, retryable },
+      kind = filesystemFailureKind(cause, message);
+    if (kind !== undefined) {
+      failureInput.kind = kind;
     }
-    if (typeof error.code === "string") {
-      return error.code;
-    }
-    return undefined;
+    return InfrastructureFailure.make(failureInput);
   },
   finalizeAssetStaging = (
     configuration: Readonly<Configuration>,

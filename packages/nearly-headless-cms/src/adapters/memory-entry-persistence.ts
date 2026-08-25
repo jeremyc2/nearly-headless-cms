@@ -40,4 +40,5 @@ const cloneEntryRecord = (record: EntryRecord): EntryRecord => globalThis.struct
     }),
   );
 
+/** Creates process-local Entry persistence with immutable generations. */
 export { layer };

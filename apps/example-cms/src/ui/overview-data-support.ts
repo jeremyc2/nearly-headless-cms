@@ -15,8 +15,8 @@ export interface OverviewState {
   readonly draftPostCount: number;
   readonly pendingCommentCount: number;
   readonly recentEntries: readonly {
+    readonly activityLabel: string;
     readonly entry: EntryRepresentation;
-    readonly recordedAt: string;
   }[];
   readonly rebuild: ReturnType<typeof useOverviewRebuildMutation>;
   readonly today: string;
@@ -57,6 +57,21 @@ const buildOverviewCounts = (queries: OverviewEntryQueries, assetCount: number |
         .length,
     };
   },
+  demoOverviewDate = DateTime.makeUnsafe("2026-08-23T12:00:00.000Z"),
+  overviewActivityAt = (entry: EntryRepresentation): string => {
+    const activityAt = entry.values["published-at"] ?? entry.values["created-at"];
+    if (typeof activityAt === "string" && activityAt.length > 0) {
+      return activityAt;
+    }
+    return "1970-01-01T00:00:00.000Z";
+  },
+  overviewActivityLabel = (entry: EntryRepresentation): string =>
+    DateTime.toDate(DateTime.makeUnsafe(overviewActivityAt(entry))).toLocaleString("en-US", {
+      timeZone: "UTC",
+    }),
+  overviewTodayLabel = new Intl.DateTimeFormat(undefined, {
+    dateStyle: "full",
+  }).format(DateTime.toDate(demoOverviewDate)),
   overviewRecentCandidateLimit = 12,
   overviewRecentDisplayLimit = 5,
   useOverviewEntryQueries = () =>
@@ -81,17 +96,14 @@ const buildOverviewCounts = (queries: OverviewEntryQueries, assetCount: number |
         })),
       });
     return recentCandidates
-      .map((entry, index) => ({
+      .filter((_entry, index) => recentRevisionQueries[index]?.data?.items[0] !== undefined)
+      .map((entry) => ({
+        activityLabel: overviewActivityLabel(entry),
         entry,
-        recordedAt: recentRevisionQueries[index]?.data?.items[0]?.recordedAt,
       }))
-      .filter(
-        (
-          candidate,
-        ): candidate is { readonly entry: EntryRepresentation; readonly recordedAt: string } =>
-          candidate.recordedAt !== undefined,
+      .toSorted((left, right) =>
+        overviewActivityAt(right.entry).localeCompare(overviewActivityAt(left.entry)),
       )
-      .toSorted((left, right) => right.recordedAt.localeCompare(left.recordedAt))
       .slice(0, overviewRecentDisplayLimit);
   },
   useOverviewState = (): OverviewState => {
@@ -106,9 +118,7 @@ const buildOverviewCounts = (queries: OverviewEntryQueries, assetCount: number |
       ...buildOverviewCounts(queries, assets.data?.length),
       rebuild,
       recentEntries,
-      today: new Intl.DateTimeFormat(undefined, {
-        dateStyle: "full",
-      }).format(DateTime.toDate(DateTime.nowUnsafe())),
+      today: overviewTodayLabel,
     };
   };
 

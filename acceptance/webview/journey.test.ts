@@ -46,13 +46,13 @@ const CMS_VIEWPORT_HEIGHT = 1000,
       "(() => { const input = document.querySelector('input[placeholder^=\"Filter\"]'); window.__lastInputWasTrusted = false; input?.addEventListener('input', event => { window.__lastInputWasTrusted = event.isTrusted }, { once: true }); return true })()",
     );
     await view.click('input[placeholder^="Filter"]');
-    await view.type("lighthouse");
+    await view.type("Lighthouse");
     expect(await view.evaluate<boolean>("window.__lastInputWasTrusted")).toBeTrue();
     expect(
       await view.evaluate<string | undefined>(
         "document.querySelector('input[placeholder^=\"Filter\"]')?.value",
       ),
-    ).toBe("lighthouse");
+    ).toBe("Lighthouse");
   },
   // oxlint-disable-next-line effecttsgo/async-function -- [EH-034] journey assertions compose awaited WebView navigation and evaluation.
   assertEditorHistoryNavigation = async <View extends Bun.WebView>(

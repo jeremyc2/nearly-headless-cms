@@ -1,4 +1,5 @@
 import {
+  type Asset,
   type CatalogState,
   type CmsError,
   type CmsServiceOperationContext,
@@ -8,7 +9,6 @@ import {
   type Manifest,
   type Preparation,
   type PrepareDefinitionMigrationInput,
-  type StoredAsset,
   cmsSupport,
   compileSnapshot,
   prepare,
@@ -35,17 +35,6 @@ const { attempt, entryResource, liveRecords } = cmsSupport,
     snapshot: PrepareDefinitionMigrationInput["snapshot"],
   ): Effect.Effect<CompiledSnapshot, CmsError> =>
     attempt((): CompiledSnapshot => compileSnapshot(snapshot, context.compileOptions)),
-  loadStoredAssets = (
-    context: Readonly<CmsServiceOperationContext>,
-  ): Effect.Effect<readonly StoredAsset[], CmsError> =>
-    Effect.gen(function* loadStoredAssetsEffect() {
-      const assetMetadata = yield* context.assets.list(),
-        storedAssets: StoredAsset[] = [];
-      for (const asset of assetMetadata) {
-        storedAssets.push(yield* context.assets.read(asset.id));
-      }
-      return storedAssets;
-    }),
   prepareMigrationPreparation = (
     context: Readonly<CmsServiceOperationContext>,
     input: PrepareMigrationPreparationInput,
@@ -66,8 +55,8 @@ const { attempt, entryResource, liveRecords } = cmsSupport,
     definitionSnapshot: CompiledSnapshot,
   ): Effect.Effect<
     {
+      readonly assets: readonly Asset[];
       readonly entryGeneration: EntryGeneration;
-      readonly storedAssets: readonly StoredAsset[];
     },
     CmsError
   > =>
@@ -84,28 +73,32 @@ const { attempt, entryResource, liveRecords } = cmsSupport,
         definitionSpaceId: definitionSnapshot.definitionSpaceId,
         kind: "asset",
       });
-      const entryGeneration = yield* context.persistence.readGeneration(),
-        storedAssets = yield* loadStoredAssets(context);
-      return { entryGeneration, storedAssets };
+      const assets = yield* context.assets.list(),
+        entryGeneration = yield* context.persistence.readGeneration();
+      return { assets, entryGeneration };
     }),
   readConsistentSnapshotData = (
     context: Readonly<CmsServiceOperationContext>,
   ): Effect.Effect<
     {
+      readonly assets: readonly Asset[];
       readonly definitionSnapshot: CompiledSnapshot;
       readonly entryGeneration: EntryGeneration;
-      readonly storedAssets: readonly StoredAsset[];
     },
     CmsError
   > =>
     Effect.gen(function* readConsistentSnapshotDataEffect() {
       const catalogState = yield* context.catalog.read(),
         definitionSnapshot = catalogState.active.compiled,
-        { entryGeneration, storedAssets } = yield* readAuthorizedConsistentSnapshotRecords(
+        snapshotRecords = yield* readAuthorizedConsistentSnapshotRecords(
           context,
           definitionSnapshot,
         );
-      return { definitionSnapshot, entryGeneration, storedAssets };
+      return {
+        assets: snapshotRecords.assets,
+        definitionSnapshot,
+        entryGeneration: snapshotRecords.entryGeneration,
+      };
     }),
   storePreparedDefinitionMigration = (
     context: Readonly<CmsServiceOperationContext>,

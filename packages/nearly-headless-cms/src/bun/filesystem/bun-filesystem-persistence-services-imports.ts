@@ -1,5 +1,11 @@
 export { Management, type Metadata } from "../../asset.ts";
-export { type CmsError, Conflict, InvalidInput, NotFound } from "../../cms-error.ts";
+export {
+  type CmsError,
+  Conflict,
+  type InfrastructureFailure,
+  InvalidInput,
+  NotFound,
+} from "../../cms-error.ts";
 export type { Generator } from "../../identifier.ts";
 export {
   DefinitionCatalog as DefinitionCatalogTag,
@@ -19,6 +25,6 @@ export {
   emptyLength,
   initialVersion,
 } from "./bun-filesystem-persistence-types.ts";
-export { Context, Effect, SynchronizedRef } from "effect";
+export { Context, Effect, Stream, SynchronizedRef } from "effect";
 // oxlint-disable-next-line effecttsgo/node-builtin-import -- [EH-101] Bun does not provide a path manipulation API; these operations are platform-neutral string handling.
 export { join } from "node:path";

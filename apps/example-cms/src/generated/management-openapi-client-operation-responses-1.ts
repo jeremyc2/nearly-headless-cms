@@ -17,8 +17,8 @@ export interface OperationResponsesChunk1 {
   readonly inspectMigrationPreparation: JsonObject;
   readonly listCatalogEvents: JsonObject;
   readonly listDefinitionRevisions: JsonObject;
-  readonly listDefinitions: JsonObject;
   readonly listDefinitionSnapshots: JsonObject;
+  readonly listDefinitions: JsonObject;
   readonly listEntryRevisions: RevisionPage;
   readonly listExampleAssets: readonly {
     readonly id: string;

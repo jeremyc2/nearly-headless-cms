@@ -9,6 +9,7 @@ import type { Representation } from "./entry.ts";
 import { dual } from "effect/Function";
 import migrationHelpers from "./definition-migration-helpers.ts";
 
+/** Definition migration manifests, handlers, preparations, and reports. */
 export type {
   Handler,
   HandlerInput,
@@ -95,4 +96,5 @@ const arityForMigrationFreshnessDual = 2,
   },
   { validateGraph } = migrationHelpers;
 
+/** Migration freshness, path resolution, preparation, and graph validation helpers. */
 export { assertFresh, path, prepare, validateGraph };

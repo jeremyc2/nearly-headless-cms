@@ -67,5 +67,7 @@ const { managementPaths } = openApiManagementPaths,
   stringify = (document: Document): string =>
     `${JSON.stringify(bSortValue(document), null, indentationSpaces)}\n`;
 
+/** Deterministic Headless and Management OpenAPI generation helpers. */
 export { headless, management, stringify };
+/** The generated OpenAPI document type. */
 export type { Document } from "./open-api-types.ts";

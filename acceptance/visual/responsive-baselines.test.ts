@@ -44,7 +44,8 @@ const baselineDirectory = join(import.meta.dir, "baselines"),
   pages = [
     {
       name: "example-cms-overview",
-      ready: "document.querySelectorAll('.signal-card').length === 4",
+      ready:
+        "document.querySelectorAll('.signal-card').length === 4 && document.querySelectorAll('.recent-panel .entry-row').length >= 5",
       url: "http://localhost:3000/",
     },
     {

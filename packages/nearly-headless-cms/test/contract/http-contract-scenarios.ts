@@ -1,5 +1,8 @@
 export { verifyDeletionReceipt } from "./http-contract-deletion-scenarios.ts";
-export { verifyMultipartAssetUpload } from "./http-contract-multipart-scenarios.ts";
+export {
+  verifyMultipartAssetUpload,
+  verifyStreamedAssetDelivery,
+} from "./http-contract-multipart-scenarios.ts";
 export {
   verifyPortableHttpApiRoutes,
   verifyVersionedManagementOperations,

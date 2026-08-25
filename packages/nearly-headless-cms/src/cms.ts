@@ -1,3 +1,4 @@
+/** Public CMS inputs, results, snapshots, and service shape. */
 export type {
   ActivateDefinitionSnapshotInput,
   ActivateDefinitionSnapshotResult,
@@ -16,5 +17,7 @@ export type {
   RetireDefinitionInput,
   ServiceShape,
 } from "./cms-types.ts";
+/** The public CMS Effect service tag. */
 export { Service } from "./cms-service.ts";
+/** CMS Layer constructors for Builder compositions. */
 export { layer, makeLayer } from "./cms-service-operations.ts";

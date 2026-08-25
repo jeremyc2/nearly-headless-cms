@@ -26,6 +26,7 @@ export * as Operation from "./operation.ts";
 export * as Persistence from "./persistence.ts";
 /** Versioned semantic Rich Text values, validation, references, and rendering. */
 export * as RichText from "./rich-text.ts";
+/** Direct Rich Text parsing and serialization helpers. */
 export { parseRichTextDocument, serializeRichTextDocument } from "./rich-text.ts";
 /** Transport-neutral startup and shutdown capability. */
 export * as Transport from "./transport.ts";

@@ -33,17 +33,18 @@ const runtimeAfterMakeGeneratedClient = `
     if ("path" in input && input.path !== undefined) {
       path = substitutePathParameters(path, input.path);
     }
-    const requestUrl = transportRequestSupport.buildRequestUrl(baseAddress, path);
+    const headers = transportRequestSupport.buildRequestHeaders(input),
+      requestUrl = transportRequestSupport.buildRequestUrl(baseAddress, path);
     if ("query" in input && input.query !== undefined) {
       transportRequestSupport.appendQueryParameters(requestUrl, input.query);
     }
     return {
       body: transportRequestSupport.buildRequestBody(
         input,
-        transportRequestSupport.buildRequestHeaders(input),
+        headers,
         specification,
       ),
-      headers: transportRequestSupport.buildRequestHeaders(input),
+      headers,
       requestUrl,
     };
   },

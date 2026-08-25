@@ -215,6 +215,7 @@ export interface Renderer<Result> {
   readonly extension: (node: ExtensionNode, children: readonly Result[]) => Result;
 }
 
+/** Rich Text constants plus parsing, validation, rendering, and reference helpers. */
 export {
   emptyLength,
   format,

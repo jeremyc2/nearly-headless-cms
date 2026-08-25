@@ -88,6 +88,7 @@ export interface DiscoveryDocument {
   readonly openApiUrl: string;
 }
 
+/** Inputs for building public runtime Definition and operation discovery. */
 export interface DiscoveryInput {
   readonly operations: readonly DeliveryOperation[];
   readonly snapshot: CompiledSnapshot;

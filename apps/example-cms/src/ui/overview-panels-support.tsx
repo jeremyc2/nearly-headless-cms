@@ -1,5 +1,4 @@
 import {
-  DateTime,
   Link,
   displayName,
   draftPluralSuffix,
@@ -90,7 +89,7 @@ const OverviewBuildPanel = <Rebuild extends OverviewState["rebuild"]>({
       </div>
       {recentEntries.length === 0 && <p className="empty-state">Loading recent revisions…</p>}
       <div className="entry-list">
-        {recentEntries.map(({ entry, recordedAt }) => (
+        {recentEntries.map(({ activityLabel, entry }) => (
           <Link
             className="entry-row"
             key={entry.id}
@@ -101,8 +100,7 @@ const OverviewBuildPanel = <Rebuild extends OverviewState["rebuild"]>({
             <span className="entry-title">
               <strong>{displayName(entry)}</strong>
               <small>
-                {entry.contentTypeId} ·{" "}
-                {DateTime.toDate(DateTime.makeUnsafe(recordedAt)).toLocaleString()}
+                {entry.contentTypeId} · {activityLabel}
               </small>
             </span>
             <span>→</span>

@@ -45,7 +45,13 @@ interface PathOperationsInput {
   readonly path: string;
 }
 
-const emptyItemCount = 0,
+const compareOperationIdentifiers = (
+    leftOperation: Readonly<GeneratedOperation>,
+    rightOperation: Readonly<GeneratedOperation>,
+  ): number =>
+    Number(leftOperation.identifier > rightOperation.identifier) -
+    Number(leftOperation.identifier < rightOperation.identifier),
+  emptyItemCount = 0,
   isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
     value !== null && typeof value === "object" && !Array.isArray(value),
   requireRecord = (value: unknown, description: string): Readonly<Record<string, unknown>> => {
@@ -198,9 +204,7 @@ const emptyItemCount = 0,
             path,
           }),
         )
-        .toSorted((leftOperation, rightOperation) =>
-          leftOperation.identifier.localeCompare(rightOperation.identifier),
-        );
+        .toSorted(compareOperationIdentifiers);
     return { document, operations: pathsOperations };
   };
 

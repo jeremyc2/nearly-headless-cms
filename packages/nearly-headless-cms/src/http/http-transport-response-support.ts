@@ -1,5 +1,5 @@
 import { type CmsError, InvalidInput, type ValidationIssue } from "../cms-error.ts";
-import { type Effect, Schema } from "effect";
+import { type Effect, Schema, Stream } from "effect";
 import {
   httpStatusNotModified,
   httpStatusOk,
@@ -23,7 +23,7 @@ const assetContentResponse = <Asset extends StoredAsset>(
     const baseHeaders = buildAssetBaseHeaders(storedAsset, requestId),
       etag = `"sha256-${storedAsset.metadata.digest}"`;
     baseHeaders.set("etag", etag);
-    if (request.headers.get("if-none-match") === etag) {
+    if (ifNoneMatchMatches(request.headers.get("if-none-match"), etag)) {
       return assetNotModifiedResponse(baseHeaders);
     }
     return resolveRangedAssetResponse({ baseHeaders, etag, request, storedAsset });
@@ -33,8 +33,8 @@ const assetContentResponse = <Asset extends StoredAsset>(
     baseHeaders: Readonly<HeadersType>,
     requestMethod: string,
   ): Response => {
-    baseHeaders.set("content-length", String(storedAsset.bytes.byteLength));
-    let body: BodyInit | null = responseBody(storedAsset.bytes);
+    baseHeaders.set("content-length", String(storedAsset.metadata.byteLength));
+    let body: BodyInit | null = Stream.toReadableStream(storedAsset.content);
     if (requestMethod === "HEAD") {
       body = null;
     }
@@ -54,9 +54,9 @@ const assetContentResponse = <Asset extends StoredAsset>(
     readonly request: ReadonlyTransportRequest;
     readonly storedAsset: Readonly<Asset>;
   }): Response => {
-    const bounds = parseRangeBounds(range, storedAsset.bytes.byteLength);
+    const bounds = parseRangeBounds(range, storedAsset.metadata.byteLength);
     if (bounds === undefined) {
-      baseHeaders.set("content-range", `bytes */${storedAsset.bytes.byteLength}`);
+      baseHeaders.set("content-range", `bytes */${storedAsset.metadata.byteLength}`);
       return new Response(null, { headers: baseHeaders, status: httpStatusRangeNotSatisfiable });
     }
     return buildSuccessfulAssetRangeResponse({ baseHeaders, bounds, request, storedAsset });
@@ -78,14 +78,17 @@ const assetContentResponse = <Asset extends StoredAsset>(
     baseHeaders.set("content-type", storedAsset.metadata.mediaType);
     return baseHeaders;
   },
-  buildAssetRangeBody = (
+  buildAssetRangeBody = <
+    Failure,
+    Content extends Stream.Stream<Uint8Array, Failure>,
+  >(
     request: ReadonlyTransportRequest,
-    bytes: Readonly<Uint8Array>,
+    content: Readonly<Content>,
   ): BodyInit | null => {
     if (request.method === "HEAD") {
       return null;
     }
-    return responseBody(bytes);
+    return Stream.toReadableStream(content);
   },
   buildErrorDocument = <ErrorType extends CmsError>(
     error: Readonly<ErrorType>,
@@ -113,13 +116,14 @@ const assetContentResponse = <Asset extends StoredAsset>(
     readonly request: ReadonlyTransportRequest;
     readonly storedAsset: Readonly<Asset>;
   }): Response => {
-    const { boundedEnd, bytes } = sliceAssetRange(storedAsset, bounds);
+    const { boundedEnd, content } = sliceAssetRange(storedAsset, bounds),
+      byteLength = boundedEnd - bounds.start + 1;
     baseHeaders.set(
       "content-range",
-      `bytes ${bounds.start}-${boundedEnd}/${storedAsset.bytes.byteLength}`,
+      `bytes ${bounds.start}-${boundedEnd}/${storedAsset.metadata.byteLength}`,
     );
-    baseHeaders.set("content-length", String(bytes.byteLength));
-    return new Response(buildAssetRangeBody(request, bytes), {
+    baseHeaders.set("content-length", String(byteLength));
+    return new Response(buildAssetRangeBody(request, content), {
       headers: baseHeaders,
       status: httpStatusPartialContent,
     });
@@ -153,6 +157,22 @@ const assetContentResponse = <Asset extends StoredAsset>(
       return undefined;
     }
     return { end, start };
+  },
+  ifNoneMatchMatches = (headerValue: string | null, etag: string): boolean => {
+    if (headerValue === null) {
+      return false;
+    }
+    const validators = headerValue.match(/(?:W\/)?"[^"]*"|\*/gu) ?? [];
+    return validators.some((validator) => {
+      if (validator === "*") {
+        return true;
+      }
+      let normalizedValidator = validator;
+      if (normalizedValidator.startsWith("W/")) {
+        normalizedValidator = normalizedValidator.slice("W/".length);
+      }
+      return normalizedValidator === etag;
+    });
   },
   invalidInputDetails = <ErrorType extends CmsError>(
     error: Readonly<ErrorType>,
@@ -229,11 +249,6 @@ const assetContentResponse = <Asset extends StoredAsset>(
     }
     return assetFullResponse(storedAsset, baseHeaders, request.method);
   },
-  responseBody = (bytes: Readonly<Uint8Array>): ArrayBuffer => {
-    const copy = new Uint8Array(bytes.byteLength);
-    copy.set(bytes);
-    return copy.buffer;
-  },
   responseHeaders = (
     requestId: string,
     fingerprint?: string,
@@ -248,10 +263,28 @@ const assetContentResponse = <Asset extends StoredAsset>(
   sliceAssetRange = <Asset extends StoredAsset>(
     storedAsset: Readonly<Asset>,
     bounds: { readonly end: number; readonly start: number },
-  ): { readonly boundedEnd: number; readonly bytes: Uint8Array } => {
-    const boundedEnd = Math.min(bounds.end, storedAsset.bytes.byteLength - 1),
-      bytes = storedAsset.bytes.slice(bounds.start, boundedEnd + 1);
-    return { boundedEnd, bytes };
+  ): { readonly boundedEnd: number; readonly content: Asset["content"] } => {
+    const boundedEnd = Math.min(bounds.end, storedAsset.metadata.byteLength - 1),
+      content = storedAsset.content.pipe(
+        Stream.mapAccum(() => 0, (offset, bytes) => {
+          const chunkEnd = offset + bytes.byteLength,
+            selectedEnd = Math.min(bytes.byteLength, boundedEnd - offset + 1),
+            selectedStart = Math.max(0, bounds.start - offset);
+          return [
+            chunkEnd,
+            [
+              {
+                bytes: bytes.slice(selectedStart, Math.max(selectedStart, selectedEnd)),
+                reachedEnd: chunkEnd > boundedEnd,
+              },
+            ],
+          ] as const;
+        }),
+        Stream.takeUntil((chunk) => chunk.reachedEnd),
+        Stream.map((chunk) => chunk.bytes),
+        Stream.filter((bytes) => bytes.byteLength > 0),
+      );
+    return { boundedEnd, content };
   };
 
 export default {

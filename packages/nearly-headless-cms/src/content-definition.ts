@@ -1,3 +1,4 @@
+/** Serializable and compiled Content Definition model types. */
 export type {
   Compatibility,
   CompileOptions,
@@ -29,6 +30,9 @@ export type {
   ValidateEntryOptions,
 } from "./content-definition-types.ts";
 
+/** Resolves portable Query capabilities for a Field. */
 export { capabilitiesFor } from "./content-definition-capabilities.ts";
+/** Classifies whether two Definition Snapshots are representation-compatible. */
 export { classifyCompatibility } from "./content-definition-compatibility.ts";
+/** Compiles and validates Content Definitions deterministically. */
 export { compile, compileSnapshot } from "./content-definition-compile.ts";

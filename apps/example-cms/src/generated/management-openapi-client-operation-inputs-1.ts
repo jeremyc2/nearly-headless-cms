@@ -82,7 +82,7 @@ export interface OperationInputsChunk1 {
       readonly "X-Request-Id"?: string;
     };
   };
-  readonly listDefinitions: {
+  readonly listDefinitionSnapshots: {
     readonly path: { readonly definitionSpaceId: string };
     readonly query?: { readonly cursor?: string; readonly pageSize?: number };
     readonly headers?: {
@@ -90,7 +90,7 @@ export interface OperationInputsChunk1 {
       readonly "X-Request-Id"?: string;
     };
   };
-  readonly listDefinitionSnapshots: {
+  readonly listDefinitions: {
     readonly path: { readonly definitionSpaceId: string };
     readonly query?: { readonly cursor?: string; readonly pageSize?: number };
     readonly headers?: {

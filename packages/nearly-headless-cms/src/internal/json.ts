@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 export type JsonPrimitive = null | boolean | number | string;
 export interface JsonObject extends Readonly<Record<string, JsonValue>> {
   readonly [Symbol.toStringTag]?: never;
@@ -68,11 +70,9 @@ const arrayJsonValuePredicate = (value: JsonValue): value is readonly JsonValue[
     }
     return JSON.stringify(canonicalizeJsonValue(value));
   },
-  serializedJsonFingerprint = (value: unknown): string => {
-    const hasher = new Bun.CryptoHasher("sha256");
-    hasher.update(serializeCanonicalJson(value));
-    return hasher.digest("hex");
-  },
+  serializedJsonFingerprint = (value: unknown): string => 
+    createHash("sha256").update(serializeCanonicalJson(value)).digest("hex")
+  ,
   validatedJsonObjectPredicate = (value: unknown): value is JsonObject =>
     jsonValuePredicate(value) &&
     value !== null &&

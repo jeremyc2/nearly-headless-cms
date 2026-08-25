@@ -2,8 +2,13 @@ import deliveryPublicAssetResponseSupport, {
   type PublicAssetResponseInput,
 } from "./delivery-public-asset-response-support.ts";
 
-const { publicAssetBody, publicAssetHeaders, rangeNotModifiedResponse, rangedAssetResponse } =
-    deliveryPublicAssetResponseSupport,
+const {
+    ifNoneMatchMatches,
+    publicAssetBody,
+    publicAssetHeaders,
+    rangeNotModifiedResponse,
+    rangedAssetResponse,
+  } = deliveryPublicAssetResponseSupport,
   publicAssetResponse = <Input extends PublicAssetResponseInput>(
     input: Readonly<Input>,
   ): Response => {
@@ -11,7 +16,7 @@ const { publicAssetBody, publicAssetHeaders, rangeNotModifiedResponse, rangedAss
       { etag, headers } = publicAssetHeaders(input),
       ifRangeMismatch = rangeNotModifiedResponse(request, asset, headers),
       range = request.headers.get("range");
-    if (request.headers.get("if-none-match") === etag) {
+    if (ifNoneMatchMatches(request.headers.get("if-none-match"), etag)) {
       return new Response(null, { headers, status: 304 });
     }
     if (ifRangeMismatch !== undefined) {
@@ -20,7 +25,7 @@ const { publicAssetBody, publicAssetHeaders, rangeNotModifiedResponse, rangedAss
     if (range !== null) {
       return rangedAssetResponse({ asset, headers, range, request });
     }
-    return new Response(publicAssetBody(request, new Uint8Array(asset.bytes)), {
+    return new Response(publicAssetBody(request, asset.content), {
       headers,
       status: 200,
     });

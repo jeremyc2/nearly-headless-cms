@@ -15,6 +15,8 @@ import {
 import { mkdtemp, open, rm } from "node:fs/promises";
 import type { IngestInput } from "../asset.ts";
 import { RequestFailureError } from "./http-transport-request-failure.ts";
+// oxlint-disable-next-line effecttsgo/node-builtin-import -- [EH-103] Temporary upload staging requires node fs primitives unavailable in the HTTP FileSystem abstraction.
+import { createReadStream } from "node:fs";
 // oxlint-disable-next-line effecttsgo/node-builtin-import -- [EH-105] Temporary upload staging requires node path primitives unavailable in the HTTP FileSystem abstraction.
 import { join } from "node:path";
 // oxlint-disable-next-line effecttsgo/node-builtin-import -- [EH-104] Temporary upload staging requires node os primitives unavailable in the HTTP FileSystem abstraction.
@@ -245,12 +247,14 @@ const { encodeChunk } = transportResponse,
     }
   },
   stagedContent = (path: string): Stream.Stream<Uint8Array, InfrastructureFailure> =>
-    Stream.fromAsyncIterable(Bun.file(path).stream(), (cause) =>
-      InfrastructureFailure.make({
-        cause,
-        message: "Staged multipart Asset read failed",
-        retryable: false,
-      }),
+    Stream.fromAsyncIterable<Uint8Array, InfrastructureFailure>(
+      createReadStream(path),
+      (cause) =>
+        InfrastructureFailure.make({
+          cause,
+          message: "Staged multipart Asset read failed",
+          retryable: false,
+        }),
     ).pipe(Stream.map((chunk) => encodeChunk(chunk))),
   writeOrderedFileChunk = (
     handle: Readonly<Awaited<ReturnType<typeof open>>>,

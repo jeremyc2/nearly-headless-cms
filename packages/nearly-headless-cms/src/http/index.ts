@@ -6,7 +6,9 @@ export * as HttpTransport from "./http-transport.ts";
 export * as OpenApi from "./open-api.ts";
 /** Shared HTTP status code constants for transport and application layers. */
 export * from "./http-status-codes.ts";
+/** Converts readonly transport values back to Web platform request primitives. */
 export { toAbortSignal, toWebRequest } from "./http-transport-readonly-types.ts";
+/** Readonly Web transport request, URL, and cancellation shapes. */
 export type {
   ReadonlyTransportAbortSignal,
   ReadonlyTransportHandlerRequest,
