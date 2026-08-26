@@ -1,5 +1,5 @@
-import { automated, manual } from "./v0.1-builders.ts";
 import type { AcceptanceCase } from "./v0.1.ts";
+import { automated } from "./v0.1-builders.ts";
 
 export const acceptanceCasesB: readonly AcceptanceCase[] = [
   automated({
@@ -164,26 +164,5 @@ export const acceptanceCasesB: readonly AcceptanceCase[] = [
     owner: "cross-system",
     selector: "workspace topology",
     source: "issue #14",
-  }),
-  manual({
-    claim:
-      "VoiceOver completes landmarks, controls, dialogs, validation, editor toolbar, and Comment receipt flows.",
-    id: "A11Y-002",
-    selector: "VoiceOver protocol",
-    source: "issue #4",
-  }),
-  manual({
-    claim:
-      "Japanese Hiragana IME, native selection, and plain-text clipboard editing survive save and reload.",
-    id: "RTX-003",
-    selector: "IME and clipboard protocol",
-    source: "issue #6",
-  }),
-  manual({
-    claim:
-      "Critical flows pass current Safari, Chrome, and Firefox with the Public Blog also checked without JavaScript.",
-    id: "COMP-002",
-    selector: "cross-browser protocol",
-    source: "issue #4",
   }),
 ];

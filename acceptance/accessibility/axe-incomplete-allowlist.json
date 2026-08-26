@@ -9,7 +9,7 @@
         "public-blog-home",
         "public-blog-post"
       ],
-      "reason": "Bun WebView contrast probes are unreliable on the pinned macOS WebKit runner; contrast is verified manually on Safari in docs/manual/v0.1-release-checklist.md."
+      "reason": "Bun WebView contrast probes are unreliable on the pinned macOS WebKit runner; v0.1 documents this limitation instead of blocking on incomplete contrast results."
     }
   ]
 }

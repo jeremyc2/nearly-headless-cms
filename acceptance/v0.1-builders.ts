@@ -10,13 +10,6 @@ export interface AutomatedAcceptanceCaseInput {
   readonly source: string;
 }
 
-export interface ManualAcceptanceCaseInput {
-  readonly claim: string;
-  readonly id: string;
-  readonly selector: string;
-  readonly source: string;
-}
-
 export const acceptanceExternalProcess = (level: VerificationLevel): string => {
     if (level === "journey" || level === "visual") {
       return "Example CMS and Public Blog";
@@ -43,28 +36,6 @@ export const acceptanceExternalProcess = (level: VerificationLevel): string => {
     level,
     operatingSystem: "portable unless named",
     owner,
-    runtime: "Bun 1.4.0",
-    selector,
-    source,
-  }),
-  manual = ({
-    claim,
-    id,
-    selector,
-    source,
-  }: Readonly<ManualAcceptanceCaseInput>): AcceptanceCase => ({
-    adapter: "filesystem",
-    automation: "manual",
-    claim,
-    command: "docs/manual/v0.1-release-checklist.md",
-    evidence: ["signed release-candidate checklist"],
-    externalProcess: "Safari, Chrome, Firefox, VoiceOver, Japanese IME",
-    id,
-    level: "manual",
-    limitation:
-      "Claim is limited to the recorded versions and macOS desktop keyboard/mouse authoring.",
-    operatingSystem: "macOS",
-    owner: "cross-system",
     runtime: "Bun 1.4.0",
     selector,
     source,

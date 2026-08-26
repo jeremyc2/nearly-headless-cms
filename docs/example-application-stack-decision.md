@@ -81,7 +81,7 @@ An Entry reference wraps a non-empty selection as its authored label. A collapse
 
 Keyboard behavior includes conventional `Cmd+B`, `Cmd+I`, `Cmd+K`, `Cmd+Z`, and `Shift+Cmd+Z`; Enter splits blocks or list items; Backspace merges or outdents at boundaries; Escape closes dialogs and restores focus. Bounded app-owned history coalesces adjacent typing and deletion. Saving marks the current position clean without erasing undo history; loading another Entry resets history.
 
-The v0.1 automated interaction target is macOS desktop keyboard and mouse behavior. Composition is handled defensively, with VoiceOver and IME behavior as explicit manual prototype gates. Mobile and touch authoring, rich HTML paste, drag reordering, collaboration, Markdown shortcuts, tables, and media resizing are outside v0.1. If the complete-experience prototype exposes unacceptable selection, composition, or accessibility defects, the editor decision is revisited explicitly rather than silently dropping required Rich Text behavior or adding a dependency.
+The v0.1 automated interaction target is macOS desktop keyboard and mouse behavior. Composition is handled defensively. VoiceOver, IME composition, mobile and touch authoring, rich HTML paste, drag reordering, collaboration, Markdown shortcuts, tables, and media resizing are outside v0.1. If the complete-experience prototype exposes unacceptable selection, composition, or accessibility defects, the editor decision is revisited explicitly rather than silently dropping required Rich Text behavior or adding a dependency.
 
 ## Public Blog application
 
@@ -99,7 +99,7 @@ Effect `HttpStaticServer` and `BunHttpServer` serve the generated `dist` directo
 
 `bun:test` covers domain behavior, Effect services, generated-client contracts, form and render models, Rich Text transactions and normalization, history, and other pure UI logic. Actual React and DOM behavior runs against the real applications through experimental Bun 1.4 `WebView` using the zero-external-browser macOS WebKit backend. The suite covers trusted typing and key input, navigation, dialogs and focus restoration, responsive viewport changes, semantic DOM and ARIA state, console failures, selected screenshots, submission, save-failure retention, and complete cross-application workflows.
 
-WebView does not prove IME, native drag selection, clipboard integration, screen-reader output, or cross-browser compatibility. Those limitations are explicit manual gates. The repository adds no Playwright, Happy DOM, React Testing Library, or simulated DOM.
+WebView does not prove IME, native drag selection, clipboard integration, screen-reader output, or cross-browser compatibility. Those behaviors are outside the automated v0.1 acceptance scope. The repository adds no Playwright, Happy DOM, React Testing Library, or simulated DOM.
 
 Ordinary independent development scripts use Bun 1.4's `bun run --no-orphans --parallel`, with prefixed output and fail-fast cleanup, instead of `concurrently` or `npm-run-all`. Readiness-dependent build and acceptance flows use a small repository-owned Effect program around `Bun.spawn`: acquire the CMS process, wait for its health route, run the scoped Astro build or WebView workflow, and release every child through Effect finalizers.
 

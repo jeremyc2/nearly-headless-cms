@@ -31,7 +31,7 @@
     "check:escape-hatches": "bun run scripts/escape-hatches.ts verify",
     "acceptance": "bun run scripts/run-acceptance.ts",
     "release": "bun run scripts/release.ts",
-    "format": "oxfmt --write package.json tsconfig.json README.md packages apps/example-cms/package.json apps/example-cms/tsconfig.json apps/example-cms/scripts apps/example-cms/src apps/example-cms/test apps/public-blog/package.json apps/public-blog/tsconfig.json apps/public-blog/astro.config.ts apps/public-blog/src apps/public-blog/test acceptance scripts docs/manual docs/releasing.md"
+    "format": "oxfmt --write package.json tsconfig.json README.md packages apps/example-cms/package.json apps/example-cms/tsconfig.json apps/example-cms/scripts apps/example-cms/src apps/example-cms/test apps/public-blog/package.json apps/public-blog/tsconfig.json apps/public-blog/astro.config.ts apps/public-blog/src apps/public-blog/test acceptance scripts docs/releasing.md"
   },
   "devDependencies": {
     "@effect/tsgo": "0.36.5",

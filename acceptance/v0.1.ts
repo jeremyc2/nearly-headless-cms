@@ -6,7 +6,6 @@ export type VerificationLevel =
   | "filesystem"
   | "journey"
   | "visual"
-  | "manual"
   | "package"
   | "architecture";
 
@@ -22,7 +21,7 @@ export interface AcceptanceCase {
   readonly operatingSystem: string;
   readonly adapter: string;
   readonly externalProcess: string;
-  readonly automation: "automated" | "manual";
+  readonly automation: "automated";
   readonly evidence: readonly string[];
   readonly limitation?: string;
 }

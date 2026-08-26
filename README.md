@@ -118,10 +118,10 @@ The v0.1 release is accepted through traceability from product and architecture 
 - repository verification, architecture checks, generated-artifact checks, and public type tests;
 - contract, integration, and real-filesystem suites;
 - real Example CMS and Public Blog processes;
-- WebView interaction and visual baselines on macOS; and
+- WebView interaction, axe-core accessibility checks, and visual baselines on macOS; and
 - npm package inspection, deterministic builds, README example execution, and clean-consumer smoke tests.
 
-Manual VoiceOver, keyboard, IME, clipboard, cross-browser, JavaScript-disabled, and accessibility protocols remain explicit release-candidate gates. The source of truth is the typed acceptance manifest, with a generated human-readable view in [`docs/acceptance/v0.1.md`](docs/acceptance/v0.1.md).
+The source of truth is the typed acceptance manifest, with a generated human-readable view in [`docs/acceptance/v0.1.md`](docs/acceptance/v0.1.md).
 
 Read the full [acceptance and verification strategy](docs/v0.1-acceptance-verification-strategy.md) for supported environments, limitations, and evidence ownership.
 
@@ -133,7 +133,6 @@ Read the full [acceptance and verification strategy](docs/v0.1-acceptance-verifi
 - [Filesystem research](docs/research/bun-filesystem-constraints.md) — storage and durability constraints
 - [Package release-readiness decision](docs/package-release-readiness-decision.md) — publication guarantees and exclusions
 - [Release runbook](docs/releasing.md) — exact artifact verification and npm publication procedure
-- [Manual v0.1 checklist](docs/manual/v0.1-release-checklist.md) — human acceptance gates
 
 Issues and specifications are tracked in [GitHub Issues](https://github.com/jeremyc2/nearly-headless-cms/issues).
 
