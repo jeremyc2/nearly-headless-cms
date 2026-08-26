@@ -1,12 +1,14 @@
-import { type Command, type State, secondHeadingLevel } from "./transactions-types.ts";
+import { type Command, type State } from "./transactions-types.ts";
 import { emptyIndex, firstIndex } from "./transactions-constants.ts";
 import type { RichText } from "nearly-headless-cms";
-import { selectedText } from "./transactions-selection.ts";
+import transactionsSelection from "./transactions-selection.ts";
 import transactionsMutations from "./transactions-mutations.ts";
 import transactionsState from "./transactions-state.ts";
 import transactionsSupport from "./transactions-support.ts";
+import transactionsBlockKindHandlers from "./transactions-block-kind-handlers.ts";
 
-const { commit, replaceBlock } = transactionsState,
+const { commit } = transactionsState,
+  { selectedText } = transactionsSelection,
   { conditionalValue } = transactionsSupport,
   applyComposition = (state: State, command: Extract<Command, { type: "composition" }>): State => ({
     ...state,
@@ -56,27 +58,20 @@ const { commit, replaceBlock } = transactionsState,
     }
     return { ...state, document: structuredClone(document), historyIndex };
   },
-  applySelect = (state: State, command: Extract<Command, { type: "select" }>): State => ({
-    ...state,
-    selection: { anchor: command.anchor, focus: command.focus },
-  }),
+  applySelect = (state: State, command: Extract<Command, { type: "select" }>): State => {
+    const selectionChanged =
+      JSON.stringify(state.selection.anchor) !== JSON.stringify(command.anchor) ||
+      JSON.stringify(state.selection.focus) !== JSON.stringify(command.focus);
+    return {
+      ...state,
+      selection: { anchor: command.anchor, focus: command.focus },
+      storedMarks: selectionChanged ? null : state.storedMarks,
+    };
+  },
   applySetBlockKind = (
     state: State,
     command: Extract<Command, { type: "setBlockKind" }>,
-  ): State => {
-    const block = state.document.children[state.selection.anchor.blockIndex];
-    if (block?.type !== "paragraph" && block?.type !== "heading") {
-      return state;
-    }
-    return commit(
-      state,
-      replaceBlock(
-        state.document,
-        state.selection.anchor.blockIndex,
-        buildBlockReplacement(block, command),
-      ),
-    );
-  },
+  ): State => transactionsBlockKindHandlers.applySetBlockKind(state, command),
   applySplitBlock = (state: State): State => transactionsMutations.splitBlock(state),
   applyToggleMark = (state: State, command: Extract<Command, { type: "toggleMark" }>): State =>
     transactionsMutations.toggleMark(state, command.mark),
@@ -94,43 +89,6 @@ const { commit, replaceBlock } = transactionsState,
       return state;
     }
     return workWrapLinkForSelection(state, selected, command);
-  },
-  buildBlockReplacement = (
-    block: RichText.ParagraphNode | RichText.HeadingNode,
-    command: Extract<Command, { type: "setBlockKind" }>,
-  ): RichText.BlockNode => {
-    if (command.blockType === "heading") {
-      return {
-        children: block.children,
-        level: command.headingLevel ?? secondHeadingLevel,
-        type: "heading",
-      };
-    }
-    if (command.blockType === "paragraph") {
-      return { children: block.children, type: "paragraph" };
-    }
-    if (command.blockType === "code-block") {
-      return {
-        children: [
-          {
-            text: block.children
-              .map((node) => {
-                if ("text" in node) {
-                  return node.text;
-                }
-                return "";
-              })
-              .join(""),
-            type: "text",
-          },
-        ],
-        type: "code-block",
-      };
-    }
-    return {
-      children: [{ children: block.children, type: "paragraph" }],
-      type: "quote",
-    };
   },
   workInsertEntryReferenceForSelection = (
     state: State,

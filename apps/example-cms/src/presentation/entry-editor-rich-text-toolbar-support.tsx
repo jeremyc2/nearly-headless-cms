@@ -1,21 +1,61 @@
 import type { ReactNode, RefObject } from "react";
 import type { BrowserAdapter } from "./rich-text-editor/index.ts";
+import type { State } from "./rich-text-editor/transactions-types.ts";
+import type { RichText } from "nearly-headless-cms";
+import transactionsMarks from "./rich-text-editor/transactions-marks.ts";
+import transactionsSelection from "./rich-text-editor/transactions-selection.ts";
 import { headingLevel } from "./main-labels.ts";
 import { preserveSelection } from "./main-shared.ts";
 
-const RichTextBlockPicker = <Adapter extends RefObject<BrowserAdapter | null>>({
+const { marksForNextInput } = transactionsMarks,
+  { locateTextAtAbsoluteOffset, resolveInlineBlockAtPosition, selectedInlineRange } =
+    transactionsSelection,
+  toolbarBlockValue = (state: State): string => {
+    const rootBlock = state.document.children[state.selection.anchor.blockIndex];
+    if (rootBlock?.type === "quote") {
+      return "quote";
+    }
+    if (rootBlock?.type === "code-block") {
+      return "code-block";
+    }
+    const inlineBlock = resolveInlineBlockAtPosition(state.document, state.selection.anchor);
+    if (inlineBlock?.type === "heading") {
+      return `heading-${inlineBlock.level}`;
+    }
+    return "paragraph";
+  },
+  toolbarListActive = (
+    state: State,
+    listType: "ordered-list" | "unordered-list",
+  ): boolean => state.document.children[state.selection.anchor.blockIndex]?.type === listType,
+  toolbarCanRedo = (state: State): boolean => state.historyIndex < state.history.length - 1,
+  toolbarCanUndo = (state: State): boolean => state.historyIndex > 0,
+  toolbarMarkActive = (state: State, mark: RichText.Mark): boolean => {
+    const inlineRange = selectedInlineRange(state);
+    if (inlineRange !== undefined && inlineRange.start !== inlineRange.end) {
+      const startText = locateTextAtAbsoluteOffset(inlineRange.block, inlineRange.start)?.text;
+      return startText?.marks?.includes(mark) ?? false;
+    }
+    return marksForNextInput(state).includes(mark);
+  },
+  RichTextBlockPicker = <Adapter extends RefObject<BrowserAdapter | null>>({
     adapter,
+    editorState,
   }: {
     readonly adapter: Readonly<Adapter>;
+    readonly editorState: State | undefined;
   }) => (
     <label className="rich-block-picker">
       <span className="visually-hidden">Block type</span>
       <select
         aria-label="Block type"
-        defaultValue="paragraph"
         onChange={(event) => {
           dispatchBlockKind(adapter, event.target.value);
         }}
+        onMouseDown={() => {
+          adapter.current?.captureEditorSelection();
+        }}
+        value={editorState === undefined ? "paragraph" : toolbarBlockValue(editorState)}
       >
         <option value="paragraph">Paragraph</option>
         <option value="heading-2">Heading 2</option>
@@ -37,16 +77,20 @@ const RichTextBlockPicker = <Adapter extends RefObject<BrowserAdapter | null>>({
     adapter,
     ariaLabel,
     children,
+    editorState,
     mark,
   }: {
     readonly adapter: Readonly<Adapter>;
     readonly ariaLabel: string;
     readonly children: Content;
+    readonly editorState: State | undefined;
     readonly mark: Mark;
   }) => (
     <button
       aria-label={ariaLabel}
-      onClick={() => adapter.current?.dispatch({ mark, type: "toggleMark" })}
+      aria-pressed={editorState === undefined ? false : toolbarMarkActive(editorState, mark)}
+      className="rich-toolbar-mark-button"
+      onClick={() => adapter.current?.dispatchToolbarCommand({ mark, type: "toggleMark" })}
       onMouseDown={preserveSelection}
       type="button"
     >
@@ -55,19 +99,23 @@ const RichTextBlockPicker = <Adapter extends RefObject<BrowserAdapter | null>>({
   ),
   RichTextToolbarHistoryButtons = <Adapter extends RefObject<BrowserAdapter | null>>({
     adapter,
+    editorState,
   }: {
     readonly adapter: Readonly<Adapter>;
+    readonly editorState: State | undefined;
   }) => (
     <>
       <button
-        onClick={() => adapter.current?.dispatch({ type: "undo" })}
+        disabled={editorState === undefined || !toolbarCanUndo(editorState)}
+        onClick={() => adapter.current?.dispatchToolbarCommand({ type: "undo" })}
         onMouseDown={preserveSelection}
         type="button"
       >
         Undo
       </button>
       <button
-        onClick={() => adapter.current?.dispatch({ type: "redo" })}
+        disabled={editorState === undefined || !toolbarCanRedo(editorState)}
+        onClick={() => adapter.current?.dispatchToolbarCommand({ type: "redo" })}
         onMouseDown={preserveSelection}
         type="button"
       >
@@ -75,16 +123,47 @@ const RichTextBlockPicker = <Adapter extends RefObject<BrowserAdapter | null>>({
       </button>
     </>
   ),
+  RichTextToolbarInsertButtons = ({
+    onOpenAssetDialog,
+    onOpenEntryDialog,
+    onOpenLinkDialog,
+  }: {
+    readonly onOpenAssetDialog: () => void;
+    readonly onOpenEntryDialog: () => void;
+    readonly onOpenLinkDialog: () => void;
+  }) => (
+    <>
+      <button onClick={onOpenLinkDialog} onMouseDown={preserveSelection} type="button">
+        Link
+      </button>
+      <button onClick={onOpenEntryDialog} onMouseDown={preserveSelection} type="button">
+        Entry reference
+      </button>
+      <button onClick={onOpenAssetDialog} onMouseDown={preserveSelection} type="button">
+        Asset
+      </button>
+    </>
+  ),
   RichTextToolbarListButtons = <Adapter extends RefObject<BrowserAdapter | null>>({
     adapter,
+    editorState,
   }: {
     readonly adapter: Readonly<Adapter>;
+    readonly editorState: State | undefined;
   }) => (
     <>
       <button
         aria-label="Unordered list"
+        aria-pressed={
+          editorState === undefined
+            ? false
+            : toolbarListActive(editorState, "unordered-list")
+        }
         onClick={() =>
-          adapter.current?.dispatch({ listType: "unordered-list", type: "toggleList" })
+          adapter.current?.dispatchToolbarCommand({
+            listType: "unordered-list",
+            type: "toggleList",
+          })
         }
         onMouseDown={preserveSelection}
         type="button"
@@ -93,7 +172,12 @@ const RichTextBlockPicker = <Adapter extends RefObject<BrowserAdapter | null>>({
       </button>
       <button
         aria-label="Ordered list"
-        onClick={() => adapter.current?.dispatch({ listType: "ordered-list", type: "toggleList" })}
+        aria-pressed={
+          editorState === undefined ? false : toolbarListActive(editorState, "ordered-list")
+        }
+        onClick={() =>
+          adapter.current?.dispatchToolbarCommand({ listType: "ordered-list", type: "toggleList" })
+        }
         onMouseDown={preserveSelection}
         type="button"
       >
@@ -101,13 +185,89 @@ const RichTextBlockPicker = <Adapter extends RefObject<BrowserAdapter | null>>({
       </button>
     </>
   ),
+  RichTextToolbarMarkButtons = <Adapter extends RefObject<BrowserAdapter | null>>({
+    adapter,
+    editorState,
+  }: {
+    readonly adapter: Readonly<Adapter>;
+    readonly editorState: State | undefined;
+  }) => (
+    <>
+      <RichTextMarkButton adapter={adapter} ariaLabel="Bold" editorState={editorState} mark="bold">
+        <span className="rich-toolbar-mark rich-toolbar-mark-bold">B</span>
+      </RichTextMarkButton>
+      <RichTextMarkButton
+        adapter={adapter}
+        ariaLabel="Italic"
+        editorState={editorState}
+        mark="italic"
+      >
+        <span className="rich-toolbar-mark rich-toolbar-mark-italic">I</span>
+      </RichTextMarkButton>
+      <RichTextMarkButton
+        adapter={adapter}
+        ariaLabel="Strikethrough"
+        editorState={editorState}
+        mark="strikethrough"
+      >
+        <span className="rich-toolbar-mark rich-toolbar-mark-strikethrough">S</span>
+      </RichTextMarkButton>
+      <RichTextMarkButton adapter={adapter} ariaLabel="Inline code" editorState={editorState} mark="code">
+        <span className="rich-toolbar-mark rich-toolbar-mark-code">{"</>"}</span>
+      </RichTextMarkButton>
+    </>
+  ),
+  RichTextToolbar = <
+    Adapter extends RefObject<BrowserAdapter | null>,
+    Toolbar extends RefObject<HTMLDivElement | null>,
+  >({
+    adapter,
+    editorState,
+    onOpenAssetDialog,
+    onOpenEntryDialog,
+    onOpenLinkDialog,
+    toolbar,
+  }: {
+    readonly adapter: Readonly<Adapter>;
+    readonly editorState: State | undefined;
+    readonly onOpenAssetDialog: () => void;
+    readonly onOpenEntryDialog: () => void;
+    readonly onOpenLinkDialog: () => void;
+    readonly toolbar: Readonly<Toolbar>;
+  }) => (
+    <div aria-label="Rich Text formatting" className="rich-toolbar" ref={toolbar} role="toolbar">
+      <div className="rich-toolbar-group">
+        <RichTextBlockPicker adapter={adapter} editorState={editorState} />
+      </div>
+      <span aria-hidden="true" className="rich-toolbar-divider" />
+      <div className="rich-toolbar-group">
+        <RichTextToolbarMarkButtons adapter={adapter} editorState={editorState} />
+      </div>
+      <span aria-hidden="true" className="rich-toolbar-divider" />
+      <div className="rich-toolbar-group">
+        <RichTextToolbarListButtons adapter={adapter} editorState={editorState} />
+      </div>
+      <span aria-hidden="true" className="rich-toolbar-divider" />
+      <div className="rich-toolbar-group">
+        <RichTextToolbarInsertButtons
+          onOpenAssetDialog={onOpenAssetDialog}
+          onOpenEntryDialog={onOpenEntryDialog}
+          onOpenLinkDialog={onOpenLinkDialog}
+        />
+      </div>
+      <span aria-hidden="true" className="rich-toolbar-divider" />
+      <div className="rich-toolbar-group">
+        <RichTextToolbarHistoryButtons adapter={adapter} editorState={editorState} />
+      </div>
+    </div>
+  ),
   // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
   dispatchBlockKind = <Adapter extends RefObject<BrowserAdapter | null>>(
     adapter: Adapter,
     blockType: string,
   ): void => {
     if (blockType === "heading-2" || blockType === "heading-3" || blockType === "heading-4") {
-      adapter.current?.dispatch({
+      adapter.current?.dispatchToolbarCommand({
         blockType: "heading",
         headingLevel: headingLevel(blockType),
         type: "setBlockKind",
@@ -115,13 +275,8 @@ const RichTextBlockPicker = <Adapter extends RefObject<BrowserAdapter | null>>({
       return;
     }
     if (blockType === "paragraph" || blockType === "quote" || blockType === "code-block") {
-      adapter.current?.dispatch({ blockType, type: "setBlockKind" });
+      adapter.current?.dispatchToolbarCommand({ blockType, type: "setBlockKind" });
     }
   };
 
-export {
-  RichTextBlockPicker,
-  RichTextMarkButton,
-  RichTextToolbarHistoryButtons,
-  RichTextToolbarListButtons,
-};
+export { RichTextToolbar };

@@ -1,45 +1,27 @@
 import { emptyIndex, firstIndex } from "./transactions-constants.ts";
 import type { RichText } from "nearly-headless-cms";
 import type { State } from "./transactions-types.ts";
-import { selectedText } from "./transactions-selection.ts";
+import transactionsInlineEdit from "./transactions-inline-edit.ts";
+import transactionsMarks from "./transactions-marks.ts";
+import transactionsSelection from "./transactions-selection.ts";
+import transactionsSelectionOffset from "./transactions-selection-offset.ts";
 import transactionsState from "./transactions-state.ts";
 import transactionsSupport from "./transactions-support.ts";
 
-const { commit, replaceBlock } = transactionsState,
-  { canonicalMarks, conditionalValue, replaceInlineNode } = transactionsSupport,
-  buildMarkedTextSegments = (
-    selected: NonNullable<ReturnType<typeof selectedText>>,
-    activeMarks: readonly RichText.Mark[],
-    nextMarks: readonly RichText.Mark[],
-  ): RichText.TextNode[] => [
-    ...conditionalValue(
-      selected.start === emptyIndex,
-      [],
-      [
-        {
-          text: selected.text.text.slice(emptyIndex, selected.start),
-          type: "text" as const,
-          ...conditionalValue(activeMarks.length === emptyIndex, {}, { marks: activeMarks }),
-        },
-      ],
-    ),
-    {
-      text: selected.text.text.slice(selected.start, selected.end),
-      type: "text",
-      ...conditionalValue(nextMarks.length === emptyIndex, {}, { marks: nextMarks }),
-    },
-    ...conditionalValue(
-      selected.end === selected.text.text.length,
-      [],
-      [
-        {
-          text: selected.text.text.slice(selected.end),
-          type: "text" as const,
-          ...conditionalValue(activeMarks.length === emptyIndex, {}, { marks: activeMarks }),
-        },
-      ],
-    ),
-  ],
+const {
+    rebuildBlockWithMarkToggle,
+    rebuildBlockWithRangeReplacement,
+    splitInlineBlockAtOffset,
+  } = transactionsInlineEdit,
+  { marksForNextInput, toggleMarkInSet } = transactionsMarks,
+  { selectedInlineRange, selectedText } = transactionsSelection,
+  { positionFromAbsoluteOffset } = transactionsSelectionOffset,
+  { commit, replaceBlock } = transactionsState,
+  { conditionalValue } = transactionsSupport,
+  deleteInlineRange = (
+    state: State,
+    inlineRange: NonNullable<ReturnType<typeof selectedInlineRange>>,
+  ): State => workInsertTextForInlineRange(state, inlineRange, ""),
   insertReference = (
     state: State,
     reference: RichText.EntryReferenceNode | RichText.LinkNode,
@@ -51,53 +33,45 @@ const { commit, replaceBlock } = transactionsState,
     return workInsertReferenceForSelection(state, selected, reference);
   },
   insertText = (state: State, text: string): State => {
-    const selected = selectedText(state);
-    if (selected === undefined) {
+    const inlineRange = selectedInlineRange(state);
+    if (inlineRange === undefined) {
       return state;
     }
-    return workInsertTextForSelection(state, selected, text);
-  },
-  resolveInsertMarks = (
-    selected: NonNullable<ReturnType<typeof selectedText>>,
-    pendingMarks: readonly RichText.Mark[],
-  ): { readonly marks?: readonly RichText.Mark[] } => {
-    if ((selected.text.marks?.length ?? emptyIndex) > emptyIndex) {
-      return { marks: selected.text.marks };
-    }
-    if (pendingMarks.length > emptyIndex) {
-      return { marks: pendingMarks };
-    }
-    return {};
+    return workInsertTextForInlineRange(state, inlineRange, text);
   },
   splitBlock = (state: State): State => {
-    const selected = selectedText(state);
-    if (selected === undefined) {
+    const inlineRange = selectedInlineRange(state);
+    if (inlineRange === undefined || inlineRange.start !== inlineRange.end) {
       return state;
     }
-    return workSplitBlockForSelection(state, selected);
+    return workSplitBlockAtOffset(state, inlineRange, inlineRange.start);
   },
   splitListBlock = <
     // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     Input extends {
-      before: RichText.TextNode;
+      firstBlock: RichText.ParagraphNode | RichText.HeadingNode;
       listBlock: RichText.ListNode;
       secondBlock: RichText.ParagraphNode;
       state: State;
     },
   >({
-    before,
+    firstBlock,
     listBlock,
     secondBlock,
     state,
   }: Readonly<Input>): State => {
     const listItemIndex = state.selection.anchor.listItemIndex ?? emptyIndex,
+      firstParagraph: RichText.ParagraphNode =
+        firstBlock.type === "paragraph"
+          ? firstBlock
+          : { children: firstBlock.children, type: "paragraph" },
       nextList: RichText.ListNode = {
         ...listBlock,
         children: listBlock.children.flatMap((listItem, index) =>
           conditionalValue(
             index === listItemIndex,
             [
-              { children: [{ ...secondBlock, children: [before] }], type: "list-item" as const },
+              { children: [firstParagraph], type: "list-item" as const },
               { children: [secondBlock], type: "list-item" as const },
             ],
             [listItem],
@@ -146,16 +120,17 @@ const { commit, replaceBlock } = transactionsState,
     );
   },
   toggleMark = (state: State, mark: RichText.Mark): State => {
-    const selected = selectedText(state);
-    if (selected === undefined || selected.start === selected.end) {
-      const pendingMarks = conditionalValue(
-        state.pendingMarks.includes(mark),
-        state.pendingMarks.filter((candidate) => candidate !== mark),
-        canonicalMarks([...state.pendingMarks, mark]),
-      );
-      return { ...state, pendingMarks };
+    const inlineRange = selectedInlineRange(state);
+    if (inlineRange === undefined) {
+      return state;
     }
-    return workToggleMarkForSelection(state, selected, mark);
+    if (inlineRange.start === inlineRange.end) {
+      return {
+        ...state,
+        storedMarks: toggleMarkInSet(marksForNextInput(state), mark),
+      };
+    }
+    return workToggleMarkForInlineRange(state, inlineRange, mark);
   },
   workInsertReferenceForSelection = (
     state: State,
@@ -182,87 +157,109 @@ const { commit, replaceBlock } = transactionsState,
       ),
     );
   },
-  workInsertTextForSelection = (
+  workInsertTextForInlineRange = (
     state: State,
-    selected: NonNullable<ReturnType<typeof selectedText>>,
+    inlineRange: NonNullable<ReturnType<typeof selectedInlineRange>>,
     text: string,
   ): State => {
-    const block = {
-        ...selected.block,
-        children: selected.block.children.map((node, index) =>
-          replaceInlineNode({
-            index,
-            node,
-            replacement: {
-              text: `${selected.text.text.slice(emptyIndex, selected.start)}${text}${selected.text.text.slice(selected.end)}`,
-              type: "text",
-              ...resolveInsertMarks(selected, state.pendingMarks),
-            },
-            targetIndex: state.selection.anchor.inlineIndex,
-          }),
-        ),
-      } as RichText.ParagraphNode | RichText.HeadingNode,
-      offset = selected.start + text.length,
-      position = state.selection.anchor,
-      selection = { anchor: { ...position, offset }, focus: { ...position, offset } };
+    const insertMarks = marksForNextInput(state),
+      { anchor } = state.selection,
+      updatedChildren = rebuildBlockWithRangeReplacement({
+        block: inlineRange.block,
+        rangeEnd: inlineRange.end,
+        rangeStart: inlineRange.start,
+        replacementMarks: insertMarks,
+        replacementText: text,
+      }),
+      updatedBlock = { ...inlineRange.block, children: updatedChildren },
+      cursorAbsolute = inlineRange.start + text.length,
+      selection = {
+        anchor: positionFromAbsoluteOffset({
+          absoluteOffset: cursorAbsolute,
+          block: updatedBlock,
+          blockIndex: anchor.blockIndex,
+          listItemIndex: anchor.listItemIndex,
+        }),
+        focus: positionFromAbsoluteOffset({
+          absoluteOffset: cursorAbsolute,
+          block: updatedBlock,
+          blockIndex: anchor.blockIndex,
+          listItemIndex: anchor.listItemIndex,
+        }),
+      };
     return commit(
       state,
-      replaceBlock(state.document, position.blockIndex, selected.replace(block)),
+      replaceBlock(
+        state.document,
+        anchor.blockIndex,
+        inlineRange.replace(updatedBlock),
+      ),
       selection,
     );
   },
-  workSplitBlockForSelection = (
+  workSplitBlockAtOffset = (
     state: State,
-    selected: NonNullable<ReturnType<typeof selectedText>>,
+    inlineRange: NonNullable<ReturnType<typeof selectedInlineRange>>,
+    splitAt: number,
   ): State => {
-    const after: RichText.TextNode = {
-        ...selected.text,
-        text: selected.text.text.slice(selected.end),
-      },
-      before: RichText.TextNode = {
-        ...selected.text,
-        text: selected.text.text.slice(emptyIndex, selected.start),
-      },
-      firstBlock = { ...selected.block, children: [before] } as
-        | RichText.ParagraphNode
-        | RichText.HeadingNode,
-      secondBlock: RichText.ParagraphNode = { children: [after], type: "paragraph" };
+    const { after, before } = splitInlineBlockAtOffset(inlineRange.block, splitAt),
+      firstBlock =
+        inlineRange.block.type === "heading"
+          ? ({ ...inlineRange.block, children: before } as RichText.HeadingNode)
+          : ({ children: before, type: "paragraph" } as RichText.ParagraphNode),
+      secondBlock: RichText.ParagraphNode = { children: after, type: "paragraph" };
     if (
-      selected.rootBlock.type === "ordered-list" ||
-      selected.rootBlock.type === "unordered-list"
+      inlineRange.rootBlock.type === "ordered-list" ||
+      inlineRange.rootBlock.type === "unordered-list"
     ) {
       return splitListBlock({
-        before,
-        listBlock: selected.rootBlock,
+        firstBlock,
+        listBlock: inlineRange.rootBlock,
         secondBlock,
         state,
       });
     }
     return splitRootBlock({ firstBlock, secondBlock, state });
   },
-  workToggleMarkForSelection = (
+  workToggleMarkForInlineRange = (
     state: State,
-    selected: NonNullable<ReturnType<typeof selectedText>>,
+    inlineRange: NonNullable<ReturnType<typeof selectedInlineRange>>,
     mark: RichText.Mark,
   ): State => {
-    const activeMarks = selected.text.marks ?? [],
-      nextMarks = conditionalValue(
-        activeMarks.includes(mark),
-        activeMarks.filter((candidate) => candidate !== mark),
-        canonicalMarks([...activeMarks, mark]),
+    const { anchor, focus } = state.selection,
+      updatedChildren = rebuildBlockWithMarkToggle({
+        block: inlineRange.block,
+        mark,
+        rangeEnd: inlineRange.end,
+        rangeStart: inlineRange.start,
+      }),
+      updatedBlock = { ...inlineRange.block, children: updatedChildren },
+      selection = {
+        anchor: positionFromAbsoluteOffset({
+          absoluteOffset: inlineRange.start,
+          block: updatedBlock,
+          blockIndex: anchor.blockIndex,
+          listItemIndex: anchor.listItemIndex,
+        }),
+        focus: positionFromAbsoluteOffset({
+          absoluteOffset: inlineRange.end,
+          block: updatedBlock,
+          blockIndex: focus.blockIndex,
+          listItemIndex: focus.listItemIndex,
+        }),
+      };
+    return {
+      ...commit(
+        state,
+        replaceBlock(
+          state.document,
+          anchor.blockIndex,
+          inlineRange.replace(updatedBlock),
+        ),
+        selection,
       ),
-      replacement = buildMarkedTextSegments(selected, activeMarks, nextMarks),
-      updatedChildren = selected.block.children.flatMap((node, index) =>
-        conditionalValue(index === state.selection.anchor.inlineIndex, replacement, [node]),
-      );
-    return commit(
-      state,
-      replaceBlock(
-        state.document,
-        state.selection.anchor.blockIndex,
-        selected.replace({ ...selected.block, children: updatedChildren }),
-      ),
-    );
+      storedMarks: null,
+    };
   };
 
-export default { insertReference, insertText, splitBlock, toggleMark };
+export default { deleteInlineRange, insertReference, insertText, splitBlock, toggleMark };

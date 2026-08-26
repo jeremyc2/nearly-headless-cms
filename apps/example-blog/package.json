@@ -1,0 +1,22 @@
+{
+  "name": "@nearly-headless-cms/example-blog",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bunx --bun astro dev",
+    "build": "bun run src/core/fetch-export.ts && bunx --bun astro build",
+    "start": "bun src/server.ts",
+    "lint": "oxlint . --type-aware",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@astrojs/rss": "4.0.19",
+    "@effect/platform-bun": "4.0.0-rc.111",
+    "@tailwindcss/vite": "4.3.3",
+    "astro": "7.2.4",
+    "effect": "4.0.0-rc.111",
+    "tailwindcss": "4.3.3"
+  }
+}

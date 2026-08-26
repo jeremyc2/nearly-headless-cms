@@ -1,0 +1,23 @@
+---
+import { assetById, authorById, categoryById, publicExport, tagById } from "../../../core/data/public-export.ts"
+import type { GetStaticPaths } from "astro"
+import RichText from "../../components/rich-text.astro"
+import SiteLayout from "../../layouts/site-layout.astro"
+
+export const getStaticPaths: GetStaticPaths = () =>
+  publicExport.posts.map((generatedPost) => ({
+    params: { slug: String(generatedPost["slug"]) },
+    props: { post: generatedPost },
+  }))
+
+const { post } = Astro.props,
+  postAsset = assetById.get(String(post["featuredAsset"] ?? "")),
+  postAuthor = authorById.get(String(post["author"]))
+---
+<SiteLayout title={String(post["title"])} description={String(post["excerpt"])}>
+  <article><header class="article-header shell narrow"><p class="post-meta"><time datetime={String(post["publishedAt"])}>{new Date(String(post["publishedAt"])).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</time>{postAuthor && <> · By <a href={`/authors/${String(postAuthor["slug"])}/`}>{String(postAuthor["name"])}</a></>}</p><h1>{String(post["title"])}</h1><p class="article-deck">{String(post["excerpt"])}</p><div class="taxonomy-links">{(post["categories"] as string[]).map((identifier) => { const category = categoryById.get(identifier); return category && <a href={`/categories/${String(category["slug"])}/`}>{String(category["name"])}</a> })}{(post["tags"] as string[]).map((identifier) => { const tag = tagById.get(identifier); return tag && <a href={`/tags/${String(tag["slug"])}/`}>#{String(tag["name"])}</a> })}</div></header>
+    {postAsset?.localPath && <figure class="hero-image shell"><img src={postAsset.localPath} alt={String(post["featuredAlternativeText"] ?? "")} width={postAsset.metadata.width} height={postAsset.metadata.height} /></figure>}
+    <div class="article-body shell narrow"><RichText nodes={(post["body"] as { readonly children: unknown[] }).children} /></div>
+    {postAuthor && <aside class="author-card shell narrow"><div class="author-avatar">{String(postAuthor["name"]).slice(0, 1)}</div><div><p class="eyebrow">Written by</p><h2><a href={`/authors/${String(postAuthor["slug"])}/`}>{String(postAuthor["name"])}</a></h2><p>{String(postAuthor["biography"])}</p></div></aside>}
+  </article>
+</SiteLayout>

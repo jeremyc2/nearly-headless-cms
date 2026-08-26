@@ -25,6 +25,9 @@ const { blockElementName } = transactionsEditorAdapterSupport,
     if (marks?.includes("code") === true) {
       text.className = "rich-inline-code";
     }
+    if (marks?.includes("strikethrough") === true) {
+      text.style.textDecoration = "line-through";
+    }
   },
   assignTextSpanIndices = (
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-230] DOM spans are mutated while assigning editor selection indices.
@@ -97,6 +100,12 @@ const { blockElementName } = transactionsEditorAdapterSupport,
     }
     const element = document.createElement(blockElementName(block));
     element.dataset["nodeType"] = block.type;
+    if (blockIndex !== undefined) {
+      element.dataset["blockIndex"] = String(blockIndex);
+    }
+    if (listItemIndex !== undefined) {
+      element.dataset["listItemIndex"] = String(listItemIndex);
+    }
     renderBlockChildren({
       block,
       blockIndex,

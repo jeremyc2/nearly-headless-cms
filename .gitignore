@@ -10,7 +10,9 @@ dist
 # local app runtime data
 apps/example-cms/.data/
 apps/example-cms-minimal/.data/
+apps/example-blog-cms/.data/
 apps/public-blog/.generated/
+apps/example-blog/.generated/
 acceptance/journeys/.complete-system-journey-*/
 acceptance/journeys/nearly-headless-cms-journey-*/
 
