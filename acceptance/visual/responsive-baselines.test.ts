@@ -8,7 +8,94 @@ let acceptanceTest = test.skip;
 if (Bun.env["ACCEPTANCE_SERVERS_READY"] === "1") {
   acceptanceTest = test;
 }
-const baselineDirectory = join(import.meta.dir, "baselines"),
+interface IconAlignmentMeasurement {
+  readonly horizontalOffset: number;
+  readonly symbol: string | null;
+  readonly verticalOffset: number;
+}
+
+interface OrbitArrowMeasurement {
+  readonly arrowheadContent: string;
+  readonly arrowheadHeight: string;
+  readonly arrowheadTop: number;
+  readonly arrowheadTransform: string;
+  readonly arrowheadWidth: string;
+  readonly borderRightWidth: string;
+  readonly borderTopWidth: string;
+  readonly connectorHeight: number;
+}
+
+const alignmentTolerancePixels = 1,
+  assertBuildOrbitArrowIsCentered = <View extends Bun.WebView>(
+    view: Readonly<View>,
+  ): Promise<void> =>
+    view
+      .evaluate<OrbitArrowMeasurement | null>(`(() => {
+        const connector = document.querySelector(".build-orbit i");
+        if (!(connector instanceof HTMLElement)) {
+          return null;
+        }
+        const connectorStyle = getComputedStyle(connector);
+        const arrowheadStyle = getComputedStyle(connector, "::after");
+        return {
+          arrowheadContent: arrowheadStyle.content,
+          arrowheadHeight: arrowheadStyle.height,
+          arrowheadTop: Number.parseFloat(arrowheadStyle.top),
+          arrowheadTransform: arrowheadStyle.transform,
+          arrowheadWidth: arrowheadStyle.width,
+          borderRightWidth: arrowheadStyle.borderRightWidth,
+          borderTopWidth: arrowheadStyle.borderTopWidth,
+          connectorHeight: Number.parseFloat(connectorStyle.height),
+        };
+      })()`)
+      .then((measurement) => {
+        if (measurement === null) {
+          return;
+        }
+        expect(measurement.arrowheadContent).toBe('""');
+        expect(measurement.arrowheadHeight).toBe(measurement.arrowheadWidth);
+        expect(measurement.arrowheadTop).toBe(measurement.connectorHeight / centerDivisor);
+        expect(measurement.borderRightWidth).toBe(`${measurement.connectorHeight}px`);
+        expect(measurement.borderTopWidth).toBe(`${measurement.connectorHeight}px`);
+        expect(measurement.arrowheadTransform).not.toBe("none");
+      }),
+  assertSignalIconsAreCentered = <View extends Bun.WebView>(
+    view: Readonly<View>,
+  ): Promise<void> =>
+    view
+      .evaluate<readonly IconAlignmentMeasurement[]>(`Array.from(
+        document.querySelectorAll(".signal-icon"),
+        element => {
+          const containerBounds = element.getBoundingClientRect();
+          const symbolRange = document.createRange();
+          symbolRange.selectNodeContents(element);
+          const symbolBounds = symbolRange.getBoundingClientRect();
+          return {
+            horizontalOffset:
+              ((symbolBounds.left + symbolBounds.right) -
+                (containerBounds.left + containerBounds.right)) /
+              2,
+            symbol: element.textContent,
+            verticalOffset:
+              ((symbolBounds.top + symbolBounds.bottom) -
+                (containerBounds.top + containerBounds.bottom)) /
+              2,
+          };
+        },
+      )`)
+      .then((measurements) => {
+        for (const measurement of measurements) {
+          expect(
+            Math.abs(measurement.horizontalOffset),
+            `Signal icon ${measurement.symbol ?? ""} is not horizontally centered`,
+          ).toBeLessThanOrEqual(alignmentTolerancePixels);
+          expect(
+            Math.abs(measurement.verticalOffset),
+            `Signal icon ${measurement.symbol ?? ""} is not vertically centered`,
+          ).toBeLessThanOrEqual(alignmentTolerancePixels);
+        }
+      }),
+  baselineDirectory = join(import.meta.dir, "baselines"),
   // oxlint-disable-next-line effecttsgo/async-function -- [EH-061] screenshot and filesystem APIs are Promise-based Bun platform operations.
   captureAndCheckBaseline = async <View extends Bun.WebView>(
     view: Readonly<View>,
@@ -30,6 +117,7 @@ const baselineDirectory = join(import.meta.dir, "baselines"),
     }
     await compareToBaseline(screenshotBytes, baselinePath);
   },
+  centerDivisor = 2,
   // oxlint-disable-next-line effecttsgo/async-function -- [EH-004] baseline bytes are read through Promise-based Bun filesystem APIs.
   compareToBaseline = async <Bytes extends Uint8Array>(
     screenshotBytes: Readonly<Bytes>,
@@ -91,6 +179,8 @@ describe("responsive visual baselines", () => {
             if (scenario.finalize !== undefined) {
               await scenario.finalize(view);
             }
+            await assertBuildOrbitArrowIsCentered(view);
+            await assertSignalIconsAreCentered(view);
             await captureAndCheckBaseline(view, scenario.name, viewport);
           } finally {
             view.close();
