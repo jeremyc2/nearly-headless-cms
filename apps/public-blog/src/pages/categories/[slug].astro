@@ -1,28 +1,16 @@
 ---
-import type { GetStaticPaths } from "astro";
-import PostCard from "../../components/post-card.astro";
-import SiteLayout from "../../layouts/site-layout.astro";
-import { publicExport } from "../../data/public-export.ts";
+import type { GetStaticPaths } from "astro"
+import PostCard from "../../components/post-card.astro"
+import SiteLayout from "../../layouts/site-layout.astro"
+import { publicExport } from "../../data/public-export.ts"
 
 export const getStaticPaths: GetStaticPaths = () =>
-    publicExport.categories.map((generatedCategory) => ({
-      params: { slug: generatedCategory.slug },
-      props: { category: generatedCategory },
-    })),
-  { category } = Astro.props,
-  posts = publicExport.posts.filter((post) =>
-    post.categories.includes(category.id),
-  );
----
+  publicExport.categories.map((generatedCategory) => ({
+    params: { slug: generatedCategory.slug },
+    props: { category: generatedCategory },
+  }))
 
-<SiteLayout title={category.name}
-  ><header class="listing-header">
-    <div class="shell">
-      <p class="eyebrow">Category</p><h1>{category.name}</h1><p>
-        {category.description}
-      </p>
-    </div>
-  </header><section class="shell content-stack">
-    <div class="post-grid">{posts.map((post) => <PostCard post={post} />)}</div>
-  </section></SiteLayout
->
+const { category } = Astro.props,
+  posts = publicExport.posts.filter((post) => post.categories.includes(category.id))
+---
+<SiteLayout title={category.name}><header class="listing-header"><div class="shell"><p class="eyebrow">Category</p><h1>{category.name}</h1><p>{category.description}</p></div></header><section class="shell content-stack"><div class="post-grid">{posts.map((post) => <PostCard post={post} />)}</div></section></SiteLayout>

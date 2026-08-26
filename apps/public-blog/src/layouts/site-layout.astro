@@ -1,68 +1,25 @@
 ---
-import "../styles/global.css";
-interface Props {
-  readonly title?: string;
-  readonly description?: string;
-}
-const {
-  description = "Field notes on content, systems, and durable ideas.",
-  title,
-} = Astro.props;
-let pageTitle = "The Lantern · Field notes for durable ideas";
+import "../styles/global.css"
+interface Props { readonly title?: string; readonly description?: string }
+const { description = "Field notes on content, systems, and durable ideas.", title } = Astro.props
+let pageTitle = "The Lantern · Field notes for durable ideas"
 if (title !== undefined) {
-  pageTitle = `${title} · The Lantern`;
+  pageTitle = `${title} · The Lantern`
 }
 ---
-
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
     <meta name="description" content={description} />
-    <link
-      rel="alternate"
-      type="application/rss+xml"
-      title="The Lantern"
-      href="/feed.xml"
-    />
+    <link rel="alternate" type="application/rss+xml" title="The Lantern" href="/feed.xml" />
     <title>{pageTitle}</title>
   </head>
   <body>
     <a class="skip-link" href="#content">Skip to content</a>
-    <header class="site-header">
-      <div class="shell header-inner">
-        <a class="site-brand" href="/"
-          ><span class="lantern-mark">L</span><span
-            ><strong>The Lantern</strong><small
-              >Field notes for durable ideas</small
-            ></span
-          ></a
-        ><nav aria-label="Primary navigation">
-          <a href="/posts/">Archive</a><a href="/categories/">Categories</a><a
-            href="/tags/">Tags</a
-          ><a href="/feed.xml">RSS</a>
-        </nav>
-      </div>
-    </header>
+    <header class="site-header"><div class="shell header-inner"><a class="site-brand" href="/"><span class="lantern-mark">L</span><span><strong>The Lantern</strong><small>Field notes for durable ideas</small></span></a><nav aria-label="Primary navigation"><a href="/posts/">Archive</a><a href="/categories/">Categories</a><a href="/tags/">Tags</a><a href="/feed.xml">RSS</a></nav></div></header>
     <main id="content"><slot /></main>
-    <footer class="site-footer">
-      <div class="shell">
-        <div class="footer-brand">
-          <span class="lantern-mark">L</span><div>
-            <strong>The Lantern</strong><p>
-              Independent writing, delivered as static pages from a Nearly
-              Headless CMS.
-            </p>
-          </div>
-        </div><nav aria-label="Footer navigation">
-          <a href="/posts/">Archive</a><a href="/authors/ada-rowan/"
-            >About the author</a
-          ><a href="/feed.xml">RSS feed</a>
-        </nav><p class="build-identity">
-          Build {new Date().toISOString().slice(0, 10)}
-        </p>
-      </div>
-    </footer>
+    <footer class="site-footer"><div class="shell"><div class="footer-brand"><span class="lantern-mark">L</span><div><strong>The Lantern</strong><p>Independent writing, delivered as static pages from a Nearly Headless CMS.</p></div></div><nav aria-label="Footer navigation"><a href="/posts/">Archive</a><a href="/authors/ada-rowan/">About the author</a><a href="/feed.xml">RSS feed</a></nav><p class="build-identity">Build {new Date().toISOString().slice(0, 10)}</p></div></footer>
   </body>
 </html>

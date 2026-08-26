@@ -1,57 +1,13 @@
 ---
-import PostCard from "../components/post-card.astro";
-import SiteLayout from "../layouts/site-layout.astro";
-import { publicExport } from "../data/public-export.ts";
-const [featuredPost, ...recentPosts] = publicExport.posts;
+import PostCard from "../components/post-card.astro"
+import SiteLayout from "../layouts/site-layout.astro"
+import { publicExport } from "../data/public-export.ts"
+const [featuredPost, ...recentPosts] = publicExport.posts
 ---
-
 <SiteLayout>
-  <section class="hero">
-    <div class="shell">
-      <p class="eyebrow">Independent field notes</p><h1>
-        Ideas built to<br /><em>outlast the interface.</em>
-      </h1><p class="hero-intro">
-        Essays on content, small systems, and the patient work of making
-        knowledge durable.
-      </p>
-    </div>
-  </section>
-  <div class="shell content-stack">
-    {featuredPost && <PostCard post={featuredPost} featured />}
-    {
-      recentPosts.length > 0 && (
-        <section>
-          <>
-            <div class="section-heading split">
-              <>
-                <div>
-                  <>
-                    <p class="eyebrow">From the archive</p>
-                    <h2>Recent field notes</h2>
-                  </>
-                </div>
-                <a class="read-link" href="/posts/">
-                  Browse the archive →
-                </a>
-              </>
-            </div>
-            <div class="post-grid">
-              {recentPosts.map((post) => (
-                <PostCard post={post} />
-              ))}
-            </div>
-          </>
-        </section>
-      )
-    }
-    <aside class="newsletter">
-      <div>
-        <p class="eyebrow">The occasional dispatch</p><h2>
-          A slower kind of inbox.
-        </h2><p>
-          New field notes are available through a clean, portable RSS feed.
-        </p>
-      </div><a class="button light" href="/feed.xml">Follow via RSS</a>
-    </aside>
+  <section class="hero"><div class="shell"><p class="eyebrow">Independent field notes</p><h1>Ideas built to<br /><em>outlast the interface.</em></h1><p class="hero-intro">Essays on content, small systems, and the patient work of making knowledge durable.</p></div></section>
+  <div class="shell content-stack">{featuredPost && <PostCard post={featuredPost} featured />}
+    {recentPosts.length > 0 && <section><div class="section-heading split"><div><p class="eyebrow">From the archive</p><h2>Recent field notes</h2></div><a class="read-link" href="/posts/">Browse the archive →</a></div><div class="post-grid">{recentPosts.map((post) => <PostCard post={post} />)}</div></section>}
+    <aside class="newsletter"><div><p class="eyebrow">The occasional dispatch</p><h2>A slower kind of inbox.</h2><p>New field notes are available through a clean, portable RSS feed.</p></div><a class="button light" href="/feed.xml">Follow via RSS</a></aside>
   </div>
 </SiteLayout>

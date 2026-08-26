@@ -1,31 +1,5 @@
 ---
-import SiteLayout from "../../layouts/site-layout.astro";
-import { publicExport } from "../../data/public-export.ts";
+import SiteLayout from "../../layouts/site-layout.astro"
+import { publicExport } from "../../data/public-export.ts"
 ---
-
-<SiteLayout title="Categories"
-    ><header class="listing-header">
-        <div class="shell">
-            <p class="eyebrow">Browse by section</p><h1>Categories</h1>
-        </div>
-    </header><section class="shell taxonomy-grid">
-        {
-            publicExport.categories.map((category) => (
-                <a href={`/categories/${category.slug}/`}>
-                    <>
-                        <strong>{category.name}</strong>
-                        <p>{category.description}</p>
-                        <span>
-                            {
-                                publicExport.posts.filter((post) =>
-                                    post.categories.includes(category.id),
-                                ).length
-                            }{" "}
-                            Posts →
-                        </span>
-                    </>
-                </a>
-            ))
-        }
-    </section></SiteLayout
->
+<SiteLayout title="Categories"><header class="listing-header"><div class="shell"><p class="eyebrow">Browse by section</p><h1>Categories</h1></div></header><section class="shell taxonomy-grid">{publicExport.categories.map((category) => <a href={`/categories/${category.slug}/`}><strong>{category.name}</strong><p>{category.description}</p><span>{publicExport.posts.filter((post) => post.categories.includes(category.id)).length} Posts →</span></a>)}</section></SiteLayout>

@@ -1,27 +1,10 @@
 ---
-import Pagination from "../../../components/pagination.astro";
-import PostCard from "../../../components/post-card.astro";
-import SiteLayout from "../../../layouts/site-layout.astro";
+import Pagination from "../../../components/pagination.astro"
+import PostCard from "../../../components/post-card.astro"
+import SiteLayout from "../../../layouts/site-layout.astro"
 
-export { postArchivePaths as getStaticPaths } from "../../../domain/archive-pages.ts";
+export { postArchivePaths as getStaticPaths } from "../../../domain/archive-pages.ts"
 
-const { page } = Astro.props;
+const { page } = Astro.props
 ---
-
-<SiteLayout title={`Archive · Page ${page.pageNumber}`}
-    ><header class="listing-header">
-        <div class="shell">
-            <p class="eyebrow">Every field note</p><h1>The archive</h1><p>
-                Published Posts, newest first.
-            </p>
-        </div>
-    </header><section class="shell content-stack">
-        <div class="post-grid">
-            {page.items.map((post) => <PostCard post={post} />)}
-        </div><Pagination
-            basePath="/posts"
-            previousPage={page.previousPage}
-            nextPage={page.nextPage}
-        />
-    </section></SiteLayout
->
+<SiteLayout title={`Archive · Page ${page.pageNumber}`}><header class="listing-header"><div class="shell"><p class="eyebrow">Every field note</p><h1>The archive</h1><p>Published Posts, newest first.</p></div></header><section class="shell content-stack"><div class="post-grid">{page.items.map((post) => <PostCard post={post} />)}</div><Pagination basePath="/posts" previousPage={page.previousPage} nextPage={page.nextPage} /></section></SiteLayout>
