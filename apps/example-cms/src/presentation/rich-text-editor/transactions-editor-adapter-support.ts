@@ -1,6 +1,6 @@
 import { type RichText } from "nearly-headless-cms";
 import { type Command } from "./transactions-types.ts";
-import { emptyIndex } from "./transactions-constants.ts";
+import { emptyIndex, firstIndex } from "./transactions-constants.ts";
 import type {
   ReadonlyClipboardEvent,
   ReadonlyCompositionEvent,
@@ -29,6 +29,12 @@ const { conditionalValue } = transactionsSupport,
     }
     if (event.inputType === "deleteContentBackward") {
       return { type: "deleteBackward" };
+    }
+    if (
+      event.inputType === "deleteContentForward" ||
+      event.inputType === "deleteContent"
+    ) {
+      return { type: "deleteForward" };
     }
     if (event.inputType === "insertParagraph") {
       return { type: "splitBlock" };
@@ -124,6 +130,9 @@ const { conditionalValue } = transactionsSupport,
     }
     return undefined;
   },
+  resolveEditableHost = (host: ReadonlyEditableHost): HTMLElement =>
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-333] editable hosts are HTMLElement divs at runtime.
+    host as unknown as HTMLElement,
   resolveElementFromNode = (
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-228] DOM selection nodes are inspected without retaining references.
     node: globalThis.Node | null,
@@ -139,19 +148,107 @@ const { conditionalValue } = transactionsSupport,
     }
     return undefined;
   },
+  resolveHostSelectionPosition = (
+    editableHost: HTMLElement,
+    offset: number,
+  ): SelectionPosition | undefined =>
+    offset <= emptyIndex
+      ? firstSelectionPositionInHost(editableHost)
+      : lastSelectionPositionInHost(editableHost),
+  resolveInlineTextSelectionPosition = (
+    inlineText: Element,
+    offset: number,
+  ): SelectionPosition | undefined => {
+    if (!(inlineText instanceof HTMLElement)) {
+      return undefined;
+    }
+    return selectionPositionFromResolvedText(inlineText, offset);
+  },
+  resolveInlineSpanSelectionPosition = (
+    inlineSpans: readonly Element[],
+    offset: number,
+  ): SelectionPosition | undefined => {
+    const pickSpan = (index: number, spanOffset: number): SelectionPosition | undefined => {
+      const span = inlineSpans[index];
+      if (span === undefined) {
+        return undefined;
+      }
+      return resolveInlineTextSelectionPosition(span, spanOffset);
+    };
+    if (offset <= emptyIndex) {
+      return pickSpan(emptyIndex, emptyIndex);
+    }
+    if (offset >= inlineSpans.length) {
+      const lastIndex = inlineSpans.length - firstIndex;
+      const lastSpan = inlineSpans[lastIndex];
+      return pickSpan(lastIndex, textLength(lastSpan?.textContent));
+    }
+    return pickSpan(offset, emptyIndex);
+  },
+  firstSelectionPositionInHost = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-338] editable hosts are queried while resolving native selection anchors.
+    host: HTMLElement,
+  ): SelectionPosition | undefined => {
+    const first = host.querySelector("[data-block-index][data-inline-index]");
+    if (first === null) {
+      return undefined;
+    }
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-335] querySelector returns Element; selection spans are rendered as HTMLElements.
+    return selectionPositionFromResolvedText(first as HTMLElement, emptyIndex);
+  },
+  lastSelectionPositionInHost = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-338] editable hosts are queried while resolving native selection anchors.
+    host: HTMLElement,
+  ): SelectionPosition | undefined => {
+    const spans = host.querySelectorAll("[data-block-index][data-inline-index]"),
+      last = spans.item(spans.length - firstIndex);
+    if (last === null) {
+      return undefined;
+    }
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-336] querySelectorAll returns Element; selection spans are rendered as HTMLElements.
+    return selectionPositionFromResolvedText(last as HTMLElement, textLength(last.textContent));
+  },
+  selectionPositionFromBlockElement = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-337] block elements are inspected while mapping native selection offsets.
+    blockElement: HTMLElement,
+    offset: number,
+  ): SelectionPosition | undefined => {
+    const inlineSpans = [...blockElement.querySelectorAll(":scope > [data-inline-index]")];
+    if (inlineSpans.length === emptyIndex) {
+      return undefined;
+    }
+    return resolveInlineSpanSelectionPosition(inlineSpans, offset);
+  },
+  resolveBlockElementSelectionPosition = (
+    editableHost: HTMLElement,
+    element: Element,
+    offset: number,
+  ): SelectionPosition | undefined => {
+    const blockElement = element.closest("[data-block-index]:not([data-inline-index])");
+    if (blockElement instanceof HTMLElement && editableHost.contains(blockElement)) {
+      return selectionPositionFromBlockElement(blockElement, offset);
+    }
+    return undefined;
+  },
   selectionPositionFromNode = (
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-228] DOM selection nodes are inspected without retaining references.
     node: globalThis.Node | null,
     offset: number,
     host: ReadonlyEditableHost,
   ): SelectionPosition | undefined => {
-    const element = resolveElementFromNode(node),
-      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-203] closest runs on the runtime Element resolved from the selection node.
-      text = element?.closest("[data-block-index][data-inline-index]") as HTMLElement | null;
-    if (text === null || !host.contains(text)) {
+    const element = resolveElementFromNode(node);
+    if (element === undefined || element === null) {
       return undefined;
     }
-    return selectionPositionFromResolvedText(text, offset);
+    const editableHost = resolveEditableHost(host);
+    if (element === editableHost) {
+      return resolveHostSelectionPosition(editableHost, offset);
+    }
+    const inlineText = element.closest("[data-block-index][data-inline-index]");
+    if (inlineText !== null && editableHost.contains(inlineText)) {
+      return resolveInlineTextSelectionPosition(inlineText, offset);
+    }
+    return resolveBlockElementSelectionPosition(editableHost, element, offset);
   },
   selectionPositionFromResolvedText = (
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-231] DOM text spans are read while mapping native selection offsets.

@@ -8,19 +8,29 @@ import {
 } from "./transactions-constants.ts";
 import type { RichText } from "nearly-headless-cms";
 import { normalize } from "./transactions-normalize.ts";
+import transactionsSelection from "./transactions-selection.ts";
+import transactionsSelectionOffset from "./transactions-selection-offset.ts";
 import transactionsSupport from "./transactions-support.ts";
 
-const { conditionalValue } = transactionsSupport,
+const { reconcileSelection } = transactionsSelectionOffset,
+  { conditionalValue } = transactionsSupport,
   commit = (
     state: State,
     document: RichText.Document,
     selection: Selection = state.selection,
   ): State => {
-    const normalized = normalize(document);
+    const normalized = normalize(document),
+      reconciledSelection = reconcileSelection({
+        normalizedDocument: normalized,
+        resolveInlineBlock: (rootBlock, listItemIndex) =>
+          transactionsSelection.resolveSelectedBlock(rootBlock, listItemIndex)?.block,
+        selection,
+        sourceDocument: document,
+      });
     if (signature(normalized) === signature(state.document)) {
-      return { ...state, selection };
+      return { ...state, selection: reconciledSelection };
     }
-    return workCommitChangedDocument(state, normalized, selection);
+    return workCommitChangedDocument(state, normalized, reconciledSelection);
   },
   create = (document: RichText.Document = emptyDocument()): State => {
     const normalized = normalize(document);
@@ -30,11 +40,11 @@ const { conditionalValue } = transactionsSupport,
       document: normalized,
       history: [normalized],
       historyIndex: emptyIndex,
-      pendingMarks: [],
       selection: {
         anchor: { blockIndex: emptyIndex, inlineIndex: emptyIndex, offset: emptyIndex },
         focus: { blockIndex: emptyIndex, inlineIndex: emptyIndex, offset: emptyIndex },
       },
+      storedMarks: null,
     };
   },
   isDirty = (state: State): boolean => signature(state.document) !== state.cleanSignature,

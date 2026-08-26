@@ -11,11 +11,18 @@ export const contentTypes = [
     { identifier: "comment", label: "Comments", symbol: "M" },
   ] as const,
   managementClient = makeManagementClient(),
-  preserveSelection = <Event extends MouseEvent<HTMLButtonElement>>(
+  preserveSelection = <Event extends MouseEvent<HTMLElement>>(
     event: Readonly<Event>,
   ): void => {
     event.preventDefault();
   },
+  closeWhenBackdropClicked =
+    (close: () => void) =>
+    (event: Readonly<MouseEvent<HTMLElement>>): void => {
+      if (event.target === event.currentTarget) {
+        close();
+      }
+    },
   queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, staleTime: 10_000 } },
   }),

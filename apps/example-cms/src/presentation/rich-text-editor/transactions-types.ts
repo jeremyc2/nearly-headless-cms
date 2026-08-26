@@ -24,7 +24,7 @@ export interface Selection {
 export interface State {
   readonly document: RichText.Document;
   readonly selection: Selection;
-  readonly pendingMarks: readonly RichText.Mark[];
+  readonly storedMarks: readonly RichText.Mark[] | null;
   readonly history: readonly RichText.Document[];
   readonly historyIndex: number;
   readonly cleanSignature: string;
@@ -35,6 +35,7 @@ export type Command =
   | { readonly type: "select"; readonly anchor: Position; readonly focus: Position }
   | { readonly type: "insertText"; readonly text: string }
   | { readonly type: "deleteBackward" }
+  | { readonly type: "deleteForward" }
   | { readonly type: "splitBlock" }
   | {
       readonly type: "toggleList";

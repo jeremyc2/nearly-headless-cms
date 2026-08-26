@@ -1,4 +1,5 @@
 import { editorialConfirmationDescription, editorialConfirmationLabel } from "./main-labels.ts";
+import { closeWhenBackdropClicked } from "./main-shared.ts";
 import type { EditorialConfirmationStatus } from "./entry-editor-types.ts";
 
 export const EntryEditorEditorialDialog = ({
@@ -12,7 +13,7 @@ export const EntryEditorEditorialDialog = ({
   readonly onCancel: () => void;
   readonly onConfirm: (status: EditorialConfirmationStatus) => void;
 }) => (
-  <div className="rich-dialog-backdrop">
+  <div className="rich-dialog-backdrop" onClick={closeWhenBackdropClicked(onCancel)}>
     <div
       aria-labelledby="editorial-command-title"
       aria-modal="true"

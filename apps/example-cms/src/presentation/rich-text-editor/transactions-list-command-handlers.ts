@@ -1,31 +1,55 @@
 import { type Command, type State } from "./transactions-types.ts";
-import { type SelectedTextContext, selectedText } from "./transactions-selection.ts";
+import transactionsSelection, { type SelectedTextContext } from "./transactions-selection.ts";
 import { emptyIndex, firstIndex } from "./transactions-constants.ts";
 import type { RichText } from "nearly-headless-cms";
-import transactionsMutations from "./transactions-mutations.ts";
+import transactionsDelete from "./transactions-delete.ts";
 import transactionsState from "./transactions-state.ts";
 import transactionsSupport from "./transactions-support.ts";
 
-const { commit, replaceBlock } = transactionsState,
+const { deleteSelection } = transactionsDelete,
+  { selectedInlineRange, selectedText } = transactionsSelection,
+  { commit, replaceBlock } = transactionsState,
   { conditionalValue } = transactionsSupport,
   applyDeleteBackward = (state: State): State => {
-    const selected = selectedText(state);
-    if (selected === undefined) {
+    const inlineRange = selectedInlineRange(state);
+    if (
+      inlineRange !== undefined &&
+      inlineRange.start === emptyIndex &&
+      inlineRange.end === emptyIndex &&
+      (inlineRange.rootBlock.type === "ordered-list" ||
+        inlineRange.rootBlock.type === "unordered-list")
+    ) {
+      const selected = selectedText(state);
+      if (selected !== undefined) {
+        return workDeleteBackwardAtListStart(state, selected);
+      }
+    }
+    return deleteSelection(state, "backward");
+  },
+  applyDeleteForward = (state: State): State => deleteSelection(state, "forward"),
+  toggleListInQuote = (
+    state: State,
+    command: Extract<Command, { type: "toggleList" }>,
+    quote: RichText.QuoteNode,
+  ): State => {
+    const inner = quote.children[emptyIndex];
+    if (inner?.type !== "paragraph" && inner?.type !== "heading") {
       return state;
     }
-    if (
-      selected.start === emptyIndex &&
-      selected.end === emptyIndex &&
-      (selected.rootBlock.type === "ordered-list" || selected.rootBlock.type === "unordered-list")
-    ) {
-      return workDeleteBackwardAtListStart(state, selected);
-    }
-    return workDeleteBackwardForSelection(state, selected);
+    return wrapBlockInList({
+      blockIndex: state.selection.anchor.blockIndex,
+      listType: command.listType,
+      rootBlock: inner,
+      state,
+    });
   },
   applyToggleList = (state: State, command: Extract<Command, { type: "toggleList" }>): State => {
     const rootBlock = state.document.children[state.selection.anchor.blockIndex];
     if (rootBlock === undefined) {
       return state;
+    }
+    if (rootBlock.type === "quote") {
+      return toggleListInQuote(state, command, rootBlock);
     }
     if (rootBlock.type === "ordered-list" || rootBlock.type === "unordered-list") {
       return toggleExistingList({
@@ -182,24 +206,6 @@ const { commit, replaceBlock } = transactionsState,
   },
   workDeleteBackwardAtListStart = (state: State, selected: SelectedTextContext): State =>
     outdentListItem({ selected, state }),
-  workDeleteBackwardForSelection = (
-    state: State,
-    selected: NonNullable<ReturnType<typeof selectedText>>,
-  ): State => {
-    const { insertText } = transactionsMutations,
-      selection = {
-        anchor: {
-          ...state.selection.anchor,
-          offset: conditionalValue(
-            selected.start === selected.end,
-            Math.max(emptyIndex, selected.start - firstIndex),
-            selected.start,
-          ),
-        },
-        focus: { ...state.selection.focus, offset: selected.end },
-      };
-    return insertText({ ...state, selection }, "");
-  },
   wrapBlockInList = <
     // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     Input extends {
@@ -234,6 +240,30 @@ const { commit, replaceBlock } = transactionsState,
         type: listType,
       };
     return commit(state, replaceBlock(state.document, blockIndex, list), { anchor, focus });
+  },
+  liftCurrentListItem = (state: State): State | undefined => {
+    const inlineRange = selectedInlineRange(state);
+    if (inlineRange === undefined) {
+      return undefined;
+    }
+    if (
+      inlineRange.rootBlock.type !== "ordered-list" &&
+      inlineRange.rootBlock.type !== "unordered-list"
+    ) {
+      return undefined;
+    }
+    const listItemIndex = state.selection.anchor.listItemIndex ?? emptyIndex,
+      paragraph = inlineRange.rootBlock.children[listItemIndex]?.children[emptyIndex];
+    if (paragraph?.type !== "paragraph") {
+      return undefined;
+    }
+    return unwrapListItemParagraph({
+      blockIndex: state.selection.anchor.blockIndex,
+      listBlock: inlineRange.rootBlock,
+      listItemIndex,
+      paragraph,
+      state,
+    });
   };
 
-export default { applyDeleteBackward, applyToggleList };
+export default { applyDeleteBackward, applyDeleteForward, applyToggleList, liftCurrentListItem };

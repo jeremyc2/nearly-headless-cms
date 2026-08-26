@@ -53,10 +53,13 @@ const commandHandlers = {
   },
   dispatchStatelessCommand = (
     state: State,
-    command: Extract<Command, { type: "deleteBackward" | "splitBlock" }>,
+    command: Extract<Command, { type: "deleteBackward" | "deleteForward" | "splitBlock" }>,
   ): State => {
     if (command.type === "deleteBackward") {
       return commandHandlers.applyDeleteBackward(state);
+    }
+    if (command.type === "deleteForward") {
+      return commandHandlers.applyDeleteForward(state);
     }
     return commandHandlers.applySplitBlock(state);
   },
@@ -67,6 +70,7 @@ const commandHandlers = {
         return commandHandlers.applyComposition(state, command);
       }
       case "deleteBackward":
+      case "deleteForward":
       case "splitBlock": {
         return dispatchStatelessCommand(state, command);
       }

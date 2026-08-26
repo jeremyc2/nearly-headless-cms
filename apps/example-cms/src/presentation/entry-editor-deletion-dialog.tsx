@@ -1,4 +1,5 @@
 import { EntryEditorDeletionDialogPanel } from "./entry-editor-deletion-dialog-panel.tsx";
+import { closeWhenBackdropClicked } from "./main-shared.ts";
 import type { DeletionRecord } from "./entry-editor-types.ts";
 
 interface EntryEditorDeletionDialogProperties {
@@ -17,8 +18,18 @@ interface EntryEditorDeletionDialogProperties {
   readonly title: string;
 }
 
-export const EntryEditorDeletionDialog = (properties: EntryEditorDeletionDialogProperties) => (
-  <div className="rich-dialog-backdrop">
+export const EntryEditorDeletionDialog = (properties: EntryEditorDeletionDialogProperties) => {
+  const closeDialog = (): void => {
+    if (properties.deletionRecord === undefined) {
+      properties.onCancelDeletion();
+      return;
+    }
+    if (properties.confirmPurge) {
+      properties.onCancelPurge();
+    }
+  };
+  return (
+    <div className="rich-dialog-backdrop" onClick={closeWhenBackdropClicked(closeDialog)}>
     <div
       aria-labelledby="entry-deletion-title"
       aria-modal="true"
@@ -28,4 +39,5 @@ export const EntryEditorDeletionDialog = (properties: EntryEditorDeletionDialogP
       <EntryEditorDeletionDialogPanel {...properties} />
     </div>
   </div>
-);
+  );
+};

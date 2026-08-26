@@ -1,0 +1,20 @@
+{
+  "extends": ["../../.oxlintrc.json"],
+  "rules": {
+    "no-magic-numbers": "off",
+    "typescript/prefer-readonly-parameter-types": "off",
+    "eslint/no-ternary": "off",
+    "eslint/one-var": "off",
+    "eslint/no-duplicate-imports": "off",
+    "eslint/max-lines": "off",
+    "eslint/max-lines-per-function": "off",
+    "eslint/max-statements": "off",
+    "eslint/init-declarations": "off",
+    "unicorn/prefer-export-from": "off",
+    "unicorn/prefer-ternary": "off",
+    "unicorn/consistent-function-scoping": "off",
+    "typescript/no-unsafe-type-assertion": "off",
+    "typescript/no-unnecessary-type-parameters": "off",
+    "typescript/require-await": "off"
+  }
+}

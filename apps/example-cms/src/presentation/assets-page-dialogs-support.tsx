@@ -1,6 +1,7 @@
 import { type UseMutationResult } from "@tanstack/react-query";
 import { type RefObject } from "react";
 import { deleteImageLabel } from "./main-labels.ts";
+import { closeWhenBackdropClicked } from "./main-shared.ts";
 
 const AssetsPageDeleteDialog = <
     // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
@@ -25,6 +26,9 @@ const AssetsPageDeleteDialog = <
   }) => (
     <AssetsPageDestructiveDialog
       eyebrow="Confirm deletion"
+      onClose={() => {
+        setDeletionAssetId(undefined);
+      }}
       title="Delete this image Asset?"
       titleId="delete-image-title"
     >
@@ -86,15 +90,17 @@ const AssetsPageDeleteDialog = <
   AssetsPageDestructiveDialog = <Children extends React.ReactNode>({
     children,
     eyebrow,
+    onClose,
     title,
     titleId,
   }: {
     readonly children: Children;
     readonly eyebrow: string;
+    readonly onClose: () => void;
     readonly title: string;
     readonly titleId: string;
   }) => (
-    <div className="rich-dialog-backdrop">
+    <div className="rich-dialog-backdrop" onClick={closeWhenBackdropClicked(onClose)}>
       <div
         className="rich-dialog destructive-dialog"
         role="dialog"
@@ -128,6 +134,9 @@ const AssetsPageDeleteDialog = <
   }) => (
     <AssetsPageDestructiveDialog
       eyebrow="Confirm replacement"
+      onClose={() => {
+        setReplacementConfirmationAssetId(undefined);
+      }}
       title="Replace this immutable image?"
       titleId="replace-image-title"
     >
