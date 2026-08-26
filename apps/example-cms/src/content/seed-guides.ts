@@ -57,7 +57,7 @@ const guideSeedSlug = "getting-started",
     version: RichText.formatVersion,
   }),
   guideRichTextJsonObject = (document: RichText.Document): ContentDefinition.JsonObject =>
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-213] RichText.toJson returns a JSON-compatible object validated by the CMS schema boundary.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-212] RichText.toJson returns a JSON-compatible object validated by the CMS schema boundary.
     RichText.toJson(document) as ContentDefinition.JsonObject,
   guideSeedGettingStartedBody = (): RichText.Document => {
     const youProvideListItem = guideListItem(

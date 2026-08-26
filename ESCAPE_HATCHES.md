@@ -317,6 +317,7 @@ Sorted by escape-hatch code (`EH-###`).
 - **EH-289** (`eslint/no-ternary`): reindex mode chooses between an empty code map and the persisted registry map.
 - **EH-290** (`eslint/one-var`): reindex mode chooses between an empty code map and the persisted registry map.
 - **EH-291** (`eslint/max-statements`): escape hatch maintenance updates source files sequentially to preserve formatting.
+- **EH-292** (`typescript/no-unsafe-type-assertion`): Wire values are assembled from validated Entry fields and explicit null defaults.
 
 ## Justification Registry
 
@@ -539,6 +540,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
+- `apps/example-cms/src/content/seed-guides.ts:60`
 - `apps/example-cms/src/content/seed.ts:26`
 
 #### EH-213: synchronizeSelectionState queries the runtime editable host for the current DOM selection.
@@ -558,6 +560,12 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 **Locations:**
 
 - `packages/nearly-headless-cms/src/http/http-transport-readonly-types.ts:28`
+
+#### EH-292: Wire values are assembled from validated Entry fields and explicit null defaults.
+
+**Locations:**
+
+- `apps/example-cms/src/api/delivery/delivery-support.ts:136`
 
 ### TypeScript · `typescript/prefer-readonly-parameter-types`
 
@@ -918,13 +926,13 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/api/delivery/delivery-support.ts:160`
+- `apps/example-cms/src/api/delivery/delivery-support.ts:178`
 
 #### EH-263: path parameter schemas include Effect Schema classes that are not deeply readonly.
 
 **Locations:**
 
-- `apps/example-cms/src/api/delivery/delivery-support.ts:162`
+- `apps/example-cms/src/api/delivery/delivery-support.ts:180`
 
 #### EH-264: React callbacks receive mutable draft value maps from the editor.
 
@@ -1400,13 +1408,13 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `scripts/check-architecture.ts:194`
+- `scripts/check-architecture.ts:196`
 
 #### EH-051: parallel portability scans use async file reads.
 
 **Locations:**
 
-- `scripts/check-architecture.ts:211`
+- `scripts/check-architecture.ts:213`
 
 #### EH-052: Persistence spans ordered atomic filesystem writes.
 
@@ -1747,7 +1755,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `scripts/check-architecture.ts:241`
+- `scripts/check-architecture.ts:243`
 
 ### Effect · `effecttsgo/global-fetch`
 
@@ -1936,7 +1944,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/api/delivery/delivery-support.ts:158`
+- `apps/example-cms/src/api/delivery/delivery-support.ts:176`
 
 #### EH-127: multipart parsing is Promise-based and this helper is not a pipeable Effect API.
 
@@ -2558,7 +2566,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `scripts/check-architecture.ts:222`
+- `scripts/check-architecture.ts:224`
 
 #### EH-197: cleanup must remain sequential.
 

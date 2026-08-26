@@ -39,6 +39,14 @@ const requestUrlSearchParameter = (
   MAX_PUBLIC_EXPORT_BYTES = 5_000_000,
   MAX_QUERY_PAGE_SIZE = 100,
   ONE_ITEM = 1,
+  publicNullableWireFields: Readonly<Record<string, readonly string[]>> = {
+    author: ["portrait", "portraitAlternativeText", "profile"],
+    category: ["description"],
+    comment: ["websiteUrl"],
+    guide: ["nextGuide"],
+    post: ["featuredAlternativeText", "featuredAsset"],
+    tag: ["description"],
+  },
   canonicalizeJsonValue = (value: unknown): unknown => {
     if (value === null || typeof value !== "object" || Array.isArray(value)) {
       return value;
@@ -110,14 +118,24 @@ const requestUrlSearchParameter = (
       },
     }),
   publicValue = (entry: {
+    readonly contentTypeId?: string;
     readonly id: string;
     readonly values: ContentDefinition.JsonObject;
-  }): PublicValue => ({
-    id: entry.id,
-    ...Object.fromEntries(
-      Object.entries(entry.values).map(([key, value]) => [lowerCamelCase(key), value]),
-    ),
-  }),
+  }): PublicValue => {
+    const value: Record<string, ContentDefinition.JsonValue> = { id: entry.id };
+    for (const [key, fieldValue] of Object.entries(entry.values)) {
+      value[lowerCamelCase(key)] = fieldValue;
+    }
+    if (entry.contentTypeId !== undefined) {
+      for (const nullableKey of publicNullableWireFields[entry.contentTypeId] ?? []) {
+        if (!(nullableKey in value)) {
+          value[nullableKey] = null;
+        }
+      }
+    }
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-292] Wire values are assembled from validated Entry fields and explicit null defaults.
+    return value;
+  },
   queryAll = ({
     cms,
     contentTypeId,
