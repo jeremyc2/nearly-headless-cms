@@ -1,5 +1,5 @@
 import entryEditorControllerLocalStateSupport from "./entry-editor-controller-local-state-support.ts";
-import { useEffect } from "./entry-editor-controller-imports.ts";
+import { useEffect } from "react";
 
 const {
     useEntryEditorControllerFieldBindings,

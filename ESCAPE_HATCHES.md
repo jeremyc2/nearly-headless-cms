@@ -336,91 +336,91 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/assets-page-dialogs-support.tsx:4`
-- `apps/example-cms/src/ui/assets-page-dialogs-support.tsx:13`
-- `apps/example-cms/src/ui/assets-page-dialogs-support.tsx:41`
-- `apps/example-cms/src/ui/assets-page-dialogs-support.tsx:50`
-- `apps/example-cms/src/ui/assets-page-dialogs-support.tsx:83`
-- `apps/example-cms/src/ui/assets-page-dialogs-support.tsx:110`
+- `apps/example-cms/src/ui/assets-page-dialogs-support.tsx:6`
+- `apps/example-cms/src/ui/assets-page-dialogs-support.tsx:15`
+- `apps/example-cms/src/ui/assets-page-dialogs-support.tsx:43`
+- `apps/example-cms/src/ui/assets-page-dialogs-support.tsx:52`
+- `apps/example-cms/src/ui/assets-page-dialogs-support.tsx:85`
 - `apps/example-cms/src/ui/assets-page-dialogs-support.tsx:112`
 - `apps/example-cms/src/ui/assets-page-dialogs-support.tsx:114`
-- `apps/example-cms/src/ui/assets-page-header-support.tsx:5`
-- `apps/example-cms/src/ui/assets-page-header-support.tsx:7`
-- `apps/example-cms/src/ui/assets-page-header-support.tsx:9`
-- `apps/example-cms/src/ui/assets-page-header-support.tsx:15`
-- `apps/example-cms/src/ui/assets-page-header-support.tsx:58`
-- `apps/example-cms/src/ui/assets-page-header-support.tsx:60`
-- `apps/example-cms/src/ui/assets-page-header-support.tsx:62`
-- `apps/example-cms/src/ui/assets-page-header-support.tsx:68`
-- `apps/example-cms/src/ui/assets-page-header-support.tsx:105`
-- `apps/example-cms/src/ui/assets-page-header-support.tsx:114`
-- `apps/example-cms/src/ui/assets-page-header-support.tsx:120`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:11`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:13`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:15`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:21`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:23`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:56`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:58`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:60`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:66`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:68`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:122`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:124`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:126`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:132`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:134`
-- `apps/example-cms/src/ui/entry-editor-controller-local-state-support.ts:18`
-- `apps/example-cms/src/ui/entry-editor-controller-local-state-support.ts:20`
-- `apps/example-cms/src/ui/entry-editor-controller-local-state-support.ts:67`
+- `apps/example-cms/src/ui/assets-page-dialogs-support.tsx:116`
+- `apps/example-cms/src/ui/assets-page-header-support.tsx:6`
+- `apps/example-cms/src/ui/assets-page-header-support.tsx:8`
+- `apps/example-cms/src/ui/assets-page-header-support.tsx:10`
+- `apps/example-cms/src/ui/assets-page-header-support.tsx:16`
+- `apps/example-cms/src/ui/assets-page-header-support.tsx:59`
+- `apps/example-cms/src/ui/assets-page-header-support.tsx:61`
+- `apps/example-cms/src/ui/assets-page-header-support.tsx:63`
+- `apps/example-cms/src/ui/assets-page-header-support.tsx:69`
+- `apps/example-cms/src/ui/assets-page-header-support.tsx:106`
+- `apps/example-cms/src/ui/assets-page-header-support.tsx:115`
+- `apps/example-cms/src/ui/assets-page-header-support.tsx:121`
+- `apps/example-cms/src/ui/assets-page-panels-support.tsx:8`
+- `apps/example-cms/src/ui/assets-page-panels-support.tsx:10`
+- `apps/example-cms/src/ui/assets-page-panels-support.tsx:12`
+- `apps/example-cms/src/ui/assets-page-panels-support.tsx:18`
+- `apps/example-cms/src/ui/assets-page-panels-support.tsx:20`
+- `apps/example-cms/src/ui/assets-page-panels-support.tsx:53`
+- `apps/example-cms/src/ui/assets-page-panels-support.tsx:55`
+- `apps/example-cms/src/ui/assets-page-panels-support.tsx:57`
+- `apps/example-cms/src/ui/assets-page-panels-support.tsx:63`
+- `apps/example-cms/src/ui/assets-page-panels-support.tsx:65`
+- `apps/example-cms/src/ui/assets-page-panels-support.tsx:119`
+- `apps/example-cms/src/ui/assets-page-panels-support.tsx:121`
+- `apps/example-cms/src/ui/assets-page-panels-support.tsx:123`
+- `apps/example-cms/src/ui/assets-page-panels-support.tsx:129`
+- `apps/example-cms/src/ui/assets-page-panels-support.tsx:131`
+- `apps/example-cms/src/ui/entry-editor-controller-local-state-support.ts:14`
+- `apps/example-cms/src/ui/entry-editor-controller-local-state-support.ts:16`
+- `apps/example-cms/src/ui/entry-editor-controller-local-state-support.ts:63`
 - `apps/example-cms/src/ui/entry-editor-controller-view-actions-support.ts:4`
 - `apps/example-cms/src/ui/entry-editor-controller-view-actions-support.ts:6`
 - `apps/example-cms/src/ui/entry-editor-history-panel-body.tsx:89`
-- `apps/example-cms/src/ui/entry-editor-layout.tsx:43`
+- `apps/example-cms/src/ui/entry-editor-layout.tsx:42`
 - `apps/example-cms/src/ui/entry-editor-overlays.tsx:6`
+- `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:14`
 - `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:16`
 - `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:18`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:20`
+- `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:47`
 - `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:49`
 - `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:51`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:53`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:85`
+- `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:83`
+- `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:140`
 - `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:142`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:144`
+- `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:165`
 - `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:167`
 - `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:169`
 - `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:171`
 - `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:173`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:175`
+- `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:232`
 - `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:234`
 - `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:236`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:238`
+- `apps/example-cms/src/ui/entry-editor-publication-panel-sections-support.tsx:14`
 - `apps/example-cms/src/ui/entry-editor-publication-panel-sections-support.tsx:16`
 - `apps/example-cms/src/ui/entry-editor-publication-panel-sections-support.tsx:18`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-sections-support.tsx:20`
+- `apps/example-cms/src/ui/entry-editor-publication-panel-sections-support.tsx:52`
 - `apps/example-cms/src/ui/entry-editor-publication-panel-sections-support.tsx:54`
 - `apps/example-cms/src/ui/entry-editor-publication-panel-sections-support.tsx:56`
 - `apps/example-cms/src/ui/entry-editor-publication-panel-sections-support.tsx:58`
 - `apps/example-cms/src/ui/entry-editor-publication-panel-sections-support.tsx:60`
 - `apps/example-cms/src/ui/entry-editor-publication-panel-sections-support.tsx:62`
 - `apps/example-cms/src/ui/entry-editor-publication-panel-sections-support.tsx:64`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-sections-support.tsx:66`
+- `apps/example-cms/src/ui/entry-editor-publication-panel-support.tsx:9`
 - `apps/example-cms/src/ui/entry-editor-publication-panel-support.tsx:11`
 - `apps/example-cms/src/ui/entry-editor-publication-panel-support.tsx:13`
 - `apps/example-cms/src/ui/entry-editor-publication-panel-support.tsx:15`
 - `apps/example-cms/src/ui/entry-editor-publication-panel-support.tsx:17`
 - `apps/example-cms/src/ui/entry-editor-publication-panel-support.tsx:19`
 - `apps/example-cms/src/ui/entry-editor-publication-panel-support.tsx:21`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-support.tsx:23`
-- `apps/example-cms/src/ui/entry-editor-rich-text-field-support.ts:20`
-- `apps/example-cms/src/ui/entry-editor-rich-text-field-support.ts:22`
-- `apps/example-cms/src/ui/entry-editor-rich-text-field-support.ts:24`
-- `apps/example-cms/src/ui/entry-editor-rich-text-field-support.ts:26`
-- `apps/example-cms/src/ui/entry-editor-rich-text-field-support.ts:67`
-- `apps/example-cms/src/ui/entry-editor-rich-text-field-support.ts:69`
-- `apps/example-cms/src/ui/entry-editor-rich-text-field-view.tsx:26`
+- `apps/example-cms/src/ui/entry-editor-rich-text-field-support.ts:12`
+- `apps/example-cms/src/ui/entry-editor-rich-text-field-support.ts:14`
+- `apps/example-cms/src/ui/entry-editor-rich-text-field-support.ts:16`
+- `apps/example-cms/src/ui/entry-editor-rich-text-field-support.ts:18`
+- `apps/example-cms/src/ui/entry-editor-rich-text-field-support.ts:59`
+- `apps/example-cms/src/ui/entry-editor-rich-text-field-support.ts:61`
+- `apps/example-cms/src/ui/entry-editor-rich-text-field-view.tsx:24`
+- `apps/example-cms/src/ui/entry-editor-rich-text-insert-dialog-support.tsx:8`
 - `apps/example-cms/src/ui/entry-editor-rich-text-insert-dialog-support.tsx:10`
-- `apps/example-cms/src/ui/entry-editor-rich-text-insert-dialog-support.tsx:12`
 - `apps/example-cms/src/ui/entry-editor-rich-text-insert-dialog.tsx:13`
 - `apps/example-cms/src/ui/entry-editor-rich-text-insert-dialog.tsx:15`
 - `apps/example-cms/src/ui/entry-editor-rich-text-toolbar-support.tsx:30`
@@ -429,34 +429,34 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 - `apps/example-cms/src/ui/entry-editor-rich-text-toolbar-support.tsx:104`
 - `apps/example-cms/src/ui/entry-editor-rich-text-toolbar.tsx:12`
 - `apps/example-cms/src/ui/entry-editor-rich-text-toolbar.tsx:14`
+- `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:6`
 - `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:8`
 - `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:10`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:12`
+- `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:33`
 - `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:35`
 - `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:37`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:39`
+- `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:65`
 - `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:67`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:69`
+- `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:88`
 - `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:90`
 - `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:92`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:94`
+- `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:126`
 - `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:128`
 - `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:130`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:132`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:173`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-fields-support.tsx:27`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-fields-support.tsx:29`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-fields-support.tsx:66`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-fields-support.tsx:68`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-fields-support.tsx:117`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-fields-support.tsx:119`
+- `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:171`
+- `apps/example-cms/src/ui/entry-editor-story-canvas-fields-support.tsx:24`
+- `apps/example-cms/src/ui/entry-editor-story-canvas-fields-support.tsx:26`
+- `apps/example-cms/src/ui/entry-editor-story-canvas-fields-support.tsx:63`
+- `apps/example-cms/src/ui/entry-editor-story-canvas-fields-support.tsx:65`
+- `apps/example-cms/src/ui/entry-editor-story-canvas-fields-support.tsx:114`
+- `apps/example-cms/src/ui/entry-editor-story-canvas-fields-support.tsx:116`
+- `apps/example-cms/src/ui/entry-editor-story-canvas-support.tsx:14`
 - `apps/example-cms/src/ui/entry-editor-story-canvas-support.tsx:16`
 - `apps/example-cms/src/ui/entry-editor-story-canvas-support.tsx:18`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-support.tsx:20`
+- `apps/example-cms/src/ui/entry-editor-story-canvas-support.tsx:35`
 - `apps/example-cms/src/ui/entry-editor-story-canvas-support.tsx:37`
 - `apps/example-cms/src/ui/entry-editor-story-canvas-support.tsx:39`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-support.tsx:41`
-- `apps/example-cms/src/ui/overview-panels-support.tsx:10`
+- `apps/example-cms/src/ui/overview-panels-support.tsx:6`
 - `apps/example-cms/src/ui/rich-text-editor/transactions-editor-adapter-render.ts:68`
 - `apps/example-cms/src/ui/rich-text-editor/transactions-editor-adapter-render.ts:70`
 - `apps/example-cms/src/ui/rich-text-editor/transactions-editor-adapter-selection.ts:10`
@@ -482,7 +482,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/rich-text-editor/transactions-editor-adapter-support.ts:151`
+- `apps/example-cms/src/ui/rich-text-editor/transactions-editor-adapter-support.ts:149`
 
 #### EH-204: fetch requires AbortSignal; generated clients pass the runtime signal.
 
@@ -527,7 +527,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/rich-text-editor/transactions-editor-adapter-support.ts:88`
+- `apps/example-cms/src/ui/rich-text-editor/transactions-editor-adapter-support.ts:86`
 
 #### EH-211: restoreSelectionRange reads selection anchors from the runtime editable host.
 
@@ -653,8 +653,8 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/rich-text-editor/transactions-editor-adapter-support.ts:130`
-- `apps/example-cms/src/ui/rich-text-editor/transactions-editor-adapter-support.ts:145`
+- `apps/example-cms/src/ui/rich-text-editor/transactions-editor-adapter-support.ts:128`
+- `apps/example-cms/src/ui/rich-text-editor/transactions-editor-adapter-support.ts:143`
 
 #### EH-229: DOM spans are mutated while applying rich-text marks.
 
@@ -672,7 +672,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/rich-text-editor/transactions-editor-adapter-support.ts:159`
+- `apps/example-cms/src/ui/rich-text-editor/transactions-editor-adapter-support.ts:157`
 
 #### EH-232: drain polling reads shared active-request counters without mutating them.
 
@@ -930,8 +930,8 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/entry-editor-controller-mutations.ts:25`
-- `apps/example-cms/src/ui/entry-editor-controller-mutations.ts:27`
+- `apps/example-cms/src/ui/entry-editor-controller-mutations.ts:24`
+- `apps/example-cms/src/ui/entry-editor-controller-mutations.ts:26`
 - `apps/example-cms/src/ui/entry-editor-mutations.ts:61`
 - `apps/example-cms/src/ui/entry-editor-mutations.ts:129`
 
@@ -990,7 +990,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/api/delivery/delivery-public-asset-response-support.ts:59`
+- `apps/example-cms/src/api/delivery/delivery-public-asset-response-support.ts:109`
 
 #### EH-274: SynchronizedRef state is mutated while persisting ingested assets.
 
@@ -1424,8 +1424,8 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/assets-page-mutations-support.ts:27`
-- `apps/example-cms/src/ui/assets-page-mutations-support.ts:37`
+- `apps/example-cms/src/ui/assets-page-mutations-support.ts:29`
+- `apps/example-cms/src/ui/assets-page-mutations-support.ts:39`
 - `apps/example-cms/src/ui/entry-editor-history-panel-body.tsx:177`
 
 #### EH-055: React query callback awaits navigation.
@@ -1702,8 +1702,8 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/assets-page-mutations-support.ts:10`
-- `apps/example-cms/src/ui/assets-page-mutations-support.ts:24`
+- `apps/example-cms/src/ui/assets-page-mutations-support.ts:12`
+- `apps/example-cms/src/ui/assets-page-mutations-support.ts:26`
 
 ### Effect · `effecttsgo/extends-native-error`
 
@@ -2292,13 +2292,13 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/assets-page-dialogs-support.tsx:108`
-- `apps/example-cms/src/ui/assets-page-header-support.tsx:3`
-- `apps/example-cms/src/ui/assets-page-header-support.tsx:103`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:54`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-sections-support.tsx:52`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-fields-support.tsx:64`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-support.tsx:35`
+- `apps/example-cms/src/ui/assets-page-dialogs-support.tsx:110`
+- `apps/example-cms/src/ui/assets-page-header-support.tsx:4`
+- `apps/example-cms/src/ui/assets-page-header-support.tsx:104`
+- `apps/example-cms/src/ui/assets-page-panels-support.tsx:51`
+- `apps/example-cms/src/ui/entry-editor-publication-panel-sections-support.tsx:50`
+- `apps/example-cms/src/ui/entry-editor-story-canvas-fields-support.tsx:61`
+- `apps/example-cms/src/ui/entry-editor-story-canvas-support.tsx:33`
 
 #### EH-170: shutdown scenario keeps orchestration in one place for readability.
 

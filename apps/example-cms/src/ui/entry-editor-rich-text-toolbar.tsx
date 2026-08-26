@@ -1,12 +1,12 @@
 import {
-  type BrowserAdapter,
-  type RefObject,
   RichTextBlockPicker,
   RichTextMarkButton,
   RichTextToolbarHistoryButtons,
   RichTextToolbarListButtons,
-  preserveSelection,
-} from "./entry-editor-rich-text-toolbar-imports.ts";
+} from "./entry-editor-rich-text-toolbar-support.tsx";
+import { preserveSelection } from "./main-shared.ts";
+import type { BrowserAdapter } from "./rich-text-editor/index.ts";
+import type { RefObject } from "react";
 
 export const EntryEditorRichTextToolbar = <
   // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.

@@ -1,17 +1,13 @@
-import {
-  type DeletionRecord,
-  type Dispatch,
-  type EditorialConfirmationStatus,
-  type EntryConflict,
-  type SetStateAction,
-  createFieldUpdater,
-  entryEditorControllerMutationsSupport,
-  stringValue,
-  titleFieldFrom,
-  useEntryEditorQueries,
-  useRef,
-  useState,
-} from "./entry-editor-controller-imports.ts";
+import { useRef, useState, type Dispatch, type SetStateAction } from "react";
+import entryEditorControllerMutationsSupport from "./entry-editor-controller-mutations.ts";
+import { useEntryEditorQueries } from "./entry-editor-queries.ts";
+import { createFieldUpdater, titleFieldFrom } from "./entry-editor-support.ts";
+import type {
+  DeletionRecord,
+  EditorialConfirmationStatus,
+  EntryConflict,
+} from "./entry-editor-types.ts";
+import { stringValue } from "./main-entry-support.ts";
 
 const { useEntryEditorControllerMutations } = entryEditorControllerMutationsSupport,
   useEntryEditorControllerFieldBindings = <

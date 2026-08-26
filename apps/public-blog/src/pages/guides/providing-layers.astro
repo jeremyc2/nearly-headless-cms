@@ -3,25 +3,25 @@ import GuideLayout from "../../layouts/guide-layout.astro"
 ---
 <GuideLayout
   title="Provide layers"
-  description="The CMS service is pluggable. Provide one layer per dependency — or use the convenience layers bundled with the library."
+  description="The CMS service is pluggable. Provide one layer per dependency, or use the bundled convenience layers to get running faster."
   nextGuide={{ href: "/guides/building-a-site/", label: "Build a content site" }}
 >
   <p>
-    Effect layers are the wiring diagram. Nearly Headless CMS expects you to provide persistence,
-    authorization, identity, and identifier generation. The library composes them into
-    <code>Cms.Service</code>.
+    Effect layers are how you wire dependencies. Nearly Headless CMS expects persistence,
+    authorization, identity, and identifier generation from your app. The library composes them
+    into <code>Cms.Service</code>.
   </p>
 
   <h2>One file per layer in the Example CMS</h2>
   <p>The reference app splits dependencies into a <code>layers/</code> folder:</p>
   <ul>
-    <li><code>layers/authorization.ts</code> — who can do what</li>
-    <li><code>layers/identity.ts</code> — who is making this request</li>
-    <li><code>layers/identifiers.ts</code> — how new IDs are generated</li>
-    <li><code>layers/persistence.ts</code> — where entries and assets are stored</li>
-    <li><code>layers/cms.ts</code> — merges everything into <code>Cms.makeLayer</code></li>
+    <li><code>layers/authorization.ts</code> decides who can do what</li>
+    <li><code>layers/identity.ts</code> reads who is making this request</li>
+    <li><code>layers/identifiers.ts</code> generates new IDs</li>
+    <li><code>layers/persistence.ts</code> stores entries and assets</li>
+    <li><code>layers/cms.ts</code> merges everything into <code>Cms.makeLayer</code></li>
   </ul>
-  <p>Want filesystem storage with development defaults already wired? Import the convenience layer:</p>
+  <p>Want filesystem storage with development defaults already wired?</p>
   <pre><code>{`import { Filesystem } from "nearly-headless-cms/layers"
 
 const cmsLayer = Filesystem.cms({
@@ -32,9 +32,9 @@ const cmsLayer = Filesystem.cms({
 
   <h2>Replace any layer without forking the library</h2>
   <p>
-    Convenience layers are optional. You can import <code>Cms.makeLayer</code> directly and provide
-    your own <code>Persistence.EntryPersistence</code> implementation, or build a layer from the
-    service definition using Effect's layer utilities.
+    Convenience layers are optional. Call <code>Cms.makeLayer</code> directly and provide your own
+    <code>Persistence.EntryPersistence</code>, or build a layer from the service definition with
+    Effect's layer utilities.
   </p>
   <pre><code>{`import { Cms } from "nearly-headless-cms"
 import { Layer } from "effect"
@@ -51,8 +51,8 @@ const cmsLayer = Cms.makeLayer({ operationContracts })
 
   <h2>Development vs production</h2>
   <p>
-    Use <code>InMemory.cms</code> for tests and prototypes. Use
-    <code>Filesystem.cms</code> or your own durable adapter when you need data to survive restarts.
-    The CMS service interface stays the same.
+    Use <code>InMemory.cms</code> for tests and prototypes. Use <code>Filesystem.cms</code> or your
+    own durable adapter when data must survive restarts. The CMS service interface does not change
+    between them.
   </p>
 </GuideLayout>

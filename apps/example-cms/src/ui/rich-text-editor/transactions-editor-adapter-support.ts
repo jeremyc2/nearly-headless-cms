@@ -1,8 +1,6 @@
-import {
-  type Command,
-  type RichText,
-  emptyIndex,
-} from "./transactions-editor-adapter-support-imports.ts";
+import { type RichText } from "nearly-headless-cms";
+import { type Command } from "./transactions-types.ts";
+import { emptyIndex } from "./transactions-constants.ts";
 import type {
   ReadonlyClipboardEvent,
   ReadonlyCompositionEvent,

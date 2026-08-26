@@ -1,10 +1,6 @@
-import {
-  Link,
-  displayName,
-  draftPluralSuffix,
-  pendingCommentClass,
-  rebuildLabel,
-} from "./overview-imports.ts";
+import { Link } from "@tanstack/react-router";
+import { draftPluralSuffix, pendingCommentClass, rebuildLabel } from "./main-labels.ts";
+import { displayName } from "./main-entry-support.ts";
 import type { OverviewState } from "./overview-data-support.ts";
 
 // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.

@@ -1,13 +1,80 @@
-import type {
-  PublicReachabilityInput,
-  ReachabilityState,
-  SnapshotEntry,
-} from "./delivery-public-content-types.ts";
-import type { Cms } from "nearly-headless-cms";
+import { EntryQuery, type Cms } from "nearly-headless-cms";
 import { Schema } from "effect";
-import deliveryPublicContentQuerySupport from "./delivery-public-content-query-support.ts";
 
-const { querySnapshot } = deliveryPublicContentQuerySupport,
+export interface PublicReachabilityInput {
+  readonly authors: readonly Cms.ConsistentReadSnapshot["entries"][number][];
+  readonly categories: readonly Cms.ConsistentReadSnapshot["entries"][number][];
+  readonly posts: readonly Cms.ConsistentReadSnapshot["entries"][number][];
+  readonly tags: readonly Cms.ConsistentReadSnapshot["entries"][number][];
+}
+
+export interface QuerySnapshotInput {
+  readonly consistentSnapshot: Cms.ConsistentReadSnapshot;
+  readonly contentTypeId: string;
+  readonly sort?: readonly EntryQuery.Sort[];
+  readonly where?: EntryQuery.Predicate;
+}
+
+export interface ReachabilityState {
+  readonly entriesByIdentifier: ReadonlyMap<string, Cms.ConsistentReadSnapshot["entries"][number]>;
+  readonly pendingDocuments: unknown[];
+  readonly publicAuthorIdentifiers: Set<string>;
+  readonly publicCategoryIdentifiers: Set<string>;
+  readonly publicTagIdentifiers: Set<string>;
+  readonly richTextReachableIdentifiers: Set<string>;
+}
+
+export type SnapshotEntry = Cms.ConsistentReadSnapshot["entries"][number];
+
+const evaluateSnapshotQueryPage = <
+    Input extends QuerySnapshotInput & { readonly cursor: string | undefined },
+  >(
+    input: Readonly<Input>,
+  ): EntryQuery.QueryPage => {
+    const { consistentSnapshot, contentTypeId, cursor, sort, where } = input,
+      query = {
+        contentTypeId,
+        cursor,
+        pageSize: 100,
+      } as {
+        contentTypeId: string;
+        cursor: string | undefined;
+        pageSize: number;
+        sort?: QuerySnapshotInput["sort"];
+        where?: QuerySnapshotInput["where"];
+      };
+    if (sort !== undefined) {
+      query.sort = sort;
+    }
+    if (where !== undefined) {
+      query.where = where;
+    }
+    return EntryQuery.evaluate({
+      entries: consistentSnapshot.entries,
+      options: { generation: consistentSnapshot.generation },
+      query,
+      snapshot: consistentSnapshot.definitionSnapshot,
+    });
+  },
+  querySnapshot = <Input extends QuerySnapshotInput>(
+    input: Readonly<Input>,
+  ): readonly SnapshotEntry[] => {
+    const { consistentSnapshot, contentTypeId, sort, where } = input,
+      entries: SnapshotEntry[] = [];
+    let cursor: string | undefined = undefined;
+    do {
+      const page: EntryQuery.QueryPage = evaluateSnapshotQueryPage({
+        consistentSnapshot,
+        contentTypeId,
+        cursor,
+        sort,
+        where,
+      });
+      entries.push(...page.items);
+      cursor = page.nextCursor;
+    } while (cursor !== undefined);
+    return entries;
+  },
   appendReachableRichTextEntry = <State extends ReachabilityState>(
     discoveredIdentifier: string,
     state: Readonly<State>,

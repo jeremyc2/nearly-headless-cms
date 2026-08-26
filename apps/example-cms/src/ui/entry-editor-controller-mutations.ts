@@ -1,11 +1,10 @@
 import {
-  type DeletionRecord,
-  type EntryConflict,
   useEntryEditorDeleteMutation,
   useEntryEditorEditorialMutation,
   useEntryEditorPurgeMutation,
   useEntryEditorSaveMutation,
-} from "./entry-editor-controller-mutations-imports.ts";
+} from "./entry-editor-mutations.ts";
+import type { DeletionRecord, EntryConflict } from "./entry-editor-types.ts";
 
 export const useEntryEditorControllerMutations = ({
   contentTypeId,

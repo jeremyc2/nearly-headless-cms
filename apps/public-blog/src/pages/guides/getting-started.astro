@@ -3,19 +3,24 @@ import GuideLayout from "../../layouts/guide-layout.astro"
 ---
 <GuideLayout
   title="Getting started"
-  description="Nearly Headless CMS is a library for building your own headless CMS. You bring the storage, identity, and HTTP layer. The library gives you the CMS service."
+  description="Nearly Headless CMS is a library, not a hosted product. You compose a CMS from services. This page gets you to a working in-memory CMS in a few lines."
   nextGuide={{ href: "/guides/defining-content/", label: "Define your content" }}
 >
   <p>
-    You do not install a CMS product. You compose one from services. The library exposes a single
-    <code>Cms.Service</code> Effect service. Your app provides the layers it needs: where content
-    lives, who is making a request, and how HTTP routes reach the CMS.
+    Hosted headless CMS tools ship storage, auth, and an admin UI together. This library splits that
+    apart on purpose. You keep control of the parts that usually differ between teams.
+  </p>
+
+  <p>
+    The library exposes one Effect service, <code>Cms.Service</code>. Your app provides the layers
+    around it: where content lives, who is calling, and whether they are allowed to.
   </p>
 
   <h2>The smallest useful app</h2>
   <p>For local development, start with the in-memory layer:</p>
   <pre><code>{`import { ContentDefinition, Cms } from "nearly-headless-cms"
 import { InMemory } from "nearly-headless-cms/layers"
+import { Effect } from "effect"
 
 const snapshot = ContentDefinition.compileSnapshot({
   definitionSpaceId: "my-site",
@@ -25,24 +30,27 @@ const snapshot = ContentDefinition.compileSnapshot({
 
 const cmsLayer = InMemory.cms({ snapshot })`}</code></pre>
   <p>
-    That one layer already wires open authorization, anonymous identity, crypto identifiers, and
-    process-local storage. You can swap any piece later without touching the CMS service itself.
+    That layer already wires open authorization, anonymous identity, crypto identifiers, and
+    process-local storage. Replace any piece later without rewriting the CMS service.
   </p>
 
-  <h2>What you provide vs what the library owns</h2>
+  <h2>Your job vs the library's job</h2>
   <ul>
-    <li><strong>You provide:</strong> persistence, authorization, identity, identifier generation, HTTP transport, and any custom API operations.</li>
-    <li><strong>The library owns:</strong> the CMS service — creating entries, querying, assets, definition snapshots, and history.</li>
+    <li><strong>You provide:</strong> persistence, authorization, identity, ID generation, HTTP wiring, and any custom public API operations.</li>
+    <li><strong>The library provides:</strong> the CMS service for entries, queries, assets, definition snapshots, and history.</li>
   </ul>
 
   <h2>Where the example apps fit</h2>
   <p>
-    The Example CMS in this monorepo shows a full composition with filesystem storage, delivery and
-    management APIs, and a React dashboard. This Public Blog is the other half: a static site that
-    reads from the Headless API at build time.
+    The Example CMS in this monorepo is a full composition: filesystem storage, delivery and
+    management APIs, and a React dashboard.
   </p>
   <p>
-    Follow the guides in order, or jump to <a href="/guides/providing-layers/">Providing layers</a>
-    if you already know your storage backend.
+    This Public Blog is the other half. It is a static site that reads from the Headless API at
+    build time and never imports the library.
+  </p>
+  <p>
+    Read the guides in order, or jump to <a href="/guides/providing-layers/">Provide layers</a> if
+    you already know where your data will live.
   </p>
 </GuideLayout>

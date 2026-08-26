@@ -1,11 +1,7 @@
-import {
-  Effect,
-  Link,
-  Outlet,
-  contentTypes,
-  managementClient,
-  useQuery,
-} from "./workbench-imports.ts";
+import { useQuery } from "@tanstack/react-query";
+import { Link, Outlet } from "@tanstack/react-router";
+import { Effect } from "effect";
+import { contentTypes, managementClient } from "./main-shared.ts";
 
 const Workbench = () => {
     const pendingComments = useQuery({

@@ -1,4 +1,6 @@
-import { type RefObject, type UseMutationResult, deleteImageLabel } from "./assets-page-imports.ts";
+import { type UseMutationResult } from "@tanstack/react-query";
+import { type RefObject } from "react";
+import { deleteImageLabel } from "./main-labels.ts";
 
 const AssetsPageDeleteDialog = <
     // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.

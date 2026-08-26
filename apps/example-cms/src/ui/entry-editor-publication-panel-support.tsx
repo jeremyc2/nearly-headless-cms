@@ -1,7 +1,5 @@
-import {
-  type EditorialConfirmationStatus,
-  type EntryRepresentation,
-} from "./entry-editor-publication-panel-imports.ts";
+import { type EntryRepresentation } from "../generated/management-client.ts";
+import type { EditorialConfirmationStatus } from "./entry-editor-types.ts";
 import publicationPanelFieldsSupport from "./entry-editor-publication-panel-fields-support.tsx";
 import publicationPanelSectionsSupport from "./entry-editor-publication-panel-sections-support.tsx";
 

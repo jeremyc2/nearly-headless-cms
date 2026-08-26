@@ -1,7 +1,5 @@
-import {
-  entryEditorControllerViewSupport,
-  useNavigate,
-} from "./entry-editor-controller-imports.ts";
+import { useNavigate } from "@tanstack/react-router";
+import entryEditorControllerViewSupport from "./entry-editor-controller-view.ts";
 import entryEditorControllerStateSupport from "./entry-editor-controller-state-support.ts";
 
 const { useEntryEditorControllerView } = entryEditorControllerViewSupport,

@@ -1,7 +1,5 @@
-import {
-  type AssetRepresentation,
-  richTextDocumentFrom,
-} from "./entry-editor-story-canvas-imports.ts";
+import { type AssetRepresentation } from "../generated/management-client.ts";
+import { richTextDocumentFrom } from "./main-shared.ts";
 import storyCanvasAssetsSupport from "./entry-editor-story-canvas-assets-support.tsx";
 import storyCanvasFieldsSupport from "./entry-editor-story-canvas-fields-support.tsx";
 

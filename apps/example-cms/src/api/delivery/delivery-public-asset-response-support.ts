@@ -6,9 +6,60 @@ import {
   httpStatusRangeNotSatisfiable,
 } from "nearly-headless-cms/http";
 import type { Asset } from "nearly-headless-cms";
-import { ONE_ITEM } from "./delivery-support.ts";
+import { FIRST_INDEX, ONE_ITEM } from "./delivery-support.ts";
 import { Stream } from "effect";
-import deliveryPublicAssetByteRangeSupport from "./delivery-public-asset-byte-range-support.ts";
+
+interface ParsedByteRange {
+  readonly end: number;
+  readonly start: number;
+}
+
+const byteRangeEndFromMatch = <Match extends RegExpExecArray>(
+    match: Readonly<Match>,
+    byteLength: number,
+  ): number => {
+    if (match.groups?.["start"] === "" || match.groups?.["end"] === "") {
+      return byteLength - ONE_ITEM;
+    }
+    return Number(match.groups?.["end"]);
+  },
+  byteRangePattern = /^bytes=(?<start>\d*)-(?<end>\d*)$/u,
+  byteRangeStartFromMatch = <Match extends RegExpExecArray>(
+    match: Readonly<Match>,
+    byteLength: number,
+  ): number => {
+    if (match.groups?.["start"] === "") {
+      return Math.max(FIRST_INDEX, byteLength - Number(match.groups?.["end"]));
+    }
+    return Number(match.groups?.["start"]);
+  },
+  parseByteRange = (
+    range: string,
+    byteLength: number,
+  ): ParsedByteRange | "invalid" | "unsatisfiable" => {
+    const match = byteRangePattern.exec(range);
+    if (match === null || range.includes(",")) {
+      return "invalid";
+    }
+    return parseMatchedByteRange(match, byteLength);
+  },
+  parseMatchedByteRange = <Match extends RegExpExecArray>(
+    match: Readonly<Match>,
+    byteLength: number,
+  ): ParsedByteRange | "unsatisfiable" => {
+    const end = byteRangeEndFromMatch(match, byteLength),
+      start = byteRangeStartFromMatch(match, byteLength);
+    if (
+      !Number.isSafeInteger(start) ||
+      !Number.isSafeInteger(end) ||
+      start < FIRST_INDEX ||
+      end < start ||
+      start >= byteLength
+    ) {
+      return "unsatisfiable";
+    }
+    return { end, start };
+  };
 
 export interface PublicAssetResponseInput {
   readonly asset: Asset.StoredAsset;
@@ -24,8 +75,7 @@ interface RangedAssetResponseInput {
   readonly request: ReadonlyTransportRequest;
 }
 
-const { parseByteRange } = deliveryPublicAssetByteRangeSupport,
-  publicAssetBody = <Content extends Asset.StoredAsset["content"]>(
+const publicAssetBody = <Content extends Asset.StoredAsset["content"]>(
     request: Readonly<ReadonlyTransportRequest>,
     content: Readonly<Content>,
   ): BodyInit | null => {

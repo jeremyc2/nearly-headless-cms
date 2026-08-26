@@ -1,19 +1,11 @@
-import {
-  BrowserAdapter,
-  Effect,
-  type RichText,
-  RichTextEditor,
-  type RichTextInsertDialog,
-  contentTypes,
-  entryOptionLabel,
-  managementClient,
-  useEffect,
-  useMemo,
-  useQueries,
-  useQuery,
-  useRef,
-  useState,
-} from "./entry-editor-rich-text-field-imports.ts";
+import { useQueries, useQuery } from "@tanstack/react-query";
+import { Effect } from "effect";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { type RichText } from "nearly-headless-cms";
+import { entryOptionLabel } from "./main-labels.ts";
+import { contentTypes, managementClient } from "./main-shared.ts";
+import { BrowserAdapter, RichTextEditor } from "./rich-text-editor/index.ts";
+import type { RichTextInsertDialog } from "./entry-editor-types.ts";
 import type { EntryRepresentation, QueryPage } from "../generated/management-client.ts";
 
 const applyRichTextFieldAdapterEffect = <

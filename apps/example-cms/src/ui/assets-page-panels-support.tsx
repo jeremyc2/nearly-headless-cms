@@ -1,9 +1,6 @@
-import {
-  type AssetRepresentation,
-  type UseMutationResult,
-  type UseQueryResult,
-  assetDimensions,
-} from "./assets-page-imports.ts";
+import { type UseMutationResult, type UseQueryResult } from "@tanstack/react-query";
+import { type AssetRepresentation } from "../generated/management-client.ts";
+import { assetDimensions } from "./main-labels.ts";
 import assetsPageDialogsSupport from "./assets-page-dialogs-support.tsx";
 
 const { AssetsPageDeleteDialog, AssetsPageReplaceDialog } = assetsPageDialogsSupport,

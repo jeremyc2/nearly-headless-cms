@@ -1,4 +1,5 @@
-import { type RefObject, type UseMutationResult } from "./assets-page-imports.ts";
+import { type UseMutationResult } from "@tanstack/react-query";
+import { type RefObject } from "react";
 
 // oxlint-disable-next-line eslint/max-lines-per-function -- [EH-169] React panel helpers exceed function line budget after typed prop alias escape hatches.
 const AssetsPageFileInputs = <

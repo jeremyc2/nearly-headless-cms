@@ -1,16 +1,14 @@
 import {
-  type EditorialConfirmationStatus,
-  type EntryRepresentation,
-  displayName,
   editorialButtonLabel,
-  editorialIssues,
   editorialStatus,
   featuredAlternativeTextField,
   publicationInputValue,
   publicationValue,
   stringArrayValue,
-  stringValue,
-} from "./entry-editor-publication-panel-imports.ts";
+} from "./main-labels.ts";
+import { type EntryRepresentation } from "../generated/management-client.ts";
+import { displayName, editorialIssues, stringValue } from "./main-entry-support.ts";
+import type { EditorialConfirmationStatus } from "./entry-editor-types.ts";
 
 const EntryEditorAuthorField = <
     // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.

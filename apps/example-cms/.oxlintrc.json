@@ -5,6 +5,7 @@
     "typescript/prefer-readonly-parameter-types": "off",
     "eslint/no-ternary": "off",
     "eslint/one-var": "off",
-    "eslint/no-duplicate-imports": "off"
+    "eslint/no-duplicate-imports": "off",
+    "eslint/max-lines": "off"
   }
 }

@@ -1,10 +1,8 @@
-import {
-  type BrowserAdapter,
-  EntryEditorRichTextInsertDialog,
-  EntryEditorRichTextToolbar,
-  type RefObject,
-  type RichTextInsertDialog,
-} from "./entry-editor-rich-text-field-imports.ts";
+import { EntryEditorRichTextInsertDialog } from "./entry-editor-rich-text-insert-dialog.tsx";
+import { EntryEditorRichTextToolbar } from "./entry-editor-rich-text-toolbar.tsx";
+import type { RefObject } from "react";
+import type { BrowserAdapter } from "./rich-text-editor/index.ts";
+import type { RichTextInsertDialog } from "./entry-editor-types.ts";
 import type { AssetRepresentation } from "../generated/management-client.ts";
 
 export interface EntryEditorRichTextFieldViewProperties {

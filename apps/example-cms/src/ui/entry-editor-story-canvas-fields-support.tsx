@@ -1,9 +1,6 @@
-import {
-  EntryEditorRichTextField,
-  type RichText,
-  stringValue,
-  suggestedSlug,
-} from "./entry-editor-story-canvas-imports.ts";
+import { EntryEditorRichTextField } from "./entry-editor-rich-text-field.tsx";
+import { type RichText } from "nearly-headless-cms";
+import { stringValue, suggestedSlug } from "./main-entry-support.ts";
 
 const EntryEditorAuthorProfileField = ({
     onUpdateField,

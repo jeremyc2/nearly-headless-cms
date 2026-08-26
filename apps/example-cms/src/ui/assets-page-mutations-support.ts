@@ -1,4 +1,6 @@
-import { Effect, managementClient, queryClient, useMutation } from "./assets-page-imports.ts";
+import { useMutation } from "@tanstack/react-query";
+import { Effect } from "effect";
+import { managementClient, queryClient } from "./main-shared.ts";
 
 export const useAssetsPageMutations = (input: {
   readonly setDeletionAssetId: (assetId: string | undefined) => void;

@@ -1,8 +1,6 @@
-import {
-  type AssetRepresentation,
-  assetSelectValue,
-  stringValue,
-} from "./entry-editor-story-canvas-imports.ts";
+import { type AssetRepresentation } from "../generated/management-client.ts";
+import { assetSelectValue } from "./main-labels.ts";
+import { stringValue } from "./main-entry-support.ts";
 
 const EntryEditorContentTypeAssetFields = <
     // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.

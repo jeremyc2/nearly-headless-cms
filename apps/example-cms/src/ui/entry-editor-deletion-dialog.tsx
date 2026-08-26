@@ -1,7 +1,5 @@
-import {
-  type DeletionRecord,
-  EntryEditorDeletionDialogPanel,
-} from "./entry-editor-deletion-dialog-imports.ts";
+import { EntryEditorDeletionDialogPanel } from "./entry-editor-deletion-dialog-panel.tsx";
+import type { DeletionRecord } from "./entry-editor-types.ts";
 
 interface EntryEditorDeletionDialogProperties {
   readonly confirmPurge: boolean;

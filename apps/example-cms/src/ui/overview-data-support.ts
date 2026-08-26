@@ -1,12 +1,7 @@
-import {
-  DateTime,
-  Effect,
-  type EntryRepresentation,
-  contentTypes,
-  managementClient,
-  useQueries,
-  useQuery,
-} from "./overview-imports.ts";
+import { useQueries, useQuery } from "@tanstack/react-query";
+import { DateTime, Effect } from "effect";
+import { type EntryRepresentation } from "../generated/management-client.ts";
+import { contentTypes, managementClient } from "./main-shared.ts";
 import useOverviewRebuildMutation from "./overview-rebuild-support.ts";
 
 export interface OverviewState {
