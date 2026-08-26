@@ -1,5 +1,4 @@
-import type { ReadonlyTransportRequest } from "../http-transport-readonly-types.ts";
-import { toWebRequest } from "../http-transport-readonly-types.ts";
+import { type ReadonlyTransportRequest, toWebRequest } from "../http-transport-readonly-types.ts";
 
 /** Parsed cursor pagination values from a Delivery Query request. */
 export interface PaginationFromRequest {
@@ -11,6 +10,7 @@ export interface PaginationFromRequest {
 export const defaultDeliveryPageSize = 20,
   maximumDeliveryPageSize = 100;
 
+// oxlint-disable-next-line eslint/one-var -- [EH-310] transport helpers stay in one local const block below exported pagination constants.
 const requestUrlSearchParameter = (
     parameterName: string,
     request: ReadonlyTransportRequest,

@@ -15,15 +15,28 @@ const defaultFormatVersion = 1,
     }
     return field.kind.kind;
   },
-  fieldContractFromResolvedField = (field: Readonly<ResolvedField>): FieldContract => ({
-    kind: fieldKindIdentifier(field),
-    path: field.key,
-    ...(capabilitiesFor(field.kind).projectable === true ? { projectable: true as const } : {}),
-    ...(field.required === true ? { required: true as const } : {}),
-    ...(field.kind.kind === "rich-text"
-      ? { formatVersion: field.kind.formatVersion ?? defaultFormatVersion }
-      : {}),
-  }),
+  fieldContractFromResolvedField = (field: Readonly<ResolvedField>): FieldContract => {
+    const contract: {
+      formatVersion?: number;
+      kind: string;
+      path: string;
+      projectable?: true;
+      required?: true;
+    } = {
+      kind: fieldKindIdentifier(field),
+      path: field.key,
+    };
+    if (capabilitiesFor(field.kind).projectable === true) {
+      contract.projectable = true;
+    }
+    if (field.required === true) {
+      contract.required = true;
+    }
+    if (field.kind.kind === "rich-text") {
+      contract.formatVersion = field.kind.formatVersion ?? defaultFormatVersion;
+    }
+    return contract;
+  },
   findTopLevelField = (
     fields: readonly ResolvedField[],
     path: string,
@@ -47,9 +60,9 @@ const defaultFormatVersion = 1,
         (field) =>
           options.projectableOnly !== true || capabilitiesFor(field.kind).projectable === true,
       )
-      .map(fieldContractFromResolvedField);
+      .map((field) => fieldContractFromResolvedField(field));
   },
-  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-298] Definition Requirement derivation is intentionally a direct Snapshot lookup helper.
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-294] Definition Requirement derivation is intentionally a direct Snapshot lookup helper.
   definitionRequirementFromContentType = (
     snapshot: CompiledSnapshot,
     contentTypeId: string,
@@ -64,7 +77,7 @@ const defaultFormatVersion = 1,
       fields: resolveFieldContracts(contentType.fields, options),
     };
   },
-  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-299] batch Definition Requirement derivation is intentionally a direct Snapshot lookup helper.
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-293] batch Definition Requirement derivation is intentionally a direct Snapshot lookup helper.
   definitionRequirementsFromContentTypes = (
     snapshot: CompiledSnapshot,
     contentTypeIds: readonly string[],

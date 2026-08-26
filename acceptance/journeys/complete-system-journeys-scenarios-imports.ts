@@ -1,4 +1,4 @@
-export { type ExampleSystem, createExampleSystem } from "../../apps/example-cms/src/system.ts";
+export { type ExampleSystem, createExampleSystem } from "../../apps/example-cms/src/core/composition.ts";
 export {
   verifyBoundedListingsAndAssets,
   verifyCommentIdempotency,

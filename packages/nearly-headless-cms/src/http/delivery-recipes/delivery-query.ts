@@ -191,8 +191,8 @@ const firstIndex = 0,
       response: options.response,
     }),
   }),
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-303] Delivery Query builders accept Effect Schema classes that are not deeply readonly.
   entryBySlugDeliveryQuery = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-303] Delivery Query builders accept Effect Schema classes that are not deeply readonly.
     options: Readonly<EntryBySlugDeliveryQueryOptions>,
   ): DeliveryOperation => {
     const pathParameterName = options.pathParameterName ?? "slug";

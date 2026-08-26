@@ -1,4 +1,5 @@
-import { ContentDefinition, CmsError } from "nearly-headless-cms";
+import type { ContentDefinition} from "nearly-headless-cms";
+import { CmsError } from "nearly-headless-cms";
 import {
   findEntryBySlug,
   publicEntryValue as projectPublicEntryValue,
@@ -75,20 +76,24 @@ export const publicEntryValueOptions = { nullableWireFields: publicNullableWireF
   queryAll = queryEveryEntry,
   queryPage = (
     input: Omit<Parameters<typeof queryEntryPage>[0], "publicEntryValueOptions">,
-  ) => queryEntryPage({ ...input, publicEntryValueOptions }),
-  readSchemas = (
-    response: HttpContract.OperationSchema,
-    pathParameters: Record<string, HttpContract.OperationSchema> = {},
-    includePagination = false,
-  ): HttpContract.OperationSchemas =>
-    readDeliverySchemas({
-      includePagination,
-      pageQuery: PageQuery,
-      pathParameters,
-      request: EmptyRequest,
-      response,
-    }),
-  requiredParameter = requiredPathParameter;
+  ) => queryEntryPage({ ...input, publicEntryValueOptions });
+
+// oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-305] Example CMS readSchemas is a thin DeliveryRecipes wrapper.
+export const readSchemas = (
+  response: HttpContract.OperationSchema,
+  pathParameters: Record<string, HttpContract.OperationSchema> = {},
+  includePagination = false,
+): HttpContract.OperationSchemas =>
+  readDeliverySchemas({
+    includePagination,
+    pageQuery: PageQuery,
+    pathParameters,
+    request: EmptyRequest,
+    response,
+  });
+
+// oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-306] Example CMS requiredParameter is a thin DeliveryRecipes wrapper.
+export const requiredParameter = requiredPathParameter;
 
 export default {
   canonicalizeJsonValue,

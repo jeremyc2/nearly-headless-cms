@@ -326,6 +326,15 @@ Sorted by escape-hatch code (`EH-###`).
 - **EH-302** (`effecttsgo/missing-pipeable-signature`): slug Entry lookup is intentionally a direct CMS service helper.
 - **EH-303** (`typescript/prefer-readonly-parameter-types`): Delivery Query builders accept Effect Schema classes that are not deeply readonly.
 - **EH-304** (`typescript/prefer-readonly-parameter-types`): OperationSchema values include Effect Schema classes that are not deeply readonly.
+- **EH-305** (`effecttsgo/missing-pipeable-signature`): Example CMS readSchemas is a thin DeliveryRecipes wrapper.
+- **EH-306** (`effecttsgo/missing-pipeable-signature`): Example CMS requiredParameter is a thin DeliveryRecipes wrapper.
+- **EH-307** (`eslint/one-var`): delivery operation assembly stays separate from schema constants.
+- **EH-308** (`eslint/one-var`): digest and response headers are derived after the size guard.
+- **EH-309** (`eslint/one-var`): digest helpers stay grouped in one local const block below exported defaults.
+- **EH-310** (`eslint/one-var`): transport helpers stay in one local const block below exported pagination constants.
+- **EH-311** (`typescript/no-unsafe-type-assertion`): Asset metadata is encoded as JSON without retaining class instances.
+- **EH-312** (`typescript/no-unsafe-type-assertion`): Web Crypto digest failures are converted to defects via orDie at call sites.
+- **EH-313** (`typescript/prefer-readonly-parameter-types`): SHA-256 digest accepts mutable byte buffers from TextEncoder output.
 
 ## Justification Registry
 
@@ -568,6 +577,18 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 **Locations:**
 
 - `packages/nearly-headless-cms/src/http/http-transport-readonly-types.ts:28`
+
+#### EH-311: Asset metadata is encoded as JSON without retaining class instances.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/http/delivery-recipes/public-export.ts:65`
+
+#### EH-312: Web Crypto digest failures are converted to defects via orDie at call sites.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/http/delivery-recipes/public-export.ts:47`
 
 ### TypeScript · `typescript/prefer-readonly-parameter-types`
 
@@ -1013,13 +1034,20 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 **Locations:**
 
 - `packages/nearly-headless-cms/src/http/delivery-recipes/delivery-query.ts:170`
-- `packages/nearly-headless-cms/src/http/delivery-recipes/delivery-query.ts:194`
+- `packages/nearly-headless-cms/src/http/delivery-recipes/delivery-query.ts:195`
+- `packages/nearly-headless-cms/src/http/delivery-recipes/public-export.ts:79`
 
 #### EH-304: OperationSchema values include Effect Schema classes that are not deeply readonly.
 
 **Locations:**
 
 - `packages/nearly-headless-cms/src/http/delivery-recipes/delivery-query.ts:81`
+
+#### EH-313: SHA-256 digest accepts mutable byte buffers from TextEncoder output.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/http/delivery-recipes/public-export.ts:44`
 
 ### Effect · `effecttsgo/abort-controller-in-effect`
 
@@ -2037,13 +2065,13 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/delivery-recipes/definition-requirement.ts:74`
+- `packages/nearly-headless-cms/src/http/delivery-recipes/definition-requirement.ts:80`
 
 #### EH-294: Definition Requirement derivation is intentionally a direct Snapshot lookup helper.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/delivery-recipes/definition-requirement.ts:59`
+- `packages/nearly-headless-cms/src/http/delivery-recipes/definition-requirement.ts:65`
 
 #### EH-295: pagination parsing is intentionally a direct transport helper.
 
@@ -2055,13 +2083,13 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/delivery-recipes/public-export.ts:53`
+- `packages/nearly-headless-cms/src/http/delivery-recipes/public-export.ts:56`
 
 #### EH-297: Public Content Export route declaration is intentionally a direct HTTP contract helper.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/delivery-recipes/public-export.ts:73`
+- `packages/nearly-headless-cms/src/http/delivery-recipes/public-export.ts:77`
 
 #### EH-298: public Entry page projection is intentionally a pure value transform helper.
 
@@ -2092,6 +2120,18 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 **Locations:**
 
 - `packages/nearly-headless-cms/src/http/delivery-recipes/delivery-query.ts:141`
+
+#### EH-305: Example CMS readSchemas is a thin DeliveryRecipes wrapper.
+
+**Locations:**
+
+- `apps/example-cms/src/core/api/delivery/delivery-support.ts:81`
+
+#### EH-306: Example CMS requiredParameter is a thin DeliveryRecipes wrapper.
+
+**Locations:**
+
+- `apps/example-cms/src/core/api/delivery/delivery-support.ts:95`
 
 ### Effect · `effecttsgo/new-promise`
 
@@ -2600,6 +2640,30 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 **Locations:**
 
 - `scripts/escape-hatches-registry-support.ts:88`
+
+#### EH-307: delivery operation assembly stays separate from schema constants.
+
+**Locations:**
+
+- `apps/example-cms-minimal/src/core/delivery.ts:33`
+
+#### EH-308: digest and response headers are derived after the size guard.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/http/delivery-recipes/public-export.ts:94`
+
+#### EH-309: digest helpers stay grouped in one local const block below exported defaults.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/http/delivery-recipes/public-export.ts:36`
+
+#### EH-310: transport helpers stay in one local const block below exported pagination constants.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/http/delivery-recipes/pagination.ts:13`
 
 ### ESLint · `eslint/require-unicode-regexp`
 

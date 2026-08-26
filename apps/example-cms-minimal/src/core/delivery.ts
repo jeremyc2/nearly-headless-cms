@@ -29,28 +29,30 @@ const EmptyRequest = Schema.Struct({}),
   sharedSchemas = {
     pageQuery: PageQuery,
     request: EmptyRequest,
-  };
+  },
+  // oxlint-disable-next-line eslint/one-var -- [EH-307] delivery operation assembly stays separate from schema constants.
+  makeDeliveryOperations = (): readonly HttpContract.DeliveryOperation[] => [
+    paginatedDeliveryQuery({
+      contentTypeId: "note",
+      definitionRequirements: [noteDefinitionRequirement],
+      identifier: "listNotes",
+      path: "/notes",
+      reachableContentTypeIds: ["note"],
+      response: NotePage,
+      sort: [{ direction: "ascending", path: "title" }],
+      ...sharedSchemas,
+    }),
+    entryBySlugDeliveryQuery({
+      contentTypeId: "note",
+      definitionRequirements: [noteDefinitionRequirement],
+      identifier: "getNoteBySlug",
+      path: "/notes/{slug}",
+      pathParameterSchema: Identifier,
+      reachableContentTypeIds: ["note"],
+      response: Note,
+      ...sharedSchemas,
+    }),
+  ];
 
 /** Headless Delivery Queries for the minimal notes demo. */
-export const makeDeliveryOperations = (): readonly HttpContract.DeliveryOperation[] => [
-  paginatedDeliveryQuery({
-    contentTypeId: "note",
-    definitionRequirements: [noteDefinitionRequirement],
-    identifier: "listNotes",
-    path: "/notes",
-    reachableContentTypeIds: ["note"],
-    response: NotePage,
-    sort: [{ direction: "ascending", path: "title" }],
-    ...sharedSchemas,
-  }),
-  entryBySlugDeliveryQuery({
-    contentTypeId: "note",
-    definitionRequirements: [noteDefinitionRequirement],
-    identifier: "getNoteBySlug",
-    path: "/notes/{slug}",
-    pathParameterSchema: Identifier,
-    reachableContentTypeIds: ["note"],
-    response: Note,
-    ...sharedSchemas,
-  }),
-];
+export { makeDeliveryOperations };

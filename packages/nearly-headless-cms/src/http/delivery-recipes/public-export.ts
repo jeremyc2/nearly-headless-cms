@@ -33,15 +33,18 @@ export interface PublicExportDeliveryQueryOptions {
   readonly response: OperationSchema;
 }
 
+// oxlint-disable-next-line eslint/one-var -- [EH-309] digest helpers stay grouped in one local const block below exported defaults.
 const hexDigitWidth = 2,
   sha256Radix = 16,
-  encodeExportArtifact = (artifact: Readonly<JsonObject>): Effect.Effect<Uint8Array, never> =>
+  encodeExportArtifact = (artifact: Readonly<JsonObject>): Effect.Effect<Uint8Array> =>
     Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(artifact).pipe(
       Effect.map((json) => new TextEncoder().encode(json)),
       Effect.orDie,
     ),
-  sha256HexDigest = (bytes: Uint8Array): Effect.Effect<string, never> =>
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-313] SHA-256 digest accepts mutable byte buffers from TextEncoder output.
+  sha256HexDigest = (bytes: Uint8Array): Effect.Effect<string> =>
     Effect.tryPromise({
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-312] Web Crypto digest failures are converted to defects via orDie at call sites.
       catch: () => undefined as never,
       try: () =>
         crypto.subtle.digest("SHA-256", new Uint8Array(bytes)).then((digestBuffer) =>
@@ -59,6 +62,7 @@ const hexDigitWidth = 2,
     publicEntryValueOptions,
   }: Readonly<PublicExportArtifactInput>): JsonObject => {
     const artifact: Record<string, JsonValue> = {
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-311] Asset metadata is encoded as JSON without retaining class instances.
       assets: assets as unknown as JsonValue,
       definitionFingerprint,
       generatedAt,
@@ -72,6 +76,7 @@ const hexDigitWidth = 2,
   },
   // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-297] Public Content Export route declaration is intentionally a direct HTTP contract helper.
   publicExportDeliveryQuery = (
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-303] Delivery Query builders accept Effect Schema classes that are not deeply readonly.
     options: Readonly<PublicExportDeliveryQueryOptions>,
   ): DeliveryOperation => ({
     cacheControl: "no-cache",
@@ -86,6 +91,7 @@ const hexDigitWidth = 2,
             message: `Public Content Export exceeds the configured ${maximumBytes}-byte bound`,
           });
         }
+        // oxlint-disable-next-line eslint/one-var -- [EH-308] digest and response headers are derived after the size guard.
         const digest = yield* sha256HexDigest(bytes),
           etag = `"sha256-${digest}"`,
           headers = new Headers({

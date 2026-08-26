@@ -24,14 +24,13 @@ const port = Number(Bun.env["EXAMPLE_CMS_MINIMAL_PORT"] ?? "3001"),
     });
     return yield* Effect.log(`Seeded note for ${definitionSnapshot.fingerprint}`);
   }),
+  registerHealthRoute = HttpRouter.HttpRouter.pipe(
+    Effect.flatMap((router) => router.add("GET", "/health", HttpServerResponse.text("ok"))),
+  ),
   routeApplicationLayer = Layer.mergeAll(
     HttpTransport.layer(composition.transportOptions),
     Layer.effectDiscard(seedNote),
-    Layer.effectDiscard(
-      HttpRouter.HttpRouter.pipe(
-        Effect.flatMap((router) => router.add("GET", "/health", HttpServerResponse.text("ok"))),
-      ),
-    ),
+    Layer.effectDiscard(registerHealthRoute),
   ).pipe(Layer.provide(composition.cmsLayer)),
   serverLayer = HttpRouter.serve(routeApplicationLayer).pipe(
     Layer.provide(
