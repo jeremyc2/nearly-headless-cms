@@ -150,8 +150,24 @@ Authorization still runs inside `Cms.Service`. Adding a route does not create a 
 Use `DeliveryRecipes` from `nearly-headless-cms/http` to derive Definition Requirements from your Snapshot, project public Entry values, and declare common Headless routes:
 
 ```ts
+import { ContentDefinition } from "nearly-headless-cms";
 import { Schema } from "effect";
 import { DeliveryRecipes } from "nearly-headless-cms/http";
+
+const snapshot = ContentDefinition.compileSnapshot({
+  definitionSpaceId: "notes",
+  snapshotId: "initial",
+  definitions: [
+    ContentDefinition.Fields.contentType({
+      id: "note",
+      name: "Note",
+      fields: [
+        ContentDefinition.Fields.requiredTextField("title", "Title", { maxLength: 120 }),
+        ContentDefinition.Fields.requiredSlugField("slug", "Slug"),
+      ],
+    }),
+  ],
+});
 
 const noteRequirement = DeliveryRecipes.definitionRequirementFromContentType(snapshot, "note", {
   projectableOnly: true,
@@ -164,9 +180,17 @@ const listNotes = DeliveryRecipes.paginatedDeliveryQuery({
   path: "/notes",
   reachableContentTypeIds: ["note"],
   request: Schema.Struct({}),
-  response: Schema.Struct({ items: Schema.Array(Schema.Unknown) }),
-  pageQuery: Schema.Struct({ cursor: Schema.optionalKey(Schema.String) }),
+  response: Schema.Struct({
+    items: Schema.Array(Schema.Struct({ id: Schema.String, slug: Schema.String, title: Schema.String })),
+    nextCursor: Schema.optionalKey(Schema.String),
+  }),
+  pageQuery: {
+    cursor: Schema.optionalKey(Schema.String),
+    pageSize: Schema.optionalKey(Schema.Int),
+  },
 });
+
+void listNotes;
 ```
 
 See [`apps/example-cms-minimal`](https://github.com/jeremyc2/nearly-headless-cms/tree/main/apps/example-cms-minimal) for a complete minimal app using these helpers.
