@@ -2,7 +2,10 @@
   "resolvedFindings": [
     {
       "id": "color-contrast",
-      "kinds": ["incomplete", "violation"],
+      "kinds": [
+        "incomplete",
+        "violation"
+      ],
       "pages": [
         "example-cms-overview",
         "example-cms-content-list",

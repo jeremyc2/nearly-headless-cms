@@ -1,9 +1,9 @@
 ---
-import PaginatedPostList from "../../../../components/paginated-post-list.astro"
-import SiteLayout from "../../../../layouts/site-layout.astro"
+import PaginatedPostList from "../../../../components/paginated-post-list.astro";
+import SiteLayout from "../../../../layouts/site-layout.astro";
 
-export { categoryArchivePaths as getStaticPaths } from "../../../../domain/archive-pages.ts"
-const { category, page } = Astro.props
+export { categoryArchivePaths as getStaticPaths } from "../../../../domain/archive-pages.ts";
+const { category, page } = Astro.props;
 ---
 
 <SiteLayout title={`${category.name} · Page ${page.pageNumber}`}>

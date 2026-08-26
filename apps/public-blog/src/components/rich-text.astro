@@ -1,26 +1,93 @@
 ---
-import type { RichTextNode } from "../generated/headless-client.ts"
-import { assetById } from "../data/public-export.ts"
-interface Props { readonly nodes: readonly RichTextNode[] }
-const { nodes } = Astro.props
+import type { RichTextNode } from "../generated/headless-client.ts";
+import { assetById } from "../data/public-export.ts";
+interface Props {
+  readonly nodes: readonly RichTextNode[];
+}
+const { nodes } = Astro.props;
 ---
-{nodes.map((node) => {
-  if (node.type === "text") return <>{node.text}</>
-  if (node.type === "paragraph") return <p><Astro.self nodes={node.children ?? []} /></p>
-  if (node.type === "heading") {
-    const Heading = `h${node.level ?? 2}` as "h2" | "h3" | "h4"
-    return <Heading><Astro.self nodes={node.children ?? []} /></Heading>
-  }
-  if (node.type === "link") return <a href={node.url}><Astro.self nodes={node.children ?? []} /></a>
-  if (node.type === "entry-reference") return <a href={`/references/${node.entryId}/`}><Astro.self nodes={node.children ?? []} /></a>
-  if (node.type === "quote") return <blockquote><Astro.self nodes={node.children ?? []} /></blockquote>
-  if (node.type === "code-block") return <pre><code><Astro.self nodes={node.children ?? []} /></code></pre>
-  if (node.type === "ordered-list") return <ol><Astro.self nodes={node.children ?? []} /></ol>
-  if (node.type === "unordered-list") return <ul><Astro.self nodes={node.children ?? []} /></ul>
-  if (node.type === "list-item") return <li><Astro.self nodes={node.children ?? []} /></li>
-  if (node.type === "asset-reference") {
-    const asset = assetById.get(node.assetId ?? "")
-    return asset?.localPath === undefined ? <aside class="unsupported-rich-text">Missing referenced Asset</aside> : <figure><img src={asset.localPath} alt={node.alternativeText ?? ""} width={asset.metadata.width} height={asset.metadata.height} />{node.caption && <figcaption>{node.caption}</figcaption>}</figure>
-  }
-  return <aside class="unsupported-rich-text" role="note">Unsupported Rich Text node: {node.type}</aside>
-})}
+
+{
+  nodes.map((node) => {
+    if (node.type === "text") return <>{node.text}</>;
+    if (node.type === "paragraph")
+      return (
+        <p>
+          <Astro.self nodes={node.children ?? []} />
+        </p>
+      );
+    if (node.type === "heading") {
+      const Heading = `h${node.level ?? 2}` as "h2" | "h3" | "h4";
+      return (
+        <Heading>
+          <Astro.self nodes={node.children ?? []} />
+        </Heading>
+      );
+    }
+    if (node.type === "link")
+      return (
+        <a href={node.url}>
+          <Astro.self nodes={node.children ?? []} />
+        </a>
+      );
+    if (node.type === "entry-reference")
+      return (
+        <a href={`/references/${node.entryId}/`}>
+          <Astro.self nodes={node.children ?? []} />
+        </a>
+      );
+    if (node.type === "quote")
+      return (
+        <blockquote>
+          <Astro.self nodes={node.children ?? []} />
+        </blockquote>
+      );
+    if (node.type === "code-block")
+      return (
+        <pre>
+          <code>
+            <Astro.self nodes={node.children ?? []} />
+          </code>
+        </pre>
+      );
+    if (node.type === "ordered-list")
+      return (
+        <ol>
+          <Astro.self nodes={node.children ?? []} />
+        </ol>
+      );
+    if (node.type === "unordered-list")
+      return (
+        <ul>
+          <Astro.self nodes={node.children ?? []} />
+        </ul>
+      );
+    if (node.type === "list-item")
+      return (
+        <li>
+          <Astro.self nodes={node.children ?? []} />
+        </li>
+      );
+    if (node.type === "asset-reference") {
+      const asset = assetById.get(node.assetId ?? "");
+      return asset?.localPath === undefined ? (
+        <aside class="unsupported-rich-text">Missing referenced Asset</aside>
+      ) : (
+        <figure>
+          <img
+            src={asset.localPath}
+            alt={node.alternativeText ?? ""}
+            width={asset.metadata.width}
+            height={asset.metadata.height}
+          />
+          {node.caption && <figcaption>{node.caption}</figcaption>}
+        </figure>
+      );
+    }
+    return (
+      <aside class="unsupported-rich-text" role="note">
+        Unsupported Rich Text node: {node.type}
+      </aside>
+    );
+  })
+}

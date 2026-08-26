@@ -36,10 +36,7 @@
       },
       "files": [
         "apps/public-blog/**/*.astro"
-      ],
-      "rules": {
-        "eslint/one-var": "off"
-      }
+      ]
     }
   ],
   "rules": {
@@ -47,7 +44,11 @@
     "no-magic-numbers": [
       "error",
       {
-        "ignore": [-1, 0, 1],
+        "ignore": [
+          -1,
+          0,
+          1
+        ],
         "ignoreArrayIndexes": true,
         "ignoreDefaultValues": true,
         "ignoreNumericLiteralTypes": true,
