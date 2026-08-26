@@ -9,12 +9,12 @@ You are the **CMS Builder**. You choose the database, the login flow, the admin 
 ## Install
 
 ```sh
-bun add nearly-headless-cms effect
+bun add nearly-headless-cms effect@rc
 ```
 
 Requirements:
 
-- Effect `^4.0.0-rc.111` (peer dependency)
+- Effect `^4.0.0-rc.111` (peer dependency) — install with the `@rc` tag; npm's `latest` tag is still v3
 - Bun 1.4+ or Node.js 22+
 - TypeScript 7 for the published types
 - ESM only

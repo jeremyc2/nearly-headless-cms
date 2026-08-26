@@ -8,18 +8,18 @@ Nearly Headless CMS is an [Effect](https://effect.website) library that handles 
 
 ## Install
 
-[`nearly-headless-cms`](https://www.npmjs.com/package/nearly-headless-cms) is published on npm. Install it with your package manager of choice, along with Effect (a peer dependency):
+[`nearly-headless-cms`](https://www.npmjs.com/package/nearly-headless-cms) is published on npm. Install it with your package manager of choice, along with Effect (a peer dependency). Use the `@rc` tag for Effect — npm's `latest` tag is still v3:
 
 ```sh
-bun add nearly-headless-cms effect
+bun add nearly-headless-cms effect@rc
 ```
 
 ```sh
-pnpm add nearly-headless-cms effect
+pnpm add nearly-headless-cms effect@rc
 ```
 
 ```sh
-npm install nearly-headless-cms effect
+npm install nearly-headless-cms effect@rc
 ```
 
 Node.js 22+ and Bun 1.4+ are supported. See the [package README](packages/nearly-headless-cms/README.md) for import paths and version pins.
