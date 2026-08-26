@@ -110,6 +110,8 @@ This publishes the **same tarball** that verification inspected — not a fresh 
 - `PACKAGE_ARCHIVE` pointing at `.artifacts/npm/nearly-headless-cms-<version>.tgz`
 - Valid npm credentials
 
+Local bootstrap publish omits provenance (`--provenance=false`) because npm can only generate Sigstore attestations from a CI OIDC provider such as GitHub Actions. That override is required even when `publishConfig.provenance` is `true` in the manifest. Later CI releases can pass `--provenance` after trusted publishing is configured.
+
 ### 6. Post-publish checks
 
 1. Open [npmjs.com/package/nearly-headless-cms](https://www.npmjs.com/package/nearly-headless-cms) and confirm version, metadata, and provenance.
