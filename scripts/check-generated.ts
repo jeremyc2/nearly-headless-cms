@@ -2,8 +2,8 @@ import * as HttpApiContract from "../packages/nearly-headless-cms/src/http/http-
 import { generateClientSource, parseOpenApiDocument } from "./openapi-client-generator.ts";
 import { OpenApi } from "../packages/nearly-headless-cms/src/http/index.ts";
 import { acceptanceCases } from "../acceptance/v0.1.ts";
-import { makeDeliveryOperations } from "../apps/example-cms/src/api/delivery/index.ts";
-import { makeManagementOperations } from "../apps/example-cms/src/api/management/index.ts";
+import { makeDeliveryOperations } from "../apps/example-cms/src/core/api/delivery/index.ts";
+import { makeManagementOperations } from "../apps/example-cms/src/core/api/management/index.ts";
 interface GeneratedArtifact {
   readonly content: string;
   readonly path: string;
@@ -94,7 +94,7 @@ const buildClientArtifacts = <Document extends ReturnType<typeof HttpApiContract
         ...artifact,
         path: artifact.path.replace(
           "/apps/example-cms/src/generated/",
-          "/apps/public-blog/src/generated/",
+          "/apps/public-blog/src/core/generated/",
         ),
       }));
     {

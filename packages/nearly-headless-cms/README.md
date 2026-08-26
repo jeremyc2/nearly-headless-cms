@@ -145,13 +145,39 @@ A **Content Client** (your blog, app, or static site generator) calls the Headle
 
 Authorization still runs inside `Cms.Service`. Adding a route does not create a back door.
 
+## Declare Delivery Queries with less boilerplate
+
+Use `DeliveryRecipes` from `nearly-headless-cms/http` to derive Definition Requirements from your Snapshot, project public Entry values, and declare common Headless routes:
+
+```ts
+import { Schema } from "effect";
+import { DeliveryRecipes } from "nearly-headless-cms/http";
+
+const noteRequirement = DeliveryRecipes.definitionRequirementFromContentType(snapshot, "note", {
+  projectableOnly: true,
+});
+
+const listNotes = DeliveryRecipes.paginatedDeliveryQuery({
+  contentTypeId: "note",
+  definitionRequirements: [noteRequirement],
+  identifier: "listNotes",
+  path: "/notes",
+  reachableContentTypeIds: ["note"],
+  request: Schema.Struct({}),
+  response: Schema.Struct({ items: Schema.Array(Schema.Unknown) }),
+  pageQuery: Schema.Struct({ cursor: Schema.optionalKey(Schema.String) }),
+});
+```
+
+See [`apps/example-cms-minimal`](https://github.com/jeremyc2/nearly-headless-cms/tree/main/apps/example-cms-minimal) for a complete minimal app using these helpers.
+
 ## Public imports
 
 | Import | Use it for |
 | --- | --- |
 | `nearly-headless-cms` | `Cms`, `ContentDefinition`, `Entry`, `EntryQuery`, `Asset`, `RichText`, and service contracts |
 | `nearly-headless-cms/layers` | `InMemory`, `Filesystem`, and shared dev dependencies |
-| `nearly-headless-cms/http` | HTTP transport, contracts, and OpenAPI generation |
+| `nearly-headless-cms/http` | HTTP transport, contracts, OpenAPI generation, and `DeliveryRecipes` helpers |
 | `nearly-headless-cms/adapters` | In-memory persistence, anonymous identity, open authorization |
 | `nearly-headless-cms/bun/filesystem` | Bun-only filesystem persistence |
 | `nearly-headless-cms/testing` | Fully composed `DevelopmentCms` layer |
@@ -160,7 +186,8 @@ Import from these paths only. Undocumented internals are not part of the public 
 
 ## Learn more
 
-- [Guides](https://github.com/jeremyc2/nearly-headless-cms/tree/main/apps/public-blog/src/pages/guides) walk from first layer to a static site
+- [Guides](https://github.com/jeremyc2/nearly-headless-cms/tree/main/apps/public-blog/src/presentation/pages/guides) walk from first layer to a static site
+- [Minimal Example CMS README](https://github.com/jeremyc2/nearly-headless-cms/blob/main/apps/example-cms-minimal/README.md) for the smallest runnable app
 - [Example CMS README](https://github.com/jeremyc2/nearly-headless-cms/blob/main/apps/example-cms/README.md) for a runnable reference app
 - [Public Blog README](https://github.com/jeremyc2/nearly-headless-cms/blob/main/apps/public-blog/README.md) for the static site demo
 - [Repository README](https://github.com/jeremyc2/nearly-headless-cms) for the monorepo overview

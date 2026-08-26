@@ -152,7 +152,6 @@ Sorted by escape-hatch code (`EH-###`).
 - **EH-123** (`effecttsgo/missing-pipeable-signature`): escape hatch registry helpers are intentionally direct-call only.
 - **EH-124** (`effecttsgo/missing-pipeable-signature`): interactive visual scenarios reset mutated Example CMS fixture entries.
 - **EH-125** (`effecttsgo/missing-pipeable-signature`): JSON field helper is intentionally a direct two-argument operation.
-- **EH-126** (`effecttsgo/missing-pipeable-signature`): local schema adapter is intentionally direct-call only.
 - **EH-127** (`effecttsgo/missing-pipeable-signature`): multipart parsing is Promise-based and this helper is not a pipeable Effect API.
 - **EH-128** (`effecttsgo/missing-pipeable-signature`): public serialize helper is not a pipeable Effect API.
 - **EH-129** (`effecttsgo/missing-pipeable-signature`): Rich Text helpers are not pipeable Effect APIs.
@@ -288,8 +287,6 @@ Sorted by escape-hatch code (`EH-###`).
 - **EH-259** (`typescript/prefer-readonly-parameter-types`): OpenAPI operation descriptors are read while building path maps.
 - **EH-260** (`typescript/prefer-readonly-parameter-types`): OpenAPI routes read configured operations without mutation.
 - **EH-261** (`typescript/prefer-readonly-parameter-types`): OperationFetchRequest carries optional readonly abort signal bridge fields.
-- **EH-262** (`typescript/prefer-readonly-parameter-types`): OperationSchema values include Effect Schema classes that are not deeply readonly.
-- **EH-263** (`typescript/prefer-readonly-parameter-types`): path parameter schemas include Effect Schema classes that are not deeply readonly.
 - **EH-264** (`typescript/prefer-readonly-parameter-types`): React callbacks receive mutable draft value maps from the editor.
 - **EH-265** (`typescript/prefer-readonly-parameter-types`): React Query mutation and query objects expose mutable status while rendering history.
 - **EH-266** (`typescript/prefer-readonly-parameter-types`): React Query results expose mutable status fields while rendering revision details.
@@ -317,7 +314,27 @@ Sorted by escape-hatch code (`EH-###`).
 - **EH-289** (`eslint/no-ternary`): reindex mode chooses between an empty code map and the persisted registry map.
 - **EH-290** (`eslint/one-var`): reindex mode chooses between an empty code map and the persisted registry map.
 - **EH-291** (`eslint/max-statements`): escape hatch maintenance updates source files sequentially to preserve formatting.
-- **EH-292** (`typescript/no-unsafe-type-assertion`): Wire values are assembled from validated Entry fields and explicit null defaults.
+- **EH-293** (`effecttsgo/missing-pipeable-signature`): batch Definition Requirement derivation is intentionally a direct Snapshot lookup helper.
+- **EH-294** (`effecttsgo/missing-pipeable-signature`): Definition Requirement derivation is intentionally a direct Snapshot lookup helper.
+- **EH-295** (`effecttsgo/missing-pipeable-signature`): pagination parsing is intentionally a direct transport helper.
+- **EH-296** (`effecttsgo/missing-pipeable-signature`): Public Content Export assembly is intentionally a pure snapshot helper.
+- **EH-297** (`effecttsgo/missing-pipeable-signature`): Public Content Export route declaration is intentionally a direct HTTP contract helper.
+- **EH-298** (`effecttsgo/missing-pipeable-signature`): public Entry page projection is intentionally a pure value transform helper.
+- **EH-299** (`effecttsgo/missing-pipeable-signature`): public Entry projection is intentionally a pure value transform helper.
+- **EH-300** (`effecttsgo/missing-pipeable-signature`): required path parameter lookup is intentionally a direct transport helper.
+- **EH-301** (`effecttsgo/missing-pipeable-signature`): paginated Entry page reads are intentionally direct CMS service helpers.
+- **EH-302** (`effecttsgo/missing-pipeable-signature`): slug Entry lookup is intentionally a direct CMS service helper.
+- **EH-303** (`typescript/prefer-readonly-parameter-types`): Delivery Query builders accept Effect Schema classes that are not deeply readonly.
+- **EH-304** (`typescript/prefer-readonly-parameter-types`): OperationSchema values include Effect Schema classes that are not deeply readonly.
+- **EH-305** (`effecttsgo/missing-pipeable-signature`): Example CMS readSchemas is a thin DeliveryRecipes wrapper.
+- **EH-306** (`effecttsgo/missing-pipeable-signature`): Example CMS requiredParameter is a thin DeliveryRecipes wrapper.
+- **EH-307** (`eslint/one-var`): delivery operation assembly stays separate from schema constants.
+- **EH-308** (`eslint/one-var`): digest and response headers are derived after the size guard.
+- **EH-309** (`eslint/one-var`): digest helpers stay grouped in one local const block below exported defaults.
+- **EH-310** (`eslint/one-var`): transport helpers stay in one local const block below exported pagination constants.
+- **EH-311** (`typescript/no-unsafe-type-assertion`): Asset metadata is encoded as JSON without retaining class instances.
+- **EH-312** (`typescript/no-unsafe-type-assertion`): Web Crypto digest failures are converted to defects via orDie at call sites.
+- **EH-313** (`typescript/prefer-readonly-parameter-types`): SHA-256 digest accepts mutable byte buffers from TextEncoder output.
 
 ## Justification Registry
 
@@ -337,139 +354,139 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/assets-page-dialogs-support.tsx:6`
-- `apps/example-cms/src/ui/assets-page-dialogs-support.tsx:15`
-- `apps/example-cms/src/ui/assets-page-dialogs-support.tsx:43`
-- `apps/example-cms/src/ui/assets-page-dialogs-support.tsx:52`
-- `apps/example-cms/src/ui/assets-page-dialogs-support.tsx:85`
-- `apps/example-cms/src/ui/assets-page-dialogs-support.tsx:112`
-- `apps/example-cms/src/ui/assets-page-dialogs-support.tsx:114`
-- `apps/example-cms/src/ui/assets-page-dialogs-support.tsx:116`
-- `apps/example-cms/src/ui/assets-page-header-support.tsx:6`
-- `apps/example-cms/src/ui/assets-page-header-support.tsx:8`
-- `apps/example-cms/src/ui/assets-page-header-support.tsx:10`
-- `apps/example-cms/src/ui/assets-page-header-support.tsx:16`
-- `apps/example-cms/src/ui/assets-page-header-support.tsx:59`
-- `apps/example-cms/src/ui/assets-page-header-support.tsx:61`
-- `apps/example-cms/src/ui/assets-page-header-support.tsx:63`
-- `apps/example-cms/src/ui/assets-page-header-support.tsx:69`
-- `apps/example-cms/src/ui/assets-page-header-support.tsx:106`
-- `apps/example-cms/src/ui/assets-page-header-support.tsx:115`
-- `apps/example-cms/src/ui/assets-page-header-support.tsx:121`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:8`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:10`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:12`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:18`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:20`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:53`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:55`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:57`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:63`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:65`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:119`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:121`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:123`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:129`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:131`
-- `apps/example-cms/src/ui/entry-editor-controller-local-state-support.ts:14`
-- `apps/example-cms/src/ui/entry-editor-controller-local-state-support.ts:16`
-- `apps/example-cms/src/ui/entry-editor-controller-local-state-support.ts:63`
-- `apps/example-cms/src/ui/entry-editor-controller-view-actions-support.ts:4`
-- `apps/example-cms/src/ui/entry-editor-controller-view-actions-support.ts:6`
-- `apps/example-cms/src/ui/entry-editor-history-panel-body.tsx:89`
-- `apps/example-cms/src/ui/entry-editor-layout.tsx:42`
-- `apps/example-cms/src/ui/entry-editor-overlays.tsx:6`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:14`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:16`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:18`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:47`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:49`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:51`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:83`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:140`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:142`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:165`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:167`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:169`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:171`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:173`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:232`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:234`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-fields-support.tsx:236`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-sections-support.tsx:14`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-sections-support.tsx:16`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-sections-support.tsx:18`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-sections-support.tsx:52`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-sections-support.tsx:54`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-sections-support.tsx:56`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-sections-support.tsx:58`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-sections-support.tsx:60`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-sections-support.tsx:62`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-sections-support.tsx:64`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-support.tsx:9`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-support.tsx:11`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-support.tsx:13`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-support.tsx:15`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-support.tsx:17`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-support.tsx:19`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-support.tsx:21`
-- `apps/example-cms/src/ui/entry-editor-rich-text-field-support.ts:12`
-- `apps/example-cms/src/ui/entry-editor-rich-text-field-support.ts:14`
-- `apps/example-cms/src/ui/entry-editor-rich-text-field-support.ts:16`
-- `apps/example-cms/src/ui/entry-editor-rich-text-field-support.ts:18`
-- `apps/example-cms/src/ui/entry-editor-rich-text-field-support.ts:59`
-- `apps/example-cms/src/ui/entry-editor-rich-text-field-support.ts:61`
-- `apps/example-cms/src/ui/entry-editor-rich-text-field-view.tsx:24`
-- `apps/example-cms/src/ui/entry-editor-rich-text-insert-dialog-support.tsx:8`
-- `apps/example-cms/src/ui/entry-editor-rich-text-insert-dialog-support.tsx:10`
-- `apps/example-cms/src/ui/entry-editor-rich-text-insert-dialog.tsx:13`
-- `apps/example-cms/src/ui/entry-editor-rich-text-insert-dialog.tsx:15`
-- `apps/example-cms/src/ui/entry-editor-rich-text-toolbar-support.tsx:30`
-- `apps/example-cms/src/ui/entry-editor-rich-text-toolbar-support.tsx:32`
-- `apps/example-cms/src/ui/entry-editor-rich-text-toolbar-support.tsx:34`
-- `apps/example-cms/src/ui/entry-editor-rich-text-toolbar-support.tsx:104`
-- `apps/example-cms/src/ui/entry-editor-rich-text-toolbar.tsx:12`
-- `apps/example-cms/src/ui/entry-editor-rich-text-toolbar.tsx:14`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:6`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:8`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:10`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:33`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:35`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:37`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:65`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:67`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:88`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:90`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:92`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:126`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:128`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:130`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-assets-support.tsx:171`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-fields-support.tsx:24`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-fields-support.tsx:26`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-fields-support.tsx:63`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-fields-support.tsx:65`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-fields-support.tsx:114`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-fields-support.tsx:116`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-support.tsx:14`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-support.tsx:16`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-support.tsx:18`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-support.tsx:35`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-support.tsx:37`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-support.tsx:39`
-- `apps/example-cms/src/ui/overview-panels-support.tsx:6`
-- `apps/example-cms/src/ui/rich-text-editor/transactions-editor-adapter-render.ts:68`
-- `apps/example-cms/src/ui/rich-text-editor/transactions-editor-adapter-render.ts:70`
-- `apps/example-cms/src/ui/rich-text-editor/transactions-editor-adapter-selection.ts:10`
-- `apps/example-cms/src/ui/rich-text-editor/transactions-list-command-handlers.ts:94`
-- `apps/example-cms/src/ui/rich-text-editor/transactions-list-command-handlers.ts:114`
-- `apps/example-cms/src/ui/rich-text-editor/transactions-list-command-handlers.ts:138`
-- `apps/example-cms/src/ui/rich-text-editor/transactions-list-command-handlers.ts:204`
-- `apps/example-cms/src/ui/rich-text-editor/transactions-mutations.ts:80`
-- `apps/example-cms/src/ui/rich-text-editor/transactions-mutations.ts:120`
-- `apps/example-cms/src/ui/rich-text-editor/transactions-selection.ts:8`
-- `apps/example-cms/src/ui/rich-text-editor/transactions-selection.ts:128`
-- `apps/example-cms/src/ui/rich-text-editor/transactions-support.ts:87`
+- `apps/example-cms/src/presentation/assets-page-dialogs-support.tsx:6`
+- `apps/example-cms/src/presentation/assets-page-dialogs-support.tsx:15`
+- `apps/example-cms/src/presentation/assets-page-dialogs-support.tsx:43`
+- `apps/example-cms/src/presentation/assets-page-dialogs-support.tsx:52`
+- `apps/example-cms/src/presentation/assets-page-dialogs-support.tsx:85`
+- `apps/example-cms/src/presentation/assets-page-dialogs-support.tsx:112`
+- `apps/example-cms/src/presentation/assets-page-dialogs-support.tsx:114`
+- `apps/example-cms/src/presentation/assets-page-dialogs-support.tsx:116`
+- `apps/example-cms/src/presentation/assets-page-header-support.tsx:6`
+- `apps/example-cms/src/presentation/assets-page-header-support.tsx:8`
+- `apps/example-cms/src/presentation/assets-page-header-support.tsx:10`
+- `apps/example-cms/src/presentation/assets-page-header-support.tsx:16`
+- `apps/example-cms/src/presentation/assets-page-header-support.tsx:59`
+- `apps/example-cms/src/presentation/assets-page-header-support.tsx:61`
+- `apps/example-cms/src/presentation/assets-page-header-support.tsx:63`
+- `apps/example-cms/src/presentation/assets-page-header-support.tsx:69`
+- `apps/example-cms/src/presentation/assets-page-header-support.tsx:106`
+- `apps/example-cms/src/presentation/assets-page-header-support.tsx:115`
+- `apps/example-cms/src/presentation/assets-page-header-support.tsx:121`
+- `apps/example-cms/src/presentation/assets-page-panels-support.tsx:8`
+- `apps/example-cms/src/presentation/assets-page-panels-support.tsx:10`
+- `apps/example-cms/src/presentation/assets-page-panels-support.tsx:12`
+- `apps/example-cms/src/presentation/assets-page-panels-support.tsx:18`
+- `apps/example-cms/src/presentation/assets-page-panels-support.tsx:20`
+- `apps/example-cms/src/presentation/assets-page-panels-support.tsx:53`
+- `apps/example-cms/src/presentation/assets-page-panels-support.tsx:55`
+- `apps/example-cms/src/presentation/assets-page-panels-support.tsx:57`
+- `apps/example-cms/src/presentation/assets-page-panels-support.tsx:63`
+- `apps/example-cms/src/presentation/assets-page-panels-support.tsx:65`
+- `apps/example-cms/src/presentation/assets-page-panels-support.tsx:119`
+- `apps/example-cms/src/presentation/assets-page-panels-support.tsx:121`
+- `apps/example-cms/src/presentation/assets-page-panels-support.tsx:123`
+- `apps/example-cms/src/presentation/assets-page-panels-support.tsx:129`
+- `apps/example-cms/src/presentation/assets-page-panels-support.tsx:131`
+- `apps/example-cms/src/presentation/entry-editor-controller-local-state-support.ts:14`
+- `apps/example-cms/src/presentation/entry-editor-controller-local-state-support.ts:16`
+- `apps/example-cms/src/presentation/entry-editor-controller-local-state-support.ts:63`
+- `apps/example-cms/src/presentation/entry-editor-controller-view-actions-support.ts:4`
+- `apps/example-cms/src/presentation/entry-editor-controller-view-actions-support.ts:6`
+- `apps/example-cms/src/presentation/entry-editor-history-panel-body.tsx:89`
+- `apps/example-cms/src/presentation/entry-editor-layout.tsx:42`
+- `apps/example-cms/src/presentation/entry-editor-overlays.tsx:6`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-fields-support.tsx:14`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-fields-support.tsx:16`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-fields-support.tsx:18`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-fields-support.tsx:47`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-fields-support.tsx:49`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-fields-support.tsx:51`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-fields-support.tsx:83`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-fields-support.tsx:140`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-fields-support.tsx:142`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-fields-support.tsx:165`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-fields-support.tsx:167`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-fields-support.tsx:169`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-fields-support.tsx:171`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-fields-support.tsx:173`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-fields-support.tsx:232`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-fields-support.tsx:234`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-fields-support.tsx:236`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-sections-support.tsx:14`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-sections-support.tsx:16`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-sections-support.tsx:18`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-sections-support.tsx:52`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-sections-support.tsx:54`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-sections-support.tsx:56`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-sections-support.tsx:58`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-sections-support.tsx:60`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-sections-support.tsx:62`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-sections-support.tsx:64`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-support.tsx:9`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-support.tsx:11`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-support.tsx:13`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-support.tsx:15`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-support.tsx:17`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-support.tsx:19`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-support.tsx:21`
+- `apps/example-cms/src/presentation/entry-editor-rich-text-field-support.ts:12`
+- `apps/example-cms/src/presentation/entry-editor-rich-text-field-support.ts:14`
+- `apps/example-cms/src/presentation/entry-editor-rich-text-field-support.ts:16`
+- `apps/example-cms/src/presentation/entry-editor-rich-text-field-support.ts:18`
+- `apps/example-cms/src/presentation/entry-editor-rich-text-field-support.ts:59`
+- `apps/example-cms/src/presentation/entry-editor-rich-text-field-support.ts:61`
+- `apps/example-cms/src/presentation/entry-editor-rich-text-field-view.tsx:24`
+- `apps/example-cms/src/presentation/entry-editor-rich-text-insert-dialog-support.tsx:8`
+- `apps/example-cms/src/presentation/entry-editor-rich-text-insert-dialog-support.tsx:10`
+- `apps/example-cms/src/presentation/entry-editor-rich-text-insert-dialog.tsx:13`
+- `apps/example-cms/src/presentation/entry-editor-rich-text-insert-dialog.tsx:15`
+- `apps/example-cms/src/presentation/entry-editor-rich-text-toolbar-support.tsx:30`
+- `apps/example-cms/src/presentation/entry-editor-rich-text-toolbar-support.tsx:32`
+- `apps/example-cms/src/presentation/entry-editor-rich-text-toolbar-support.tsx:34`
+- `apps/example-cms/src/presentation/entry-editor-rich-text-toolbar-support.tsx:104`
+- `apps/example-cms/src/presentation/entry-editor-rich-text-toolbar.tsx:12`
+- `apps/example-cms/src/presentation/entry-editor-rich-text-toolbar.tsx:14`
+- `apps/example-cms/src/presentation/entry-editor-story-canvas-assets-support.tsx:6`
+- `apps/example-cms/src/presentation/entry-editor-story-canvas-assets-support.tsx:8`
+- `apps/example-cms/src/presentation/entry-editor-story-canvas-assets-support.tsx:10`
+- `apps/example-cms/src/presentation/entry-editor-story-canvas-assets-support.tsx:33`
+- `apps/example-cms/src/presentation/entry-editor-story-canvas-assets-support.tsx:35`
+- `apps/example-cms/src/presentation/entry-editor-story-canvas-assets-support.tsx:37`
+- `apps/example-cms/src/presentation/entry-editor-story-canvas-assets-support.tsx:65`
+- `apps/example-cms/src/presentation/entry-editor-story-canvas-assets-support.tsx:67`
+- `apps/example-cms/src/presentation/entry-editor-story-canvas-assets-support.tsx:88`
+- `apps/example-cms/src/presentation/entry-editor-story-canvas-assets-support.tsx:90`
+- `apps/example-cms/src/presentation/entry-editor-story-canvas-assets-support.tsx:92`
+- `apps/example-cms/src/presentation/entry-editor-story-canvas-assets-support.tsx:126`
+- `apps/example-cms/src/presentation/entry-editor-story-canvas-assets-support.tsx:128`
+- `apps/example-cms/src/presentation/entry-editor-story-canvas-assets-support.tsx:130`
+- `apps/example-cms/src/presentation/entry-editor-story-canvas-assets-support.tsx:171`
+- `apps/example-cms/src/presentation/entry-editor-story-canvas-fields-support.tsx:24`
+- `apps/example-cms/src/presentation/entry-editor-story-canvas-fields-support.tsx:26`
+- `apps/example-cms/src/presentation/entry-editor-story-canvas-fields-support.tsx:63`
+- `apps/example-cms/src/presentation/entry-editor-story-canvas-fields-support.tsx:65`
+- `apps/example-cms/src/presentation/entry-editor-story-canvas-fields-support.tsx:114`
+- `apps/example-cms/src/presentation/entry-editor-story-canvas-fields-support.tsx:116`
+- `apps/example-cms/src/presentation/entry-editor-story-canvas-support.tsx:14`
+- `apps/example-cms/src/presentation/entry-editor-story-canvas-support.tsx:16`
+- `apps/example-cms/src/presentation/entry-editor-story-canvas-support.tsx:18`
+- `apps/example-cms/src/presentation/entry-editor-story-canvas-support.tsx:35`
+- `apps/example-cms/src/presentation/entry-editor-story-canvas-support.tsx:37`
+- `apps/example-cms/src/presentation/entry-editor-story-canvas-support.tsx:39`
+- `apps/example-cms/src/presentation/overview-panels-support.tsx:6`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-render.ts:68`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-render.ts:70`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-selection.ts:10`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-list-command-handlers.ts:94`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-list-command-handlers.ts:114`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-list-command-handlers.ts:138`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-list-command-handlers.ts:204`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-mutations.ts:80`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-mutations.ts:120`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-selection.ts:8`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-selection.ts:128`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-support.ts:87`
 
 ### TypeScript · `typescript/no-unsafe-type-assertion`
 
@@ -483,7 +500,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/rich-text-editor/transactions-editor-adapter-support.ts:149`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-support.ts:149`
 
 #### EH-204: fetch requires AbortSignal; generated clients pass the runtime signal.
 
@@ -491,26 +508,26 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 - `apps/example-cms/src/generated/headless-openapi-client-runtime-transport.ts:65`
 - `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:65`
-- `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:65`
+- `apps/public-blog/src/core/generated/headless-openapi-client-runtime-transport.ts:65`
 - `scripts/openapi-client-generator/runtime-template.ts:155`
 
 #### EH-205: list item filtering preserves list-item node shapes within the editor document.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/rich-text-editor/transactions-list-command-handlers.ts:66`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-list-command-handlers.ts:66`
 
 #### EH-206: list replacement preserves list node shape after item removal.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/rich-text-editor/transactions-list-command-handlers.ts:62`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-list-command-handlers.ts:62`
 
 #### EH-207: MutationObserver.observe requires Node; the editable host is a runtime HTMLElement.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/rich-text-editor/browser-adapter.ts:96`
+- `apps/example-cms/src/presentation/rich-text-editor/browser-adapter.ts:96`
 
 #### EH-208: OpenAPI schema objects are validated as non-null objects before use.
 
@@ -522,32 +539,32 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/rich-text-editor/transactions-list-command-handlers.ts:226`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-list-command-handlers.ts:226`
 
 #### EH-210: ReadonlyEditableHost is a Pick view of the editable div passed at runtime.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/rich-text-editor/transactions-editor-adapter-support.ts:86`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-support.ts:86`
 
 #### EH-211: restoreSelectionRange reads selection anchors from the runtime editable host.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/rich-text-editor/browser-adapter.ts:101`
+- `apps/example-cms/src/presentation/rich-text-editor/browser-adapter.ts:101`
 
 #### EH-212: RichText.toJson returns a JSON-compatible object validated by the CMS schema boundary.
 
 **Locations:**
 
-- `apps/example-cms/src/content/seed-guides.ts:60`
-- `apps/example-cms/src/content/seed.ts:26`
+- `apps/example-cms/src/core/content/seed-guides.ts:60`
+- `apps/example-cms/src/core/content/seed.ts:26`
 
 #### EH-213: synchronizeSelectionState queries the runtime editable host for the current DOM selection.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/rich-text-editor/browser-adapter.ts:126`
+- `apps/example-cms/src/presentation/rich-text-editor/browser-adapter.ts:126`
 
 #### EH-214: Web APIs require AbortSignal; transport callers always pass the real signal.
 
@@ -561,11 +578,17 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 - `packages/nearly-headless-cms/src/http/http-transport-readonly-types.ts:28`
 
-#### EH-292: Wire values are assembled from validated Entry fields and explicit null defaults.
+#### EH-311: Asset metadata is encoded as JSON without retaining class instances.
 
 **Locations:**
 
-- `apps/example-cms/src/api/delivery/delivery-support.ts:136`
+- `packages/nearly-headless-cms/src/http/delivery-recipes/public-export.ts:65`
+
+#### EH-312: Web Crypto digest failures are converted to defects via orDie at call sites.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/http/delivery-recipes/public-export.ts:47`
 
 ### TypeScript · `typescript/prefer-readonly-parameter-types`
 
@@ -583,15 +606,15 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/api/management/management-image-assignment-support.ts:27`
-- `apps/example-cms/src/api/management/management-image-assignment-support.ts:29`
+- `apps/example-cms/src/core/api/management/management-image-assignment-support.ts:27`
+- `apps/example-cms/src/core/api/management/management-image-assignment-support.ts:29`
 
 #### EH-218: batch mutations are built from mutable entry write tokens.
 
 **Locations:**
 
-- `apps/example-cms/src/api/management/management-cascade-deletions.ts:9`
-- `apps/example-cms/src/api/management/management-cascade-deletions.ts:23`
+- `apps/example-cms/src/core/api/management/management-cascade-deletions.ts:9`
+- `apps/example-cms/src/core/api/management/management-cascade-deletions.ts:23`
 
 #### EH-219: Bun.spawn requires a mutable string command argv.
 
@@ -623,20 +646,20 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/api/delivery/delivery-comment-submission-support.ts:173`
+- `apps/example-cms/src/core/api/delivery/delivery-comment-submission-support.ts:173`
 
 #### EH-223: conflict resolution callbacks receive mutable draft value maps.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/entry-editor-conflict-panel.tsx:16`
-- `apps/example-cms/src/ui/entry-editor-conflict-panel.tsx:67`
+- `apps/example-cms/src/presentation/entry-editor-conflict-panel.tsx:16`
+- `apps/example-cms/src/presentation/entry-editor-conflict-panel.tsx:67`
 
 #### EH-224: create results use CMS mutation response union shapes.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/content-list-support.ts:56`
+- `apps/example-cms/src/presentation/content-list-support.ts:56`
 
 #### EH-225: deniedAction.current is mutated to simulate authorization denial.
 
@@ -661,26 +684,26 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/rich-text-editor/transactions-editor-adapter-support.ts:128`
-- `apps/example-cms/src/ui/rich-text-editor/transactions-editor-adapter-support.ts:143`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-support.ts:128`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-support.ts:143`
 
 #### EH-229: DOM spans are mutated while applying rich-text marks.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/rich-text-editor/transactions-editor-adapter-render.ts:16`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-render.ts:16`
 
 #### EH-230: DOM spans are mutated while assigning editor selection indices.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/rich-text-editor/transactions-editor-adapter-render.ts:30`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-render.ts:30`
 
 #### EH-231: DOM text spans are read while mapping native selection offsets.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/rich-text-editor/transactions-editor-adapter-support.ts:157`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-support.ts:157`
 
 #### EH-232: drain polling reads shared active-request counters without mutating them.
 
@@ -692,19 +715,19 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/rich-text-editor/transactions-editor-adapter-selection.ts:51`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-selection.ts:51`
 
 #### EH-234: editable hosts are queried for live native selection state.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/rich-text-editor/transactions-editor-adapter-selection.ts:42`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-selection.ts:42`
 
 #### EH-235: editable hosts are queried while synchronizing editor selection state.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/rich-text-editor/transactions-editor-adapter-selection.ts:85`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-selection.ts:85`
 
 #### EH-236: Effect programs are executed by runOperationInterruptibly without mutation.
 
@@ -885,7 +908,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/api/delivery/delivery-comment-submission-support.ts:97`
+- `apps/example-cms/src/core/api/delivery/delivery-comment-submission-support.ts:97`
 
 #### EH-258: OpenAPI operation descriptors are read while building Effect HTTP API declarations.
 
@@ -919,41 +942,29 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 - `apps/example-cms/src/generated/headless-openapi-client-runtime-transport.ts:46`
 - `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:46`
-- `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:46`
+- `apps/public-blog/src/core/generated/headless-openapi-client-runtime-transport.ts:46`
 - `scripts/openapi-client-generator/runtime-template.ts:139`
-
-#### EH-262: OperationSchema values include Effect Schema classes that are not deeply readonly.
-
-**Locations:**
-
-- `apps/example-cms/src/api/delivery/delivery-support.ts:178`
-
-#### EH-263: path parameter schemas include Effect Schema classes that are not deeply readonly.
-
-**Locations:**
-
-- `apps/example-cms/src/api/delivery/delivery-support.ts:180`
 
 #### EH-264: React callbacks receive mutable draft value maps from the editor.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/entry-editor-controller-mutations.ts:24`
-- `apps/example-cms/src/ui/entry-editor-controller-mutations.ts:26`
-- `apps/example-cms/src/ui/entry-editor-mutations.ts:61`
-- `apps/example-cms/src/ui/entry-editor-mutations.ts:129`
+- `apps/example-cms/src/presentation/entry-editor-controller-mutations.ts:24`
+- `apps/example-cms/src/presentation/entry-editor-controller-mutations.ts:26`
+- `apps/example-cms/src/presentation/entry-editor-mutations.ts:61`
+- `apps/example-cms/src/presentation/entry-editor-mutations.ts:129`
 
 #### EH-265: React Query mutation and query objects expose mutable status while rendering history.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/entry-editor-history-panel-body.tsx:48`
+- `apps/example-cms/src/presentation/entry-editor-history-panel-body.tsx:48`
 
 #### EH-266: React Query results expose mutable status fields while rendering revision details.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/entry-editor-revision-inspection.tsx:42`
+- `apps/example-cms/src/presentation/entry-editor-revision-inspection.tsx:42`
 
 #### EH-267: RequestInit is passed directly into the Web Request constructor.
 
@@ -974,7 +985,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/entry-editor-support.ts:22`
+- `apps/example-cms/src/presentation/entry-editor-support.ts:22`
 
 #### EH-270: shutdown mutates shared lifecycle counters and abort controllers.
 
@@ -998,7 +1009,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/api/delivery/delivery-public-asset-response-support.ts:109`
+- `apps/example-cms/src/core/api/delivery/delivery-public-asset-response-support.ts:109`
 
 #### EH-274: SynchronizedRef state is mutated while persisting ingested assets.
 
@@ -1017,6 +1028,26 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 **Locations:**
 
 - `packages/nearly-headless-cms/src/http/http-transport-lifecycle-support.ts:90`
+
+#### EH-303: Delivery Query builders accept Effect Schema classes that are not deeply readonly.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/http/delivery-recipes/delivery-query.ts:170`
+- `packages/nearly-headless-cms/src/http/delivery-recipes/delivery-query.ts:195`
+- `packages/nearly-headless-cms/src/http/delivery-recipes/public-export.ts:79`
+
+#### EH-304: OperationSchema values include Effect Schema classes that are not deeply readonly.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/http/delivery-recipes/delivery-query.ts:81`
+
+#### EH-313: SHA-256 digest accepts mutable byte buffers from TextEncoder output.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/http/delivery-recipes/public-export.ts:44`
 
 ### Effect · `effecttsgo/abort-controller-in-effect`
 
@@ -1103,7 +1134,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/content-list-mutations.ts:32`
+- `apps/example-cms/src/presentation/content-list-mutations.ts:32`
 
 #### EH-013: Cleanup intentionally preserves sequential filesystem ordering.
 
@@ -1153,7 +1184,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/entry-editor-mutations.ts:23`
+- `apps/example-cms/src/presentation/entry-editor-mutations.ts:23`
 
 #### EH-021: Diagnostic inspection is a read-only filesystem boundary.
 
@@ -1177,7 +1208,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/content-list-mutations.ts:19`
+- `apps/example-cms/src/presentation/content-list-mutations.ts:19`
 
 #### EH-026: escape hatch registry CLI uses async filesystem IO.
 
@@ -1236,9 +1267,9 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 - `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:129`
 - `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:178`
 - `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:216`
-- `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:99`
-- `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:148`
-- `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:186`
+- `apps/public-blog/src/core/generated/headless-openapi-client-runtime-transport.ts:99`
+- `apps/public-blog/src/core/generated/headless-openapi-client-runtime-transport.ts:148`
+- `apps/public-blog/src/core/generated/headless-openapi-client-runtime-transport.ts:186`
 - `scripts/openapi-client-generator/runtime-template.ts:2`
 - `scripts/openapi-client-generator/runtime-template.ts:51`
 - `scripts/openapi-client-generator/runtime-template.ts:86`
@@ -1408,13 +1439,13 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `scripts/check-architecture.ts:196`
+- `scripts/check-architecture.ts:216`
 
 #### EH-051: parallel portability scans use async file reads.
 
 **Locations:**
 
-- `scripts/check-architecture.ts:213`
+- `scripts/check-architecture.ts:233`
 
 #### EH-052: Persistence spans ordered atomic filesystem writes.
 
@@ -1432,39 +1463,39 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/assets-page-mutations-support.ts:29`
-- `apps/example-cms/src/ui/assets-page-mutations-support.ts:39`
-- `apps/example-cms/src/ui/entry-editor-history-panel-body.tsx:177`
+- `apps/example-cms/src/presentation/assets-page-mutations-support.ts:29`
+- `apps/example-cms/src/presentation/assets-page-mutations-support.ts:39`
+- `apps/example-cms/src/presentation/entry-editor-history-panel-body.tsx:177`
 
 #### EH-055: React query callback awaits navigation.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/entry-editor-mutations.ts:109`
+- `apps/example-cms/src/presentation/entry-editor-mutations.ts:109`
 
 #### EH-056: React query callback sequences invalidation before navigation.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/content-list-mutations.ts:31`
+- `apps/example-cms/src/presentation/content-list-mutations.ts:31`
 
 #### EH-057: React query error callback awaits the latest server state.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/entry-editor-mutations.ts:148`
+- `apps/example-cms/src/presentation/entry-editor-mutations.ts:148`
 
 #### EH-058: React query mutation is an intentional browser async boundary.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/overview-rebuild-support.ts:5`
+- `apps/example-cms/src/presentation/overview-rebuild-support.ts:5`
 
 #### EH-059: React query mutation must bridge browser fetch.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/content-list-mutations.ts:18`
+- `apps/example-cms/src/presentation/content-list-mutations.ts:18`
 
 #### EH-060: Recovery locking is a filesystem callback boundary.
 
@@ -1679,7 +1710,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/content-list-support.ts:12`
+- `apps/example-cms/src/presentation/content-list-support.ts:12`
 
 #### EH-088: default request IDs are generated synchronously before Effect execution.
 
@@ -1710,8 +1741,8 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/assets-page-mutations-support.ts:12`
-- `apps/example-cms/src/ui/assets-page-mutations-support.ts:26`
+- `apps/example-cms/src/presentation/assets-page-mutations-support.ts:12`
+- `apps/example-cms/src/presentation/assets-page-mutations-support.ts:26`
 
 ### Effect · `effecttsgo/extends-native-error`
 
@@ -1755,7 +1786,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `scripts/check-architecture.ts:243`
+- `scripts/check-architecture.ts:263`
 
 ### Effect · `effecttsgo/global-fetch`
 
@@ -1763,7 +1794,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/overview-rebuild-support.ts:7`
+- `apps/example-cms/src/presentation/overview-rebuild-support.ts:7`
 
 #### EH-100: CLI acceptance polling intentionally uses the platform fetch boundary.
 
@@ -1777,7 +1808,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 - `apps/example-cms/src/generated/headless-openapi-client-runtime-transport.ts:49`
 - `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:49`
-- `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:49`
+- `apps/public-blog/src/core/generated/headless-openapi-client-runtime-transport.ts:49`
 - `scripts/openapi-client-generator/runtime-template.ts:142`
 
 #### EH-102: integration test aborts an in-flight request against the live HTTP listener.
@@ -1872,7 +1903,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 - `apps/example-cms/src/generated/headless-openapi-client-runtime-transport.ts:49`
 - `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:49`
-- `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:49`
+- `apps/public-blog/src/core/generated/headless-openapi-client-runtime-transport.ts:49`
 - `scripts/openapi-client-generator/runtime-template.ts:142`
 
 ### Effect · `effecttsgo/global-timers`
@@ -1895,14 +1926,14 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/content-list-support.ts:14`
-- `apps/example-cms/src/ui/content-list-support.ts:73`
+- `apps/example-cms/src/presentation/content-list-support.ts:14`
+- `apps/example-cms/src/presentation/content-list-support.ts:73`
 
 #### EH-120: content list helper is intentionally a direct two-argument operation.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/content-list-support.ts:119`
+- `apps/example-cms/src/presentation/content-list-support.ts:119`
 
 #### EH-121: dual's generic overload is not inferred by the linter for this public helper.
 
@@ -1920,7 +1951,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/rich-text-editor/transactions-dispatch.ts:63`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-dispatch.ts:63`
 
 #### EH-123: escape hatch registry helpers are intentionally direct-call only.
 
@@ -1939,12 +1970,6 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 **Locations:**
 
 - `apps/example-cms/test/integration/headless-api-support.ts:36`
-
-#### EH-126: local schema adapter is intentionally direct-call only.
-
-**Locations:**
-
-- `apps/example-cms/src/api/delivery/delivery-support.ts:176`
 
 #### EH-127: multipart parsing is Promise-based and this helper is not a pipeable Effect API.
 
@@ -1996,15 +2021,15 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/main-labels.ts:15`
-- `apps/example-cms/src/ui/main-labels.ts:88`
-- `apps/example-cms/src/ui/main-labels.ts:182`
+- `apps/example-cms/src/presentation/main-labels.ts:15`
+- `apps/example-cms/src/presentation/main-labels.ts:88`
+- `apps/example-cms/src/presentation/main-labels.ts:182`
 
 #### EH-135: UI value helper is intentionally a direct two-argument operation.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/main-entry-support.ts:89`
+- `apps/example-cms/src/presentation/main-entry-support.ts:89`
 
 #### EH-136: visual baseline setup queries the live Example CMS management API.
 
@@ -2035,6 +2060,78 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 **Locations:**
 
 - `packages/nearly-headless-cms/src/http/http-transport-request-parsing.ts:96`
+
+#### EH-293: batch Definition Requirement derivation is intentionally a direct Snapshot lookup helper.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/http/delivery-recipes/definition-requirement.ts:80`
+
+#### EH-294: Definition Requirement derivation is intentionally a direct Snapshot lookup helper.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/http/delivery-recipes/definition-requirement.ts:65`
+
+#### EH-295: pagination parsing is intentionally a direct transport helper.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/http/delivery-recipes/pagination.ts:21`
+
+#### EH-296: Public Content Export assembly is intentionally a pure snapshot helper.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/http/delivery-recipes/public-export.ts:56`
+
+#### EH-297: Public Content Export route declaration is intentionally a direct HTTP contract helper.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/http/delivery-recipes/public-export.ts:77`
+
+#### EH-298: public Entry page projection is intentionally a pure value transform helper.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/http/delivery-recipes/public-entry-value.ts:32`
+
+#### EH-299: public Entry projection is intentionally a pure value transform helper.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/http/delivery-recipes/public-entry-value.ts:10`
+
+#### EH-300: required path parameter lookup is intentionally a direct transport helper.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/http/delivery-recipes/pagination.ts:29`
+
+#### EH-301: paginated Entry page reads are intentionally direct CMS service helpers.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/http/delivery-recipes/delivery-query.ts:124`
+
+#### EH-302: slug Entry lookup is intentionally a direct CMS service helper.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/http/delivery-recipes/delivery-query.ts:141`
+
+#### EH-305: Example CMS readSchemas is a thin DeliveryRecipes wrapper.
+
+**Locations:**
+
+- `apps/example-cms/src/core/api/delivery/delivery-support.ts:81`
+
+#### EH-306: Example CMS requiredParameter is a thin DeliveryRecipes wrapper.
+
+**Locations:**
+
+- `apps/example-cms/src/core/api/delivery/delivery-support.ts:95`
 
 ### Effect · `effecttsgo/new-promise`
 
@@ -2173,7 +2270,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 - `apps/example-cms/src/generated/headless-openapi-client-runtime-transport-request-support.ts:37`
 - `apps/example-cms/src/generated/management-openapi-client-runtime-transport-request-support.ts:37`
-- `apps/public-blog/src/generated/headless-openapi-client-runtime-transport-request-support.ts:37`
+- `apps/public-blog/src/core/generated/headless-openapi-client-runtime-transport-request-support.ts:37`
 - `scripts/openapi-client-generator/runtime-template.ts:229`
 
 ### Effect · `effecttsgo/run-effect-inside-effect`
@@ -2300,13 +2397,13 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/ui/assets-page-dialogs-support.tsx:110`
-- `apps/example-cms/src/ui/assets-page-header-support.tsx:4`
-- `apps/example-cms/src/ui/assets-page-header-support.tsx:104`
-- `apps/example-cms/src/ui/assets-page-panels-support.tsx:51`
-- `apps/example-cms/src/ui/entry-editor-publication-panel-sections-support.tsx:50`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-fields-support.tsx:61`
-- `apps/example-cms/src/ui/entry-editor-story-canvas-support.tsx:33`
+- `apps/example-cms/src/presentation/assets-page-dialogs-support.tsx:110`
+- `apps/example-cms/src/presentation/assets-page-header-support.tsx:4`
+- `apps/example-cms/src/presentation/assets-page-header-support.tsx:104`
+- `apps/example-cms/src/presentation/assets-page-panels-support.tsx:51`
+- `apps/example-cms/src/presentation/entry-editor-publication-panel-sections-support.tsx:50`
+- `apps/example-cms/src/presentation/entry-editor-story-canvas-fields-support.tsx:61`
+- `apps/example-cms/src/presentation/entry-editor-story-canvas-support.tsx:33`
 
 #### EH-170: shutdown scenario keeps orchestration in one place for readability.
 
@@ -2410,7 +2507,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 - `apps/example-cms/src/generated/headless-openapi-client-runtime-transport.ts:54`
 - `apps/example-cms/src/generated/management-openapi-client-runtime-transport.ts:54`
-- `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:54`
+- `apps/public-blog/src/core/generated/headless-openapi-client-runtime-transport.ts:54`
 - `scripts/openapi-client-generator/runtime-template.ts:147`
 
 #### EH-180: registry formatting keeps compact comment labels.
@@ -2544,6 +2641,30 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 - `scripts/escape-hatches-registry-support.ts:88`
 
+#### EH-307: delivery operation assembly stays separate from schema constants.
+
+**Locations:**
+
+- `apps/example-cms-minimal/src/core/delivery.ts:33`
+
+#### EH-308: digest and response headers are derived after the size guard.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/http/delivery-recipes/public-export.ts:94`
+
+#### EH-309: digest helpers stay grouped in one local const block below exported defaults.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/http/delivery-recipes/public-export.ts:36`
+
+#### EH-310: transport helpers stay in one local const block below exported pagination constants.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/src/http/delivery-recipes/pagination.ts:13`
+
 ### ESLint · `eslint/require-unicode-regexp`
 
 #### EH-195: registry parsing uses ASCII comment markers only.
@@ -2566,7 +2687,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `scripts/check-architecture.ts:224`
+- `scripts/check-architecture.ts:244`
 
 #### EH-197: cleanup must remain sequential.
 

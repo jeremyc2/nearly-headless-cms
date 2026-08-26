@@ -2,7 +2,7 @@ import tailwind from "bun-plugin-tailwind";
 
 const workspace = `${import.meta.dir}/..`,
   workspaceBuildResult = await Bun.build({
-    entrypoints: [`${workspace}/src/index.html`, `${workspace}/src/server.ts`],
+    entrypoints: [`${workspace}/src/presentation/index.html`, `${workspace}/src/server.ts`],
     minify: true,
     outdir: `${workspace}/dist`,
     plugins: [tailwind],

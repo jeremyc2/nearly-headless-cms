@@ -23,7 +23,7 @@ The build reads from `EXAMPLE_CMS_URL`, which defaults to `http://localhost:3000
 
 ## What happens at build time
 
-1. `src/fetch-export.ts` downloads a validated public export and asset files from the Headless API.
+1. `src/core/fetch-export.ts` downloads a validated public export and asset files from the Headless API.
 2. Astro writes static HTML from `.generated/public-export.json`.
 3. You deploy plain files. No Node server required for reading posts.
 
@@ -39,19 +39,32 @@ Your stack can differ. This demo uses Astro and Tailwind. The contract that matt
 
 Browse [http://localhost:4321/guides/](http://localhost:4321/guides/) when the site is running locally.
 
-The guides walk from installing the library to defining content, wiring layers, and building a site like this one. Source lives in `src/pages/guides/`.
+The guides walk from installing the library to defining content, wiring layers, and building a site like this one. Source lives in `src/presentation/pages/guides/`.
 
-## Project layout
+## Core vs Presentation
+
+The source tree separates CMS integration from Astro templates:
 
 ```
 src/
-  fetch-export.ts       Downloads the public export before Astro builds
-  pages/                Routes, including /guides for the tutorial
-  layouts/              Site and guide page shells
-  components/           Post cards, rich text rendering, pagination
-  generated/            OpenAPI client for the Headless API (generated)
+  core/                 CMS integration — read these files first
+    fetch-export.ts     Downloads the public export before Astro builds
+    data/               Loads the build-time export snapshot
+    domain/             Pagination, archive paths, and view helpers
+    generated/          OpenAPI client for the Headless API (generated)
+    README.md
+  presentation/         Astro templates — skip on first read
+    pages/              Routes, including /guides for the tutorial
+    layouts/            Site and guide page shells
+    components/         Post cards, rich text rendering, pagination
+    styles/             Global CSS
+    README.md
+  server.ts             Serves the static build locally
 .generated/             Build-time export JSON and fetched assets (gitignored)
 ```
+
+- **[Core README](src/core/README.md)** — export download, typed data access, and domain helpers.
+- **[Presentation README](src/presentation/README.md)** — replaceable Astro UI; imports from `../core/...`.
 
 ## Related docs
 

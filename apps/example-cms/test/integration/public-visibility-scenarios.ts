@@ -1,4 +1,4 @@
-import { type ExampleSystem, createExampleSystem } from "../../src/system.ts";
+import { type ExampleSystem, createExampleSystem } from "../../src/core/composition.ts";
 import {
   type PublicVisibilityHandler,
   authorIndex,

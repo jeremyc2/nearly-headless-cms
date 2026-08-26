@@ -6,5 +6,6 @@ export default defineConfig({
   build: { format: "directory" },
   output: "static",
   site: env.PUBLIC_BLOG_SITE ?? "http://localhost:4321",
+  srcDir: "./src/presentation",
   vite: { plugins: [tailwindcss()] },
 });

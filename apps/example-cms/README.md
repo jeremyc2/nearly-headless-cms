@@ -29,22 +29,30 @@ The app uses filesystem persistence and open authorization (every request is ano
 
 ## How the code is organized
 
+The source tree separates **CMS Builder core** from **reference presentation**:
+
 ```
 src/
-  content/          What the CMS stores (definitions, seed data)
-  layers/           One file per dependency wired into Cms.makeLayer
-  api/
-    delivery/       Headless API operations (public reads and writes)
-    management/     Management API operations (editorial workflows)
-    shared/         Wire schemas and command receipts
-  ui/               React admin dashboard
-  system.ts         Composes layers and API routes
+  core/             CMS Builder core — read this first
+    content/        Content model, seed data, definition sync
+    api/            Delivery and management HTTP operation declarations
+    composition.ts  CMS layer and transport wiring
+    identifiers.ts  Deterministic IDs for acceptance tests
+  presentation/     Reference React admin UI — skip on first read
+    index.html      Browser entrypoint
+    main.tsx        React bootstrap
+    …               Dashboard pages and entry editor
+  generated/        Auto-generated OpenAPI clients — do not edit
   server.ts         Bun HTTP entrypoint
 ```
 
-Each file in `layers/` exports one Effect layer. Swap `persistence.ts` for Postgres, swap `identity.ts` for your session middleware, and `Cms.Service` stays the same.
+### Reading order
 
-Convenience layers from `nearly-headless-cms/layers` cover the common dev case when you do not want to wire every dependency by hand.
+1. **`core/`** — Start with `core/README.md`, then `content/definitions.ts` and `composition.ts`. This is what you copy when building your own CMS.
+2. **`presentation/`** — Optional reference UI. See `presentation/README.md` if you want a working admin dashboard example.
+3. **`generated/`** — Typed HTTP clients regenerated from OpenAPI specs. See `generated/README.md`.
+
+Local development uses `Filesystem.cms` from `nearly-headless-cms/layers`, which wires filesystem persistence with open authorization, anonymous identity, and crypto identifiers. Swap any piece in `core/composition.ts` without changing `Cms.Service`.
 
 ## Pair with the Public Blog
 

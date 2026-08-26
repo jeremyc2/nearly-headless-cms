@@ -6,7 +6,7 @@
       "name": "nearly-headless-cms",
       "dependencies": {
         "effect": "4.0.0-rc.111",
-        "nearly-headless-cms": "/Users/jeremy/Documents/personal/nearly-headless-cms/.artifacts/npm/nearly-headless-cms-0.1.0.tgz",
+        "nearly-headless-cms": "workspace:*",
       },
       "devDependencies": {
         "@effect/tsgo": "0.36.5",
@@ -35,6 +35,15 @@
       "devDependencies": {
         "@types/react": "19.2.14",
         "@types/react-dom": "19.2.3",
+      },
+    },
+    "apps/example-cms-minimal": {
+      "name": "@nearly-headless-cms/example-cms-minimal",
+      "version": "0.1.0",
+      "dependencies": {
+        "@effect/platform-bun": "4.0.0-rc.111",
+        "effect": "4.0.0-rc.111",
+        "nearly-headless-cms": "workspace:*",
       },
     },
     "apps/public-blog": {
@@ -283,6 +292,8 @@
     "@napi-rs/wasm-runtime": ["@napi-rs/wasm-runtime@1.2.3", "", { "dependencies": { "@tybys/wasm-util": "^0.10.3" }, "peerDependencies": { "@emnapi/core": "^1.7.1 || ^2.0.0-alpha.4", "@emnapi/runtime": "^1.7.1 || ^2.0.0-alpha.4" } }, "sha512-UMduMbqO5s5zF2NkNacMT/yK5Y5QiKvWr2+50bzIIxFDwVJ2h49b+oyjaCGPhJxd2/gC2x39EHv/gHVuu36x2Q=="],
 
     "@nearly-headless-cms/example-cms": ["@nearly-headless-cms/example-cms@workspace:apps/example-cms"],
+
+    "@nearly-headless-cms/example-cms-minimal": ["@nearly-headless-cms/example-cms-minimal@workspace:apps/example-cms-minimal"],
 
     "@nearly-headless-cms/public-blog": ["@nearly-headless-cms/public-blog@workspace:apps/public-blog"],
 

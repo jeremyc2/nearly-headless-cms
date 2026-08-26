@@ -6,6 +6,33 @@ export * as HttpTransport from "./http-transport.ts";
 export * as HttpTransportLifecycle from "./http-transport-lifecycle.ts";
 /** Deterministic Management and Headless OpenAPI 3.1 generation. */
 export * as OpenApi from "./open-api.ts";
+/** Delivery Query builders and public projection helpers for CMS Builders. */
+export * as DeliveryRecipes from "./delivery-recipes/index.ts";
+/** Convenience re-exports for common Delivery Recipe helpers. */
+export {
+  definitionRequirementFromContentType,
+  definitionRequirementsFromContentTypes,
+  entryBySlugDeliveryQuery,
+  findEntryBySlug,
+  paginatedDeliveryQuery,
+  publicEntryPage,
+  publicEntryValue,
+  publicExportArtifact,
+  publicExportDeliveryQuery,
+  queryEntryPage,
+  queryEveryEntry,
+  readDeliverySchemas,
+  requiredPathParameter,
+  paginationFromRequest,
+} from "./delivery-recipes/index.ts";
+/** Convenience re-exported Delivery Recipe option types. */
+export type {
+  DefinitionRequirementOptions,
+  EntryBySlugDeliveryQueryOptions,
+  PaginatedDeliveryQueryOptions,
+  PublicEntryValueOptions,
+  PublicExportDeliveryQueryOptions,
+} from "./delivery-recipes/index.ts";
 /** Shared HTTP status code constants for transport and application layers. */
 export * from "./http-status-codes.ts";
 /** Parses conditional request validators against immutable Asset ETags. */

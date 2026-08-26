@@ -63,19 +63,21 @@ The library does not ship a CMS dashboard or turn content into HTML. That is you
 
 ## Learn by example
 
-This repo includes two reference apps:
+Start with the smallest app, then grow into the full demo:
 
-- **[Example CMS](apps/example-cms)** runs a React admin UI, a Management API, and a Headless API from one Bun server. See [apps/example-cms/README.md](apps/example-cms/README.md) to run it.
-- **[Public Blog](apps/public-blog)** is an Astro site that fetches a static export from the Headless API at build time. See [apps/public-blog/README.md](apps/public-blog/README.md) for the two-terminal workflow.
+- **[Minimal Example CMS](apps/example-cms-minimal)** — ~120 lines of core wiring, no UI. Read [`src/core/`](apps/example-cms-minimal/src/core/) first.
+- **[Example CMS](apps/example-cms)** — full reference app with a React admin UI, Management API, and Headless API. Core logic lives in [`src/core/`](apps/example-cms/src/core/); the dashboard is [`src/presentation/`](apps/example-cms/src/presentation/) (skip on first read).
+- **[Public Blog](apps/public-blog)** — Astro site that reads a static export at build time. CMS integration is [`src/core/`](apps/public-blog/src/core/); templates are [`src/presentation/`](apps/public-blog/src/presentation/).
 
-Read the step-by-step guides in the Public Blog under `/guides` when it is running locally, or browse the source in [`apps/public-blog/src/pages/guides/`](apps/public-blog/src/pages/guides/).
+Read the step-by-step guides in the Public Blog under `/guides` when it is running locally, or browse the source in [`apps/public-blog/src/presentation/pages/guides/`](apps/public-blog/src/presentation/pages/guides/).
 
 ## Where to go next
 
 - [Package README](packages/nearly-headless-cms/README.md) for imports, layers, HTTP transport, and stability notes
+- [Minimal Example CMS README](apps/example-cms-minimal/README.md) for the smallest runnable CMS Builder app
 - [Example CMS README](apps/example-cms/README.md) for running the reference admin app and APIs
 - [Public Blog README](apps/public-blog/README.md) for the static site demo and build workflow
-- [Guides](apps/public-blog/src/pages/guides/index.astro) for a tutorial path from content types to a live site
+- [Guides](apps/public-blog/src/presentation/pages/guides/index.astro) for a tutorial path from content types to a live site
 
 ## Working on the library itself
 

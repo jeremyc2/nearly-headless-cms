@@ -1,0 +1,26 @@
+---
+import { publicExport } from "../../../core/data/public-export.ts"
+import SiteLayout from "../../layouts/site-layout.astro"
+import { sortedGuides } from "../../../core/domain/public-model.ts"
+
+const guides = sortedGuides(publicExport)
+---
+<SiteLayout title="Guides" description="Build your own headless CMS and a site that reads from it.">
+  <section class="hero shell narrow">
+    <p class="eyebrow">Nearly Headless CMS</p>
+    <h1>Guides for CMS builders</h1>
+    <p class="hero-intro">
+      You bring storage, auth, and templates. The library handles entries, queries, and APIs.
+      These pages follow the same path the Example CMS and this blog use.
+    </p>
+  </section>
+  <div class="shell content-stack guide-index">
+    {guides.map((guide) => (
+      <article class="guide-card">
+        <h2><a href={`/guides/${guide.slug}/`}>{guide.title}</a></h2>
+        <p>{guide.description}</p>
+        <a class="read-link" href={`/guides/${guide.slug}/`}>Read guide →</a>
+      </article>
+    ))}
+  </div>
+</SiteLayout>

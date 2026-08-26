@@ -1,4 +1,4 @@
-import type { ExampleSystem } from "../../src/system.ts";
+import type { ExampleSystem } from "../../src/core/composition.ts";
 
 const createTemporaryStorageRoot = (testDirectory: string): Promise<string> =>
     Bun.$`mktemp -d ${testDirectory}/.headless-api-XXXXXX`.text().then((output) => output.trim()),

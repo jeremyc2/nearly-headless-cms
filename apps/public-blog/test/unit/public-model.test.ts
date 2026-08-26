@@ -1,6 +1,6 @@
-import type { PublicBlogExport, PublicPost } from "../../src/generated/headless-client.ts";
+import type { PublicBlogExport, PublicPost } from "../../src/core/generated/headless-client.ts";
 import { describe, expect, test } from "bun:test";
-import { paginate, publishedPosts } from "../../src/domain/public-model.ts";
+import { paginate, publishedPosts } from "../../src/core/domain/public-model.ts";
 
 const expectedFirstPageLength = 2,
   expectedSecondPageLength = 1,

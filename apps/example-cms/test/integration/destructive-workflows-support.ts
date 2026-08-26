@@ -1,4 +1,4 @@
-export type { ExampleSystem } from "../../src/system.ts";
+export type { ExampleSystem } from "../../src/core/composition.ts";
 export {
   createTemporaryStorageRoot,
   firstItemIndex,
