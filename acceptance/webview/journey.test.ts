@@ -4,6 +4,7 @@ const CMS_VIEWPORT_HEIGHT = 1000,
   CMS_VIEWPORT_WIDTH = 1440,
   CONTENT_LIST_READY =
     "document.querySelector('h1')?.textContent === 'Posts' && document.querySelectorAll('.entry-row').length >= 2",
+  ENTRY_EDITOR_PLACEHOLDER_TITLE = "Entry",
   EXPECTED_SIGNAL_CARD_COUNT = 4,
   JOURNEY_TEST_TIMEOUT_MILLISECONDS = 120_000,
   MINIMUM_EDITOR_PATH_SEGMENTS = 4,
@@ -51,8 +52,11 @@ const CMS_VIEWPORT_HEIGHT = 1000,
       editorTitle = requireNonEmptyString(
         await waitFor(
           view,
-          "document.querySelector('h1')?.textContent",
-          (value: string | undefined) => value !== undefined && value.length > 0,
+          "document.querySelector('.editor-header h1')?.textContent",
+          (value: string | undefined) =>
+            value !== undefined &&
+            value.length > 0 &&
+            value !== ENTRY_EDITOR_PLACEHOLDER_TITLE,
         ),
       );
     await view.evaluate("(() => { history.back(); return true })()");
@@ -99,7 +103,7 @@ const CMS_VIEWPORT_HEIGHT = 1000,
     await view.navigate(`http://localhost:3000${editorPath}`);
     await waitUntilReady(
       view,
-      `document.querySelector('h1')?.textContent === ${JSON.stringify(editorTitle)}`,
+      `document.querySelector('.editor-header h1')?.textContent === ${JSON.stringify(editorTitle)}`,
     );
     await view.resize(RESPONSIVE_WIDTH, RESPONSIVE_HEIGHT);
     expect(await view.evaluate<number>("innerWidth")).toBe(RESPONSIVE_WIDTH);
