@@ -249,6 +249,12 @@ const evaluateSnapshotQueryPage = <
         reachability.publicCategoryIdentifiers.has(category.id),
       ),
       comments: publicApprovedComments(consistentSnapshot, reachability.publishedPostIdentifiers),
+      guides: querySnapshot({
+        consistentSnapshot,
+        contentTypeId: "guide",
+        sort: [{ direction: "ascending", path: "sort-order" }],
+        where: { operator: "equals", path: "status", value: "published" },
+      }),
       posts,
       reachability,
       tags: allTags.filter((tag) => reachability.publicTagIdentifiers.has(tag.id)),

@@ -43,6 +43,16 @@ export interface OperationResponsesChunk {
     }[];
     readonly definitionFingerprint: string;
     readonly generatedAt: string;
+    readonly guides: readonly {
+      readonly body: Readonly<Record<string, unknown>>;
+      readonly description: string;
+      readonly id: string;
+      readonly nextGuide: string | null;
+      readonly slug: string;
+      readonly sortOrder: number;
+      readonly status: "published";
+      readonly title: string;
+    }[];
     readonly posts: readonly {
       readonly author: string;
       readonly body: Readonly<Record<string, unknown>>;

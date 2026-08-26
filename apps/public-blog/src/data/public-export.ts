@@ -11,12 +11,16 @@ const decodePublicBlogExport = Schema.decodeUnknownSync(PublicBlogExportSchema),
   publicBlogExportCategoryById = new Map(
     publicBlogExport.categories.map((category) => [category.id, category]),
   ),
-  publicBlogExportTagById = new Map(publicBlogExport.tags.map((tag) => [tag.id, tag]));
+  publicBlogExportTagById = new Map(publicBlogExport.tags.map((tag) => [tag.id, tag])),
+  publicBlogExportGuideById = new Map(
+    publicBlogExport.guides.map((guide) => [guide.id, guide]),
+  );
 
 export {
   publicBlogExportAssetById as assetById,
   publicBlogExportAuthorById as authorById,
   publicBlogExportCategoryById as categoryById,
+  publicBlogExportGuideById as guideById,
   publicBlogExport as publicExport,
   publicBlogExportTagById as tagById,
 };

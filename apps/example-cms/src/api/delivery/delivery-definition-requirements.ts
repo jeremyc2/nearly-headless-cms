@@ -10,6 +10,18 @@ export const authorDefinitionRequirement = {
       { kind: "list", path: "external-links", projectable: true },
     ],
   } as const,
+  guideDefinitionRequirement = {
+    contentTypeId: "guide",
+    fields: [
+      { kind: "text", path: "title", projectable: true, required: true },
+      { kind: "text", path: "slug", projectable: true, required: true },
+      { kind: "text", path: "description", projectable: true, required: true },
+      { formatVersion: 1, kind: "rich-text", path: "body", projectable: true, required: true },
+      { kind: "integer", path: "sort-order", projectable: true, required: true },
+      { kind: "relationship", path: "next-guide", projectable: true },
+      { kind: "enum", path: "status", projectable: true, required: true },
+    ],
+  } as const,
   commentDefinitionRequirement = {
     contentTypeId: "comment",
     fields: [

@@ -1,10 +1,9 @@
 import { ContentDefinition } from "nearly-headless-cms";
 
-const { Fields } = ContentDefinition;
-
-const definitionSnapshot = ContentDefinition.compileSnapshot({
-  definitionSpaceId: "example-blog",
-  definitions: [
+const { Fields } = ContentDefinition,
+  definitionSource = {
+    definitionSpaceId: "example-blog",
+    definitions: [
     Fields.fieldGroup({
       fields: [
         Fields.requiredTextField("label", "Label", { maxLength: 80, minLength: 1 }),
@@ -143,6 +142,45 @@ const definitionSnapshot = ContentDefinition.compileSnapshot({
     }),
     Fields.contentType({
       fields: [
+        Fields.requiredTextField("title", "Title", { maxLength: 180, minLength: 1 }),
+        Fields.requiredSlugField("slug", "Slug", { maxLength: 140, minLength: 1 }),
+        Fields.requiredTextField("description", "Description", {
+          maxLength: 400,
+          minLength: 1,
+          multiline: true,
+        }),
+        {
+          key: "body",
+          kind: { formatVersion: 1, kind: "rich-text" },
+          label: "Body",
+          required: true,
+        },
+        {
+          key: "sort-order",
+          kind: { kind: "integer", minimum: 0 },
+          label: "Sort order",
+          required: true,
+        },
+        {
+          key: "next-guide",
+          kind: Fields.relationship(["guide"]),
+          label: "Next guide",
+          nullable: true,
+        },
+        {
+          defaultValue: "draft",
+          key: "status",
+          kind: Fields.enumField(["draft", "published"]),
+          label: "Guide status",
+          required: true,
+        },
+      ],
+      history: true,
+      id: "guide",
+      name: "Guide",
+    }),
+    Fields.contentType({
+      fields: [
         { key: "post", kind: Fields.relationship(["post"]), label: "Post", required: true },
         Fields.requiredTextField("display-name", "Display name", { maxLength: 80, minLength: 1 }),
         { key: "website-url", kind: { kind: "url" }, label: "Website URL", nullable: true },
@@ -171,8 +209,12 @@ const definitionSnapshot = ContentDefinition.compileSnapshot({
       revisionRetention: { maximumRevisionCount: 25 },
     }),
   ],
-  snapshotId: "example-blog-v1",
-});
+  snapshotId: "example-blog-v2",
+  },
+  definitionSnapshot = ContentDefinition.compileSnapshot(definitionSource);
+
+/** Source input for the Example Blog definition snapshot. */
+export { definitionSource };
 
 /** Compiled Example Blog definition snapshot. */
 export { definitionSnapshot };

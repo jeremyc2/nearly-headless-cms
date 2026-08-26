@@ -1972,6 +1972,59 @@
                     "generatedAt": {
                       "type": "string"
                     },
+                    "guides": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "body": {
+                            "type": "object"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "nextGuide": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "slug": {
+                            "type": "string"
+                          },
+                          "sortOrder": {
+                            "type": "integer"
+                          },
+                          "status": {
+                            "enum": [
+                              "published"
+                            ],
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "body",
+                          "description",
+                          "id",
+                          "nextGuide",
+                          "slug",
+                          "sortOrder",
+                          "status",
+                          "title"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
                     "posts": {
                       "items": {
                         "additionalProperties": false,
@@ -2096,6 +2149,7 @@
                     "comments",
                     "definitionFingerprint",
                     "generatedAt",
+                    "guides",
                     "posts",
                     "tags"
                   ],

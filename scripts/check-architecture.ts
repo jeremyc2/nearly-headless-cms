@@ -96,9 +96,7 @@ const architectureRepository = path.join(import.meta.dir, ".."),
   rootManifest: unknown = await Bun.file(path.join(architectureRepository, "package.json")).json(),
   sourceGlob = new Bun.Glob("apps/public-blog/src/**/*.{ts,astro}"),
   publicBlogSourcePaths = await Array.fromAsync(sourceGlob.scan({ cwd: architectureRepository })),
-  sourcePaths = publicBlogSourcePaths.filter(
-    (relativePath) => !relativePath.startsWith("apps/public-blog/src/pages/guides/"),
-  ),
+  sourcePaths = publicBlogSourcePaths,
   twoSpaceIndent = 2,
   workspaceManifestGlobMatches = await Promise.all(
     ["packages/*/package.json", "apps/*/package.json"].map((pattern) =>

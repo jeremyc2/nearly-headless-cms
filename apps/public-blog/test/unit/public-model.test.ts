@@ -29,6 +29,7 @@ describe("Public Blog render model", () => {
         comments: [],
         definitionFingerprint: "test",
         generatedAt: "2026-08-24T00:00:00.000Z",
+        guides: [],
         posts: [
           post("later-b", "published", "2026-08-24T00:00:00.000Z"),
           post("earlier", "published", "2026-08-23T00:00:00.000Z"),

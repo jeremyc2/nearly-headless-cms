@@ -1,28 +1,9 @@
 ---
+import { publicExport } from "../../data/public-export.ts"
 import SiteLayout from "../../layouts/site-layout.astro"
+import { sortedGuides } from "../../domain/public-model.ts"
 
-const guides = [
-  {
-    description: "Install the library, wire one layer, create your first entry.",
-    href: "/guides/getting-started/",
-    title: "Getting started",
-  },
-  {
-    description: "Describe posts, authors, and tags in one TypeScript file.",
-    href: "/guides/defining-content/",
-    title: "Define your content",
-  },
-  {
-    description: "Plug in storage, identity, and auth one file at a time.",
-    href: "/guides/providing-layers/",
-    title: "Provide layers",
-  },
-  {
-    description: "Fetch a public export at build time and render pages.",
-    href: "/guides/building-a-site/",
-    title: "Build a content site",
-  },
-]
+const guides = sortedGuides(publicExport)
 ---
 <SiteLayout title="Guides" description="Build your own headless CMS and a site that reads from it.">
   <section class="hero shell narrow">
@@ -36,9 +17,9 @@ const guides = [
   <div class="shell content-stack guide-index">
     {guides.map((guide) => (
       <article class="guide-card">
-        <h2><a href={guide.href}>{guide.title}</a></h2>
+        <h2><a href={`/guides/${guide.slug}/`}>{guide.title}</a></h2>
         <p>{guide.description}</p>
-        <a class="read-link" href={guide.href}>Read guide →</a>
+        <a class="read-link" href={`/guides/${guide.slug}/`}>Read guide →</a>
       </article>
     ))}
   </div>
