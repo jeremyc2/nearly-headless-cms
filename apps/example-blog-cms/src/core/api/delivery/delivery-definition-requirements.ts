@@ -7,6 +7,11 @@ export const authorDefinitionRequirement = definitionRequirementFromContentType(
     "author",
     { projectableOnly: true },
   ),
+  commentDefinitionRequirement = definitionRequirementFromContentType(
+    definitionSnapshot,
+    "comment",
+    { projectableOnly: true },
+  ),
   postDefinitionRequirement = definitionRequirementFromContentType(
     definitionSnapshot,
     "post",

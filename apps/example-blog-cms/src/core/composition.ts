@@ -1,6 +1,6 @@
 import type { Cms, Operation } from "nearly-headless-cms";
 import { Cms as CmsModule, type CmsError } from "nearly-headless-cms";
-import { CryptoIdentifierGenerator } from "nearly-headless-cms/adapters";
+import { AllowAllAuthorization, AnonymousIdentity, CryptoIdentifierGenerator } from "nearly-headless-cms/adapters";
 import { HttpTransport } from "nearly-headless-cms/http";
 import type { Layer } from "effect";
 import { Effect, Layer as LayerModule, ManagedRuntime, Option } from "effect";
@@ -8,7 +8,7 @@ import { groupBasedAuthorizationLayer } from "./auth/auth-authorization.ts";
 import { requestScopedIdentityLayer } from "./auth/auth-request-identity.ts";
 import { makeDeliveryOperations } from "./api/delivery/index.ts";
 import { makeManagementOperations } from "./api/management/index.ts";
-import { memoryCommandReceiptStore } from "./api/shared/command-receipt-store.ts";
+import { filesystemCommandReceiptStore } from "./api/shared/command-receipt-store.ts";
 import { definitionSnapshot } from "./content/definitions.ts";
 import { type SeedResult, seed } from "./content/seed.ts";
 import { sqlCmsPersistenceLayer } from "./persistence/sql-persistence-layer.ts";
@@ -36,37 +36,48 @@ const makeCmsLayer = ({
   assetBlobRoot,
   connectionString,
   operationContracts,
+  useOpenAuthorization,
 }: {
   readonly assetBlobRoot: string;
   readonly connectionString: string;
   readonly operationContracts: readonly Operation.DefinitionContract[];
+  readonly useOpenAuthorization: boolean;
 }): Layer.Layer<Cms.Service, CmsError.InfrastructureFailure> => {
   const persistenceLayer = sqlCmsPersistenceLayer({
     assetBlobRoot,
     connectionString,
     definitionSnapshot,
   }).pipe(LayerModule.provide(CryptoIdentifierGenerator.layer)),
-    dependencies = LayerModule.mergeAll(
-      groupBasedAuthorizationLayer,
-      requestScopedIdentityLayer,
-      CryptoIdentifierGenerator.layer,
-      persistenceLayer,
-    );
+    dependencies = useOpenAuthorization
+      ? LayerModule.mergeAll(
+          AllowAllAuthorization.layer,
+          AnonymousIdentity.layer,
+          CryptoIdentifierGenerator.layer,
+          persistenceLayer,
+        )
+      : LayerModule.mergeAll(
+          groupBasedAuthorizationLayer,
+          requestScopedIdentityLayer,
+          CryptoIdentifierGenerator.layer,
+          persistenceLayer,
+        );
 
   return CmsModule.makeLayer({ operationContracts }).pipe(LayerModule.provide(dependencies));
 };
 
 const makeExampleBlogCmsCompositionInternal = (
   options: ExampleBlogCmsSystemOptions = {},
+  useOpenAuthorization = false,
 ): ExampleBlogCmsComposition => {
   const storageRoot = options.storageRoot ?? ".data/example-blog-cms",
-    commandReceiptStore = memoryCommandReceiptStore(),
+    commandReceiptStore = filesystemCommandReceiptStore(`${storageRoot}/command-receipts`),
     deliveryOperations = makeDeliveryOperations({ commandReceiptStore }),
     managementOperations = makeManagementOperations({ commandReceiptStore }),
     exampleCmsLayer = makeCmsLayer({
       assetBlobRoot: options.assetBlobRoot ?? `${storageRoot}/assets`,
       connectionString: options.connectionString ?? `file:${storageRoot}/cms.sqlite`,
       operationContracts: [...deliveryOperations, ...managementOperations],
+      useOpenAuthorization,
     }),
     transportOptions: HttpTransport.Options = {
       cors: {
@@ -85,7 +96,9 @@ const makeExampleBlogCmsCompositionInternal = (
 };
 
 /** Builds the reusable CMS layer and HTTP operation declarations for Example Blog CMS. */
-export const makeExampleBlogCmsComposition = makeExampleBlogCmsCompositionInternal;
+export const makeExampleBlogCmsComposition = (
+  options: ExampleBlogCmsSystemOptions = {},
+): ExampleBlogCmsComposition => makeExampleBlogCmsCompositionInternal(options);
 
 /** Builds the composition using optional environment overrides. */
 export const makeSeededExampleBlogCmsCompositionFromEnvironment = (): ExampleBlogCmsComposition => {
@@ -102,7 +115,7 @@ export const makeSeededExampleBlogCmsCompositionFromEnvironment = (): ExampleBlo
 export const createExampleBlogCmsSystem = (
   options: ExampleBlogCmsSystemOptions = {},
 ): Promise<ExampleBlogCmsSystem> => {
-  const composition = makeExampleBlogCmsCompositionInternal(options),
+  const composition = makeExampleBlogCmsCompositionInternal(options, true),
     runtime = ManagedRuntime.make(composition.cmsLayer);
 
   return runtime.runPromise(

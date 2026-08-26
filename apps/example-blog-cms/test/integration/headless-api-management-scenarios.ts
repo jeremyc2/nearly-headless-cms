@@ -43,7 +43,7 @@ const makeReplacementForm = (): FormData => {
   }> => {
     const cascaded = await system.handler(
       new Request(
-        `http://cms.test/api/v1/management/definition-spaces/example-blog/operations/posts/${postId}/cascade-deletions`,
+        `http://cms.test/api/v1/management/definition-spaces/example-blog-cms/operations/posts/${postId}/cascade-deletions`,
         {
           headers: { "cms-write-token": postWriteToken },
           method: "POST",
@@ -87,7 +87,7 @@ const makeReplacementForm = (): FormData => {
   ): Promise<Readonly<Record<string, unknown>>> => {
     const returnedToDraft = await handler(
       new Request(
-        `http://cms.test/api/v1/management/definition-spaces/example-blog/operations/posts/${postId}/draft-returns`,
+        `http://cms.test/api/v1/management/definition-spaces/example-blog-cms/operations/posts/${postId}/draft-returns`,
         {
           headers: { "cms-write-token": writeToken },
           method: "POST",
@@ -152,7 +152,7 @@ const makeReplacementForm = (): FormData => {
     const categoryContext = await readCategoryWriteToken(handler, exportBefore),
       detached = await handler(
         new Request(
-          `http://cms.test/api/v1/management/definition-spaces/example-blog/operations/categories/${categoryContext.categoryId}/detachments`,
+          `http://cms.test/api/v1/management/definition-spaces/example-blog-cms/operations/categories/${categoryContext.categoryId}/detachments`,
           {
             headers: { "cms-write-token": categoryContext.categoryWriteToken },
             method: "POST",
@@ -202,7 +202,7 @@ const makeReplacementForm = (): FormData => {
     const oldAssetId = readFirstAssetId(exportBefore),
       replaced = await handler(
         new Request(
-          `http://cms.test/api/v1/management/definition-spaces/example-blog/operations/assets/${oldAssetId}/replacements`,
+          `http://cms.test/api/v1/management/definition-spaces/example-blog-cms/operations/assets/${oldAssetId}/replacements`,
           {
             body: makeReplacementForm(),
             headers: { "idempotency-key": "replace-seed-image" },
@@ -235,7 +235,7 @@ const makeReplacementForm = (): FormData => {
   ): Promise<void> => {
     const published = await handler(
         new Request(
-          `http://cms.test/api/v1/management/definition-spaces/example-blog/operations/posts/${postId}/publications`,
+          `http://cms.test/api/v1/management/definition-spaces/example-blog-cms/operations/posts/${postId}/publications`,
           {
             headers: { "cms-write-token": requireWriteToken(draftState) },
             method: "POST",
@@ -259,7 +259,7 @@ const makeReplacementForm = (): FormData => {
   ): Promise<void> => {
     const stalePublish = await handler(
       new Request(
-        `http://cms.test/api/v1/management/definition-spaces/example-blog/operations/posts/${postId}/publications`,
+        `http://cms.test/api/v1/management/definition-spaces/example-blog-cms/operations/posts/${postId}/publications`,
         {
           headers: { "cms-write-token": staleWriteToken },
           method: "POST",

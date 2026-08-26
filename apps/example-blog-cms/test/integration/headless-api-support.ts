@@ -22,7 +22,7 @@ const createTemporaryStorageRoot = (testDirectory: string): Promise<string> =>
     }),
   // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-133] test URL helper is intentionally a direct two-argument operation.
   managementStateUrl = (contentTypeId: string, entryId: string): string =>
-    `http://cms.test/api/v1/management/definition-spaces/example-blog/content-types/${contentTypeId}/entries/${entryId}/state`,
+    `http://cms.test/api/v1/management/definition-spaces/example-blog-cms/content-types/${contentTypeId}/entries/${entryId}/state`,
   oneItem = 1,
   removeStorageRoot = (storageRoot: string): Promise<void> =>
     Bun.$`rm -rf ${storageRoot}`.then(() => {}),

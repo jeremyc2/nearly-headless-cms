@@ -4,6 +4,7 @@ import deliveryOperationRoutes from "./delivery-operation-routes-support.ts";
 
 export {
   authorDefinitionRequirement,
+  commentDefinitionRequirement,
   postDefinitionRequirement,
   taxonomyDefinitionRequirement,
 } from "./delivery-definition-requirements.ts";

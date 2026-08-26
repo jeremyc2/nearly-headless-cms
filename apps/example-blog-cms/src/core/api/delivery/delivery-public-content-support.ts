@@ -196,6 +196,19 @@ const evaluateSnapshotQueryPage = <
       },
     };
   },
+  publicApprovedComments = <Snapshot extends Cms.ConsistentReadSnapshot>(
+    consistentSnapshot: Readonly<Snapshot>,
+    publishedPostIdentifiers: ReadonlySet<string>,
+  ) =>
+    querySnapshot({
+      consistentSnapshot,
+      contentTypeId: "comment",
+      sort: [{ direction: "ascending", path: "created-at" }],
+      where: { operator: "equals", path: "status", value: "approved" },
+    }).filter((comment) => {
+      const postIdentifier = comment.values["post"];
+      return typeof postIdentifier === "string" && publishedPostIdentifiers.has(postIdentifier);
+    }),
   publicAssetIds = <
     Post extends { readonly values: Record<string, unknown> },
     Author extends { readonly values: Record<string, unknown> },
@@ -235,6 +248,7 @@ const evaluateSnapshotQueryPage = <
       categories: allCategories.filter((category) =>
         reachability.publicCategoryIdentifiers.has(category.id),
       ),
+      comments: publicApprovedComments(consistentSnapshot, reachability.publishedPostIdentifiers),
       posts,
       reachability,
       tags: allTags.filter((tag) => reachability.publicTagIdentifiers.has(tag.id)),

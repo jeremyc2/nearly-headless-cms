@@ -44,7 +44,7 @@ const archivePageSize = 6,
   zPublishedPosts = (snapshot: PublicBlogExport): readonly PublicPost[] =>
     [...snapshot.posts].toSorted(
       (leftPost, rightPost) =>
-        leftPost.publishedAt.localeCompare(rightPost.publishedAt) ||
+        rightPost.publishedAt.localeCompare(leftPost.publishedAt) ||
         leftPost.id.localeCompare(rightPost.id),
     ),
   zRouteManifest = (snapshot: PublicBlogExport): readonly string[] => [

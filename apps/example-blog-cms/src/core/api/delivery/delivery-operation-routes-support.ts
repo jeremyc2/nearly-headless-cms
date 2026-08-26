@@ -1,8 +1,11 @@
 import {
   AssetBytes,
+  CommentReceipt,
+  CommentSubmission,
   EmptyRequest,
   EntryPage,
   Identifier,
+  PublicComment,
   PublicEntryReference,
   PublicPost,
 } from "../shared/wire-schemas.ts";
@@ -12,16 +15,19 @@ import type { HttpContract } from "nearly-headless-cms/http";
 import type { CommandReceiptStore } from "../shared/command-receipt-store.ts";
 import {
   authorDefinitionRequirement,
+  commentDefinitionRequirement,
   postDefinitionRequirement,
   taxonomyDefinitionRequirement,
 } from "./delivery-definition-requirements.ts";
+import deliveryCommentSubmission from "./delivery-comment-submission-support.ts";
 import deliveryExportRoute from "./delivery-export-route-support.ts";
 import deliveryPublicAssetResponse from "./delivery-public-asset-response-support.ts";
 import deliveryPublicContent from "./delivery-public-content-support.ts";
 import deliveryPublicOwnerSupport from "./delivery-public-owner-support.ts";
 import deliverySupport from "./delivery-support.ts";
 
-const { buildExportRoute } = deliveryExportRoute,
+const { makeSubmitCommentExecute } = deliveryCommentSubmission,
+  { buildExportRoute } = deliveryExportRoute,
   { publicAssetIds, publicContent } = deliveryPublicContent,
   { publicAssetResponse } = deliveryPublicAssetResponse,
   {
@@ -71,14 +77,68 @@ const { buildExportRoute } = deliveryExportRoute,
       }),
     ),
   buildDeliveryOperationRoutes = (
-    _commandReceiptStore: CommandReceiptStore,
-  ): readonly HttpContract.DeliveryOperation[] => [
+    commandReceiptStore: CommandReceiptStore,
+  ): readonly HttpContract.DeliveryOperation[] => {
+    const submitComment = makeSubmitCommentExecute(commandReceiptStore);
+    return [
       ...buildPostRoutes(),
       ...buildTaxonomyOwnerRoutes(),
+      buildListApprovedCommentsRoute(),
+      buildSubmitCommentRoute(submitComment),
       buildReferenceRoute(),
       ...buildAssetRoutes(),
       buildExportRoute(),
-    ],
+    ];
+  },
+  buildListApprovedCommentsRoute = (): HttpContract.DeliveryOperation => ({
+    definitionRequirements: [postDefinitionRequirement, commentDefinitionRequirement],
+    execute: ({ cms, parameters, request }) =>
+      Effect.gen(function* listApprovedComments() {
+        const post = yield* cms.getEntry({
+          contentTypeId: "post",
+          entryId: requiredParameter(parameters, "postId"),
+        });
+        if (post.values["status"] !== "published") {
+          return yield* CmsError.NotFound.make({ message: "Published Post was not found" });
+        }
+        return yield* queryPage({
+          cms,
+          contentTypeId: "comment",
+          request,
+          sort: [{ direction: "ascending", path: "created-at" }],
+          where: {
+            all: [
+              { operator: "equals", path: "post", value: post.id },
+              { operator: "equals", path: "status", value: "approved" },
+            ],
+          },
+        });
+      }),
+    identifier: "listApprovedComments",
+    method: "GET",
+    path: "/posts/{postId}/comments",
+    reachableContentTypeIds: ["post", "comment"],
+    schemas: readSchemas(EntryPage(PublicComment), { postId: Identifier }, true),
+  }),
+  buildSubmitCommentRoute = (
+    submitComment: HttpContract.DeliveryOperation["execute"],
+  ): HttpContract.DeliveryOperation => ({
+    definitionRequirements: [postDefinitionRequirement, commentDefinitionRequirement],
+    execute: submitComment,
+    identifier: "submitComment",
+    method: "POST",
+    path: "/posts/{postId}/comments",
+    reachableContentTypeIds: ["post", "comment"],
+    requiresIdempotencyKey: true,
+    schemas: {
+      pathParameters: { postId: Identifier },
+      request: CommentSubmission,
+      requestBody: CommentSubmission,
+      requestHeaders: { "idempotency-key": Identifier },
+      response: CommentReceipt,
+    },
+    successStatus: 201,
+  }),
   buildOwnerBySlugRoute = (
     contentTypeId: "author" | "category" | "tag",
   ): HttpContract.DeliveryOperation => ({

@@ -21,7 +21,7 @@ const authorIndex = 0,
     }),
   loopIncrement = 1,
   managementEntriesUrl = (contentTypeIdentifier: string): string =>
-    `http://cms.test/api/v1/management/definition-spaces/example-blog/content-types/${contentTypeIdentifier}/entries`,
+    `http://cms.test/api/v1/management/definition-spaces/example-blog-cms/content-types/${contentTypeIdentifier}/entries`,
   notFoundStatus = 404,
   postsToCreate = 101,
   // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-132] test JSON field helper is intentionally a direct two-argument operation.

@@ -40,7 +40,7 @@ const readAuthorId = (exported: Readonly<Record<string, unknown>>): string => {
     return Promise.resolve(
       system.handler(
         new Request(
-          "http://cms.test/api/v1/management/definition-spaces/example-blog/content-types/post/entries/query",
+          "http://cms.test/api/v1/management/definition-spaces/example-blog-cms/content-types/post/entries/query",
           {
             body: queryBody,
             headers: { "content-type": "application/json" },
@@ -64,13 +64,13 @@ const readAuthorId = (exported: Readonly<Record<string, unknown>>): string => {
       bAuthorId = readAuthorId(aExported),
       cAuthorStateResponse = await system.handler(
         new Request(
-          `http://cms.test/api/v1/management/definition-spaces/example-blog/content-types/author/entries/${bAuthorId}/state`,
+          `http://cms.test/api/v1/management/definition-spaces/example-blog-cms/content-types/author/entries/${bAuthorId}/state`,
         ),
       ),
       dAuthorState = await jsonRecord(cAuthorStateResponse),
       eCascadeResponse = await system.handler(
         new Request(
-          `http://cms.test/api/v1/management/definition-spaces/example-blog/operations/authors/${bAuthorId}/cascade-deletions`,
+          `http://cms.test/api/v1/management/definition-spaces/example-blog-cms/operations/authors/${bAuthorId}/cascade-deletions`,
           {
             headers: { "cms-write-token": readStringField(dAuthorState, "writeToken") },
             method: "POST",
@@ -100,7 +100,7 @@ const readAuthorId = (exported: Readonly<Record<string, unknown>>): string => {
   verifyAuthorLookup = (system: ExampleSystem, authorId: string): Promise<Response> =>
     system.handler(
       new Request(
-        `http://cms.test/api/v1/management/definition-spaces/example-blog/content-types/author/entries/${authorId}`,
+        `http://cms.test/api/v1/management/definition-spaces/example-blog-cms/content-types/author/entries/${authorId}`,
       ),
     );
 

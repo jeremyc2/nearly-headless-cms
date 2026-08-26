@@ -3,6 +3,7 @@ import { publicExportArtifact, publicExportDeliveryQuery, type HttpContract } fr
 import { Effect } from "effect";
 import {
   authorDefinitionRequirement,
+  commentDefinitionRequirement,
   postDefinitionRequirement,
   taxonomyDefinitionRequirement,
 } from "./delivery-definition-requirements.ts";
@@ -20,6 +21,7 @@ const { publicAssetIds, publicContent } = deliveryPublicContent,
       content: {
         authors: content.authors,
         categories: content.categories,
+        comments: content.comments,
         posts: content.posts,
         tags: content.tags,
       },
@@ -37,10 +39,11 @@ const { publicAssetIds, publicContent } = deliveryPublicContent,
         authorDefinitionRequirement,
         taxonomyDefinitionRequirement("category"),
         taxonomyDefinitionRequirement("tag"),
+        commentDefinitionRequirement,
       ],
       identifier: "exportPublicBlog",
       maximumBytes: MAX_PUBLIC_EXPORT_BYTES,
-      reachableContentTypeIds: ["post", "author", "category", "tag"],
+      reachableContentTypeIds: ["post", "author", "category", "tag", "comment"],
       request: EmptyRequest,
       response: PublicBlogExport,
     });

@@ -51,7 +51,7 @@ const assignFeaturedAsset = (
     readonly draftEntry: Readonly<Record<string, unknown>>;
     readonly draftWriteToken: string;
   }> => {
-    const draftStateUrl = `http://cms.test/api/v1/management/definition-spaces/example-blog/content-types/post/entries/${draftPostId}/state`;
+    const draftStateUrl = `http://cms.test/api/v1/management/definition-spaces/example-blog-cms/content-types/post/entries/${draftPostId}/state`;
     return Promise.resolve(system.handler(new Request(draftStateUrl)))
       .then(jsonRecord)
       .then((draftState) => {
@@ -69,7 +69,7 @@ const assignFeaturedAsset = (
   },
   readIngestedAssetId = (system: ExampleSystem): Promise<string> => {
     const ingestionRequest = new Request(
-      "http://cms.test/api/v1/management/definition-spaces/example-blog/assets",
+      "http://cms.test/api/v1/management/definition-spaces/example-blog-cms/assets",
       { body: makeTemporaryImageForm(), method: "POST" },
     );
     return Promise.resolve(system.handler(ingestionRequest))
@@ -90,8 +90,8 @@ const assignFeaturedAsset = (
     }
     const aAssetId = await readIngestedAssetId(system),
       bDraftPostId = system.seed.draftPostId,
-      cDraftEntryUrl = `http://cms.test/api/v1/management/definition-spaces/example-blog/content-types/post/entries/${bDraftPostId}`,
-      dDraftStateUrl = `http://cms.test/api/v1/management/definition-spaces/example-blog/content-types/post/entries/${bDraftPostId}/state`,
+      cDraftEntryUrl = `http://cms.test/api/v1/management/definition-spaces/example-blog-cms/content-types/post/entries/${bDraftPostId}`,
+      dDraftStateUrl = `http://cms.test/api/v1/management/definition-spaces/example-blog-cms/content-types/post/entries/${bDraftPostId}/state`,
       eDraftPostState = await readDraftPostState(system, bDraftPostId),
       fDraftEntry = eDraftPostState.draftEntry,
       gDraftWriteToken = eDraftPostState.draftWriteToken,
@@ -106,14 +106,14 @@ const assignFeaturedAsset = (
       ),
       kDeletionResponse = await system.handler(
         new Request(
-          `http://cms.test/api/v1/management/definition-spaces/example-blog/operations/assets/${aAssetId}/assignment-clearing-deletions`,
+          `http://cms.test/api/v1/management/definition-spaces/example-blog-cms/operations/assets/${aAssetId}/assignment-clearing-deletions`,
           { headers: { "idempotency-key": "delete-temporary-image" }, method: "POST" },
         ),
       ),
       lReceipt = await jsonRecord(kDeletionResponse),
       mRepeatedDeletionResponse = await system.handler(
         new Request(
-          `http://cms.test/api/v1/management/definition-spaces/example-blog/operations/assets/${aAssetId}/assignment-clearing-deletions`,
+          `http://cms.test/api/v1/management/definition-spaces/example-blog-cms/operations/assets/${aAssetId}/assignment-clearing-deletions`,
           { headers: { "idempotency-key": "delete-temporary-image" }, method: "POST" },
         ),
       );
@@ -144,7 +144,7 @@ const assignFeaturedAsset = (
         expect(updatedEntry["values"]["featured-alternative-text"]).toBeNull();
         return system.handler(
           new Request(
-            `http://cms.test/api/v1/management/definition-spaces/example-blog/assets/${assetId}`,
+            `http://cms.test/api/v1/management/definition-spaces/example-blog-cms/assets/${assetId}`,
           ),
         );
       })

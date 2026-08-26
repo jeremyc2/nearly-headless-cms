@@ -180,6 +180,34 @@ const paragraph = (text: string): RichText.ParagraphNode => ({
       seedEntryId,
     );
   },
+  seedRecordComments = (
+    cms: Readonly<Cms.ServiceShape>,
+    publishedPostId: string,
+  ): Effect.Effect<void, CmsError.CmsError> =>
+    Effect.gen(function* createSeedCommentsEffect() {
+      yield* cms.createEntry({
+        contentTypeId: "comment",
+        values: {
+          body: "The signal metaphor is going to stay with me.",
+          "created-at": "2026-08-23T14:00:00.000Z",
+          "display-name": "Mira",
+          post: publishedPostId,
+          status: "approved",
+          "website-url": null,
+        },
+      });
+      yield* cms.createEntry({
+        contentTypeId: "comment",
+        values: {
+          body: "Waiting for moderation.",
+          "created-at": "2026-08-23T15:00:00.000Z",
+          "display-name": "Pending Reader",
+          post: publishedPostId,
+          status: "pending",
+          "website-url": null,
+        },
+      });
+    }),
   seedWritePosts = (
     cms: Readonly<Cms.ServiceShape>,
   ): Effect.Effect<SeedResult, CmsError.CmsError> =>
@@ -203,7 +231,9 @@ const paragraph = (text: string): RichText.ParagraphNode => ({
       } satisfies SeedResult;
     }
     {
-      return yield* seedWritePosts(cms);
+      const seedResult = yield* seedWritePosts(cms);
+      yield* seedRecordComments(cms, seedResult.publishedPostId);
+      return seedResult;
     }
   });
 

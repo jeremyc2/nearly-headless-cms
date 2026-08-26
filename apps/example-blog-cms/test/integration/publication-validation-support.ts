@@ -26,10 +26,10 @@ export type PublicationValidationHandler = ExampleSystem["handler"];
 
 // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-133] test URL helper is intentionally a direct two-argument operation.
 const managementEntryUrl = (contentTypeIdentifier: string, entryIdentifier: string): string =>
-    `http://cms.test/api/v1/management/definition-spaces/example-blog/content-types/${contentTypeIdentifier}/entries/${entryIdentifier}`,
+    `http://cms.test/api/v1/management/definition-spaces/example-blog-cms/content-types/${contentTypeIdentifier}/entries/${entryIdentifier}`,
   // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-133] test URL helper is intentionally a direct two-argument operation.
   publishPostUrl = (postIdentifier: string): string =>
-    `http://cms.test/api/v1/management/definition-spaces/example-blog/operations/posts/${postIdentifier}/publications`,
+    `http://cms.test/api/v1/management/definition-spaces/example-blog-cms/operations/posts/${postIdentifier}/publications`,
   readEntryValues = (
     state: Readonly<Record<string, unknown>>,
   ): Readonly<Record<string, unknown>> => {
