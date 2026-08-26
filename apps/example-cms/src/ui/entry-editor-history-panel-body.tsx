@@ -1,14 +1,9 @@
 import { type UseQueryResult, useMutation, useQuery } from "@tanstack/react-query";
-// oxlint-disable-next-line eslint/sort-imports -- [EH-129] history panel imports follow UI dependency grouping.
 import { DateTime, Effect } from "effect";
 import { useState } from "react";
-// oxlint-disable-next-line eslint/sort-imports -- [EH-129] history panel imports follow UI dependency grouping.
 import type { RevisionPage } from "../generated/management-openapi-client-component-types.ts";
-// oxlint-disable-next-line eslint/sort-imports -- [EH-129] history panel imports follow UI dependency grouping.
 import { EntryEditorRevisionInspection } from "./entry-editor-revision-inspection.tsx";
-// oxlint-disable-next-line eslint/sort-imports -- [EH-129] history panel imports follow UI dependency grouping.
 import { revisionClass, revisionLabel } from "./main-labels.ts";
-// oxlint-disable-next-line eslint/sort-imports -- [EH-129] history panel imports follow UI dependency grouping.
 import { managementClient, queryClient } from "./main-shared.ts";
 
 interface EntryEditorRevisionSummary {
@@ -50,7 +45,7 @@ const EntryEditorHistoryPanelBody = ({
       />
     );
   },
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-200] React Query mutation and query objects expose mutable status while rendering history.
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-265] React Query mutation and query objects expose mutable status while rendering history.
   EntryEditorHistoryPanelView = ({
     contentTypeId,
     entryId,
@@ -91,7 +86,7 @@ const EntryEditorHistoryPanelBody = ({
     </section>
   ),
   EntryEditorHistorySelectedRevision = <
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     Restore extends ReturnType<typeof useEntryEditorRestoreMutation>,
   >({
     contentTypeId,
@@ -179,7 +174,7 @@ const EntryEditorHistoryPanelBody = ({
           }),
         );
       },
-      // oxlint-disable-next-line effecttsgo/async-function -- [EH-045] React query callback awaits cache invalidation.
+      // oxlint-disable-next-line effecttsgo/async-function -- [EH-054] React query callback awaits cache invalidation.
       onSuccess: async () => {
         onRestored();
         await queryClient.invalidateQueries({ queryKey: ["entry-state", contentTypeId, entryId] });

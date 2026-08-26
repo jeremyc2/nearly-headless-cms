@@ -7,7 +7,7 @@ import transactionsEditorAdapterSupport from "./transactions-editor-adapter-supp
 const { listItemSelectorSuffix, selectionPositionFromNode, textLength } =
     transactionsEditorAdapterSupport,
   nativeSelectionPositions = <
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     Input extends {
       readonly host: ReadonlyEditableHost;
       readonly nativeSelection: ReadonlyNativeSelection | null;
@@ -39,7 +39,7 @@ const { listItemSelectorSuffix, selectionPositionFromNode, textLength } =
     return undefined;
   },
   readNativeSelectionPositions = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-170] editable hosts are queried for live native selection state.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-234] editable hosts are queried for live native selection state.
     host: HTMLElement,
   ) =>
     nativeSelectionPositions({
@@ -48,7 +48,7 @@ const { listItemSelectorSuffix, selectionPositionFromNode, textLength } =
     }),
   restoreSelectionRange = (
     state: Readonly<State>,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-169] editable hosts are mutated while restoring native selection ranges.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-233] editable hosts are mutated while restoring native selection ranges.
     host: HTMLElement,
   ): void => {
     if (!host.isConnected) {
@@ -82,7 +82,7 @@ const { listItemSelectorSuffix, selectionPositionFromNode, textLength } =
   },
   synchronizeSelectionState = (
     state: Readonly<State>,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-171] editable hosts are queried while synchronizing editor selection state.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-235] editable hosts are queried while synchronizing editor selection state.
     host: HTMLElement,
   ): State => {
     const positions = readNativeSelectionPositions(host);

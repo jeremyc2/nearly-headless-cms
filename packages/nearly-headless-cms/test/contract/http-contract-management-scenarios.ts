@@ -17,13 +17,13 @@ type ManagementHandler = <RequestType extends Request>(
 
 const makeManagementHandler = (): Promise<ManagementHandler> => {
     const handlerEffect = HttpTransport.makeHandler({}).pipe(
-      // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-112] test entry point needs a fresh isolated layer.
+      // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-162] test entry point needs a fresh isolated layer.
       Effect.provide(DevelopmentCms.layer({ snapshot })),
     );
     return Effect.runPromise(handlerEffect);
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-038] HTTP contract assertions intentionally await native promises.
   runPortableRoutesContract = async (): Promise<void> => {
     const routes = HttpTransport.layer({
         deliveryOperations: [
@@ -56,7 +56,7 @@ const makeManagementHandler = (): Promise<ManagementHandler> => {
     }
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-038] HTTP contract assertions intentionally await native promises.
   runVersionedManagementContract = async (): Promise<void> => {
     const handler = await makeManagementHandler();
     await verifyVersionedManagementRequests(handler);
@@ -66,7 +66,7 @@ const makeManagementHandler = (): Promise<ManagementHandler> => {
   verifyPortableHttpApiRoutes = (): Promise<void> => runPortableRoutesContract(),
   verifyVersionedManagementOperations = (): Promise<void> => runVersionedManagementContract(),
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-038] HTTP contract assertions intentionally await native promises.
   verifyVersionedManagementRequests = async (handler: ManagementHandler): Promise<void> => {
     const created = await handler(
         new Request(

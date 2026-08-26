@@ -54,25 +54,25 @@ const emptyLength = 0,
   headingLevelThree = 3,
   headingLevelTwo = 2,
   headingLevels = [headingLevelTwo, headingLevelThree, headingLevelFour] as const,
-  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-092] Rich Text helpers are not pipeable Effect APIs.
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-129] Rich Text helpers are not pipeable Effect APIs.
   parseRichTextDocument = validateDocumentImpl,
   /** Collects live references in linear time over the Rich Text tree. */
   references = (document: Document): References => rendering.collectReferences(document),
   /** Renders a validated document through a Content Client-owned Renderer. */
-  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-086] dual's generic overload is not inferred by the linter for this public helper.
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-121] dual's generic overload is not inferred by the linter for this public helper.
   render = Function.dual(
     dualInputArity,
     <Result>(document: Document, renderer: Renderer<Result>): readonly Result[] =>
       rendering.renderDocument(document, renderer),
   ),
-  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-091] public serialize helper is not a pipeable Effect API.
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-128] public serialize helper is not a pipeable Effect API.
   serializeRichTextDocument = serializeRichTextDocumentImpl,
-  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-086] dual's generic overload is not inferred by the linter for this public helper.
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-121] dual's generic overload is not inferred by the linter for this public helper.
   toJsonDual = Function.dual(
     (arguments_) => arguments_.length === dualInputArity || blockValidation.isObject(arguments_[0]),
     serializeRichTextDocumentImpl,
   ),
-  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-086] dual's generic overload is not inferred by the linter for this public helper.
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-121] dual's generic overload is not inferred by the linter for this public helper.
   validateDual = Function.dual(
     (arguments_) => arguments_.length === dualInputArity || blockValidation.isObject(arguments_[0]),
     validateDocumentImpl,

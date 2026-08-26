@@ -26,5 +26,5 @@ export {
   initialVersion,
 } from "./bun-filesystem-persistence-types.ts";
 export { Context, Effect, Stream, SynchronizedRef } from "effect";
-// oxlint-disable-next-line effecttsgo/node-builtin-import -- [EH-101] Bun does not provide a path manipulation API; these operations are platform-neutral string handling.
+// oxlint-disable-next-line effecttsgo/node-builtin-import -- [EH-145] Bun does not provide a path manipulation API; these operations are platform-neutral string handling.
 export { join } from "node:path";

@@ -83,7 +83,7 @@ const assignFeaturedAsset = (
       });
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-060] scenario intentionally awaits native HTTP promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-069] scenario intentionally awaits native HTTP promises.
   verifyAssetAssignmentClearingDeletion = async (system: ExampleSystem): Promise<void> => {
     if (system.seed === undefined) {
       throw new Error("Expected a seeded Example System");

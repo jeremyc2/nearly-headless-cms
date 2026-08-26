@@ -9,9 +9,9 @@ export interface ContentListPredicate {
 
 export const contentListCreateIdentifierLength = 8,
   contentListCreateSuffix = (): string =>
-    // oxlint-disable-next-line effecttsgo/crypto-random-uuid -- [EH-068] browser UI labels need a synchronous local identifier.
+    // oxlint-disable-next-line effecttsgo/crypto-random-uuid -- [EH-087] browser UI labels need a synchronous local identifier.
     crypto.randomUUID().slice(0, contentListCreateIdentifierLength),
-  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-084] content list helper is intentionally a direct three-argument operation.
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-119] content list helper is intentionally a direct three-argument operation.
   contentListCreateValues = (
     contentTypeId: string,
     relatedEntryId: string | undefined,
@@ -53,7 +53,7 @@ export const contentListCreateIdentifierLength = 8,
     return { name: `Untitled ${suffix}`, slug: `untitled-${suffix}` };
   },
   contentListEntryFromCreateResult = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-162] create results use CMS mutation response union shapes.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-224] create results use CMS mutation response union shapes.
     result: { entry: { id: string } } | { id: string },
   ): { id: string } => {
     if ("entry" in result) {
@@ -70,7 +70,7 @@ export const contentListCreateIdentifierLength = 8,
     }
     return "name";
   },
-  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-084] content list helper is intentionally a direct three-argument operation.
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-119] content list helper is intentionally a direct three-argument operation.
   contentListPredicates = (
     contentTypeId: string,
     filterText: string,
@@ -116,7 +116,7 @@ export const contentListCreateIdentifierLength = 8,
     }
     return queryOptions;
   },
-  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-085] content list helper is intentionally a direct two-argument operation.
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-120] content list helper is intentionally a direct two-argument operation.
   contentListQueryRelatedEntries = (
     contentTypeId: string,
     relatedContentTypeId: string,

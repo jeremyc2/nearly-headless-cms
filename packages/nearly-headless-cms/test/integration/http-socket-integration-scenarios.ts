@@ -9,7 +9,7 @@ import {
 } from "./http-socket-integration-scenarios-imports.ts";
 
 const discoveryHandlerEffect = HttpTransport.makeHandler({}).pipe(
-    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-112] test entry point needs a fresh isolated layer.
+    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-162] test entry point needs a fresh isolated layer.
     Effect.provide(DevelopmentCms.layer({ snapshot })),
   ),
   startDiscoveryTransport = (): Promise<{
@@ -29,7 +29,7 @@ const discoveryHandlerEffect = HttpTransport.makeHandler({}).pipe(
     startDiscoveryTransport().then((transport) => {
       const discoveryUrl = `${transport.address}api/v1/headless/schema`;
       return (
-        // oxlint-disable-next-line effecttsgo/global-fetch -- [EH-247] integration test exercises the live HTTP listener through the platform fetch boundary.
+        // oxlint-disable-next-line effecttsgo/global-fetch -- [EH-108] integration test exercises the live HTTP listener through the platform fetch boundary.
         fetch(discoveryUrl)
       )
         .then((response) => {

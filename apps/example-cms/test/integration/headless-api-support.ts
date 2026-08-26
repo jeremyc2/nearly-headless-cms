@@ -20,7 +20,7 @@ const createTemporaryStorageRoot = (testDirectory: string): Promise<string> =>
       }
       return body;
     }),
-  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-096] test URL helper is intentionally a direct two-argument operation.
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-133] test URL helper is intentionally a direct two-argument operation.
   managementStateUrl = (contentTypeId: string, entryId: string): string =>
     `http://cms.test/api/v1/management/definition-spaces/example-blog/content-types/${contentTypeId}/entries/${entryId}/state`,
   oneItem = 1,
@@ -33,7 +33,7 @@ const createTemporaryStorageRoot = (testDirectory: string): Promise<string> =>
     }
     return publishedPostId;
   },
-  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-088] JSON field helper is intentionally a direct two-argument operation.
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-125] JSON field helper is intentionally a direct two-argument operation.
   requireStringField = (record: Readonly<Record<string, unknown>>, key: string): string => {
     const value = record[key];
     if (typeof value !== "string") {

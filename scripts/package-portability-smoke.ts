@@ -1,4 +1,4 @@
-// oxlint-disable-next-line effecttsgo/node-builtin-import -- [EH-102] Standalone CLI resolves repository paths before any Effect application exists.
+// oxlint-disable-next-line effecttsgo/node-builtin-import -- [EH-150] Standalone CLI resolves repository paths before any Effect application exists.
 import path from "node:path";
 import { readPackageManifest } from "./package-manifest.ts";
 
@@ -7,14 +7,13 @@ const effectVersion = "4.0.0-rc.111",
   packageManifest = await readPackageManifest(
     path.join(monorepoRoot, "packages/nearly-headless-cms/package.json"),
   ),
-  // oxlint-disable-next-line eslint/sort-vars -- [EH-258] archive path depends on the resolved package manifest version.
   packageArchivePath = path.join(
     monorepoRoot,
     ".artifacts/npm",
     `nearly-headless-cms-${packageManifest.version}.tgz`,
   ),
   portableConsumer = `import { Cms, ContentDefinition } from "nearly-headless-cms"; import { HttpTransport } from "nearly-headless-cms/http"; import { MemoryEntryPersistence } from "nearly-headless-cms/adapters"; import { DevelopmentCms } from "nearly-headless-cms/testing"; console.log(Boolean(Cms.Service && ContentDefinition.compile && HttpTransport.makeHandler && MemoryEntryPersistence.layer && DevelopmentCms.layer));\n`,
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-013] CLI command runner awaits process completion.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-015] CLI command runner awaits process completion.
   runCommand = async (command: readonly string[], workingDirectory: string): Promise<void> => {
     const child = Bun.spawn([...command], {
       cwd: workingDirectory,

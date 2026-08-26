@@ -22,12 +22,12 @@ const headlessApiContext: { fixture: HeadlessApiFixture | undefined } = { fixtur
   };
 
 describe("Example CMS Headless API", () => {
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-007] Bun lifecycle hook performs async system setup.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-009] Bun lifecycle hook performs async system setup.
   beforeAll(async () => {
     headlessApiContext.fixture = await createHeadlessApiFixture(import.meta.dir);
   });
 
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-006] Bun lifecycle hook performs async cleanup.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-008] Bun lifecycle hook performs async cleanup.
   afterAll(async () => {
     const { fixture } = headlessApiContext;
     if (fixture !== undefined) {

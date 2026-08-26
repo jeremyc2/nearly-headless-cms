@@ -1,0 +1,48 @@
+---
+import GuideLayout from "../../layouts/guide-layout.astro"
+---
+<GuideLayout
+  title="Getting started"
+  description="Nearly Headless CMS is a library for building your own headless CMS. You bring the storage, identity, and HTTP layer. The library gives you the CMS service."
+  nextGuide={{ href: "/guides/defining-content/", label: "Define your content" }}
+>
+  <p>
+    You do not install a CMS product. You compose one from services. The library exposes a single
+    <code>Cms.Service</code> Effect service. Your app provides the layers it needs: where content
+    lives, who is making a request, and how HTTP routes reach the CMS.
+  </p>
+
+  <h2>The smallest useful app</h2>
+  <p>For local development, start with the in-memory layer:</p>
+  <pre><code>{`import { ContentDefinition, Cms } from "nearly-headless-cms"
+import { InMemory } from "nearly-headless-cms/layers"
+
+const snapshot = ContentDefinition.compileSnapshot({
+  definitionSpaceId: "my-site",
+  snapshotId: "v1",
+  definitions: [/* your content types */],
+})
+
+const cmsLayer = InMemory.cms({ snapshot })`}</code></pre>
+  <p>
+    That one layer already wires open authorization, anonymous identity, crypto identifiers, and
+    process-local storage. You can swap any piece later without touching the CMS service itself.
+  </p>
+
+  <h2>What you provide vs what the library owns</h2>
+  <ul>
+    <li><strong>You provide:</strong> persistence, authorization, identity, identifier generation, HTTP transport, and any custom API operations.</li>
+    <li><strong>The library owns:</strong> the CMS service — creating entries, querying, assets, definition snapshots, and history.</li>
+  </ul>
+
+  <h2>Where the example apps fit</h2>
+  <p>
+    The Example CMS in this monorepo shows a full composition with filesystem storage, delivery and
+    management APIs, and a React dashboard. This Public Blog is the other half: a static site that
+    reads from the Headless API at build time.
+  </p>
+  <p>
+    Follow the guides in order, or jump to <a href="/guides/providing-layers/">Providing layers</a>
+    if you already know your storage backend.
+  </p>
+</GuideLayout>

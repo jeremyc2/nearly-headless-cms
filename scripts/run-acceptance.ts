@@ -1,5 +1,5 @@
 // This standalone Bun CLI resolves repository paths before any Effect application exists.
-// oxlint-disable-next-line effecttsgo/node-builtin-import -- [EH-102] Standalone CLI resolves repository paths before any Effect application exists.
+// oxlint-disable-next-line effecttsgo/node-builtin-import -- [EH-150] Standalone CLI resolves repository paths before any Effect application exists.
 import path from "node:path";
 import { readPackageManifest } from "./package-manifest.ts";
 
@@ -11,7 +11,6 @@ const acceptanceServers: {
     publicBlog: undefined,
   },
   monorepoRoot = path.join(import.meta.dir, ".."),
-  // oxlint-disable-next-line eslint/sort-vars -- [EH-350] acceptance CMS storage path depends on the resolved monorepo root.
   acceptanceCmsStorageRoot = path.join(monorepoRoot, ".artifacts/acceptance/example-cms"),
   packageManifest = await readPackageManifest(
     path.join(monorepoRoot, "packages/nearly-headless-cms/package.json"),
@@ -21,12 +20,12 @@ const acceptanceServers: {
     ".artifacts/npm",
     `nearly-headless-cms-${packageManifest.version}.tgz`,
   ),
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-013] CLI command runner awaits process completion.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-015] CLI command runner awaits process completion.
   run = async <Command extends readonly string[]>(
     command: Readonly<Command>,
     environment?: Readonly<Record<string, string>>,
   ): Promise<void> => {
-    // oxlint-disable-next-line effecttsgo/global-console -- [EH-076] acceptance progress is intentionally emitted to CLI stdout.
+    // oxlint-disable-next-line effecttsgo/global-console -- [EH-095] acceptance progress is intentionally emitted to CLI stdout.
     console.log(`\n→ ${command.join(" ")}`);
     const child = Bun.spawn([...command], {
       cwd: monorepoRoot,
@@ -38,18 +37,18 @@ const acceptanceServers: {
       throw new Error(`Acceptance command failed: ${command.join(" ")}`);
     }
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-014] CLI readiness polling requires awaited retries.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-016] CLI readiness polling requires awaited retries.
   waitFor = (requestUrl: string): Promise<void> => {
     const acceptancePollIntervalMilliseconds = 100,
       acceptanceReadinessTimeoutMilliseconds = 20_000,
       deadline = performance.now() + acceptanceReadinessTimeoutMilliseconds,
-      // oxlint-disable-next-line effecttsgo/async-function -- [EH-053] recursive polling requires awaited retries.
+      // oxlint-disable-next-line effecttsgo/async-function -- [EH-062] recursive polling requires awaited retries.
       poll = async (): Promise<void> => {
         if (performance.now() >= deadline) {
           throw new Error(`Timed out waiting for ${requestUrl}`);
         }
         try {
-          // oxlint-disable-next-line effecttsgo/global-fetch -- [EH-080] CLI acceptance polling intentionally uses the platform fetch boundary.
+          // oxlint-disable-next-line effecttsgo/global-fetch -- [EH-100] CLI acceptance polling intentionally uses the platform fetch boundary.
           const response = await fetch(requestUrl);
           if (response.ok) {
             return;
@@ -112,5 +111,5 @@ await run(["bun", "run", "--cwd", "packages/nearly-headless-cms", "readme:verify
 await run(["bun", "run", "--cwd", "packages/nearly-headless-cms", "package:smoke"], {
   PACKAGE_ARCHIVE: packageVersionArchive,
 });
-// oxlint-disable-next-line effecttsgo/global-console -- [EH-075] acceptance completion is intentionally emitted to CLI stdout.
+// oxlint-disable-next-line effecttsgo/global-console -- [EH-094] acceptance completion is intentionally emitted to CLI stdout.
 console.log("\nNearly Headless CMS v0.1 automated acceptance passed.");

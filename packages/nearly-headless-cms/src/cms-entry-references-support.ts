@@ -61,9 +61,8 @@ const { collectRichTextReferences, validateRichTextDocument } = cmsEntryReferenc
     }
     return [value];
   },
-  // oxlint-disable-next-line eslint/sort-vars -- [EH-131] helper declaration order follows dependency order.
   appendAssetIdentifiers = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-184] mutable assetIds out-param is bundled in input interface.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-249] mutable assetIds out-param is bundled in input interface.
     input: Readonly<AppendAssetIdentifiersInput>,
   ): void => {
     for (const assetId of oneOrMany(input.value)) {
@@ -73,7 +72,7 @@ const { collectRichTextReferences, validateRichTextDocument } = cmsEntryReferenc
     }
   },
   appendRelationshipTargets = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-190] mutable relationships out-param is bundled in input interface.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-255] mutable relationships out-param is bundled in input interface.
     input: Readonly<AppendRelationshipTargetsInput>,
   ): void => {
     for (const entryId of oneOrMany(input.value)) {
@@ -91,9 +90,8 @@ const { collectRichTextReferences, validateRichTextDocument } = cmsEntryReferenc
     }
     return undefined;
   },
-  // oxlint-disable-next-line eslint/sort-vars -- [EH-131] helper declaration order follows dependency order.
   collectAssetFieldReferences = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-188] mutable out-params are bundled in input interface.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-253] mutable out-params are bundled in input interface.
     input: Readonly<CollectFieldReferencesInput>,
   ): void => {
     const { assetIds, field, value } = input,
@@ -105,7 +103,7 @@ const { collectRichTextReferences, validateRichTextDocument } = cmsEntryReferenc
     }
   },
   collectRelationshipFieldReferences = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-188] mutable out-params are bundled in input interface.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-253] mutable out-params are bundled in input interface.
     input: Readonly<CollectFieldReferencesInput>,
   ): void => {
     const { field, relationships, value } = input,
@@ -119,7 +117,7 @@ const { collectRichTextReferences, validateRichTextDocument } = cmsEntryReferenc
     }
   },
   collectRichTextFieldReferences = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-188] mutable out-params are bundled in input interface.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-253] mutable out-params are bundled in input interface.
     input: Readonly<CollectFieldReferencesInput>,
   ): void => {
     const { assetIds, field, relationships, value } = input;
@@ -131,9 +129,8 @@ const { collectRichTextReferences, validateRichTextDocument } = cmsEntryReferenc
       assetIds.push(...richTextReferences.assetIds);
     }
   },
-  // oxlint-disable-next-line eslint/sort-vars -- [EH-131] helper declaration order follows dependency order.
   collectFieldReferences = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-188] mutable out-params are bundled in input interface.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-253] mutable out-params are bundled in input interface.
     input: Readonly<CollectFieldReferencesInput>,
   ): void => {
     collectRelationshipFieldReferences(input);

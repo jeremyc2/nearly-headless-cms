@@ -4,7 +4,7 @@ import { HttpRouter, HttpServerResponse, HttpStaticServer } from "effect/unstabl
 import { DashboardBuildFailure } from "./dashboard-build-failure.ts";
 import { HttpTransport } from "nearly-headless-cms/http";
 import { makeSeededExampleCompositionFromEnvironment } from "./system.ts";
-import { seed } from "./domain/seed.ts";
+import { seed } from "./content/seed.ts";
 import tailwind from "bun-plugin-tailwind";
 
 const applicationBaseDirectory = new URL("..", import.meta.url).pathname,

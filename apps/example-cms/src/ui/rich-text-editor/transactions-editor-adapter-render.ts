@@ -13,7 +13,7 @@ const { blockElementName } = transactionsEditorAdapterSupport,
   { conditionalValue } = transactionsSupport,
   applyTextMarks = (
     marks: readonly RichText.Mark[] | undefined,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-166] DOM spans are mutated while applying rich-text marks.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-229] DOM spans are mutated while applying rich-text marks.
     text: HTMLSpanElement,
   ): void => {
     if (marks?.includes("bold") === true) {
@@ -27,7 +27,7 @@ const { blockElementName } = transactionsEditorAdapterSupport,
     }
   },
   assignTextSpanIndices = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-167] DOM spans are mutated while assigning editor selection indices.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-230] DOM spans are mutated while assigning editor selection indices.
     input: {
       readonly blockIndex: number;
       readonly inlineIndex: number;
@@ -65,9 +65,9 @@ const { blockElementName } = transactionsEditorAdapterSupport,
     return element;
   },
   renderBlockChildren = <
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     RenderBlockType extends RenderBlock,
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     Input extends {
       readonly block: RichText.BlockNode;
       readonly blockIndex: number | undefined;

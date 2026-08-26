@@ -10,7 +10,7 @@ interface AssignProjectedSegmentInput {
   value: JsonValue;
 }
 
-// oxlint-disable-next-line eslint/one-var -- [EH-125] helpers with readonly disables must stay as separate const declarations.
+// oxlint-disable-next-line eslint/one-var -- [EH-187] helpers with readonly disables must stay as separate const declarations.
 const aNestedProjectedRecord = (existing: JsonValue | undefined): Record<string, JsonValue> => {
     if (isJsonObject(existing)) {
       return { ...existing };
@@ -18,7 +18,7 @@ const aNestedProjectedRecord = (existing: JsonValue | undefined): Record<string,
     return {};
   },
   bAssignProjectedSegment = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-189] mutable projected out-param is bundled in input interface.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-254] mutable projected out-param is bundled in input interface.
     input: Readonly<AssignProjectedSegmentInput>,
   ): void => {
     let current = input.projected;

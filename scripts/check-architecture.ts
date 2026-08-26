@@ -1,5 +1,5 @@
 // This standalone Bun CLI resolves repository paths before any Effect application exists.
-// oxlint-disable-next-line effecttsgo/node-builtin-import -- [EH-102] Standalone CLI resolves repository paths before any Effect application exists.
+// oxlint-disable-next-line effecttsgo/node-builtin-import -- [EH-150] Standalone CLI resolves repository paths before any Effect application exists.
 import path from "node:path";
 
 const architectureRepository = path.join(import.meta.dir, ".."),
@@ -191,7 +191,7 @@ for (const forbidden of [
   }
 }
 await Promise.all(
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-041] parallel architecture scans use async file reads.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-050] parallel architecture scans use async file reads.
   sourcePaths.map(async (relativePath) => {
     const source = await Bun.file(path.join(architectureRepository, relativePath)).text();
     if (
@@ -208,7 +208,7 @@ await Promise.all(
       (relativePath) =>
         !relativePath.includes("/bun/filesystem/") && !relativePath.includes("/bun/http/"),
     )
-    // oxlint-disable-next-line effecttsgo/async-function -- [EH-042] parallel portability scans use async file reads.
+    // oxlint-disable-next-line effecttsgo/async-function -- [EH-051] parallel portability scans use async file reads.
     .map(async (relativePath) => {
       const source = await Bun.file(path.join(architectureRepository, relativePath)).text();
       if (/\bBun\.|["']bun:/u.test(source)) {
@@ -219,7 +219,7 @@ await Promise.all(
 for (const sourcePath of publicApiSourcePaths) {
   const packageRelativePath = `packages/nearly-headless-cms/${sourcePath}`,
     // Check files in declaration order so diagnostics remain deterministic.
-    // oxlint-disable-next-line no-await-in-loop -- [EH-134] checks intentionally run sequentially.
+    // oxlint-disable-next-line no-await-in-loop -- [EH-196] checks intentionally run sequentially.
     sourceText = await Bun.file(path.join(architectureRepository, packageRelativePath)).text(),
     splitSourceLines = sourceText.split("\n");
   for (const [lineIndex, line] of splitSourceLines.entries()) {
@@ -238,7 +238,7 @@ if (documentationScanState.declarations.length > 0) {
     `Public API declarations need TSDoc:\n${documentationScanState.declarations.join("\n")}`,
   );
 }
-// oxlint-disable-next-line effecttsgo/global-console -- [EH-078] this script's contract is machine-readable CLI stdout.
+// oxlint-disable-next-line effecttsgo/global-console -- [EH-098] this script's contract is machine-readable CLI stdout.
 console.log(
   JSON.stringify(
     {

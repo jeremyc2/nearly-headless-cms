@@ -17,7 +17,7 @@ const assetHandlerEffect = HttpTransport.makeHandler({
     maximumMultipartFileByteLength: payloadByteFive,
     maximumMultipartMetadataByteLength: 256,
   }).pipe(
-    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-112] test entry point needs a fresh isolated layer.
+    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-162] test entry point needs a fresh isolated layer.
     Effect.provide(DevelopmentCms.layer({ snapshot })),
   ),
   assetUploadBytes = [
@@ -27,14 +27,12 @@ const assetHandlerEffect = HttpTransport.makeHandler({
     payloadByteFour,
     payloadByteFive,
   ] as const,
-  // oxlint-disable-next-line eslint/sort-vars -- [EH-308] upload path follows handler construction in this socket scenario.
   assetUploadPath = "api/v1/management/definition-spaces/example-blog/assets",
   multipartBoundary = "nhcmsSlowProducerBoundary",
   multipartFooterBytes = new TextEncoder().encode(`\r\n--${multipartBoundary}--\r\n`),
   multipartHeaderBytes = new TextEncoder().encode(
     `--${multipartBoundary}\r\nContent-Disposition: form-data; name="metadata"\r\n\r\n{"filename":"pixel.bin","mediaType":"application/octet-stream"}\r\n--${multipartBoundary}\r\nContent-Disposition: form-data; name="content"; filename="pixel.bin"\r\nContent-Type: application/octet-stream\r\n\r\n`,
   ),
-  // oxlint-disable-next-line eslint/sort-vars -- [EH-310] paced multipart body closes over header and footer bytes declared above.
   makeSlowProducerUploadBody = (): ReadableStream<Uint8Array> => {
     const multipartChunks = [
       multipartHeaderBytes,
@@ -65,7 +63,7 @@ const assetHandlerEffect = HttpTransport.makeHandler({
     ).then((transport) => {
       const uploadUrl = `${transport.address}${assetUploadPath}`;
       return (
-        // oxlint-disable-next-line effecttsgo/global-fetch -- [EH-309] integration test uploads a paced multipart Asset body through the live HTTP listener.
+        // oxlint-disable-next-line effecttsgo/global-fetch -- [EH-111] integration test uploads a paced multipart Asset body through the live HTTP listener.
         fetch(uploadUrl, {
           body: makeSlowProducerUploadBody(),
           headers: {

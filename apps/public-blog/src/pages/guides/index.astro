@@ -1,0 +1,45 @@
+---
+import SiteLayout from "../../layouts/site-layout.astro"
+
+const guides = [
+  {
+    description: "What Nearly Headless CMS is, and the smallest layer composition to get running.",
+    href: "/guides/getting-started/",
+    title: "Getting started",
+  },
+  {
+    description: "Declare content types in one file using field helpers and compileSnapshot.",
+    href: "/guides/defining-content/",
+    title: "Define your content",
+  },
+  {
+    description: "One layer per dependency, plus convenience layers you can swap out.",
+    href: "/guides/providing-layers/",
+    title: "Provide layers",
+  },
+  {
+    description: "Fetch a static export from the Headless API and render a content site.",
+    href: "/guides/building-a-site/",
+    title: "Build a content site",
+  },
+]
+---
+<SiteLayout title="Guides" description="Learn how to compose a headless CMS and build a content site with Nearly Headless CMS.">
+  <section class="hero shell narrow">
+    <p class="eyebrow">Nearly Headless CMS</p>
+    <h1>Guides for building with the library</h1>
+    <p class="hero-intro">
+      These pages walk through the same ideas the Example CMS and this Public Blog demonstrate —
+      without requiring you to read the library internals first.
+    </p>
+  </section>
+  <div class="shell content-stack guide-index">
+    {guides.map((guide) => (
+      <article class="guide-card">
+        <h2><a href={guide.href}>{guide.title}</a></h2>
+        <p>{guide.description}</p>
+        <a class="read-link" href={guide.href}>Read guide →</a>
+      </article>
+    ))}
+  </div>
+</SiteLayout>

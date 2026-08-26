@@ -44,6 +44,8 @@
   ],
   "rules": {
     "eslint/new-cap": "off",
+    "eslint/sort-imports": "off",
+    "eslint/sort-vars": "off",
     "no-magic-numbers": [
       "error",
       {

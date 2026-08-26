@@ -30,7 +30,7 @@ const { bodylessResponse, jsonResponse, requestFailureResponse } = transportResp
     if (origin === null || !options.cors.origins.includes(origin)) {
       return response;
     }
-    // oxlint-disable-next-line eslint/one-var -- [EH-336] CORS header mutation follows the origin allowlist guard.
+    // oxlint-disable-next-line eslint/one-var -- [EH-185] CORS header mutation follows the origin allowlist guard.
     const headers = new Headers(response.headers);
     headers.set("access-control-allow-origin", origin);
     headers.append("vary", "Origin");
@@ -65,7 +65,7 @@ const { bodylessResponse, jsonResponse, requestFailureResponse } = transportResp
   },
   handleDiscoveryRoute = (
     context: Readonly<RouteHandlerContext>,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-164] discovery routes read configured operations without mutation.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-226] discovery routes read configured operations without mutation.
     operations: Readonly<NonNullable<Options["deliveryOperations"]>>,
   ): Response | undefined => {
     if (
@@ -91,9 +91,9 @@ const { bodylessResponse, jsonResponse, requestFailureResponse } = transportResp
   },
   handleOpenApiRoutes = (
     context: Readonly<RouteHandlerContext>,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-195] OpenAPI routes read configured operations without mutation.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-260] OpenAPI routes read configured operations without mutation.
     operations: Readonly<NonNullable<Options["deliveryOperations"]>>,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-195] OpenAPI routes read configured operations without mutation.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-260] OpenAPI routes read configured operations without mutation.
     managementOperations: Readonly<NonNullable<Options["managementOperations"]>>,
   ): Response | undefined => {
     if (

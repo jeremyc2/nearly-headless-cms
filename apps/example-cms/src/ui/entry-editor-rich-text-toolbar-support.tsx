@@ -27,11 +27,11 @@ const RichTextBlockPicker = <Adapter extends RefObject<BrowserAdapter | null>>({
     </label>
   ),
   RichTextMarkButton = <
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     Adapter extends RefObject<BrowserAdapter | null>,
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     Mark extends "bold" | "code" | "italic" | "strikethrough",
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     Content extends ReactNode,
   >({
     adapter,
@@ -101,7 +101,7 @@ const RichTextBlockPicker = <Adapter extends RefObject<BrowserAdapter | null>>({
       </button>
     </>
   ),
-  // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+  // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
   dispatchBlockKind = <Adapter extends RefObject<BrowserAdapter | null>>(
     adapter: Adapter,
     blockType: string,

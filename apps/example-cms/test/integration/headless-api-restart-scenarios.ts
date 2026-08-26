@@ -18,7 +18,7 @@ const makeRestartCommentRequest = (postId: string): Request =>
       method: "POST",
     }),
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-031] helper intentionally awaits native HTTP promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-037] helper intentionally awaits native HTTP promises.
   recordRestartComment = async (
     system: ExampleSystem,
   ): Promise<{
@@ -30,7 +30,7 @@ const makeRestartCommentRequest = (postId: string): Request =>
     return { postId, receipt: await jsonRecord(responseComment) };
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-030] helper intentionally awaits native filesystem cleanup.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-036] helper intentionally awaits native filesystem cleanup.
   restartSeededSystem = async (
     firstSystem: ExampleSystem,
     restartRoot: string,
@@ -39,7 +39,7 @@ const makeRestartCommentRequest = (postId: string): Request =>
     return createExampleSystem({ storageRoot: restartRoot });
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-038] HTTP contract assertions intentionally await native promises.
   verifyCommentReceiptReplay = async (testDirectory: string): Promise<void> => {
     const aSetupRoot = await createTemporaryStorageRoot(testDirectory),
       bSetupFirstSystem = await createExampleSystem({ seed: true, storageRoot: aSetupRoot }),

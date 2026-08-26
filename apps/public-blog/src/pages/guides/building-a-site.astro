@@ -1,0 +1,45 @@
+---
+import GuideLayout from "../../layouts/guide-layout.astro"
+---
+<GuideLayout
+  title="Build a content site"
+  description="A headless CMS is only half the story. This Public Blog fetches a static export at build time and renders plain HTML pages."
+>
+  <p>
+    Content clients should not import the CMS library. They talk to the Headless API — the delivery
+    surface your CMS exposes to the public — and turn the response into pages, feeds, and forms.
+  </p>
+
+  <h2>Build-time export, runtime comments</h2>
+  <p>The Public Blog workflow:</p>
+  <ol>
+    <li>Example CMS runs and serves the Headless API on port 3000.</li>
+    <li><code>fetch-export.ts</code> downloads a validated public export and assets.</li>
+    <li>Astro builds static HTML from <code>.generated/public-export.json</code>.</li>
+    <li>Comment submission is the only piece that calls the API at runtime.</li>
+  </ol>
+
+  <h2>Why static?</h2>
+  <p>
+    Posts, authors, categories, and tags change on editorial cadence — not on every page view. A
+    static snapshot keeps hosting simple, makes caching trivial, and proves the Headless API is a
+    clean boundary.
+  </p>
+
+  <h2>Your stack, your templates</h2>
+  <p>
+    This site uses Astro and Tailwind. Yours might be Next.js, Eleventy, or a mobile app. The
+    contract is the export shape from the Headless API, not the library's internal types.
+  </p>
+
+  <h2>Try it locally</h2>
+  <pre><code>{`# Terminal 1 — start the CMS
+cd apps/example-cms && bun run dev
+
+# Terminal 2 — build and serve the blog
+cd apps/public-blog && bun run build && bun run dev`}</code></pre>
+  <p>
+    Browse the archive, read a post, submit a comment. Then open the Example CMS dashboard to approve
+    the comment and trigger a rebuild.
+  </p>
+</GuideLayout>

@@ -87,7 +87,7 @@ const { customDescriptor, descriptor } = openApiOperationSupport,
     },
   }),
   dCustomManagementPaths = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-194] OpenAPI operation descriptors are read while building path maps.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-259] OpenAPI operation descriptors are read while building path maps.
     operations: readonly ManagementOperation[],
   ): Readonly<Record<string, Readonly<Record<string, OperationDescriptor>>>> =>
     Object.fromEntries(
@@ -97,7 +97,7 @@ const { customDescriptor, descriptor } = openApiOperationSupport,
       ]),
     ),
   eManagementPaths = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-194] OpenAPI operation descriptors are read while building path maps.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-259] OpenAPI operation descriptors are read while building path maps.
     operations: readonly ManagementOperation[],
   ): Readonly<Record<string, Readonly<Record<string, OperationDescriptor>>>> =>
     ({

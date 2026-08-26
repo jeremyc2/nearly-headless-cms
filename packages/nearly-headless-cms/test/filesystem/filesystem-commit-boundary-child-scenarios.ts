@@ -14,12 +14,12 @@ import {
 
 const firstEntryIdentifier = "entry-1",
   runWithLayerExit = <Value, EffectError, Requirements>(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-179] Layer values are provided to runPromise without mutation.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-244] Layer values are provided to runPromise without mutation.
     layer: Layer.Layer<Requirements, EffectError>,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-173] Effect programs are executed by runPromise without mutation.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-237] Effect programs are executed by runPromise without mutation.
     effect: Readonly<Effect.Effect<Value, EffectError, Requirements>>,
   ): Promise<Exit.Exit<Value, EffectError>> =>
-    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-112] test entry point needs a fresh isolated layer.
+    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-162] test entry point needs a fresh isolated layer.
     Effect.runPromise(effect.pipe(Effect.provide(layer), Effect.exit)),
   verifyChildTerminationDuringEntryCommit = (): Promise<void> =>
     mkdtemp(join(tmpdir(), "nearly-headless-cms-child-entry-commit-")).then((root) => {

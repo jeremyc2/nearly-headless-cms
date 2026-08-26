@@ -15,7 +15,7 @@ const { executeOperation } = transportOperation,
   } = deliveryRouteSupport,
   handleCustomManagementOperations = (
     context: Readonly<RouteHandlerContext>,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-202] route handlers inspect operation metadata without mutating configured operations.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-268] route handlers inspect operation metadata without mutating configured operations.
     managementOperations: NonNullable<Options["managementOperations"]>,
   ): Response | undefined | Promise<Response | undefined> => {
     const match = findCustomManagementMatch(context, managementOperations);
@@ -50,7 +50,7 @@ const { executeOperation } = transportOperation,
   },
   handleDeliveryOperations = (
     context: Readonly<RouteHandlerContext>,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-202] route handlers inspect operation metadata without mutating configured operations.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-268] route handlers inspect operation metadata without mutating configured operations.
     operationMatchers: readonly {
       readonly expression: RegExp;
       readonly names: readonly string[];

@@ -23,7 +23,7 @@ export interface EntryEditorRichTextFieldViewProperties {
 }
 
 export const EntryEditorRichTextFieldView = <
-  // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+  // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
   Properties extends EntryEditorRichTextFieldViewProperties,
 >({
   adapter,

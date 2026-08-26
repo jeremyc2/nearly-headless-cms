@@ -9,7 +9,6 @@ import type {
   ValidateUndefinedFieldValueInput,
 } from "./content-definition-entry-validation-types.ts";
 import { cloneJson, isJsonObject } from "./internal/json.ts";
-// oxlint-disable-next-line eslint/sort-imports -- [EH-238] multi-specifier type imports precede single-specifier imports in this validation module.
 import type { JsonObject, JsonValue } from "./content-definition-types.ts";
 import type { ValidationIssue } from "./cms-error.ts";
 import validationSupport from "./content-definition-validation-support.ts";
@@ -18,7 +17,7 @@ import valueValidation from "./content-definition-value-validation.ts";
 const { createValidationIssue } = validationSupport,
   { validateValue } = valueValidation,
   appendUnknownFieldIssues = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-186] mutable issues out-param is bundled in input interface.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-251] mutable issues out-param is bundled in input interface.
     input: Readonly<AppendUnknownFieldIssuesInput>,
   ): ValidationIssue[] => {
     const knownKeys = new Set(input.input.fields.map((field) => field.key));
@@ -36,7 +35,7 @@ const { createValidationIssue } = validationSupport,
     return input.issues;
   },
   validateListBounds = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-186] mutable issues out-param is bundled in input interface.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-251] mutable issues out-param is bundled in input interface.
     input: Readonly<ValidateListBoundsInput>,
   ): void => {
     const { field, fieldPath, fieldValue, issues } = input;
@@ -71,7 +70,7 @@ const { createValidationIssue } = validationSupport,
     }
   },
   validateListItem = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-187] mutable listResult out-param is bundled in input interface.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-252] mutable listResult out-param is bundled in input interface.
     input: Readonly<ValidateListItemInput>,
   ): void => {
     const itemPath = [...input.input.fieldPath, input.itemIndex];
@@ -96,7 +95,7 @@ const { createValidationIssue } = validationSupport,
     );
   },
   validateListItems = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-187] mutable listResult out-param is bundled in input interface.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-252] mutable listResult out-param is bundled in input interface.
     input: Readonly<ValidateListItemsInput>,
   ): void => {
     for (const [itemIndex, item] of input.listItems.entries()) {
@@ -104,7 +103,7 @@ const { createValidationIssue } = validationSupport,
     }
   },
   validateNestedListFieldValue = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-185] mutable issues and result out-params are bundled in input interface.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-250] mutable issues and result out-params are bundled in input interface.
     input: Readonly<ValidatePresentFieldValueInput>,
   ): void => {
     if (input.field.kind.kind !== "list" || input.field.nestedFields === undefined) {
@@ -131,7 +130,7 @@ const { createValidationIssue } = validationSupport,
     input.result[input.field.key] = listResult;
   },
   validateNestedObjectFieldValue = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-185] mutable issues and result out-params are bundled in input interface.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-250] mutable issues and result out-params are bundled in input interface.
     input: Readonly<ValidatePresentFieldValueInput>,
   ): void => {
     if (input.field.nestedFields === undefined) {
@@ -158,7 +157,7 @@ const { createValidationIssue } = validationSupport,
     );
   },
   validateNullFieldValue = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-185] mutable issues and result out-params are bundled in input interface.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-250] mutable issues and result out-params are bundled in input interface.
     input: Readonly<ValidateNullFieldValueInput>,
   ): void => {
     const { field, fieldPath, issues, result } = input;
@@ -169,7 +168,7 @@ const { createValidationIssue } = validationSupport,
     issues.push(createValidationIssue(fieldPath, "notNullable", `${field.label} cannot be null`));
   },
   validateScalarFieldValue = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-185] mutable issues and result out-params are bundled in input interface.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-250] mutable issues and result out-params are bundled in input interface.
     input: Readonly<ValidatePresentFieldValueInput>,
   ): void => {
     input.issues.push(
@@ -182,9 +181,8 @@ const { createValidationIssue } = validationSupport,
     );
     input.result[input.field.key] = cloneJson(input.fieldValue);
   },
-  // oxlint-disable-next-line eslint/sort-vars -- [EH-131] helper declaration order follows dependency order.
   validatePresentFieldValue = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-185] mutable issues and result out-params are bundled in input interface.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-250] mutable issues and result out-params are bundled in input interface.
     input: Readonly<ValidatePresentFieldValueInput>,
   ): void => {
     if (input.field.nestedFields !== undefined && input.field.kind.kind === "list") {
@@ -198,7 +196,7 @@ const { createValidationIssue } = validationSupport,
     validateScalarFieldValue(input);
   },
   validateUndefinedFieldValue = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-185] mutable issues and result out-params are bundled in input interface.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-250] mutable issues and result out-params are bundled in input interface.
     input: Readonly<ValidateUndefinedFieldValueInput>,
   ): void => {
     const { field, fieldPath, issues, result, validateOptions } = input;
@@ -210,7 +208,6 @@ const { createValidationIssue } = validationSupport,
       issues.push(createValidationIssue(fieldPath, "required", `${field.label} is required`));
     }
   },
-  // oxlint-disable-next-line eslint/sort-vars -- [EH-131] helper declaration order follows dependency order.
   validateFields = (
     input: Readonly<ValidateFieldsInput>,
   ): {

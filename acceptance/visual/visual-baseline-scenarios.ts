@@ -14,15 +14,13 @@ export interface VisualBaselineScenario {
   readonly ready: string;
 }
 
-// oxlint-disable-next-line effecttsgo/async-function -- [EH-334] visual baseline setup prepares invalid draft publication state through the management API.
+// oxlint-disable-next-line effecttsgo/async-function -- [EH-080] visual baseline setup prepares invalid draft publication state through the management API.
 const prepareInvalidDraftPublication = async (): Promise<void> => {
-  // oxlint-disable-next-line eslint/sort-vars -- [EH-337] draft identifiers are resolved before lighthouse fixture values are copied.
   const draftIdentifier = await queryEntryIdentifierBySlug("post", "the-unfinished-map"),
     draftState = await readEntryState("post", draftIdentifier),
     draftValues = readEntryValuesFromState(draftState),
     lighthouseIdentifier = await queryEntryIdentifierBySlug("post", "a-lighthouse-for-content"),
     lighthouseValues = readEntryValuesFromState(await readEntryState("post", lighthouseIdentifier)),
-  // oxlint-disable-next-line eslint/sort-vars -- [EH-342] featured asset selection follows lighthouse fixture lookup.
    featuredAsset = lighthouseValues["featured-asset"];
   if (typeof featuredAsset !== "string") {
     throw new TypeError("Expected lighthouse featured asset");
@@ -48,7 +46,7 @@ const prepareInvalidDraftPublication = async (): Promise<void> => {
     expression: string,
   ): Promise<void> => {
     const deadline = performance.now() + settleTimeoutMilliseconds,
-      // oxlint-disable-next-line effecttsgo/async-function -- [EH-328] visual baseline polling composes sequential WebView evaluation and sleep.
+      // oxlint-disable-next-line effecttsgo/async-function -- [EH-078] visual baseline polling composes sequential WebView evaluation and sleep.
       poll = async (): Promise<void> => {
         if (performance.now() >= deadline) {
           throw new Error(`Visual prepare timed out: ${expression}`);
@@ -61,7 +59,6 @@ const prepareInvalidDraftPublication = async (): Promise<void> => {
       };
     return poll();
   },
-  // oxlint-disable-next-line eslint/sort-vars -- [EH-354] validation screenshot normalization precedes editor navigation helpers that consume it.
   normalizeDraftValidationScreenshot = <View extends Bun.WebView>(
     view: Readonly<View>,
   ): Promise<void> =>
@@ -89,7 +86,7 @@ const prepareInvalidDraftPublication = async (): Promise<void> => {
       }
       return true;
     })()`),
-  // oxlint-disable-next-line effecttsgo/async-function, eslint/sort-vars -- [EH-339, EH-341] editor navigation depends on waitUntilExpression despite alphabetical ordering.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-023] editor navigation depends on waitUntilExpression despite alphabetical ordering.
   openEditorBySlug = async <View extends Bun.WebView>(
     view: Readonly<View>,
     slug: string,
@@ -101,7 +98,7 @@ const prepareInvalidDraftPublication = async (): Promise<void> => {
       "document.querySelector('.editor-layout') !== null && location.pathname.startsWith('/content/post/')",
     );
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-318] visual baseline preparation composes awaited WebView navigation and evaluation.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-079] visual baseline preparation composes awaited WebView navigation and evaluation.
   prepareCommentSuccess = async <View extends Bun.WebView>(view: Readonly<View>): Promise<void> => {
     await view.navigate("http://localhost:4321/posts/a-lighthouse-for-content/");
     await waitUntilExpression(view, "document.querySelector('[data-comment-form]') !== null");
@@ -145,7 +142,7 @@ const prepareInvalidDraftPublication = async (): Promise<void> => {
       return true;
     })()`);
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-318] visual baseline preparation composes awaited WebView navigation and evaluation.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-079] visual baseline preparation composes awaited WebView navigation and evaluation.
   prepareCommentValidation = async <View extends Bun.WebView>(
     view: Readonly<View>,
   ): Promise<void> => {
@@ -154,7 +151,7 @@ const prepareInvalidDraftPublication = async (): Promise<void> => {
     await view.scrollTo(".comment-form button[type=submit]", { block: "center" });
     await view.click(".comment-form button[type=submit]");
   },
-  // oxlint-disable-next-line effecttsgo/async-function, eslint/sort-vars -- [EH-346, EH-347] controlled input updates precede conflict preparation despite alphabetical ordering.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-018] controlled input updates precede conflict preparation despite alphabetical ordering.
   setControlledInputValue = async <View extends Bun.WebView>(
     view: Readonly<View>,
     selector: string,
@@ -174,17 +171,17 @@ const prepareInvalidDraftPublication = async (): Promise<void> => {
       })(${JSON.stringify({ selector, value })})`,
     );
   },
-  // oxlint-disable-next-line effecttsgo/async-function, eslint/sort-vars -- [EH-344, EH-345] conflict preparation follows controlled input setup despite alphabetical ordering.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-017] conflict preparation follows controlled input setup despite alphabetical ordering.
   prepareConflictPanel = async <View extends Bun.WebView>(view: Readonly<View>): Promise<void> => {
     await restorePublishedLighthousePost();
-    // oxlint-disable-next-line eslint/one-var -- [EH-335] conflict setup reads entry state after the editor finishes loading.
+    // oxlint-disable-next-line eslint/one-var -- [EH-184] conflict setup reads entry state after the editor finishes loading.
     const entryIdentifier = await queryEntryIdentifierBySlug("post", "a-lighthouse-for-content");
     await openEditorBySlug(view, "a-lighthouse-for-content");
     await waitUntilExpression(
       view,
       "document.querySelector('.editor-header button.primary-button:not([disabled])') !== null",
     );
-    // oxlint-disable-next-line eslint/one-var -- [EH-335] conflict setup reads entry state after the editor finishes loading.
+    // oxlint-disable-next-line eslint/one-var -- [EH-184] conflict setup reads entry state after the editor finishes loading.
     const initialState = await readEntryState("post", entryIdentifier),
       staleWriteToken = readWriteToken(initialState),
       values = readEntryValuesFromState(initialState);
@@ -198,7 +195,7 @@ const prepareInvalidDraftPublication = async (): Promise<void> => {
     await view.click(".editor-header button.primary-button");
     await waitUntilExpression(view, "document.querySelector('.conflict-panel') !== null");
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-318] visual baseline preparation composes awaited WebView navigation and evaluation.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-079] visual baseline preparation composes awaited WebView navigation and evaluation.
   prepareDraftValidation = async <View extends Bun.WebView>(view: Readonly<View>): Promise<void> => {
     await prepareInvalidDraftPublication();
     await openEditorBySlug(view, "the-unfinished-map");
@@ -218,34 +215,34 @@ const prepareInvalidDraftPublication = async (): Promise<void> => {
       return true;
     })()`);
   },
-  // oxlint-disable-next-line effecttsgo/async-function, eslint/sort-vars -- [EH-355, EH-356] validation screenshot normalization runs after React settles in the test finalize hook.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-077] validation screenshot normalization runs after React settles in the test finalize hook.
   finalizeDraftValidation = async <View extends Bun.WebView>(view: Readonly<View>): Promise<void> => {
     await normalizeDraftValidationScreenshot(view);
     await view.scrollTo(".issue-summary", { block: "center" });
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-318] visual baseline preparation composes awaited WebView navigation and evaluation.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-079] visual baseline preparation composes awaited WebView navigation and evaluation.
   prepareModerationQueue = async <View extends Bun.WebView>(view: Readonly<View>): Promise<void> => {
     await view.navigate("http://localhost:3000/content/comment");
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-318] visual baseline preparation composes awaited WebView navigation and evaluation.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-079] visual baseline preparation composes awaited WebView navigation and evaluation.
   prepareOverview = async <View extends Bun.WebView>(view: Readonly<View>): Promise<void> => {
     await view.navigate("http://localhost:3000/");
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-318] visual baseline preparation composes awaited WebView navigation and evaluation.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-079] visual baseline preparation composes awaited WebView navigation and evaluation.
   preparePostEditor = async <View extends Bun.WebView>(view: Readonly<View>): Promise<void> => {
     await restorePublishedLighthousePost();
     await openEditorBySlug(view, "a-lighthouse-for-content");
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-318] visual baseline preparation composes awaited WebView navigation and evaluation.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-079] visual baseline preparation composes awaited WebView navigation and evaluation.
   preparePostHistory = async <View extends Bun.WebView>(view: Readonly<View>): Promise<void> => {
     await restorePublishedLighthousePost();
     await openEditorBySlug(view, "a-lighthouse-for-content");
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-318] visual baseline preparation composes awaited WebView navigation and evaluation.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-079] visual baseline preparation composes awaited WebView navigation and evaluation.
   preparePublicBlogHome = async <View extends Bun.WebView>(view: Readonly<View>): Promise<void> => {
     await view.navigate("http://localhost:4321/");
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-318] visual baseline preparation composes awaited WebView navigation and evaluation.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-079] visual baseline preparation composes awaited WebView navigation and evaluation.
   preparePublicBlogPost = async <View extends Bun.WebView>(view: Readonly<View>): Promise<void> => {
     await view.navigate("http://localhost:4321/posts/a-lighthouse-for-content/");
   };

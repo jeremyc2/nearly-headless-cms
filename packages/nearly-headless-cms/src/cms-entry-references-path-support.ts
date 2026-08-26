@@ -32,9 +32,8 @@ const valueAtPath = (
     }
     return current;
   },
-  // oxlint-disable-next-line eslint/sort-vars -- [EH-131] helper declaration order follows dependency order.
   setProjectedValue = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-191] mutable values out-param is bundled in input interface.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-256] mutable values out-param is bundled in input interface.
     input: Readonly<SetProjectedValueInput>,
   ): void => {
     let current = input.values;
@@ -52,7 +51,6 @@ const valueAtPath = (
       }
     }
   },
-  // oxlint-disable-next-line eslint/sort-vars -- [EH-131] helper declaration order follows dependency order.
   fieldsAtPaths = (
     fields: readonly ResolvedField[],
     parentPath: readonly string[] = [],
@@ -68,7 +66,6 @@ const valueAtPath = (
       }
       return [{ field, path }, ...descendants];
     }),
-  // oxlint-disable-next-line eslint/sort-vars -- [EH-131] helper declaration order follows dependency order.
   entryResource = (
     snapshot: Readonly<CompiledSnapshot>,
     contentTypeId: string,
@@ -86,7 +83,6 @@ const valueAtPath = (
   },
   liveRecords = (generation: Readonly<EntryGeneration>): readonly EntryRecord[] =>
     [...generation.records.values()].filter((record) => record.deletionRecord === undefined),
-  // oxlint-disable-next-line eslint/sort-vars -- [EH-131] helper declaration order follows dependency order.
   project = (
     entry: Readonly<Representation>,
     projection: readonly string[] | undefined,

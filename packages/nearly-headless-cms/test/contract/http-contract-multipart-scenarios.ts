@@ -45,7 +45,7 @@ const assetUrl = "http://cms.test/api/v1/management/definition-spaces/example-bl
       maximumMultipartFileByteLength: payloadByteFive,
       maximumMultipartMetadataByteLength: 256,
     }).pipe(
-      // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-112] test entry point needs a fresh isolated layer.
+      // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-162] test entry point needs a fresh isolated layer.
       Effect.provide(DevelopmentCms.layer({ snapshot })),
     );
     return Effect.runPromise(handlerEffect);
@@ -76,7 +76,7 @@ const assetUrl = "http://cms.test/api/v1/management/definition-spaces/example-bl
   },
   metadataJson = JSON.stringify({ filename: "pixel.bin", mediaType: "application/octet-stream" }),
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-038] HTTP contract assertions intentionally await native promises.
   readUploadedAssetIdentifier = async (handler: MultipartHandler): Promise<string> => {
     const assetUploadResponse = await handler(
         new Request(assetUrl, { body: makeAcceptedForm(), method: "POST" }),
@@ -88,7 +88,7 @@ const assetUrl = "http://cms.test/api/v1/management/definition-spaces/example-bl
     return uploadBody["id"];
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-038] HTTP contract assertions intentionally await native promises.
   runMultipartContract = async (): Promise<void> => {
     const handler = await makeMultipartHandler();
     await verifyOversizedMultipart(handler);
@@ -96,7 +96,7 @@ const assetUrl = "http://cms.test/api/v1/management/definition-spaces/example-bl
     await verifyAcceptedMultipart(handler);
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-038] HTTP contract assertions intentionally await native promises.
   runStreamedAssetContract = async (): Promise<void> => {
     const assetHandler = await makeMultipartHandler(),
       assetIdentifier = await readUploadedAssetIdentifier(assetHandler),
@@ -106,7 +106,7 @@ const assetUrl = "http://cms.test/api/v1/management/definition-spaces/example-bl
     await verifyHeadAndRangeAssetResponses(assetHandler, contentUrl);
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-038] HTTP contract assertions intentionally await native promises.
   verifyAcceptedMultipart = async (handler: MultipartHandler): Promise<void> => {
     const formAccepted = makeAcceptedForm(),
       responseAccepted = await handler(
@@ -122,7 +122,7 @@ const assetUrl = "http://cms.test/api/v1/management/definition-spaces/example-bl
     });
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-038] HTTP contract assertions intentionally await native promises.
   verifyConditionalAssetResponse = async (
     handler: MultipartHandler,
     contentUrl: string,
@@ -134,7 +134,7 @@ const assetUrl = "http://cms.test/api/v1/management/definition-spaces/example-bl
     expect(response.status).toBe(notModifiedStatus);
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-038] HTTP contract assertions intentionally await native promises.
   verifyFullAssetResponse = async (
     handler: MultipartHandler,
     contentUrl: string,
@@ -157,7 +157,7 @@ const assetUrl = "http://cms.test/api/v1/management/definition-spaces/example-bl
     return etag;
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-038] HTTP contract assertions intentionally await native promises.
   verifyHeadAndRangeAssetResponses = async (
     handler: MultipartHandler,
     contentUrl: string,
@@ -176,7 +176,7 @@ const assetUrl = "http://cms.test/api/v1/management/definition-spaces/example-bl
   },
   verifyMultipartAssetUpload = (): Promise<void> => runMultipartContract(),
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-038] HTTP contract assertions intentionally await native promises.
   verifyOversizedMultipart = async (handler: MultipartHandler): Promise<void> => {
     const formOversized = makeOversizedForm(),
       responseOversized = await handler(
@@ -187,7 +187,7 @@ const assetUrl = "http://cms.test/api/v1/management/definition-spaces/example-bl
   },
   verifyStreamedAssetDelivery = (): Promise<void> => runStreamedAssetContract(),
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-038] HTTP contract assertions intentionally await native promises.
   verifyUnexpectedMetadata = async (handler: MultipartHandler): Promise<void> => {
     const formUnexpectedMetadata = makeUnexpectedMetadataForm(),
       responseUnexpectedMetadata = await handler(

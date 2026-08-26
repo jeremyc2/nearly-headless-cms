@@ -1,0 +1,20 @@
+{
+  "extends": ["../../.oxlintrc.json"],
+  "rules": {
+    "no-magic-numbers": "off",
+    "typescript/prefer-readonly-parameter-types": "off",
+    "eslint/no-ternary": "off",
+    "eslint/one-var": "off"
+  },
+  "overrides": [
+    {
+      "env": {
+        "astro": true
+      },
+      "files": ["**/*.astro"],
+      "rules": {
+        "eslint/one-var": "off"
+      }
+    }
+  ]
+}

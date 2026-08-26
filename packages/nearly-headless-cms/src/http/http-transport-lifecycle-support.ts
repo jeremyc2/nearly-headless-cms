@@ -38,7 +38,6 @@ const defaultDrainTimeoutMilliseconds = 5000,
       headers: { "content-type": "application/json; charset=utf-8" },
       status: httpStatusServiceUnavailable,
     }),
-  // oxlint-disable-next-line eslint/sort-vars -- [EH-270] lifecycle helpers follow drain, force-stop, hook, wrap, and factory order.
   runRegisteredFinalizers = (
     finalizers: ReadonlySet<() => Promise<void>>,
   ): Effect.Effect<void> =>
@@ -47,9 +46,8 @@ const defaultDrainTimeoutMilliseconds = 5000,
         yield* Effect.promise(() => finalizer().catch(() => {}));
       }
     }),
-  // oxlint-disable-next-line eslint/sort-vars -- [EH-270] lifecycle helpers follow drain, force-stop, hook, wrap, and factory order.
   waitForActiveRequestDrain = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-276] drain polling reads shared active-request counters without mutating them.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-232] drain polling reads shared active-request counters without mutating them.
     lifecycleState: Readonly<LifecycleState>,
     drainTimeoutMilliseconds: number,
   ): Effect.Effect<void> =>
@@ -63,9 +61,8 @@ const defaultDrainTimeoutMilliseconds = 5000,
         yield* Effect.sleep(Duration.millis(drainPollIntervalMilliseconds));
       }
     }),
-  // oxlint-disable-next-line eslint/sort-vars -- [EH-270] lifecycle helpers follow drain, force-stop, hook, wrap, and factory order.
   forceShutdownRemainingRequests = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-280] shutdown mutates shared lifecycle counters and abort controllers.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-270] shutdown mutates shared lifecycle counters and abort controllers.
     lifecycleState: LifecycleState,
   ): Effect.Effect<void> => {
     const pauseAfterAbort = Effect.sleep(Duration.millis(drainPollIntervalMilliseconds));
@@ -73,7 +70,7 @@ const defaultDrainTimeoutMilliseconds = 5000,
       if (lifecycleState.activeRequestCount === 0) {
         return;
       }
-      // oxlint-disable-next-line effecttsgo/abort-controller-in-effect -- [EH-243] transport shutdown keeps one shared AbortController for in-flight Web requests.
+      // oxlint-disable-next-line effecttsgo/abort-controller-in-effect -- [EH-002] transport shutdown keeps one shared AbortController for in-flight Web requests.
       lifecycleState.forcedShutdownController = new AbortController();
       lifecycleState.forcedShutdownController.abort(new Error("transport shutdown drain expired"));
     }).pipe(Effect.andThen(pauseAfterAbort));
@@ -87,14 +84,13 @@ const defaultDrainTimeoutMilliseconds = 5000,
       hook();
     }
   },
-  // oxlint-disable-next-line eslint/sort-vars -- [EH-270] lifecycle helpers follow drain, force-stop, hook, wrap, and factory order.
   createWrappedHandler = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-277] HttpTransport handler mirrors the Web Request callback contract.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-241] HttpTransport handler mirrors the Web Request callback contract.
     handler: Handler,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-281] wrapped handlers mutate shared active-request counters.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-276] wrapped handlers mutate shared active-request counters.
     lifecycleState: LifecycleState,
   ): Handler =>
-    // oxlint-disable-next-line effecttsgo/async-function -- [EH-244] lifecycle wrapper is a Web-standard Promise<Response> callback.
+    // oxlint-disable-next-line effecttsgo/async-function -- [EH-045] lifecycle wrapper is a Web-standard Promise<Response> callback.
     async (request): Promise<Response> => {
       if (!lifecycleState.accepting) {
         return serviceUnavailableResponse();
@@ -116,7 +112,6 @@ const defaultDrainTimeoutMilliseconds = 5000,
         lifecycleState.activeRequestCount -= 1;
       }
     },
-  // oxlint-disable-next-line eslint/sort-vars -- [EH-270] lifecycle helpers follow drain, force-stop, hook, wrap, and factory order.
   createTransportLifecycle = (
     options: Readonly<TransportLifecycleOptions> = {},
   ): TransportLifecycle => {

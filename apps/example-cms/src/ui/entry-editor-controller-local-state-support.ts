@@ -15,9 +15,9 @@ import {
 
 const { useEntryEditorControllerMutations } = entryEditorControllerMutationsSupport,
   useEntryEditorControllerFieldBindings = <
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     Values extends Record<string, unknown>,
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     SetValues extends Dispatch<SetStateAction<Record<string, unknown>>>,
   >(input: {
     readonly setValues: SetValues;
@@ -64,7 +64,7 @@ const { useEntryEditorControllerMutations } = entryEditorControllerMutationsSupp
     };
   },
   useEntryEditorControllerMutationBindings = <
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     Input extends {
       readonly contentTypeId: string;
       readonly deletionRecord: DeletionRecord | undefined;

@@ -17,12 +17,11 @@ import {
 } from "./asset-http-delivery-scenarios-imports.ts";
 
 const assetUrl = "http://cms.test/api/v1/management/definition-spaces/example-blog/assets",
-  // oxlint-disable-next-line eslint/sort-vars -- [EH-266] handler effect is declared before the form factory it configures.
   assetHandlerEffect = HttpTransport.makeHandler({
     maximumMultipartFileByteLength: payloadByteFive,
     maximumMultipartMetadataByteLength: 256,
   }).pipe(
-    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-112] test entry point needs a fresh isolated layer.
+    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-162] test entry point needs a fresh isolated layer.
     Effect.provide(DevelopmentCms.layer({ snapshot })),
   ),
   makeAcceptedForm = (): FormData => {
@@ -44,20 +43,20 @@ const assetUrl = "http://cms.test/api/v1/management/definition-spaces/example-bl
     );
     return form;
   },
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-277] HttpTransport handler mirrors the Web Request callback contract.
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-241] HttpTransport handler mirrors the Web Request callback contract.
   makeHandler = (): Promise<(request: Request) => Response | Promise<Response>> =>
     Effect.runPromise(assetHandlerEffect),
   rangeNotSatisfiableStatus = 416,
   requestAssetContent = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-173] Effect programs are executed by runPromise without mutation.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-237] Effect programs are executed by runPromise without mutation.
     handler: (request: Request) => Response | Promise<Response>,
     contentUrl: string,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-279] RequestInit is passed directly into the Web Request constructor.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-267] RequestInit is passed directly into the Web Request constructor.
     requestInit?: RequestInit,
   ): Promise<Response> =>
     Promise.resolve(handler(new Request(contentUrl, requestInit))),
   uploadAssetIdentifier = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-173] Effect programs are executed by runPromise without mutation.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-237] Effect programs are executed by runPromise without mutation.
     handler: (request: Request) => Response | Promise<Response>,
   ): Promise<string> => {
     const uploadRequest = new Request(assetUrl, { body: makeAcceptedForm(), method: "POST" });
@@ -76,7 +75,7 @@ const assetUrl = "http://cms.test/api/v1/management/definition-spaces/example-bl
       });
   },
   verifyFullAssetResponse = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-173] Effect programs are executed by runPromise without mutation.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-237] Effect programs are executed by runPromise without mutation.
     handler: (request: Request) => Response | Promise<Response>,
     contentUrl: string,
   ): Promise<string> =>
@@ -99,11 +98,10 @@ const assetUrl = "http://cms.test/api/v1/management/definition-spaces/example-bl
         return etag;
       });
     }),
-  // oxlint-disable-next-line eslint/sort-vars -- [EH-272] response verifiers follow the HTTP scenario narrative order.
   verifyConditionalAndRangeResponses = (
     contentUrl: string,
     etag: string,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-173] Effect programs are executed by runPromise without mutation.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-237] Effect programs are executed by runPromise without mutation.
     handler: (request: Request) => Response | Promise<Response>,
   ): Promise<void> =>
     requestAssetContent(handler, contentUrl, {

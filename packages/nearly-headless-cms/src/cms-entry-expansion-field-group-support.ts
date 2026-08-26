@@ -41,7 +41,7 @@ interface ExpandFieldGroupListInput {
 }
 
 const expandFieldGroupList = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-191] mutable values out-param is bundled in input interface.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-256] mutable values out-param is bundled in input interface.
     input: Readonly<ExpandFieldGroupListInput>,
   ): void => {
     const {
@@ -74,9 +74,8 @@ const expandFieldGroupList = (
       });
     });
   },
-  // oxlint-disable-next-line eslint/sort-vars -- [EH-131] helper declaration order follows dependency order.
   expandFieldGroup = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-191] mutable values out-param is bundled in input interface.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-256] mutable values out-param is bundled in input interface.
     input: Readonly<ExpandFieldGroupInput>,
   ): void => {
     const {

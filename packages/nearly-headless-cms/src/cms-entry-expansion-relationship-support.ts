@@ -71,7 +71,6 @@ const expandedEntryValue = (entry: Readonly<Representation>): JsonObject => ({
     }
     return target;
   },
-  // oxlint-disable-next-line eslint/sort-vars -- [EH-131] helper declaration order follows dependency order.
   expandRelationshipEntryId = (input: Readonly<ExpandRelationshipEntryIdInput>): JsonValue => {
     const {
       ancestorEntryIds,
@@ -91,7 +90,7 @@ const expandedEntryValue = (entry: Readonly<Representation>): JsonObject => ({
     if (ancestorEntryIds.has(entryId)) {
       return entryId;
     }
-    // oxlint-disable-next-line eslint/one-var -- [EH-125] helpers with readonly disables must stay as separate const declarations.
+    // oxlint-disable-next-line eslint/one-var -- [EH-187] helpers with readonly disables must stay as separate const declarations.
     const target = loadRelationshipTarget({
       entryId,
       generation,
@@ -110,7 +109,7 @@ const expandedEntryValue = (entry: Readonly<Representation>): JsonObject => ({
     return expandedEntryValue(expandedTarget);
   },
   expandRelationshipField = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-191] mutable values out-param is bundled in input interface.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-256] mutable values out-param is bundled in input interface.
     input: Readonly<ExpandRelationshipFieldInput>,
   ): void => {
     const {
@@ -136,7 +135,7 @@ const expandedEntryValue = (entry: Readonly<Representation>): JsonObject => ({
         message: `Field ${fieldPath} does not support Relationship Expansion`,
       });
     }
-    // oxlint-disable-next-line eslint/one-var -- [EH-125] helpers with readonly disables must stay as separate const declarations.
+    // oxlint-disable-next-line eslint/one-var -- [EH-187] helpers with readonly disables must stay as separate const declarations.
     const expandEntryId = (candidateEntryId: JsonValue): JsonValue =>
       resolveRelationshipEntryId({
         ancestorEntryIds,

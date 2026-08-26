@@ -58,7 +58,7 @@ const readAuthorId = (exported: Readonly<Record<string, unknown>>): string => {
     return value;
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-060] scenario intentionally awaits native HTTP promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-069] scenario intentionally awaits native HTTP promises.
   verifyAuthorCascadeDeletion = async (system: ExampleSystem): Promise<void> => {
     const aExported = await readExport(system),
       bAuthorId = readAuthorId(aExported),

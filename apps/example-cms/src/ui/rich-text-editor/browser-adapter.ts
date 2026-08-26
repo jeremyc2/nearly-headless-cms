@@ -93,12 +93,12 @@ export class BrowserAdapter {
       fragment.append(renderBlockElement(block, blockIndex));
     }
     this.#host.replaceChildren(fragment);
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-144] MutationObserver.observe requires Node; the editable host is a runtime HTMLElement.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-207] MutationObserver.observe requires Node; the editable host is a runtime HTMLElement.
     this.#observer.observe(this.#host as unknown as Node, browserAdapterObserverOptions);
     this.#rendering = false;
     restoreSelectionRange(
       this.#state,
-      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-148] restoreSelectionRange reads selection anchors from the runtime editable host.
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-211] restoreSelectionRange reads selection anchors from the runtime editable host.
       this.#host as unknown as HTMLElement,
     );
   }
@@ -123,7 +123,7 @@ export class BrowserAdapter {
   #synchronizeSelection(): void {
     this.#state = synchronizeSelectionState(
       this.#state,
-      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-150] synchronizeSelectionState queries the runtime editable host for the current DOM selection.
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-213] synchronizeSelectionState queries the runtime editable host for the current DOM selection.
       this.#host as unknown as HTMLElement,
     );
   }

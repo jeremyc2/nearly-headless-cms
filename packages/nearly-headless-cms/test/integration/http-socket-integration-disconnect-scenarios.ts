@@ -23,7 +23,7 @@ const clientAbortDelayMilliseconds = 25,
       },
     ],
   }).pipe(
-    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-112] test entry point needs a fresh isolated layer.
+    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-162] test entry point needs a fresh isolated layer.
     Effect.provide(DevelopmentCms.layer({ snapshot })),
   ),
   verifyClientDisconnectReleasesLiveSocket = (): Promise<void> =>
@@ -36,7 +36,7 @@ const clientAbortDelayMilliseconds = 25,
           Effect.tap(() => Effect.sync(() =>{  abortController.abort(); })),
         ),
       );
-      // oxlint-disable-next-line effecttsgo/global-fetch -- [EH-288] integration test aborts an in-flight request against the live HTTP listener.
+      // oxlint-disable-next-line effecttsgo/global-fetch -- [EH-102] integration test aborts an in-flight request against the live HTTP listener.
       return fetch(`${transport.address}api/v1/headless/slow`, { signal: abortController.signal })
         .then(() => {
           throw new Error("Expected client disconnect to abort the in-flight request");

@@ -7,9 +7,9 @@ import {
 } from "./entry-editor-rich-text-insert-dialog-imports.ts";
 
 const InsertDialogActions = <
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     AdapterRef extends RefObject<BrowserAdapter | null>,
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     Dialog extends RichTextInsertDialog,
   >({
     adapter,

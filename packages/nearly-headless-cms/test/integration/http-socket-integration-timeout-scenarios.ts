@@ -24,7 +24,7 @@ const timeoutHandlerEffect = HttpTransport.makeHandler({
     ],
     requestTimeoutMilliseconds,
   }).pipe(
-    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-112] test entry point needs a fresh isolated layer.
+    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-162] test entry point needs a fresh isolated layer.
     Effect.provide(DevelopmentCms.layer({ snapshot })),
   ),
   verifyRequestTimeoutOverLiveSocket = (): Promise<void> =>
@@ -33,7 +33,7 @@ const timeoutHandlerEffect = HttpTransport.makeHandler({
     ).then((transport) => {
       const requestUrl = `${transport.address}api/v1/headless/wait-forever`;
       return (
-        // oxlint-disable-next-line effecttsgo/global-fetch -- [EH-289] integration test exercises request timeout through the live HTTP listener.
+        // oxlint-disable-next-line effecttsgo/global-fetch -- [EH-107] integration test exercises request timeout through the live HTTP listener.
         fetch(requestUrl)
       )
         .then((response) => {

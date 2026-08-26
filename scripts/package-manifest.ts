@@ -2,7 +2,7 @@ export interface PackageManifest {
   readonly version: string;
 }
 
-// oxlint-disable-next-line effecttsgo/async-function -- [EH-012] CLI bootstrap reads package.json before any Effect program exists.
+// oxlint-disable-next-line effecttsgo/async-function -- [EH-014] CLI bootstrap reads package.json before any Effect program exists.
 export const readPackageManifest = async (manifestPath: string): Promise<PackageManifest> => {
   const value: unknown = await Bun.file(manifestPath).json();
   if (

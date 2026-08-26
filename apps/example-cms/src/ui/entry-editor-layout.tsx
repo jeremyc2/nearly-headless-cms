@@ -40,7 +40,7 @@ export const EntryEditorLayout = <Properties extends EntryEditorLayoutProperties
     </div>
   ),
   EntryEditorLayoutSidebar = <
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     Properties extends Omit<EntryEditorLayoutProperties, "assets" | "title" | "titleField">,
   >(
     properties: Readonly<Properties>,

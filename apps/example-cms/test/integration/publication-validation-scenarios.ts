@@ -101,14 +101,14 @@ const assertRejectedPublication = (expectation: RejectedPublicationExpectation):
       .then(jsonRecord)
       .then(requireEntryIdentifier),
   // Bun lifecycle hooks require a Promise-returning dispose callback.
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-023] fixture setup intentionally awaits native filesystem and CMS startup.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-030] fixture setup intentionally awaits native filesystem and CMS startup.
   createPublicationValidationFixture = async (
     testDirectory: string,
   ): Promise<PublicationValidationFixture> => {
     const storageRoot = await createTemporaryStorageRoot(testDirectory),
       system = await createExampleSystem({ seed: true, storageRoot });
     return {
-      // oxlint-disable-next-line effecttsgo/async-function -- [EH-024] fixture teardown awaits native filesystem cleanup.
+      // oxlint-disable-next-line effecttsgo/async-function -- [EH-031] fixture teardown awaits native filesystem cleanup.
       dispose: async () => {
         await system.dispose();
         await removeStorageRoot(storageRoot);
@@ -227,7 +227,7 @@ const assertRejectedPublication = (expectation: RejectedPublicationExpectation):
       saveInvalidReferenceEntry(context, targetEntryIdentifier),
     ),
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-038] HTTP contract assertions intentionally await native promises.
   verifyFieldPathIssuesForPublication = async (system: ExampleSystem): Promise<void> => {
     const draftContext = await readDraftEntryContext(system),
       { publicAssetIdentifier, writeToken, ...draftEntryContext } = draftContext,
@@ -243,7 +243,7 @@ const assertRejectedPublication = (expectation: RejectedPublicationExpectation):
     });
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-038] HTTP contract assertions intentionally await native promises.
   verifyInvalidImagePublication = async (context: ImagePublicationContext): Promise<string> => {
     const invalidImageWriteToken = await saveEntryValues(
       context,
@@ -264,7 +264,7 @@ const assertRejectedPublication = (expectation: RejectedPublicationExpectation):
     return invalidImageWriteToken;
   },
   // Bun's test runner requires an async callback for the native Request and Response promises.
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-032] HTTP contract assertions intentionally await native promises.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-038] HTTP contract assertions intentionally await native promises.
   verifyInvalidReferencePublication = async (
     context: ReferencePublicationContext,
   ): Promise<void> => {

@@ -11,20 +11,20 @@ import {
   storageFormat,
   storageFormatVersion,
 } from "./bun-filesystem-persistence-types.ts";
-// oxlint-disable-next-line effecttsgo/node-builtin-import -- [EH-106] This Bun adapter needs durable fsync/open and directory primitives unavailable in Effect's portable FileSystem layer.
+// oxlint-disable-next-line effecttsgo/node-builtin-import -- [EH-155] This Bun adapter needs durable fsync/open and directory primitives unavailable in Effect's portable FileSystem layer.
 import { open, rm } from "node:fs/promises";
 import { DateTime } from "effect";
 import filesystemLockIoCatalogSupport from "./bun-filesystem-persistence-lock-io-catalog-support.ts";
 import filesystemSupport from "./bun-filesystem-persistence-support.ts";
-// oxlint-disable-next-line effecttsgo/node-builtin-import -- [EH-101] Bun does not provide a path manipulation API; these operations are platform-neutral string handling.
+// oxlint-disable-next-line effecttsgo/node-builtin-import -- [EH-145] Bun does not provide a path manipulation API; these operations are platform-neutral string handling.
 import { join } from "node:path";
 
 const { catalogGenerationFields, decodeCatalog, initialCatalog } = filesystemLockIoCatalogSupport,
   { digest, encode, filesystemErrorCode, synchronize, writeAtomic } = filesystemSupport,
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-051] Recovery locking is a filesystem callback boundary.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-060] Recovery locking is a filesystem callback boundary.
   acquireRecoveryGuard = async (configuration: Configuration): Promise<() => Promise<void>> => {
     const guardPath = join(configuration.root, `${stagingPrefix}writer-recovery`),
-      // oxlint-disable-next-line effecttsgo/crypto-random-uuid -- [EH-070] lock acquisition is a synchronous token-generation step around Bun file operations.
+      // oxlint-disable-next-line effecttsgo/crypto-random-uuid -- [EH-089] lock acquisition is a synchronous token-generation step around Bun file operations.
       guardToken = crypto.randomUUID();
     try {
       await createRecoveryGuard(guardPath, guardToken);
@@ -35,7 +35,7 @@ const { catalogGenerationFields, decodeCatalog, initialCatalog } = filesystemLoc
       await reclaimStaleRecoveryGuard(guardPath);
       await createRecoveryGuard(guardPath, guardToken);
     }
-    // oxlint-disable-next-line effecttsgo/async-function -- [EH-056] Returned release callback closes the Bun filesystem guard.
+    // oxlint-disable-next-line effecttsgo/async-function -- [EH-065] Returned release callback closes the Bun filesystem guard.
     return async () => {
       const guard = await readWriterLock(guardPath).catch(() => {});
       if (guard?.token === guardToken) {
@@ -43,12 +43,12 @@ const { catalogGenerationFields, decodeCatalog, initialCatalog } = filesystemLoc
       }
     };
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-067] Writer lock creation is a sequential Bun filesystem boundary.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-086] Writer lock creation is a sequential Bun filesystem boundary.
   acquireWriterLock = async (
     configuration: Configuration,
   ): Promise<{ readonly lockPath: string; readonly lockToken: string }> => {
     const lockPath = join(configuration.root, "writer.lock"),
-      // oxlint-disable-next-line effecttsgo/crypto-random-uuid -- [EH-070] lock acquisition is a synchronous token-generation step around Bun file operations.
+      // oxlint-disable-next-line effecttsgo/crypto-random-uuid -- [EH-089] lock acquisition is a synchronous token-generation step around Bun file operations.
       lockToken = crypto.randomUUID(),
       writerLock = await tryCreateWriterLock(configuration, lockPath, lockToken);
     if (writerLock !== undefined) {
@@ -56,7 +56,7 @@ const { catalogGenerationFields, decodeCatalog, initialCatalog } = filesystemLoc
     }
     return acquireWriterLockWithRecovery(configuration, lockPath, lockToken);
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-064] Stale lock recovery coordinates sequential Bun filesystem operations.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-075] Stale lock recovery coordinates sequential Bun filesystem operations.
   acquireWriterLockWithRecovery = async (
     configuration: Configuration,
     lockPath: string,
@@ -73,7 +73,7 @@ const { catalogGenerationFields, decodeCatalog, initialCatalog } = filesystemLoc
       await releaseRecoveryGuard();
     }
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-027] Guard creation requires sequential Bun filesystem operations.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-033] Guard creation requires sequential Bun filesystem operations.
   createRecoveryGuard = async (guardPath: string, guardToken: string): Promise<void> => {
     const handle = await open(guardPath, "wx");
     try {
@@ -85,7 +85,7 @@ const { catalogGenerationFields, decodeCatalog, initialCatalog } = filesystemLoc
       throw error;
     }
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-038] Lock creation requires sequential Bun filesystem operations.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-047] Lock creation requires sequential Bun filesystem operations.
   createWriterLock = async (
     configuration: Configuration,
     lockPath: string,
@@ -133,7 +133,7 @@ const { catalogGenerationFields, decodeCatalog, initialCatalog } = filesystemLoc
     }
     return { processId: processIdValue, token: tokenValue };
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-043] Persistence spans ordered atomic filesystem writes.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-052] Persistence spans ordered atomic filesystem writes.
   persistState = async (configuration: Configuration, state: State): Promise<void> => {
     const catalogPayload = catalogGenerationFields(state.catalog),
       generation: DiskGeneration = {
@@ -170,7 +170,7 @@ const { catalogGenerationFields, decodeCatalog, initialCatalog } = filesystemLoc
       return filesystemErrorCode(error) !== "ESRCH";
     }
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-039] Lock records are read through Bun's filesystem Promise API.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-048] Lock records are read through Bun's filesystem Promise API.
   readWriterLock = async (lockPath: string): Promise<WriterLock> => {
     const parsed: unknown = JSON.parse(await Bun.file(lockPath).text());
     if (typeof parsed !== "object" || parsed === null) {
@@ -178,7 +178,7 @@ const { catalogGenerationFields, decodeCatalog, initialCatalog } = filesystemLoc
     }
     return parseWriterLock(parsed);
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-063] Stale guard recovery reads and reclaims a Bun filesystem record.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-074] Stale guard recovery reads and reclaims a Bun filesystem record.
   reclaimStaleRecoveryGuard = async (guardPath: string): Promise<void> => {
     let guardIsActive = false;
     try {
@@ -192,7 +192,7 @@ const { catalogGenerationFields, decodeCatalog, initialCatalog } = filesystemLoc
     }
     await rm(guardPath, { force: true });
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-064] Stale lock recovery coordinates sequential Bun filesystem operations.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-075] Stale lock recovery coordinates sequential Bun filesystem operations.
   recoverStaleWriterLock = async (
     configuration: Configuration,
     lockPath: string,
@@ -215,14 +215,14 @@ const { catalogGenerationFields, decodeCatalog, initialCatalog } = filesystemLoc
     }
     return { lockPath, lockToken };
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-037] Lock cleanup reads and removes a Bun filesystem record.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-046] Lock cleanup reads and removes a Bun filesystem record.
   removeOwnedWriterLock = async (lockPath: string, lockToken: string): Promise<void> => {
     const lock = await readWriterLock(lockPath).catch(() => {});
     if (lock?.token === lockToken) {
       await rm(lockPath, { force: true });
     }
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-067] Writer lock creation is a sequential Bun filesystem boundary.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-086] Writer lock creation is a sequential Bun filesystem boundary.
   tryCreateWriterLock = async (
     configuration: Configuration,
     lockPath: string,

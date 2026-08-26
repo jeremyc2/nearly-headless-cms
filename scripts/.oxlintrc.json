@@ -1,0 +1,13 @@
+{
+  "extends": ["../.oxlintrc.json"],
+  "rules": {
+    "eslint/one-var": "off",
+    "eslint/no-ternary": "off",
+    "eslint/max-statements": "off",
+    "eslint/no-await-in-loop": "off",
+    "eslint/no-continue": "off",
+    "eslint/require-unicode-regexp": "off",
+    "eslint/prefer-named-capture-group": "off",
+    "unicorn/prefer-ternary": "off"
+  }
+}

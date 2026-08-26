@@ -32,12 +32,12 @@ const concurrentReadCount = 4,
   readOnlyBlobDirectoryMode = 0o500,
   readWriteBlobDirectoryMode = 0o755,
   runWithLayer = <Value, EffectError, Requirements>(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-179] Layer values are provided to runPromise without mutation.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-244] Layer values are provided to runPromise without mutation.
     layer: Layer.Layer<Requirements, EffectError>,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-173] Effect programs are executed by runPromise without mutation.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-237] Effect programs are executed by runPromise without mutation.
     effect: Readonly<Effect.Effect<Value, EffectError, Requirements>>,
   ): Promise<Value> => {
-    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-112] test entry point needs a fresh isolated layer.
+    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-162] test entry point needs a fresh isolated layer.
     const providedEffect = effect.pipe(Effect.provide(layer));
     return Effect.runPromise(providedEffect);
   },

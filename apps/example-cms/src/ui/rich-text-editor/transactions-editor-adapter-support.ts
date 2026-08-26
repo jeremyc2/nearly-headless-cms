@@ -85,7 +85,7 @@ const { conditionalValue } = transactionsSupport,
         render();
       }
     });
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-147] ReadonlyEditableHost is a Pick view of the editable div passed at runtime.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-210] ReadonlyEditableHost is a Pick view of the editable div passed at runtime.
     observer.observe(host as unknown as Node, browserAdapterObserverOptions);
     return observer;
   },
@@ -127,7 +127,7 @@ const { conditionalValue } = transactionsSupport,
     return undefined;
   },
   resolveElementFromNode = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-165] DOM selection nodes are inspected without retaining references.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-228] DOM selection nodes are inspected without retaining references.
     node: globalThis.Node | null,
   ): globalThis.Element | null | undefined => {
     if (node === null) {
@@ -142,13 +142,13 @@ const { conditionalValue } = transactionsSupport,
     return undefined;
   },
   selectionPositionFromNode = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-165] DOM selection nodes are inspected without retaining references.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-228] DOM selection nodes are inspected without retaining references.
     node: globalThis.Node | null,
     offset: number,
     host: ReadonlyEditableHost,
   ): SelectionPosition | undefined => {
     const element = resolveElementFromNode(node),
-      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-140] closest runs on the runtime Element resolved from the selection node.
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-203] closest runs on the runtime Element resolved from the selection node.
       text = element?.closest("[data-block-index][data-inline-index]") as HTMLElement | null;
     if (text === null || !host.contains(text)) {
       return undefined;
@@ -156,7 +156,7 @@ const { conditionalValue } = transactionsSupport,
     return selectionPositionFromResolvedText(text, offset);
   },
   selectionPositionFromResolvedText = (
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-168] DOM text spans are read while mapping native selection offsets.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-231] DOM text spans are read while mapping native selection offsets.
     text: HTMLElement,
     offset: number,
   ): SelectionPosition => {
