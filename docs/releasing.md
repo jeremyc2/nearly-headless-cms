@@ -62,7 +62,19 @@ Example for `1.0.0`:
 4. Confirm both MIT license files match.
 5. Commit and push the version bump to `main`.
 
-### 2. Verify the exact tarball
+### 2. Update visual baselines when UI changes are intentional
+
+Visual tests compare screenshots against checked-in baselines and require live Example CMS and Public Blog servers. Do **not** run `UPDATE_VISUALS=1 bun run test:visual` on its own — that skips every test because `ACCEPTANCE_SERVERS_READY` is unset.
+
+When a change intentionally alters rendered UI, re-record baselines with:
+
+```bash
+bun run update:visuals
+```
+
+Review the diff in `acceptance/visual/baselines/`, commit the updated PNGs with the UI change, then continue release verification.
+
+### 3. Verify the exact tarball
 
 ```bash
 bun run release --tag v1.0.0
@@ -78,7 +90,7 @@ Publish when ready:
   bun run release --publish
 ```
 
-### 3. Tag and push
+### 4. Tag and push
 
 ```bash
 git tag v1.0.0
@@ -86,7 +98,7 @@ git push origin main
 git push origin v1.0.0
 ```
 
-### 4. Publish to npm
+### 5. Publish to npm
 
 ```bash
 bun run release --publish
@@ -98,7 +110,7 @@ This publishes the **same tarball** that verification inspected — not a fresh 
 - `PACKAGE_ARCHIVE` pointing at `.artifacts/npm/nearly-headless-cms-<version>.tgz`
 - Valid npm credentials
 
-### 5. Post-publish checks
+### 6. Post-publish checks
 
 1. Open [npmjs.com/package/nearly-headless-cms](https://www.npmjs.com/package/nearly-headless-cms) and confirm version, metadata, and provenance.
 2. Compare the registry tarball checksum with `.artifacts/npm/inspection.json`.
@@ -112,7 +124,7 @@ This publishes the **same tarball** that verification inspected — not a fresh 
 
 4. Create a GitHub Release from the changelog entry for that version.
 
-### 6. After the first publish (bootstrap only)
+### 7. After the first publish (bootstrap only)
 
 npm requires the package to exist before [trusted publishing](https://docs.npmjs.com/trusted-publishers/) can be configured. After the first successful publish:
 

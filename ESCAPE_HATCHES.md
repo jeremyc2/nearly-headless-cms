@@ -353,7 +353,6 @@ Sorted by escape-hatch code (`EH-###`).
 - **EH-331** (`effecttsgo/node-builtin-import`): SQL bootstrap needs native directory creation before Kysely opens SQLite.
 - **EH-332** (`effecttsgo/node-builtin-import`): This Bun adapter needs durable rename/remove primitives unavailable in Effect's portable FileSystem layer.
 - **EH-333** (`typescript/no-unsafe-type-assertion`): editable hosts are HTMLElement divs at runtime.
-- **EH-334** (`typescript/no-unsafe-type-assertion`): inline span query results are rendered as HTMLElements.
 - **EH-335** (`typescript/no-unsafe-type-assertion`): querySelector returns Element; selection spans are rendered as HTMLElements.
 - **EH-336** (`typescript/no-unsafe-type-assertion`): querySelectorAll returns Element; selection spans are rendered as HTMLElements.
 - **EH-337** (`typescript/prefer-readonly-parameter-types`): block elements are inspected while mapping native selection offsets.
@@ -364,9 +363,17 @@ Sorted by escape-hatch code (`EH-###`).
 - **EH-342** (`effecttsgo/missing-pipeable-signature`): generated headless client wrapper stays a plain factory for build-time export.
 - **EH-343** (`typescript/no-floating-promises`): Bun file writers accept fire-and-forget chunk writes during synchronous hashing.
 - **EH-344** (`effecttsgo/async-function`): async generator stub matches AssetBlobStore stream contract.
-- **EH-345** (`typescript/no-unsafe-type-assertion`): closest returns Element; block elements are rendered as HTMLElements.
-- **EH-346** (`typescript/no-unsafe-type-assertion`): closest returns Element; selection spans are rendered as HTMLElements.
 - **EH-347** (`effecttsgo/crypto-random-uuid-in-effect`): staging paths are built synchronously in Bun's filesystem bridge.
+- **EH-350** (`effecttsgo/async-function`): acceptance servers require awaited process startup.
+- **EH-351** (`effecttsgo/global-console`): baseline update completion is intentionally emitted to CLI stdout.
+- **EH-352** (`effecttsgo/async-function`): acceptance browser suites orchestrate sequential CLI commands inside server lifecycle.
+- **EH-353** (`effecttsgo/async-function`): acceptance CLI command runner awaits process completion and is not a pipeable Effect API.
+- **EH-354** (`effecttsgo/async-function`): acceptance servers require awaited process shutdown and Bun.spawn handles are mutable platform types.
+- **EH-355** (`effecttsgo/async-function`): visual baseline update orchestrates sequential CLI commands inside acceptance server lifecycle.
+- **EH-356** (`effecttsgo/missing-pipeable-signature`): acceptance CLI command runner awaits process completion and is not a pipeable Effect API.
+- **EH-357** (`typescript/prefer-readonly-parameter-types`): acceptance servers require awaited process shutdown and Bun.spawn handles are mutable platform types.
+- **EH-358** (`effecttsgo/async-function`): acceptance lifecycle wraps awaited server startup and teardown; callback types are not deeply readonly.
+- **EH-359** (`typescript/prefer-readonly-parameter-types`): acceptance lifecycle wraps awaited server startup and teardown; callback types are not deeply readonly.
 
 ## Justification Registry
 
@@ -614,12 +621,12 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 - `apps/example-cms/src/presentation/entry-editor-rich-text-field-view.tsx:26`
 - `apps/example-cms/src/presentation/entry-editor-rich-text-insert-dialog-support.tsx:8`
 - `apps/example-cms/src/presentation/entry-editor-rich-text-insert-dialog-support.tsx:10`
-- `apps/example-cms/src/presentation/entry-editor-rich-text-insert-dialog.tsx:14`
-- `apps/example-cms/src/presentation/entry-editor-rich-text-insert-dialog.tsx:16`
-- `apps/example-cms/src/presentation/entry-editor-rich-text-toolbar-support.tsx:61`
-- `apps/example-cms/src/presentation/entry-editor-rich-text-toolbar-support.tsx:63`
-- `apps/example-cms/src/presentation/entry-editor-rich-text-toolbar-support.tsx:65`
-- `apps/example-cms/src/presentation/entry-editor-rich-text-toolbar-support.tsx:245`
+- `apps/example-cms/src/presentation/entry-editor-rich-text-insert-dialog.tsx:44`
+- `apps/example-cms/src/presentation/entry-editor-rich-text-insert-dialog.tsx:46`
+- `apps/example-cms/src/presentation/entry-editor-rich-text-toolbar-support.tsx:70`
+- `apps/example-cms/src/presentation/entry-editor-rich-text-toolbar-support.tsx:72`
+- `apps/example-cms/src/presentation/entry-editor-rich-text-toolbar-support.tsx:74`
+- `apps/example-cms/src/presentation/entry-editor-rich-text-toolbar-support.tsx:264`
 - `apps/example-cms/src/presentation/entry-editor-rich-text-toolbar.tsx:7`
 - `apps/example-cms/src/presentation/entry-editor-rich-text-toolbar.tsx:9`
 - `apps/example-cms/src/presentation/entry-editor-story-canvas-assets-support.tsx:6`
@@ -653,10 +660,10 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 - `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-render.ts:71`
 - `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-render.ts:73`
 - `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-selection.ts:10`
-- `apps/example-cms/src/presentation/rich-text-editor/transactions-list-command-handlers.ts:99`
-- `apps/example-cms/src/presentation/rich-text-editor/transactions-list-command-handlers.ts:119`
-- `apps/example-cms/src/presentation/rich-text-editor/transactions-list-command-handlers.ts:143`
-- `apps/example-cms/src/presentation/rich-text-editor/transactions-list-command-handlers.ts:191`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-list-command-handlers.ts:118`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-list-command-handlers.ts:138`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-list-command-handlers.ts:162`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-list-command-handlers.ts:210`
 - `apps/example-cms/src/presentation/rich-text-editor/transactions-mutations.ts:50`
 - `apps/example-cms/src/presentation/rich-text-editor/transactions-mutations.ts:94`
 - `apps/example-cms/src/presentation/rich-text-editor/transactions-support.ts:98`
@@ -674,8 +681,6 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 **Locations:**
 
 - `apps/example-blog-cms/src/presentation/rich-text-editor/transactions-editor-adapter-support.ts:149`
-- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-support.ts:209`
-- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-support.ts:217`
 
 #### EH-204: fetch requires AbortSignal; generated clients pass the runtime signal.
 
@@ -694,21 +699,21 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 **Locations:**
 
 - `apps/example-blog-cms/src/presentation/rich-text-editor/transactions-list-command-handlers.ts:66`
-- `apps/example-cms/src/presentation/rich-text-editor/transactions-list-command-handlers.ts:71`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-list-command-handlers.ts:90`
 
 #### EH-206: list replacement preserves list node shape after item removal.
 
 **Locations:**
 
 - `apps/example-blog-cms/src/presentation/rich-text-editor/transactions-list-command-handlers.ts:62`
-- `apps/example-cms/src/presentation/rich-text-editor/transactions-list-command-handlers.ts:67`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-list-command-handlers.ts:86`
 
 #### EH-207: MutationObserver.observe requires Node; the editable host is a runtime HTMLElement.
 
 **Locations:**
 
 - `apps/example-blog-cms/src/presentation/rich-text-editor/browser-adapter.ts:122`
-- `apps/example-cms/src/presentation/rich-text-editor/browser-adapter.ts:129`
+- `apps/example-cms/src/presentation/rich-text-editor/browser-adapter.ts:126`
 
 #### EH-208: OpenAPI schema objects are validated as non-null objects before use.
 
@@ -721,7 +726,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 **Locations:**
 
 - `apps/example-blog-cms/src/presentation/rich-text-editor/transactions-list-command-handlers.ts:226`
-- `apps/example-cms/src/presentation/rich-text-editor/transactions-list-command-handlers.ts:213`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-list-command-handlers.ts:232`
 
 #### EH-210: ReadonlyEditableHost is a Pick view of the editable div passed at runtime.
 
@@ -735,7 +740,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 **Locations:**
 
 - `apps/example-blog-cms/src/presentation/rich-text-editor/browser-adapter.ts:127`
-- `apps/example-cms/src/presentation/rich-text-editor/browser-adapter.ts:125`
+- `apps/example-cms/src/presentation/rich-text-editor/browser-adapter.ts:122`
 
 #### EH-212: RichText.toJson returns a JSON-compatible object validated by the CMS schema boundary.
 
@@ -752,8 +757,9 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 - `apps/example-blog-cms/src/presentation/rich-text-editor/browser-adapter.ts:152`
 - `apps/example-blog-cms/src/presentation/rich-text-editor/browser-adapter.ts:217`
-- `apps/example-cms/src/presentation/rich-text-editor/browser-adapter.ts:153`
-- `apps/example-cms/src/presentation/rich-text-editor/browser-adapter.ts:233`
+- `apps/example-cms/src/presentation/rich-text-editor/browser-adapter.ts:81`
+- `apps/example-cms/src/presentation/rich-text-editor/browser-adapter.ts:150`
+- `apps/example-cms/src/presentation/rich-text-editor/browser-adapter.ts:217`
 
 #### EH-214: Web APIs require AbortSignal; transport callers always pass the real signal.
 
@@ -789,38 +795,19 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-support.ts:201`
-
-#### EH-334: inline span query results are rendered as HTMLElements.
-
-**Locations:**
-
-- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-support.ts:181`
-- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-support.ts:188`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-support.ts:134`
 
 #### EH-335: querySelector returns Element; selection spans are rendered as HTMLElements.
 
 **Locations:**
 
-- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-support.ts:156`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-support.ts:196`
 
 #### EH-336: querySelectorAll returns Element; selection spans are rendered as HTMLElements.
 
 **Locations:**
 
-- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-support.ts:168`
-
-#### EH-345: closest returns Element; block elements are rendered as HTMLElements.
-
-**Locations:**
-
-- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-support.ts:222`
-
-#### EH-346: closest returns Element; selection spans are rendered as HTMLElements.
-
-**Locations:**
-
-- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-support.ts:214`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-support.ts:208`
 
 ### TypeScript · `typescript/prefer-readonly-parameter-types`
 
@@ -926,8 +913,8 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 - `apps/example-blog-cms/src/presentation/rich-text-editor/transactions-editor-adapter-support.ts:128`
 - `apps/example-blog-cms/src/presentation/rich-text-editor/transactions-editor-adapter-support.ts:143`
-- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-support.ts:134`
-- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-support.ts:192`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-support.ts:137`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-support.ts:234`
 
 #### EH-229: DOM spans are mutated while applying rich-text marks.
 
@@ -948,7 +935,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 **Locations:**
 
 - `apps/example-blog-cms/src/presentation/rich-text-editor/transactions-editor-adapter-support.ts:157`
-- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-support.ts:228`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-support.ts:254`
 
 #### EH-232: drain polling reads shared active-request counters without mutating them.
 
@@ -1314,14 +1301,26 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-support.ts:172`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-support.ts:212`
 
 #### EH-338: editable hosts are queried while resolving native selection anchors.
 
 **Locations:**
 
-- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-support.ts:149`
-- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-support.ts:160`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-support.ts:189`
+- `apps/example-cms/src/presentation/rich-text-editor/transactions-editor-adapter-support.ts:200`
+
+#### EH-357: acceptance servers require awaited process shutdown and Bun.spawn handles are mutable platform types.
+
+**Locations:**
+
+- `scripts/acceptance-servers.ts:80`
+
+#### EH-359: acceptance lifecycle wraps awaited server startup and teardown; callback types are not deeply readonly.
+
+**Locations:**
+
+- `scripts/acceptance-servers.ts:87`
 
 ### Effect · `effecttsgo/abort-controller-in-effect`
 
@@ -1357,7 +1356,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `acceptance/visual/responsive-baselines.test.ts:121`
+- `acceptance/visual/responsive-baselines.test.ts:123`
 
 #### EH-007: Bun filesystem handles expose Promise-based synchronization boundaries.
 
@@ -1397,7 +1396,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `acceptance/visual/responsive-baselines.test.ts:147`
+- `acceptance/visual/responsive-baselines.test.ts:149`
 - `acceptance/webview/journey.test.ts:180`
 - `acceptance/webview/journey.test.ts:199`
 - `acceptance/webview/qualification.test.ts:44`
@@ -1408,7 +1407,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 - `acceptance/accessibility/axe-webview.test.ts:61`
 - `acceptance/accessibility/axe-webview.test.ts:69`
-- `acceptance/visual/responsive-baselines.test.ts:173`
+- `acceptance/visual/responsive-baselines.test.ts:175`
 - `acceptance/webview/journey.test.ts:223`
 - `acceptance/webview/qualification.test.ts:66`
 
@@ -1437,13 +1436,12 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 **Locations:**
 
 - `scripts/package-portability-smoke.ts:16`
-- `scripts/run-acceptance.ts:23`
 
 #### EH-016: CLI readiness polling requires awaited retries.
 
 **Locations:**
 
-- `scripts/run-acceptance.ts:40`
+- `scripts/acceptance-servers.ts:15`
 
 #### EH-017: conflict preparation follows controlled input setup despite alphabetical ordering.
 
@@ -1772,13 +1770,13 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `scripts/check-architecture.ts:216`
+- `scripts/check-architecture.ts:234`
 
 #### EH-051: parallel portability scans use async file reads.
 
 **Locations:**
 
-- `scripts/check-architecture.ts:233`
+- `scripts/check-architecture.ts:251`
 
 #### EH-052: Persistence spans ordered atomic filesystem writes.
 
@@ -1854,7 +1852,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `scripts/run-acceptance.ts:45`
+- `scripts/acceptance-servers.ts:18`
 
 #### EH-063: request handling awaits body parsing and Effect execution.
 
@@ -1921,7 +1919,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `acceptance/visual/responsive-baselines.test.ts:99`
+- `acceptance/visual/responsive-baselines.test.ts:101`
 
 #### EH-071: slow consumer reads intentionally await Bun.sleep between stream chunks; readNextChunk closes over reader.
 
@@ -2113,6 +2111,42 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 - `apps/example-blog-cms/src/core/assets/s3-asset-blob-store-reference.ts:53`
 
+#### EH-350: acceptance servers require awaited process startup.
+
+**Locations:**
+
+- `scripts/acceptance-servers.ts:56`
+
+#### EH-352: acceptance browser suites orchestrate sequential CLI commands inside server lifecycle.
+
+**Locations:**
+
+- `scripts/run-acceptance.ts:26`
+
+#### EH-353: acceptance CLI command runner awaits process completion and is not a pipeable Effect API.
+
+**Locations:**
+
+- `scripts/acceptance-servers.ts:38`
+
+#### EH-354: acceptance servers require awaited process shutdown and Bun.spawn handles are mutable platform types.
+
+**Locations:**
+
+- `scripts/acceptance-servers.ts:80`
+
+#### EH-355: visual baseline update orchestrates sequential CLI commands inside acceptance server lifecycle.
+
+**Locations:**
+
+- `scripts/update-visuals.ts:3`
+
+#### EH-358: acceptance lifecycle wraps awaited server startup and teardown; callback types are not deeply readonly.
+
+**Locations:**
+
+- `scripts/acceptance-servers.ts:87`
+
 ### Effect · `effecttsgo/crypto-random-uuid`
 
 #### EH-087: browser UI labels need a synchronous local identifier.
@@ -2179,13 +2213,13 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `scripts/run-acceptance.ts:114`
+- `scripts/run-acceptance.ts:39`
 
 #### EH-095: acceptance progress is intentionally emitted to CLI stdout.
 
 **Locations:**
 
-- `scripts/run-acceptance.ts:28`
+- `scripts/acceptance-servers.ts:43`
 
 #### EH-096: escape hatch maintenance CLI reports progress.
 
@@ -2207,7 +2241,13 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `scripts/check-architecture.ts:263`
+- `scripts/check-architecture.ts:281`
+
+#### EH-351: baseline update completion is intentionally emitted to CLI stdout.
+
+**Locations:**
+
+- `scripts/update-visuals.ts:11`
 
 ### Effect · `effecttsgo/global-fetch`
 
@@ -2222,7 +2262,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `scripts/run-acceptance.ts:51`
+- `scripts/acceptance-servers.ts:24`
 
 #### EH-101: generated clients intentionally use the platform fetch boundary so callers can supply the browser or server runtime.
 
@@ -2625,6 +2665,12 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 - `apps/example-blog/src/core/generated/headless-client.ts:211`
 
+#### EH-356: acceptance CLI command runner awaits process completion and is not a pipeable Effect API.
+
+**Locations:**
+
+- `scripts/acceptance-servers.ts:38`
+
 ### Effect · `effecttsgo/new-promise`
 
 #### EH-141: hanging handler keeps the socket open until forced shutdown.
@@ -2707,6 +2753,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
+- `scripts/acceptance-servers.ts:1`
 - `scripts/check-architecture.ts:2`
 - `scripts/escape-hatches-parse-support.ts:2`
 - `scripts/package-portability-smoke.ts:1`
@@ -3206,7 +3253,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `scripts/check-architecture.ts:244`
+- `scripts/check-architecture.ts:262`
 
 #### EH-197: cleanup must remain sequential.
 

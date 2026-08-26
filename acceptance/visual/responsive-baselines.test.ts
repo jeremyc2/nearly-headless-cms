@@ -4,6 +4,8 @@ import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { visualBaselineScenarios } from "./visual-baseline-scenario-registry.ts";
 
+// Visual tests require live Example CMS and Public Blog servers. Run `bun run update:visuals`
+// To re-record baselines, or rely on `bun run acceptance` / `bun run release` for comparison.
 let acceptanceTest = test.skip;
 if (Bun.env["ACCEPTANCE_SERVERS_READY"] === "1") {
   acceptanceTest = test;
