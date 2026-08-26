@@ -27,6 +27,28 @@ if (archiveValue === undefined) {
 if (!(await Bun.file(archiveValue).exists())) {
   throw new Error(`Package archive does not exist: ${archiveValue}`);
 }
+
+if (Bun.env["GITHUB_ACTIONS"] !== "true" && Bun.env["NODE_AUTH_TOKEN"] === undefined) {
+  // oxlint-disable-next-line effecttsgo/global-console -- [EH-361] npm bootstrap publish guidance is intentionally emitted before interactive registry authentication.
+  console.log(
+    [
+      "",
+      "Publishing to npm from your machine.",
+      "Accounts with 2FA enabled use npm's browser device flow (EOTP): npm prints a URL,",
+      "you open it in a browser and sign in, and this command continues when auth completes.",
+      "For a non-interactive bootstrap publish, export NODE_AUTH_TOKEN with a narrowly scoped Automation token.",
+      "",
+    ].join("\n"),
+  );
+}
+
 if ((await publishArchive(archiveValue)) !== successfulExitCode) {
-  throw new Error("npm publication failed");
+  throw new Error(
+    [
+      "npm publication failed.",
+      "If npm printed EOTP, open the https://www.npmjs.com/auth/cli/ URL in your browser, complete sign-in, and rerun:",
+      "  bun run release --publish-only",
+      "To skip browser auth, export NODE_AUTH_TOKEN with an Automation token before publishing.",
+    ].join("\n"),
+  );
 }

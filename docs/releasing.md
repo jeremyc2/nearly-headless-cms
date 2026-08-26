@@ -7,43 +7,51 @@ This runbook verifies and publishes `nearly-headless-cms` from `packages/nearly-
 Verify a release candidate (full acceptance suite, tarball inspection, and npm dry-run):
 
 ```bash
-bun run release
-```
-
-Validate git tag and worktree state before verifying:
-
-```bash
 bun run release --tag v<version>
 ```
 
-Publish after verification succeeds (`npm login` or `NODE_AUTH_TOKEN` must already be configured):
+Publish the inspected tarball without re-running acceptance (use after verification succeeds):
 
 ```bash
-bun run release --publish
+bun run release --publish-only
+```
+
+Verify and publish in one command (re-runs the full acceptance suite):
+
+```bash
+bun run release --tag v<version> --publish
 ```
 
 ## First-time npm setup
 
-1. Log in locally:
-
-   ```bash
-   npm login
-   npm whoami   # should print jeremyc2
-   ```
-
-   Or export a narrowly scoped **Automation** token:
-
-   ```bash
-   export NODE_AUTH_TOKEN=npm_xxxxxxxx
-   ```
-
-2. Confirm the target version is not already on the registry:
+1. Confirm the target version is not already on the registry:
 
    ```bash
    npm view nearly-headless-cms@<version> version
    ```
 
    An `E404` means the version slot is free.
+
+2. Choose one authentication method for the bootstrap publish:
+
+   **Option A — interactive login (2FA uses a browser device flow)**
+
+   ```bash
+   npm login
+   npm whoami   # should print jeremyc2
+   ```
+
+   When you publish, npm may respond with `EOTP` and print a URL such as `https://www.npmjs.com/auth/cli/...`. Open that URL in a browser, complete sign-in (passkey, security key, or Touch ID), and leave the publish command running in your terminal until npm finishes. There is no `--otp` code to type for this flow.
+
+   **Option B — Automation token (non-interactive bootstrap)**
+
+   Create a narrowly scoped **Automation** token on [npmjs.com](https://www.npmjs.com/), then export it for the publish command:
+
+   ```bash
+   export NODE_AUTH_TOKEN=npm_xxxxxxxx
+   ```
+
+   Revoke this token after the package exists and trusted publishing is configured.
 
 ## Publishing a new version
 
@@ -87,7 +95,7 @@ If verification passes:
 ```text
 Release verification passed for nearly-headless-cms@1.0.0.
 Publish when ready:
-  bun run release --publish
+  bun run release --publish-only
 ```
 
 ### 4. Tag and push
@@ -101,20 +109,23 @@ git push origin v1.0.0
 ### 5. Publish to npm
 
 ```bash
-bun run release --publish
+bun run release --publish-only
 ```
 
-This publishes the **same tarball** that verification inspected — not a fresh repack. It requires:
+This uploads the **same tarball** that verification inspected — not a fresh repack. The script:
 
-- `CONFIRM_NPM_RELEASE=nearly-headless-cms@<version>` (set automatically by the script)
-- `PACKAGE_ARCHIVE` pointing at `.artifacts/npm/nearly-headless-cms-<version>.tgz`
-- Valid npm credentials
+- requires `.artifacts/npm/nearly-headless-cms-<version>.tgz` and `.artifacts/npm/inspection.json` from step 3;
+- passes `--provenance=false` on your machine because npm can only generate Sigstore attestations from a CI OIDC provider such as GitHub Actions (the manifest still sets `publishConfig.provenance: true` for later CI publishes);
+- prints browser-auth guidance when `NODE_AUTH_TOKEN` is unset;
+- passes `--provenance` automatically when `GITHUB_ACTIONS=true`.
 
-Local bootstrap publish omits provenance (`--provenance=false`) because npm can only generate Sigstore attestations from a CI OIDC provider such as GitHub Actions. That override is required even when `publishConfig.provenance` is `true` in the manifest. Later CI releases can pass `--provenance` after trusted publishing is configured.
+If browser auth fails or the terminal closes before EOTP completes, rerun `bun run release --publish-only` and open the new URL npm prints.
+
+You do not need a separate manual `npm publish` command unless you are debugging registry auth outside the release script.
 
 ### 6. Post-publish checks
 
-1. Open [npmjs.com/package/nearly-headless-cms](https://www.npmjs.com/package/nearly-headless-cms) and confirm version, metadata, and provenance.
+1. Open [npmjs.com/package/nearly-headless-cms](https://www.npmjs.com/package/nearly-headless-cms) and confirm version and metadata. The first bootstrap publish will not show provenance; later CI publishes will.
 2. Compare the registry tarball checksum with `.artifacts/npm/inspection.json`.
 3. Clean install smoke test:
 
@@ -133,7 +144,16 @@ npm requires the package to exist before [trusted publishing](https://docs.npmjs
 1. Configure the release GitHub Actions workflow as the trusted publisher on npm.
 2. Revoke the bootstrap Automation token if one was used.
 
-Later releases can use OIDC from CI without a long-lived token.
+Later releases can use OIDC from CI without a long-lived token and will receive provenance automatically.
+
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `Automatic provenance generation not supported for provider: null` | Publishing locally with provenance enabled | Use `bun run release --publish-only`; the script passes `--provenance=false` locally |
+| `EOTP` / browser URL printed | npm account uses 2FA | Open the printed URL, sign in, leave the command running; or set `NODE_AUTH_TOKEN` |
+| `Missing inspected archive` on `--publish-only` | Verification not run yet | Run `bun run release --tag v<version>` first |
+| Publish succeeded but you need to retry auth | Terminal closed during EOTP | Rerun `bun run release --publish-only` |
 
 ## Policy
 

@@ -374,6 +374,8 @@ Sorted by escape-hatch code (`EH-###`).
 - **EH-357** (`typescript/prefer-readonly-parameter-types`): acceptance servers require awaited process shutdown and Bun.spawn handles are mutable platform types.
 - **EH-358** (`effecttsgo/async-function`): acceptance lifecycle wraps awaited server startup and teardown; callback types are not deeply readonly.
 - **EH-359** (`typescript/prefer-readonly-parameter-types`): acceptance lifecycle wraps awaited server startup and teardown; callback types are not deeply readonly.
+- **EH-360** (`effecttsgo/async-function`): release bootstrap checks awaited filesystem state before publish-only upload.
+- **EH-361** (`effecttsgo/global-console`): npm bootstrap publish guidance is intentionally emitted before interactive registry authentication.
 
 ## Justification Registry
 
@@ -843,7 +845,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `scripts/release.ts:19`
+- `scripts/release.ts:21`
 
 #### EH-220: byte buffers are passed to Bun.write without retaining references.
 
@@ -1244,7 +1246,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `scripts/release.ts:21`
+- `scripts/release.ts:23`
 
 #### EH-272: staging writer state is mutated while finalizing blob writes.
 
@@ -1314,13 +1316,13 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `scripts/acceptance-servers.ts:80`
+- `scripts/acceptance-servers.ts:86`
 
 #### EH-359: acceptance lifecycle wraps awaited server startup and teardown; callback types are not deeply readonly.
 
 **Locations:**
 
-- `scripts/acceptance-servers.ts:87`
+- `scripts/acceptance-servers.ts:93`
 
 ### Effect · `effecttsgo/abort-controller-in-effect`
 
@@ -1397,8 +1399,8 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 **Locations:**
 
 - `acceptance/visual/responsive-baselines.test.ts:149`
-- `acceptance/webview/journey.test.ts:180`
-- `acceptance/webview/journey.test.ts:199`
+- `acceptance/webview/journey.test.ts:184`
+- `acceptance/webview/journey.test.ts:203`
 - `acceptance/webview/qualification.test.ts:44`
 
 #### EH-011: Bun's test runner requires a Promise-returning lifecycle callback.
@@ -1408,7 +1410,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 - `acceptance/accessibility/axe-webview.test.ts:61`
 - `acceptance/accessibility/axe-webview.test.ts:69`
 - `acceptance/visual/responsive-baselines.test.ts:175`
-- `acceptance/webview/journey.test.ts:223`
+- `acceptance/webview/journey.test.ts:227`
 - `acceptance/webview/qualification.test.ts:66`
 
 #### EH-012: cache invalidation must remain sequential.
@@ -1441,7 +1443,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `scripts/acceptance-servers.ts:15`
+- `scripts/acceptance-servers.ts:17`
 
 #### EH-017: conflict preparation follows controlled input setup despite alphabetical ordering.
 
@@ -1710,25 +1712,25 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `acceptance/webview/journey.test.ts:23`
-- `acceptance/webview/journey.test.ts:33`
-- `acceptance/webview/journey.test.ts:38`
-- `acceptance/webview/journey.test.ts:68`
-- `acceptance/webview/journey.test.ts:93`
+- `acceptance/webview/journey.test.ts:24`
+- `acceptance/webview/journey.test.ts:34`
+- `acceptance/webview/journey.test.ts:39`
+- `acceptance/webview/journey.test.ts:72`
+- `acceptance/webview/journey.test.ts:97`
 
 #### EH-042: journey orchestration composes native WebView Promise operations.
 
 **Locations:**
 
-- `acceptance/webview/journey.test.ts:127`
-- `acceptance/webview/journey.test.ts:139`
-- `acceptance/webview/journey.test.ts:160`
+- `acceptance/webview/journey.test.ts:131`
+- `acceptance/webview/journey.test.ts:143`
+- `acceptance/webview/journey.test.ts:164`
 
 #### EH-043: journey orchestration follows helper dependency order despite alphabetical ordering.
 
 **Locations:**
 
-- `acceptance/webview/journey.test.ts:150`
+- `acceptance/webview/journey.test.ts:154`
 
 #### EH-044: JSON loading uses Bun's asynchronous file API.
 
@@ -1852,7 +1854,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `scripts/acceptance-servers.ts:18`
+- `scripts/acceptance-servers.ts:20`
 
 #### EH-063: request handling awaits body parsing and Effect execution.
 
@@ -2115,7 +2117,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `scripts/acceptance-servers.ts:56`
+- `scripts/acceptance-servers.ts:58`
 
 #### EH-352: acceptance browser suites orchestrate sequential CLI commands inside server lifecycle.
 
@@ -2127,13 +2129,13 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `scripts/acceptance-servers.ts:38`
+- `scripts/acceptance-servers.ts:40`
 
 #### EH-354: acceptance servers require awaited process shutdown and Bun.spawn handles are mutable platform types.
 
 **Locations:**
 
-- `scripts/acceptance-servers.ts:80`
+- `scripts/acceptance-servers.ts:86`
 
 #### EH-355: visual baseline update orchestrates sequential CLI commands inside acceptance server lifecycle.
 
@@ -2145,7 +2147,13 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `scripts/acceptance-servers.ts:87`
+- `scripts/acceptance-servers.ts:93`
+
+#### EH-360: release bootstrap checks awaited filesystem state before publish-only upload.
+
+**Locations:**
+
+- `scripts/release.ts:42`
 
 ### Effect · `effecttsgo/crypto-random-uuid`
 
@@ -2219,7 +2227,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `scripts/acceptance-servers.ts:43`
+- `scripts/acceptance-servers.ts:45`
 
 #### EH-096: escape hatch maintenance CLI reports progress.
 
@@ -2249,6 +2257,12 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 - `scripts/update-visuals.ts:11`
 
+#### EH-361: npm bootstrap publish guidance is intentionally emitted before interactive registry authentication.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/scripts/release-npm.ts:32`
+
 ### Effect · `effecttsgo/global-fetch`
 
 #### EH-099: Browser mutation boundary is owned by the UI query client.
@@ -2262,7 +2276,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `scripts/acceptance-servers.ts:24`
+- `scripts/acceptance-servers.ts:26`
 
 #### EH-101: generated clients intentionally use the platform fetch boundary so callers can supply the browser or server runtime.
 
@@ -2669,7 +2683,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `scripts/acceptance-servers.ts:38`
+- `scripts/acceptance-servers.ts:40`
 
 ### Effect · `effecttsgo/new-promise`
 

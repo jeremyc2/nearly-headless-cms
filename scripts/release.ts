@@ -11,9 +11,11 @@ const argumentIndex = 2,
     ".artifacts/npm",
     `nearly-headless-cms-${packageManifest.version}.tgz`,
   ),
+  packageInspectionReport = path.join(monorepoRoot, ".artifacts/npm/inspection.json"),
   releaseArguments = Bun.argv.slice(argumentIndex),
   releaseConfirmation = `nearly-headless-cms@${packageManifest.version}`,
-  releasePublishRequested = releaseArguments.includes("--publish"),
+  releasePublishOnly = releaseArguments.includes("--publish-only"),
+  releasePublishRequested = releaseArguments.includes("--publish") || releasePublishOnly,
   releaseTag = releaseArguments.find((argument) => argument.startsWith("v")),
   run = (
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-219] Bun.spawn requires a mutable string command argv.
@@ -37,18 +39,35 @@ const argumentIndex = 2,
         }
       });
     }),
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-360] release bootstrap checks awaited filesystem state before publish-only upload.
+  requireVerifiedArchive = async (): Promise<void> => {
+    if (!(await Bun.file(packageVersionArchive).exists())) {
+      throw new Error(
+        `Missing inspected archive ${packageVersionArchive}. Run \`bun run release --tag v${packageManifest.version}\` first.`,
+      );
+    }
+    if (!(await Bun.file(packageInspectionReport).exists())) {
+      throw new Error(
+        `Missing inspection report ${packageInspectionReport}. Run \`bun run release --tag v${packageManifest.version}\` first.`,
+      );
+    }
+  },
   successfulExitCode = 0;
 
 if (releaseTag !== undefined) {
   await run(["bun", "run", "scripts/check-release-state.ts", releaseTag]);
 }
 
-await run(["bun", "run", "scripts/run-acceptance.ts"]);
-await run(["bun", "run", "scripts/record-release-evidence.ts"]);
-await run(["bun", "run", "publish:dry-run"], {
-  cwd: packageDirectory,
-  environment: { PACKAGE_ARCHIVE: packageVersionArchive },
-});
+if (releasePublishOnly) {
+  await requireVerifiedArchive();
+} else {
+  await run(["bun", "run", "scripts/run-acceptance.ts"]);
+  await run(["bun", "run", "scripts/record-release-evidence.ts"]);
+  await run(["bun", "run", "publish:dry-run"], {
+    cwd: packageDirectory,
+    environment: { PACKAGE_ARCHIVE: packageVersionArchive },
+  });
+}
 
 if (releasePublishRequested) {
   await run(["bun", "run", "release:npm"], {
@@ -62,6 +81,6 @@ if (releasePublishRequested) {
 } else {
   await Bun.write(
     Bun.stdout,
-    `\nRelease verification passed for ${releaseConfirmation}.\nPublish when ready:\n  bun run release --publish\n`,
+    `\nRelease verification passed for ${releaseConfirmation}.\nPublish when ready:\n  bun run release --publish-only\n`,
   );
 }
