@@ -350,6 +350,11 @@ Sorted by escape-hatch code (`EH-###`).
 - **EH-348** (`effecttsgo/async-function`): journey orchestration follows helper dependency order despite alphabetical ordering.
 - **EH-349** (`eslint/sort-vars`): journey orchestration follows helper dependency order despite alphabetical ordering.
 - **EH-350** (`eslint/sort-vars`): acceptance CMS storage path depends on the resolved monorepo root.
+- **EH-351** (`eslint/no-ternary`): acceptance runs need deterministic identifiers without splitting the sorted const chain.
+- **EH-354** (`eslint/sort-vars`): validation screenshot normalization precedes editor navigation helpers that consume it.
+- **EH-355** (`effecttsgo/async-function`): validation screenshot normalization runs after React settles in the test finalize hook.
+- **EH-356** (`eslint/sort-vars`): validation screenshot normalization runs after React settles in the test finalize hook.
+- **EH-357** (`eslint/sort-imports`): path-invariant scenarios follow the established filesystem test import grouping.
 
 ## Justification Registry
 
@@ -735,6 +740,8 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 - `packages/nearly-headless-cms/test/filesystem/filesystem-fault-injection-manifest-scenarios.ts:45`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-fault-injection-scenarios.ts:23`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-fault-injection-scenarios.ts:31`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-path-invariant-scenarios.ts:29`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-path-invariant-scenarios.ts:39`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-corruption-scenarios.ts:29`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-scenarios.ts:203`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-writer-scenarios.ts:20`
@@ -785,6 +792,8 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 - `packages/nearly-headless-cms/test/filesystem/filesystem-fault-injection-manifest-scenarios.ts:43`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-fault-injection-scenarios.ts:21`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-fault-injection-scenarios.ts:29`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-path-invariant-scenarios.ts:27`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-path-invariant-scenarios.ts:37`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-corruption-scenarios.ts:27`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-scenarios.ts:201`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-writer-scenarios.ts:18`
@@ -1595,15 +1604,15 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `acceptance/visual/visual-baseline-scenarios.ts:75`
-- `acceptance/visual/visual-baseline-scenarios.ts:119`
-- `acceptance/visual/visual-baseline-scenarios.ts:172`
-- `acceptance/visual/visual-baseline-scenarios.ts:181`
-- `acceptance/visual/visual-baseline-scenarios.ts:185`
-- `acceptance/visual/visual-baseline-scenarios.ts:189`
-- `acceptance/visual/visual-baseline-scenarios.ts:194`
-- `acceptance/visual/visual-baseline-scenarios.ts:199`
-- `acceptance/visual/visual-baseline-scenarios.ts:203`
+- `acceptance/visual/visual-baseline-scenarios.ts:104`
+- `acceptance/visual/visual-baseline-scenarios.ts:148`
+- `acceptance/visual/visual-baseline-scenarios.ts:201`
+- `acceptance/visual/visual-baseline-scenarios.ts:226`
+- `acceptance/visual/visual-baseline-scenarios.ts:230`
+- `acceptance/visual/visual-baseline-scenarios.ts:234`
+- `acceptance/visual/visual-baseline-scenarios.ts:239`
+- `acceptance/visual/visual-baseline-scenarios.ts:244`
+- `acceptance/visual/visual-baseline-scenarios.ts:248`
 
 #### EH-319: visual baseline setup queries the live Example CMS management API.
 
@@ -1633,37 +1642,43 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `acceptance/visual/visual-baseline-scenarios.ts:50`
+- `acceptance/visual/visual-baseline-scenarios.ts:51`
 
 #### EH-334: visual baseline setup prepares invalid draft publication state through the management API.
 
 **Locations:**
 
-- `acceptance/visual/visual-baseline-scenarios.ts:16`
+- `acceptance/visual/visual-baseline-scenarios.ts:17`
 
 #### EH-339: editor navigation depends on waitUntilExpression despite alphabetical ordering.
 
 **Locations:**
 
-- `acceptance/visual/visual-baseline-scenarios.ts:63`
+- `acceptance/visual/visual-baseline-scenarios.ts:92`
 
 #### EH-344: conflict preparation follows controlled input setup despite alphabetical ordering.
 
 **Locations:**
 
-- `acceptance/visual/visual-baseline-scenarios.ts:148`
+- `acceptance/visual/visual-baseline-scenarios.ts:177`
 
 #### EH-346: controlled input updates precede conflict preparation despite alphabetical ordering.
 
 **Locations:**
 
-- `acceptance/visual/visual-baseline-scenarios.ts:128`
+- `acceptance/visual/visual-baseline-scenarios.ts:157`
 
 #### EH-348: journey orchestration follows helper dependency order despite alphabetical ordering.
 
 **Locations:**
 
 - `acceptance/webview/journey.test.ts:150`
+
+#### EH-355: validation screenshot normalization runs after React settles in the test finalize hook.
+
+**Locations:**
+
+- `acceptance/visual/visual-baseline-scenarios.ts:221`
 
 ### Effect · `effecttsgo/crypto-random-uuid`
 
@@ -2117,6 +2132,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 - `packages/nearly-headless-cms/test/filesystem/filesystem-concurrency-fault-scenarios-imports.ts:9`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-fault-injection-manifest-scenarios-imports.ts:7`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-fault-injection-scenarios-imports.ts:7`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-path-invariant-scenarios.ts:9`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-corruption-scenarios.ts:6`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-scenarios.ts:35`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-writer-scenarios.ts:10`
@@ -2130,6 +2146,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 - `packages/nearly-headless-cms/test/filesystem/filesystem-concurrency-fault-scenarios-imports.ts:5`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-fault-injection-manifest-scenarios-imports.ts:5`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-fault-injection-scenarios-imports.ts:5`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-path-invariant-scenarios.ts:11`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-corruption-scenarios.ts:8`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-scenarios.ts:32`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-writer-scenarios.ts:12`
@@ -2219,6 +2236,8 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 - `packages/nearly-headless-cms/test/filesystem/filesystem-fault-injection-manifest-scenarios.ts:48`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-fault-injection-scenarios.ts:26`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-fault-injection-scenarios.ts:34`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-path-invariant-scenarios.ts:32`
+- `packages/nearly-headless-cms/test/filesystem/filesystem-path-invariant-scenarios.ts:42`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-corruption-scenarios.ts:32`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-scenarios.ts:207`
 - `packages/nearly-headless-cms/test/filesystem/filesystem-persistence-writer-scenarios.ts:24`
@@ -2396,6 +2415,12 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 - `apps/public-blog/src/generated/headless-openapi-client-runtime-transport.ts:54`
 - `scripts/openapi-client-generator/runtime-template.ts:147`
 
+#### EH-351: acceptance runs need deterministic identifiers without splitting the sorted const chain.
+
+**Locations:**
+
+- `apps/example-cms/src/system.ts:48`
+
 ### ESLint · `eslint/one-var`
 
 #### EH-125: helpers with readonly disables must stay as separate const declarations.
@@ -2485,8 +2510,8 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `acceptance/visual/visual-baseline-scenarios.ts:151`
-- `acceptance/visual/visual-baseline-scenarios.ts:158`
+- `acceptance/visual/visual-baseline-scenarios.ts:180`
+- `acceptance/visual/visual-baseline-scenarios.ts:187`
 
 #### EH-336: CORS header mutation follows the origin allowlist guard.
 
@@ -2557,6 +2582,12 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 **Locations:**
 
 - `packages/nearly-headless-cms/test/filesystem/filesystem-commit-boundary-child-spawn.ts:5`
+
+#### EH-357: path-invariant scenarios follow the established filesystem test import grouping.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/filesystem/filesystem-persistence.test.ts:25`
 
 ### ESLint · `eslint/sort-vars`
 
@@ -2784,31 +2815,31 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `acceptance/visual/visual-baseline-scenarios.ts:18`
+- `acceptance/visual/visual-baseline-scenarios.ts:19`
 
 #### EH-341: editor navigation depends on waitUntilExpression despite alphabetical ordering.
 
 **Locations:**
 
-- `acceptance/visual/visual-baseline-scenarios.ts:63`
+- `acceptance/visual/visual-baseline-scenarios.ts:92`
 
 #### EH-342: featured asset selection follows lighthouse fixture lookup.
 
 **Locations:**
 
-- `acceptance/visual/visual-baseline-scenarios.ts:24`
+- `acceptance/visual/visual-baseline-scenarios.ts:25`
 
 #### EH-345: conflict preparation follows controlled input setup despite alphabetical ordering.
 
 **Locations:**
 
-- `acceptance/visual/visual-baseline-scenarios.ts:148`
+- `acceptance/visual/visual-baseline-scenarios.ts:177`
 
 #### EH-347: controlled input updates precede conflict preparation despite alphabetical ordering.
 
 **Locations:**
 
-- `acceptance/visual/visual-baseline-scenarios.ts:128`
+- `acceptance/visual/visual-baseline-scenarios.ts:157`
 
 #### EH-349: journey orchestration follows helper dependency order despite alphabetical ordering.
 
@@ -2821,6 +2852,18 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 **Locations:**
 
 - `scripts/run-acceptance.ts:14`
+
+#### EH-354: validation screenshot normalization precedes editor navigation helpers that consume it.
+
+**Locations:**
+
+- `acceptance/visual/visual-baseline-scenarios.ts:64`
+
+#### EH-356: validation screenshot normalization runs after React settles in the test finalize hook.
+
+**Locations:**
+
+- `acceptance/visual/visual-baseline-scenarios.ts:221`
 
 ### ESLint · `no-await-in-loop`
 

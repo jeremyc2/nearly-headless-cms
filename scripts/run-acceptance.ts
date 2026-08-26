@@ -84,7 +84,7 @@ acceptanceServers.exampleCms = Bun.spawn(["bun", "run", "--cwd", "apps/example-c
 try {
   await waitFor("http://localhost:3000/health");
   await run(["bun", "run", "--cwd", "apps/public-blog", "build"], {
-    PUBLIC_BLOG_USE_FIXTURE: "1",
+    EXAMPLE_CMS_URL: "http://localhost:3000",
   });
   acceptanceServers.publicBlog = Bun.spawn(["bun", "run", "--cwd", "apps/public-blog", "start"], {
     cwd: monorepoRoot,

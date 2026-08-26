@@ -22,8 +22,29 @@ import {
   verifySerializedEntryMutations,
   verifyStaleEntryGenerationConflict,
 } from "./filesystem-commit-boundary-scenarios.ts";
+// oxlint-disable-next-line eslint/sort-imports -- [EH-357] path-invariant scenarios follow the established filesystem test import grouping.
+import {
+  verifyAbandonedStagingPrefixCleanedOnRecovery,
+  verifyCaseDistinctAssetFilenamesPreservedInMetadata,
+  verifyUnexpectedRootEntryRejectedOnStartup,
+  verifyUnicodeAssetFilenameRoundTrip,
+} from "./filesystem-path-invariant-scenarios.ts";
 import { verifyChildTerminationDuringEntryCommit } from "./filesystem-commit-boundary-child-scenarios.ts";
 import { verifyManifestPublicationPermissionFailure } from "./filesystem-fault-injection-manifest-scenarios.ts";
+
+describe("BunFilesystemPersistence macOS path invariants", () => {
+  test("rejects unexpected committed-root entries during startup recovery", () =>
+    verifyUnexpectedRootEntryRejectedOnStartup());
+
+  test("cleans abandoned reserved staging-prefix entries during startup recovery", () =>
+    verifyAbandonedStagingPrefixCleanedOnRecovery());
+
+  test("round-trips Unicode Asset filenames through committed metadata", () =>
+    verifyUnicodeAssetFilenameRoundTrip());
+
+  test("preserves case-distinct Asset filenames independently in metadata", () =>
+    verifyCaseDistinctAssetFilenamesPreservedInMetadata());
+});
 
 describe("BunFilesystemPersistence recovery and streaming", () => {
   test("durably commits the Definition Catalog and Entry generation in one cutover", () =>

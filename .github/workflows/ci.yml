@@ -23,11 +23,11 @@ jobs:
       - run: bun run test:unit
       - run: bun run test:types
       - run: bun run test:contract
+      - name: Build Public Blog static output
+        run: PUBLIC_BLOG_USE_FIXTURE=1 bun run --cwd apps/public-blog build
       - run: bun run test:integration
       - run: bun run test:filesystem
       - run: bun run test:journeys
-      - name: Build Public Blog static output
-        run: PUBLIC_BLOG_USE_FIXTURE=1 bun run --cwd apps/public-blog build
 
   compatibility:
     runs-on: macos-latest

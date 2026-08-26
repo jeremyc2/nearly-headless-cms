@@ -88,6 +88,9 @@ describe("responsive visual baselines", () => {
           try {
             await scenario.prepare(view);
             await waitUntilReady(view, scenario.ready);
+            if (scenario.finalize !== undefined) {
+              await scenario.finalize(view);
+            }
             await captureAndCheckBaseline(view, scenario.name, viewport);
           } finally {
             view.close();

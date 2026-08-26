@@ -3,7 +3,7 @@ import {
   AnonymousIdentity,
   CryptoIdentifierGenerator,
 } from "nearly-headless-cms/adapters";
-import { Cms, type CmsError } from "nearly-headless-cms";
+import { Cms, type CmsError, Identifier } from "nearly-headless-cms";
 import { Effect, Layer, ManagedRuntime, Option } from "effect";
 import { type SeedResult, seed } from "./domain/seed.ts";
 import { BunFilesystemPersistence } from "nearly-headless-cms/bun/filesystem";
@@ -29,9 +29,26 @@ export interface ExampleComposition {
   readonly transportOptions: HttpTransport.Options;
 }
 
-const makeExampleCompositionInternal = (options: ExampleSystemOptions = {}): ExampleComposition => {
+const acceptanceIdentifierSequencePadding = 4,
+  makeAcceptanceDeterministicIdentifierLayer = (): Layer.Layer<Identifier.Generator> => {
+    let sequence = 0;
+    return Layer.succeed(
+      Identifier.Generator,
+      Identifier.Generator.of({
+        generate: (kind) =>
+          Effect.succeed(
+            `${kind}-acceptance-${String(sequence++).padStart(acceptanceIdentifierSequencePadding, "0")}`,
+          ),
+      }),
+    );
+  },
+  makeExampleCompositionInternal = (options: ExampleSystemOptions = {}): ExampleComposition => {
     const storageRoot = options.storageRoot ?? ".data/example-cms",
-      storageRootBaseIdentifierLayer = CryptoIdentifierGenerator.layer,
+      storageRootBaseIdentifierLayer =
+        // oxlint-disable-next-line eslint/no-ternary -- [EH-351] acceptance runs need deterministic identifiers without splitting the sorted const chain.
+        options.storageRoot === undefined
+          ? CryptoIdentifierGenerator.layer
+          : makeAcceptanceDeterministicIdentifierLayer(),
       storageRootCommandReceiptStore = filesystemCommandReceiptStore(
         `${storageRoot}/command-receipts`,
       ),

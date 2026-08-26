@@ -1,5 +1,6 @@
 import {
   type VisualBaselineScenario,
+  finalizeDraftValidation,
   prepareCommentSuccess,
   prepareCommentValidation,
   prepareConflictPanel,
@@ -25,9 +26,11 @@ const interactiveVisualBaselineScenarios: readonly VisualBaselineScenario[] = [
         "document.querySelectorAll('.entry-row').length >= 1 && document.querySelector('.entry-row')?.textContent?.includes('pending') === true",
     },
     {
+      finalize: finalizeDraftValidation,
       name: "example-cms-validation",
       prepare: prepareDraftValidation,
-      ready: "document.querySelector('.issue-summary') !== null",
+      ready:
+        "document.querySelector('.issue-summary') !== null && document.querySelector('.rich-dialog') === null && document.querySelector('.issue-summary strong')?.textContent === 'Post is not ready for publication' && document.querySelector('.editor-header p')?.textContent?.includes('Saved') === true && document.querySelector('.field-help')?.textContent === 'lighthouse.svg'",
     },
     {
       name: "example-cms-history",

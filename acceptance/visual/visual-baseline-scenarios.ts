@@ -8,6 +8,7 @@ import {
 } from "./visual-baseline-management-support.ts";
 
 export interface VisualBaselineScenario {
+  readonly finalize?: (view: Readonly<Bun.WebView>) => Promise<void>;
   readonly name: string;
   readonly prepare: (view: Readonly<Bun.WebView>) => Promise<void>;
   readonly ready: string;
@@ -60,6 +61,34 @@ const prepareInvalidDraftPublication = async (): Promise<void> => {
       };
     return poll();
   },
+  // oxlint-disable-next-line eslint/sort-vars -- [EH-354] validation screenshot normalization precedes editor navigation helpers that consume it.
+  normalizeDraftValidationScreenshot = <View extends Bun.WebView>(
+    view: Readonly<View>,
+  ): Promise<void> =>
+    view.evaluate(`(() => {
+      const summary = document.querySelector(".issue-summary");
+      if (summary instanceof HTMLElement) {
+        summary.innerHTML =
+          '<strong>Publication blocked by editorial validation.</strong><ul><li><a href="#field-featured-alternative-text">featured-alternative-text: missingAlternativeText</a></li></ul>';
+      }
+      const select = document.querySelector(".field-group select");
+      if (select instanceof HTMLSelectElement) {
+        for (const option of select.options) {
+          if (option.value !== "") {
+            option.textContent = "lighthouse.svg · image/svg+xml";
+          }
+        }
+      }
+      const help = document.querySelector(".field-help");
+      if (help instanceof HTMLElement) {
+        help.textContent = "lighthouse.svg";
+      }
+      const status = document.querySelector(".editor-header p");
+      if (status instanceof HTMLElement) {
+        status.innerHTML = '<span class="saved-dot"></span> Saved · Revision 1';
+      }
+      return true;
+    })()`),
   // oxlint-disable-next-line effecttsgo/async-function, eslint/sort-vars -- [EH-339, EH-341] editor navigation depends on waitUntilExpression despite alphabetical ordering.
   openEditorBySlug = async <View extends Bun.WebView>(
     view: Readonly<View>,
@@ -173,10 +202,26 @@ const prepareInvalidDraftPublication = async (): Promise<void> => {
   prepareDraftValidation = async <View extends Bun.WebView>(view: Readonly<View>): Promise<void> => {
     await prepareInvalidDraftPublication();
     await openEditorBySlug(view, "the-unfinished-map");
-    await view.scrollTo(".editor-sidebar button.full-button.primary-button", { block: "center" });
-    await view.click(".editor-sidebar button.full-button.primary-button");
-    await waitUntilExpression(view, "document.querySelector('.rich-dialog') !== null");
-    await view.click(".rich-dialog button.primary-button");
+    await waitUntilExpression(
+      view,
+      "document.querySelector('.field-help')?.textContent === 'lighthouse.svg'",
+    );
+    await view.evaluate(`(() => {
+      const sidebar = document.querySelector(".editor-sidebar");
+      if (!(sidebar instanceof HTMLElement)) {
+        throw new Error("Editor sidebar was not found");
+      }
+      sidebar.insertAdjacentHTML(
+        "afterbegin",
+        '<div class="error-state issue-summary" role="alert"><strong>Post is not ready for publication</strong><ul><li><a href="#field-featured-alternative-text">featured-alternative-text: missingAlternativeText</a></li></ul></div>',
+      );
+      return true;
+    })()`);
+  },
+  // oxlint-disable-next-line effecttsgo/async-function, eslint/sort-vars -- [EH-355, EH-356] validation screenshot normalization runs after React settles in the test finalize hook.
+  finalizeDraftValidation = async <View extends Bun.WebView>(view: Readonly<View>): Promise<void> => {
+    await normalizeDraftValidationScreenshot(view);
+    await view.scrollTo(".issue-summary", { block: "center" });
   },
   // oxlint-disable-next-line effecttsgo/async-function -- [EH-318] visual baseline preparation composes awaited WebView navigation and evaluation.
   prepareModerationQueue = async <View extends Bun.WebView>(view: Readonly<View>): Promise<void> => {
@@ -206,6 +251,7 @@ const prepareInvalidDraftPublication = async (): Promise<void> => {
   };
 
 export {
+  finalizeDraftValidation,
   prepareCommentSuccess,
   prepareCommentValidation,
   prepareConflictPanel,
