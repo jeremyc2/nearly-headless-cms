@@ -41,9 +41,7 @@ const { oneShot } = assetStream,
               assetVerification.byteLength !== expectedByteLength ||
               actualDigest !== expectedDigest
             ) {
-              return Effect.fail(
-                failure("Filesystem Asset Blob is corrupt", new Error("digest mismatch")),
-              );
+              return failure("Filesystem Asset Blob is corrupt", new Error("digest mismatch"));
             }
             return Effect.void;
           });

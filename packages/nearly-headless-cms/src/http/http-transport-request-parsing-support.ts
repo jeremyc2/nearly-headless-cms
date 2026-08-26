@@ -123,20 +123,16 @@ const { encodeChunk } = transportResponse,
     const { contentPath, maximumFileByteLength, parseAssetMetadata, part, state } = input;
     if (Multipart.isField(part)) {
       if (part.key !== "metadata" || state.metadata !== undefined) {
-        return Effect.fail(
-          InvalidInput.make({
-            message: "Asset upload requires exactly one metadata field",
-          }),
-        );
+        return InvalidInput.make({
+          message: "Asset upload requires exactly one metadata field",
+        });
       }
       return Effect.sync(() => {
         state.metadata = parseAssetMetadata(part.value);
       });
     }
     if (part.key !== "content" || state.contentSeen) {
-      return Effect.fail(
-        InvalidInput.make({ message: "Asset upload requires exactly one content file" }),
-      );
+      return InvalidInput.make({ message: "Asset upload requires exactly one content file" });
     }
     state.contentSeen = true;
     state.contentMediaType = part.contentType;

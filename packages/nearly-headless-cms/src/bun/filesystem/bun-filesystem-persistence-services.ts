@@ -48,7 +48,7 @@ const { persistState } = filesystemLockRoot,
           Effect.flatMap((current) => {
             const asset = current.assets.get(assetId);
             if (asset === undefined) {
-              return Effect.fail(NotFound.make({ message: `Asset ${assetId} was not found` }));
+              return NotFound.make({ message: `Asset ${assetId} was not found` });
             }
             return Effect.succeed(structuredClone(asset));
           }),
@@ -75,7 +75,7 @@ const { persistState } = filesystemLockRoot,
         SynchronizedRef.get(state).pipe(
           Effect.flatMap((current) => {
             if (current.catalog === undefined) {
-              return Effect.fail(missingCatalog());
+              return missingCatalog();
             }
             return Effect.succeed(cloneCatalog(current.catalog));
           }),
@@ -118,13 +118,13 @@ const { persistState } = filesystemLockRoot,
     CmsError
   > => {
     if (current.catalog === undefined) {
-      return Effect.fail(missingCatalog());
+      return missingCatalog();
     }
     if (current.catalog.version !== input.expectedCatalogVersion) {
-      return Effect.fail(Conflict.make({ message: "Definition Catalog version is stale" }));
+      return Conflict.make({ message: "Definition Catalog version is stale" });
     }
     if (current.entryGeneration !== input.expectedEntryGeneration) {
-      return Effect.fail(Conflict.make({ message: "Filesystem Entry generation is stale" }));
+      return Conflict.make({ message: "Filesystem Entry generation is stale" });
     }
     const catalog = {
         ...cloneCatalog(input.catalogState),
@@ -158,7 +158,7 @@ const { persistState } = filesystemLockRoot,
     ) =>
     (current: State): Effect.Effect<readonly [EntryGeneration, State], CmsError> => {
       if (current.entryGeneration !== expectedGeneration) {
-        return Effect.fail(Conflict.make({ message: "Filesystem Entry generation is stale" }));
+        return Conflict.make({ message: "Filesystem Entry generation is stale" });
       }
       const entryEncodingByteLength = encode([...records]).byteLength,
         next: State = {
@@ -172,9 +172,9 @@ const { persistState } = filesystemLockRoot,
         entryEncodingByteLength >
         (configuration.maximumEntryEncodingByteLength ?? defaultEntryMaximumByteLength)
       ) {
-        return Effect.fail(
-          InvalidInput.make({ message: "Entry generation exceeds the configured encoding limit" }),
-        );
+        return InvalidInput.make({
+          message: "Entry generation exceeds the configured encoding limit",
+        });
       }
       return persistTuple({
         configuration,
@@ -197,7 +197,7 @@ const { persistState } = filesystemLockRoot,
         current,
       ): Effect.Effect<readonly [undefined, State], NotFound | ReturnType<typeof failure>> => {
         if (!current.assets.has(assetId)) {
-          return Effect.fail(NotFound.make({ message: `Asset ${assetId} was not found` }));
+          return NotFound.make({ message: `Asset ${assetId} was not found` });
         }
         const next: State = {
           assets: new Map([...current.assets].filter(([id]) => id !== assetId)),
@@ -281,10 +281,10 @@ const { persistState } = filesystemLockRoot,
     (configuration: Configuration, expectedVersion: number, replacement: CatalogState) =>
     (current: State): Effect.Effect<readonly [CatalogState, State], CmsError> => {
       if (current.catalog === undefined) {
-        return Effect.fail(missingCatalog());
+        return missingCatalog();
       }
       if (current.catalog.version !== expectedVersion) {
-        return Effect.fail(Conflict.make({ message: "Definition Catalog version is stale" }));
+        return Conflict.make({ message: "Definition Catalog version is stale" });
       }
       const catalog = { ...cloneCatalog(replacement), version: expectedVersion + 1 },
         next: State = { ...current, catalog, generation: current.generation + 1 };

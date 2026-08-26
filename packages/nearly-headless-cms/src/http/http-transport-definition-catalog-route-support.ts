@@ -42,9 +42,7 @@ const { jsonResponse } = transportResponse,
               ),
               definitionId = requiredPathParameter(definitionMatch, "definitionId");
             if (definition === undefined) {
-              return Effect.fail(
-                NotFound.make({ message: `Definition ${definitionId} was not found` }),
-              );
+              return NotFound.make({ message: `Definition ${definitionId} was not found` });
             }
             return Effect.succeed({
               catalogVersion: state.version,
@@ -89,9 +87,9 @@ const { jsonResponse } = transportResponse,
                 (candidate) => candidate.compiled.snapshotId === snapshotId,
               );
             if (snapshotRecord === undefined) {
-              return Effect.fail(
-                NotFound.make({ message: `Definition Snapshot ${snapshotId} was not found` }),
-              );
+              return NotFound.make({
+                message: `Definition Snapshot ${snapshotId} was not found`,
+              });
             }
             return Effect.succeed({
               ...snapshotRecord.input,

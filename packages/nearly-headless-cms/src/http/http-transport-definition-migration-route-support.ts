@@ -29,11 +29,9 @@ const { jsonResponse } = transportResponse,
             (candidate) => candidate.id === migrationPreparationId,
           );
           if (preparation === undefined) {
-            return Effect.fail(
-              NotFound.make({
-                message: `Migration Preparation ${migrationPreparationId} was not found`,
-              }),
-            );
+            return NotFound.make({
+              message: `Migration Preparation ${migrationPreparationId} was not found`,
+            });
           }
           return context.cms.activateDefinitionSnapshot({
             expectedCatalogVersion,
@@ -98,7 +96,7 @@ const { jsonResponse } = transportResponse,
                 requiredPathParameter(migrationManifestMatch, "migrationManifestId"),
             );
             if (manifest === undefined) {
-              return Effect.fail(NotFound.make({ message: "Migration Manifest was not found" }));
+              return NotFound.make({ message: "Migration Manifest was not found" });
             }
             return Effect.succeed(manifest);
           }),
@@ -127,7 +125,7 @@ const { jsonResponse } = transportResponse,
                 requiredPathParameter(migrationPreparationMatch, "migrationPreparationId"),
             );
             if (preparation === undefined) {
-              return Effect.fail(NotFound.make({ message: "Migration Preparation was not found" }));
+              return NotFound.make({ message: "Migration Preparation was not found" });
             }
             return Effect.succeed(preparation);
           }),

@@ -106,11 +106,9 @@ const {
       return Effect.succeed(compatibleManifest(input.source, input.target));
     }
     if (input.migrationManifest === undefined) {
-      return Effect.fail(
-        InvalidInput.make({
-          message: "A migration manifest is required for this Definition change",
-        }),
-      );
+      return InvalidInput.make({
+        message: "A migration manifest is required for this Definition change",
+      });
     }
     return Effect.succeed(input.migrationManifest);
   },

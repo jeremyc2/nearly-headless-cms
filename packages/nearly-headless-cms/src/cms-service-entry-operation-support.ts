@@ -42,7 +42,7 @@ const { applyRetention, attempt, collectReferences, liveRecords } = cmsSupport,
       record.deletionRecord !== undefined ||
       record.entry.contentTypeId !== contentTypeId
     ) {
-      return Effect.fail(NotFound.make({ message: `Entry ${entryId} was not found` }));
+      return NotFound.make({ message: `Entry ${entryId} was not found` });
     }
     return Effect.succeed(record);
   },
@@ -73,7 +73,7 @@ const { applyRetention, attempt, collectReferences, liveRecords } = cmsSupport,
     writeToken: string | undefined,
   ): Effect.Effect<void, CmsError> => {
     if (contentType.definition.history === true && current.writeToken !== writeToken) {
-      return Effect.fail(Conflict.make({ message: "Write Token is stale" }));
+      return Conflict.make({ message: "Write Token is stale" });
     }
     return Effect.void;
   },

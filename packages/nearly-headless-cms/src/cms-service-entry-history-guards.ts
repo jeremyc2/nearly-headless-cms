@@ -22,12 +22,10 @@ const { attempt, decodeHistoryCursor, entryResource, historyCursor } = cmsSuppor
       record.entry.contentTypeId !== input.contentTypeId ||
       record.deletionRecord === undefined
     ) {
-      return Effect.fail(
-        NotFound.make({ message: `Deleted Entry ${input.entryId} was not found` }),
-      );
+      return NotFound.make({ message: `Deleted Entry ${input.entryId} was not found` });
     }
     if (record.writeToken !== input.writeToken) {
-      return Effect.fail(Conflict.make({ message: "Write Token is stale" }));
+      return Conflict.make({ message: "Write Token is stale" });
     }
     return Effect.succeed(record);
   },
@@ -43,9 +41,7 @@ const { attempt, decodeHistoryCursor, entryResource, historyCursor } = cmsSuppor
       record.writeToken === undefined ||
       record.revisions.length === 0
     ) {
-      return Effect.fail(
-        NotFound.make({ message: `History-enabled Entry ${entryId} was not found` }),
-      );
+      return NotFound.make({ message: `History-enabled Entry ${entryId} was not found` });
     }
     return Effect.succeed({ record, writeToken: record.writeToken });
   },
@@ -63,11 +59,9 @@ const { attempt, decodeHistoryCursor, entryResource, historyCursor } = cmsSuppor
       current.writeToken !== input.writeToken
     ) {
       if (current === undefined) {
-        return Effect.fail(
-          NotFound.make({ message: `Entry History ${input.entryId} was not found` }),
-        );
+        return NotFound.make({ message: `Entry History ${input.entryId} was not found` });
       }
-      return Effect.fail(Conflict.make({ message: "Write Token is stale" }));
+      return Conflict.make({ message: "Write Token is stale" });
     }
     return Effect.succeed({ contentType, current });
   },
@@ -115,9 +109,7 @@ const { attempt, decodeHistoryCursor, entryResource, historyCursor } = cmsSuppor
       (revision) => revision.revisionNumber === revisionNumber,
     );
     if (sourceRevision === undefined) {
-      return Effect.fail(
-        NotFound.make({ message: `Entry Revision ${revisionNumber} was not found` }),
-      );
+      return NotFound.make({ message: `Entry Revision ${revisionNumber} was not found` });
     }
     return Effect.succeed(sourceRevision);
   };

@@ -27,9 +27,7 @@ const compilePath = (
   ): Effect.Effect<void, DefinitionSnapshotChanged> => {
     const expected = request.headers.get("cms-expected-definition-fingerprint");
     if (expected !== null && expected !== fingerprint) {
-      return Effect.fail(
-        DefinitionSnapshotChanged.make({ message: "The active Definition Snapshot changed" }),
-      );
+      return DefinitionSnapshotChanged.make({ message: "The active Definition Snapshot changed" });
     }
     return Effect.void;
   },

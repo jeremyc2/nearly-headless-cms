@@ -243,7 +243,7 @@ const { filesystemErrorCode, filesystemFailureKind } = filesystemFailure,
   ): Effect.Effect<void, InfrastructureFailure | InvalidInput> => {
     const nextByteLength = input.byteLength.current + input.chunk.byteLength;
     if (nextByteLength > input.maximumByteLength) {
-      return Effect.fail(InvalidInput.make({ message: "Asset bytes exceed the configured limit" }));
+      return InvalidInput.make({ message: "Asset bytes exceed the configured limit" });
     }
     return fromPromise(
       () =>

@@ -23,7 +23,7 @@ const { publicContent } = deliveryPublicContent,
           entries = publicOwnerEntries(content, contentTypeId),
           entry = entries.find((candidate) => candidate.values["slug"] === slug);
         if (entry === undefined) {
-          return Effect.fail(CmsError.NotFound.make({ message: `${contentTypeId} was not found` }));
+          return CmsError.NotFound.make({ message: `${contentTypeId} was not found` });
         }
         return Effect.succeed(publicValue(entry));
       }),

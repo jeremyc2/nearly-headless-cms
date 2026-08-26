@@ -47,11 +47,9 @@ class BuildVerificationFailure extends makeTaggedErrorClass<BuildVerificationFai
           if (exitCode === successfulExitCode) {
             return Effect.void;
           }
-          return Effect.fail(
-            BuildVerificationFailure.make({
-              message: "Package build failed during determinism verification",
-            }),
-          );
+          return BuildVerificationFailure.make({
+            message: "Package build failed during determinism verification",
+          });
         }),
       ),
     workspaceSnapshot = (): Effect.Effect<

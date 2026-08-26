@@ -36,7 +36,7 @@ const readCommandReceipt = ({
   ): Effect.Effect<string, CmsError.InvalidInput> => {
     const commandKey = request.headers.get("idempotency-key");
     if (commandKey === null || commandKey.length === 0) {
-      return Effect.fail(CmsError.InvalidInput.make({ message: "Idempotency-Key is required" }));
+      return CmsError.InvalidInput.make({ message: "Idempotency-Key is required" });
     }
     return Effect.succeed(commandKey);
   },

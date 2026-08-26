@@ -121,19 +121,15 @@ const { canonicalizeJsonValue, parseBody, requiredParameter } = deliverySupport,
       return Effect.succeed(undefined as Record<string, unknown> | undefined);
     }
     if (prior.canonicalInput !== canonicalInput) {
-      return Effect.fail(
-        CmsError.IdempotencyConflict.make({
-          message: "Idempotency key was reused with different Comment input",
-        }),
-      );
+      return CmsError.IdempotencyConflict.make({
+        message: "Idempotency key was reused with different Comment input",
+      });
     }
     if (!Schema.is(Schema.JsonObject)(prior.receipt)) {
-      return Effect.fail(
-        CmsError.InfrastructureFailure.make({
-          message: "Stored Comment receipt is not JSON-compatible",
-          retryable: false,
-        }),
-      );
+      return CmsError.InfrastructureFailure.make({
+        message: "Stored Comment receipt is not JSON-compatible",
+        retryable: false,
+      });
     }
     return Effect.succeed(prior.receipt);
   },
@@ -192,7 +188,7 @@ const { canonicalizeJsonValue, parseBody, requiredParameter } = deliverySupport,
       typeof commentBody !== "string" ||
       (websiteUrl !== undefined && websiteUrl !== null && typeof websiteUrl !== "string")
     ) {
-      return Effect.fail(CmsError.InvalidInput.make({ message: "Comment fields are invalid" }));
+      return CmsError.InvalidInput.make({ message: "Comment fields are invalid" });
     }
     return Effect.succeed({ commentBody, displayName, websiteUrl });
   },

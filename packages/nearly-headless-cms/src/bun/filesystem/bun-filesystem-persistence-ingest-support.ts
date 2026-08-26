@@ -35,9 +35,7 @@ const { defaultMetadataMaximumByteLength, encode } = filesystemSupport,
     input: Readonly<Input>,
   ): Effect.Effect<void, InvalidInput> => {
     if (input.filename.trim().length === emptyLength || !input.mediaType.includes("/")) {
-      return Effect.fail(
-        InvalidInput.make({ message: "Asset filename and media type are required" }),
-      );
+      return InvalidInput.make({ message: "Asset filename and media type are required" });
     }
     if (
       encode({
@@ -48,9 +46,7 @@ const { defaultMetadataMaximumByteLength, encode } = filesystemSupport,
         width: input.width,
       }).byteLength > (configuration.maximumMetadataByteLength ?? defaultMetadataMaximumByteLength)
     ) {
-      return Effect.fail(
-        InvalidInput.make({ message: "Asset metadata exceeds the configured limit" }),
-      );
+      return InvalidInput.make({ message: "Asset metadata exceeds the configured limit" });
     }
     return Effect.void;
   };

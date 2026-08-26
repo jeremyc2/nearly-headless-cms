@@ -57,13 +57,11 @@ const appendQueryPage = <
     if (result !== undefined && "writeToken" in result && !("entry" in result)) {
       return Effect.succeed(result);
     }
-    return Effect.fail(
-      CmsError.InfrastructureFailure.make({
-        cause: result,
-        message: "History-enabled deletion did not return its deletion record",
-        retryable: false,
-      }),
-    );
+    return CmsError.InfrastructureFailure.make({
+      cause: result,
+      message: "History-enabled deletion did not return its deletion record",
+      retryable: false,
+    });
   },
   requiredParameter = (
     parameters: Readonly<Record<string, string | undefined>>,
@@ -80,7 +78,7 @@ const appendQueryPage = <
   ): Effect.Effect<string, CmsError.InvalidInput> => {
     const writeToken = toWebRequest(request).headers.get("cms-write-token");
     if (writeToken === null || writeToken.length === 0) {
-      return Effect.fail(CmsError.InvalidInput.make({ message: "CMS-Write-Token is required" }));
+      return CmsError.InvalidInput.make({ message: "CMS-Write-Token is required" });
     }
     return Effect.succeed(writeToken);
   };

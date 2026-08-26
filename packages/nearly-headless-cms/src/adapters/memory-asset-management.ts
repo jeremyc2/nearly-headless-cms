@@ -76,7 +76,7 @@ const AssetMetadataInput = Schema.Struct({
     (assetId: string): Effect.Effect<void, NotFound> =>
       SynchronizedRef.modifyEffect(state, (assets) => {
         if (!assets.has(assetId)) {
-          return Effect.fail(NotFound.make({ message: `Asset ${assetId} was not found` }));
+          return NotFound.make({ message: `Asset ${assetId} was not found` });
         }
         const updated = new Map(assets);
         updated.delete(assetId);
@@ -132,7 +132,7 @@ const AssetMetadataInput = Schema.Struct({
         Effect.flatMap((assets) => {
           const asset = assets.get(assetId);
           if (asset === undefined) {
-            return Effect.fail(NotFound.make({ message: `Asset ${assetId} was not found` }));
+            return NotFound.make({ message: `Asset ${assetId} was not found` });
           }
           return Effect.succeed<Asset>({ id: asset.id, metadata: asset.metadata });
         }),
@@ -238,7 +238,7 @@ const AssetMetadataInput = Schema.Struct({
         Effect.flatMap((assets) => {
           const asset = assets.get(assetId);
           if (asset === undefined) {
-            return Effect.fail(NotFound.make({ message: `Asset ${assetId} was not found` }));
+            return NotFound.make({ message: `Asset ${assetId} was not found` });
           }
           return Effect.succeed({
             content: makeAssetContent(asset.bytes),

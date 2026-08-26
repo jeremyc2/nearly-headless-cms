@@ -84,7 +84,7 @@ const catalogCloneState = (state: Readonly<CatalogState>): CatalogState => ({
       }) =>
         SynchronizedRef.modifyEffect(state, (current) => {
           if (current.version !== expectedCatalogVersion) {
-            return Effect.fail(Conflict.make({ message: "Definition Catalog version is stale" }));
+            return Conflict.make({ message: "Definition Catalog version is stale" });
           }
           const committed = {
             ...catalogCloneState(catalogState),
@@ -103,7 +103,7 @@ const catalogCloneState = (state: Readonly<CatalogState>): CatalogState => ({
       replace: (expectedVersion, replacement) =>
         SynchronizedRef.modifyEffect(state, (current) => {
           if (current.version !== expectedVersion) {
-            return Effect.fail(Conflict.make({ message: "Definition Catalog version is stale" }));
+            return Conflict.make({ message: "Definition Catalog version is stale" });
           }
           const committed = {
             ...catalogCloneState(replacement),

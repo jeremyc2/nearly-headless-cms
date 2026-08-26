@@ -63,7 +63,7 @@ const requestUrlSearchParameter = (
       Effect.flatMap((entries) => {
         const firstEntry = entries[FIRST_INDEX];
         if (firstEntry === undefined) {
-          return Effect.fail(CmsError.NotFound.make({ message: `${contentTypeId} was not found` }));
+          return CmsError.NotFound.make({ message: `${contentTypeId} was not found` });
         }
         return Effect.succeed(publicValue(firstEntry));
       }),

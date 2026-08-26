@@ -16,11 +16,9 @@ const assertAppendRevisionNumber = (
   ): Effect.Effect<number, CmsError> => {
     const revision = input.definition.revision ?? 1;
     if (!Number.isSafeInteger(revision) || revision <= 0) {
-      return Effect.fail(
-        InvalidInput.make({
-          message: "Definition revision must be a positive safe integer",
-        }),
-      );
+      return InvalidInput.make({
+        message: "Definition revision must be a positive safe integer",
+      });
     }
     return Effect.succeed(revision);
   },
@@ -30,18 +28,14 @@ const assertAppendRevisionNumber = (
   ): Effect.Effect<void, CmsError> => {
     const previousRevision = resolvePreviousRevision(state, input.definition.id);
     if (previousRevision > 0 && input.definition.parentRevision !== previousRevision) {
-      return Effect.fail(
-        Conflict.make({
-          message: `Definition ${input.definition.id} must name parent revision ${previousRevision}`,
-        }),
-      );
+      return Conflict.make({
+        message: `Definition ${input.definition.id} must name parent revision ${previousRevision}`,
+      });
     }
     if (previousRevision === 0 && input.definition.parentRevision !== undefined) {
-      return Effect.fail(
-        InvalidInput.make({
-          message: `The first revision of Definition ${input.definition.id} cannot name a parent`,
-        }),
-      );
+      return InvalidInput.make({
+        message: `The first revision of Definition ${input.definition.id} cannot name a parent`,
+      });
     }
     return Effect.void;
   },
@@ -55,11 +49,9 @@ const assertAppendRevisionNumber = (
         (record) => record.definitionId === input.definition.id && record.revision === revision,
       )
     ) {
-      return Effect.fail(
-        Conflict.make({
-          message: `Definition ${input.definition.id} revision ${revision} already exists`,
-        }),
-      );
+      return Conflict.make({
+        message: `Definition ${input.definition.id} revision ${revision} already exists`,
+      });
     }
     return Effect.void;
   },
@@ -70,7 +62,7 @@ const assertAppendRevisionNumber = (
     if (state.version === expectedCatalogVersion) {
       return Effect.void;
     }
-    return Effect.fail(Conflict.make({ message: "Definition Catalog version is stale" }));
+    return Conflict.make({ message: "Definition Catalog version is stale" });
   },
   findMigrationManifest = (state: CatalogState, manifestId: string) =>
     state.migrationManifests.find((candidate) => candidate.id === manifestId),

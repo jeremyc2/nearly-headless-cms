@@ -22,9 +22,7 @@ const cloneEntryRecord = (record: EntryRecord): EntryRecord => globalThis.struct
         commitGeneration: (expectedGeneration, records) =>
           SynchronizedRef.modifyEffect(state, (current) => {
             if (current.generation !== expectedGeneration) {
-              return Effect.fail(
-                Conflict.make({ message: "Entry persistence generation is stale" }),
-              );
+              return Conflict.make({ message: "Entry persistence generation is stale" });
             }
             const committed: EntryGeneration = {
               generation: current.generation + generationIncrement,
