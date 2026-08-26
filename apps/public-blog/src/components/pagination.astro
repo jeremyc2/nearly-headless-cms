@@ -1,0 +1,15 @@
+---
+interface Props {
+  readonly basePath: string
+  readonly nextPage?: number
+  readonly previousPage?: number
+}
+
+const { basePath, nextPage, previousPage } = Astro.props
+---
+{(previousPage !== undefined || nextPage !== undefined) && (
+  <nav class="pagination" aria-label="Pagination">
+    {previousPage !== undefined && <a rel="prev" href={previousPage === 1 ? `${basePath}/` : `${basePath}/page/${previousPage}/`}>← Newer</a>}
+    {nextPage !== undefined && <a rel="next" href={`${basePath}/page/${nextPage}/`}>Older →</a>}
+  </nav>
+)}

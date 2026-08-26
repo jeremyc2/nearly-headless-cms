@@ -32,7 +32,7 @@ Verification keeps the two license texts identical.
 
 ## Runtime and dependency compatibility
 
-Portable JavaScript targets ES2022 and supports Bun `>=1.4.0` and Node `>=22`. Verification covers Bun 1.4, the supported Node 22 line, and Node 24 used by the release workflow. `nearly-headless-cms/bun/filesystem` supports Bun only and must not leak Bun-only types or imports through any portable declaration or module.
+Portable JavaScript targets ES2023 and supports Bun `>=1.4.0` and Node `>=22`. Verification covers Bun 1.4, the supported Node 22 line, and Node 24 used by the release workflow. `nearly-headless-cms/bun/filesystem` supports Bun only and must not leak Bun-only types or imports through any portable declaration or module.
 
 The package requires `effect` as a peer dependency with range `^4.0.0-rc.111` and uses exact `effect@4.0.0-rc.111` as its development dependency. Every Effect version claimed by the peer range must pass compatibility verification; an incompatible peer-floor increase requires the next `0.y.0`. TypeScript 7 is a development dependency and the declaration-compatibility target, not a consumer peer dependency. Build, lint, and test tools remain development-only.
 

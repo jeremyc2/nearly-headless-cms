@@ -1,0 +1,16 @@
+---
+import PaginatedPostList from "../../../../components/paginated-post-list.astro"
+import SiteLayout from "../../../../layouts/site-layout.astro"
+
+export { tagArchivePaths as getStaticPaths } from "../../../../domain/archive-pages.ts"
+const { page, tag } = Astro.props
+---
+
+<SiteLayout title={`${tag.name} · Page ${page.pageNumber}`}>
+  <PaginatedPostList
+    basePath={`/tags/${tag.slug}`}
+    label="Tag"
+    page={page}
+    title={`#${tag.name}`}
+  />
+</SiteLayout>

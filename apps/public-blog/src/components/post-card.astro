@@ -1,0 +1,12 @@
+---
+import { assetById, authorById } from "../data/public-export.ts"
+import type { PublicPost } from "../generated/headless-client.ts"
+interface Props { readonly post: PublicPost; readonly featured?: boolean }
+const { post, featured = false } = Astro.props,
+ postAsset = assetById.get(post.featuredAsset ?? ""),
+ postAuthor = authorById.get(post.author)
+---
+<article class:list={["post-card", { featured }]}>
+  {postAsset?.localPath && <a class="post-image" href={`/posts/${post.slug}/`} tabindex="-1"><img src={postAsset.localPath} alt={post.featuredAlternativeText ?? ""} width={postAsset.metadata.width} height={postAsset.metadata.height} /></a>}
+  <div class="post-card-body"><p class="post-meta"><time datetime={post.publishedAt}>{new Date(post.publishedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</time>{postAuthor && <> · <a href={`/authors/${postAuthor.slug}/`}>{postAuthor.name}</a></>}</p><h2><a href={`/posts/${post.slug}/`}>{post.title}</a></h2><p>{post.excerpt}</p><a class="read-link" href={`/posts/${post.slug}/`}>Read field note <span aria-hidden="true">→</span></a></div>
+</article>

@@ -1,0 +1,17 @@
+---
+import type { GetStaticPaths } from "astro"
+import PostCard from "../../components/post-card.astro"
+import RichText from "../../components/rich-text.astro"
+import SiteLayout from "../../layouts/site-layout.astro"
+import { publicExport } from "../../data/public-export.ts"
+
+export const getStaticPaths: GetStaticPaths = () =>
+  publicExport.authors.map((generatedAuthor) => ({
+    params: { slug: generatedAuthor.slug },
+    props: { author: generatedAuthor },
+  }))
+
+const { author } = Astro.props,
+  posts = publicExport.posts.filter((post) => post.author === author.id)
+---
+<SiteLayout title={author.name}><header class="listing-header"><div class="shell narrow"><p class="eyebrow">Author</p><h1>{author.name}</h1><p>{author.biography}</p>{author.profile && <div class="author-profile"><RichText nodes={author.profile.children} /></div>}</div></header><section class="shell content-stack"><div class="section-heading"><h2>Field notes by {author.name}</h2></div><div class="post-grid">{posts.map((post) => <PostCard post={post} />)}</div></section></SiteLayout>

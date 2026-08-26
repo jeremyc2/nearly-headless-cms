@@ -1,0 +1,16 @@
+---
+import PaginatedPostList from "../../../../components/paginated-post-list.astro"
+import SiteLayout from "../../../../layouts/site-layout.astro"
+
+export { authorArchivePaths as getStaticPaths } from "../../../../domain/archive-pages.ts"
+const { author, page } = Astro.props
+---
+
+<SiteLayout title={`${author.name} · Page ${page.pageNumber}`}>
+  <PaginatedPostList
+    basePath={`/authors/${author.slug}`}
+    label="Author"
+    page={page}
+    title={author.name}
+  />
+</SiteLayout>

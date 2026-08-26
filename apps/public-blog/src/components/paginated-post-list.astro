@@ -1,0 +1,30 @@
+---
+import type { Page } from "../domain/public-model.ts"
+import Pagination from "./pagination.astro"
+import PostCard from "./post-card.astro"
+import type { PublicPost } from "../generated/headless-client.ts"
+
+interface Props {
+  readonly basePath: string
+  readonly label: string
+  readonly page: Page<PublicPost>
+  readonly title: string
+}
+
+const { basePath, label, page, title } = Astro.props
+---
+
+<header class="listing-header">
+  <div class="shell">
+    <p class="eyebrow">{label}</p>
+    <h1>{title}</h1>
+  </div>
+</header>
+<section class="shell content-stack">
+  <div class="post-grid">{page.items.map((post) => <PostCard post={post} />)}</div>
+  <Pagination
+    basePath={basePath}
+    previousPage={page.previousPage}
+    nextPage={page.nextPage}
+  />
+</section>

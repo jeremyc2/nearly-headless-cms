@@ -27,11 +27,11 @@ const PACKAGE_INTERNALS = `^${R}/[^/]+/[^/]+/`;
 module.exports = {
   forbidden: [
     {
-      name: "entrypoint-boundary-from-app",
       comment:
         "App/root code may import a package's entry points (its root files), but nothing inside its subfolders.",
-      severity: "error",
       from: { pathNot: `^${R}/` }, // importer is NOT inside any package
+      name: "entrypoint-boundary-from-app",
+      severity: "error",
       to: { path: PACKAGE_INTERNALS },
     },
     {
@@ -47,29 +47,29 @@ module.exports = {
       },
     },
     {
-      name: "tests-through-entrypoints",
       comment:
         "A package's tests exercise it through its entry points like everyone else: they may import any package's entry points and their own tests/ fixtures, but never any package's internals, not even their own.",
-      severity: "error",
       from: { path: `^${R}/([^/]+)/tests/` }, // a test file, in package $1
+      name: "tests-through-entrypoints",
+      severity: "error",
       to: {
         path: PACKAGE_INTERNALS,
         pathNot: `^${R}/$1/tests/`, // own tests/ fixtures → allowed
       },
     },
     {
-      name: "tests-folder-is-private",
       comment:
         "A package's tests/ folder is reachable only from tests: nothing else may import fixtures.",
-      severity: "error",
       from: { pathNot: `^${R}/[^/]+/tests/` }, // importer is not itself a test
+      name: "tests-folder-is-private",
+      severity: "error",
       to: { path: `^${R}/[^/]+/tests/` },
     },
     {
-      name: "no-circular",
       comment: "No dependency cycles. Scope to `^${R}/` if you want to allow cycles outside packages.",
-      severity: "error",
       from: {},
+      name: "no-circular",
+      severity: "error",
       to: { circular: true },
     },
 
@@ -87,9 +87,9 @@ module.exports = {
   ],
   options: {
     doNotFollow: { path: "node_modules" },
-    tsConfig: { fileName: "tsconfig.json" },
     enhancedResolveOptions: {
       extensions: [".ts", ".tsx", ".js", ".jsx", ".json"],
     },
+    tsConfig: { fileName: "tsconfig.json" },
   },
 };

@@ -1,0 +1,16 @@
+import { Service as CmsService, type ServiceShape as CmsServiceShape } from "../cms.ts";
+import type { CompiledSnapshot } from "../content-definition.ts";
+import { Effect } from "effect";
+import type { DeliveryOperation, ManagementOperation } from "./http-contract.ts";
+import type { Handler, Options, RouteHandlerContext } from "./http-transport-types.ts";
+import dispatchRouteHandlers from "./http-transport-route-dispatch.ts";
+import handleManagementRoutes from "./http-transport-management-routes.ts";
+import handlerSupport, { type HandlerBodyLimits, type ResolvedHandlerOptions } from "./http-transport-handler-support.ts";
+import transportDeliveryRoutes from "./http-transport-delivery-routes.ts";
+import transportPreflight from "./http-transport-preflight.ts";
+import transportResponse from "./http-transport-response.ts";
+import wrapHandlerWithTimeout from "./http-transport-request-timeout.ts";
+
+type T = HandlerBodyLimits | ResolvedHandlerOptions | Handler | Options | RouteHandlerContext | DeliveryOperation | ManagementOperation | CompiledSnapshot | CmsServiceShape;
+const a: typeof Effect | typeof CmsService | typeof dispatchRouteHandlers | typeof handleManagementRoutes | typeof handlerSupport | typeof transportDeliveryRoutes | typeof transportPreflight | typeof transportResponse | typeof wrapHandlerWithTimeout = Effect;
+void a satisfies typeof Effect;

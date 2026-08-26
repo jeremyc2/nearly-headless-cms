@@ -1,0 +1,45 @@
+name: Continuous integration
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+      - run: bun install --frozen-lockfile
+      - run: bun run --filter nearly-headless-cms build
+      - run: bun lint
+      - run: bun run typecheck
+      - run: bun run check:escape-hatches
+      - run: bun run check:generated
+      - run: bun run check:architecture
+      - run: bun run test:unit
+      - run: bun run test:types
+      - run: bun run test:contract
+      - name: Build Public Blog static output
+        run: PUBLIC_BLOG_USE_FIXTURE=1 bun run --cwd apps/public-blog build
+      - run: bun run test:integration
+      - run: bun run test:filesystem
+      - run: bun run test:journeys
+
+  compatibility:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: bun install --frozen-lockfile
+      - run: bun run --cwd packages/nearly-headless-cms build
+      - run: bun run --cwd packages/nearly-headless-cms package:inspect
+      - run: bun run scripts/compatibility-matrix.ts
