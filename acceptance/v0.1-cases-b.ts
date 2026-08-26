@@ -157,7 +157,7 @@ export const acceptanceCasesB: readonly AcceptanceCase[] = [
   }),
   automated({
     claim:
-      "Exactly three workspaces preserve the library → CMS → HTTP-only Content Client dependency direction.",
+      "Private workspaces preserve the library → CMS → HTTP-only Content Client dependency direction.",
     command: "bun run check:architecture",
     id: "ARCH-001",
     level: "architecture",

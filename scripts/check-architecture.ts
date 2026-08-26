@@ -21,7 +21,7 @@ const architectureRepository = path.join(import.meta.dir, ".."),
     "./layers",
     "./package.json",
   ],
-  expectedWorkspaceCount = 4,
+  expectedWorkspaceCount = 6,
   findBlockCommentStart = (lines: readonly string[], lineIndex: number): number | undefined => {
     let commentLineIndex = lineIndex - oneItem;
     if (lines[commentLineIndex]?.trimEnd().endsWith("*/") !== true) {
@@ -100,7 +100,7 @@ const architectureRepository = path.join(import.meta.dir, ".."),
     return manifest;
   },
   rootManifest: unknown = await Bun.file(path.join(architectureRepository, "package.json")).json(),
-  sourceGlob = new Bun.Glob("apps/public-blog/src/presentation/**/*.{ts,astro}"),
+  sourceGlob = new Bun.Glob("apps/{public-blog,example-blog}/src/presentation/**/*.{ts,astro}"),
   publicBlogSourcePaths = await Array.fromAsync(sourceGlob.scan({ cwd: architectureRepository })),
   sourcePaths = publicBlogSourcePaths,
   twoSpaceIndent = 2,
@@ -117,6 +117,10 @@ const architectureRepository = path.join(import.meta.dir, ".."),
     await Bun.file(path.join(architectureRepository, "apps/example-cms/package.json")).json(),
     await Bun.file(path.join(architectureRepository, "apps/example-cms-minimal/package.json")).json(),
     await Bun.file(path.join(architectureRepository, "apps/public-blog/package.json")).json(),
+    await Bun.file(path.join(architectureRepository, "apps/example-blog/package.json")).json(),
+    await Bun.file(
+      path.join(architectureRepository, "apps/example-blog-cms/package.json"),
+    ).json(),
   ] as const,
   workspaceManifests = workspaceManifestValues.filter((value) => recordIs(value));
 if (
@@ -155,10 +159,16 @@ if (
 }
 if (
   findWorkspaceManifest("@nearly-headless-cms/public-blog") === undefined ||
+  findWorkspaceManifest("@nearly-headless-cms/example-blog") === undefined ||
+  findWorkspaceManifest("@nearly-headless-cms/example-blog-cms") === undefined ||
   findWorkspaceManifest("@nearly-headless-cms/example-cms") === undefined ||
   findWorkspaceManifest("@nearly-headless-cms/example-cms-minimal") === undefined ||
   dependencyAt(
     requireWorkspaceManifest("@nearly-headless-cms/public-blog"),
+    "nearly-headless-cms",
+  ) !== undefined ||
+  dependencyAt(
+    requireWorkspaceManifest("@nearly-headless-cms/example-blog"),
     "nearly-headless-cms",
   ) !== undefined ||
   dependencyAt(
@@ -167,6 +177,10 @@ if (
   ) !== "workspace:*" ||
   dependencyAt(
     requireWorkspaceManifest("@nearly-headless-cms/example-cms"),
+    "nearly-headless-cms",
+  ) !== "workspace:*" ||
+  dependencyAt(
+    requireWorkspaceManifest("@nearly-headless-cms/example-blog-cms"),
     "nearly-headless-cms",
   ) !== "workspace:*"
 ) {
@@ -190,11 +204,13 @@ for (const forbidden of [
   "jsdom",
   "orval",
 ]) {
-  if (
-    dependencyAt(requireWorkspaceManifest("@nearly-headless-cms/public-blog"), forbidden) !==
-    undefined
-  ) {
-    throw new Error(`Public Blog has forbidden direct dependency ${forbidden}`);
+  for (const applicationName of [
+    "@nearly-headless-cms/public-blog",
+    "@nearly-headless-cms/example-blog",
+  ] as const) {
+    if (dependencyAt(requireWorkspaceManifest(applicationName), forbidden) !== undefined) {
+      throw new Error(`${applicationName} has forbidden direct dependency ${forbidden}`);
+    }
   }
 }
 for (const forbidden of [
@@ -205,11 +221,13 @@ for (const forbidden of [
   "tiptap",
   "concurrently",
 ]) {
-  if (
-    dependencyAt(requireWorkspaceManifest("@nearly-headless-cms/example-cms"), forbidden) !==
-    undefined
-  ) {
-    throw new Error(`Example CMS has forbidden dependency ${forbidden}`);
+  for (const applicationName of [
+    "@nearly-headless-cms/example-cms",
+    "@nearly-headless-cms/example-blog-cms",
+  ] as const) {
+    if (dependencyAt(requireWorkspaceManifest(applicationName), forbidden) !== undefined) {
+      throw new Error(`${applicationName} has forbidden dependency ${forbidden}`);
+    }
   }
 }
 await Promise.all(
@@ -220,7 +238,7 @@ await Promise.all(
       /from\s+["']nearly-headless-cms(?:\/|["'])/u.test(source) ||
       /from\s+["'][^"']*example-cms/u.test(source)
     ) {
-      throw new Error(`Public Blog imports a forbidden runtime at ${relativePath}`);
+      throw new Error(`Static blog imports a forbidden runtime at ${relativePath}`);
     }
   }),
 );
