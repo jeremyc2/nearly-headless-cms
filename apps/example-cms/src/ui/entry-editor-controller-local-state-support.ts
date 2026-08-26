@@ -1,23 +1,19 @@
-import {
-  type DeletionRecord,
-  type Dispatch,
-  type EditorialConfirmationStatus,
-  type EntryConflict,
-  type SetStateAction,
-  createFieldUpdater,
-  entryEditorControllerMutationsSupport,
-  stringValue,
-  titleFieldFrom,
-  useEntryEditorQueries,
-  useRef,
-  useState,
-} from "./entry-editor-controller-imports.ts";
+import { useRef, useState, type Dispatch, type SetStateAction } from "react";
+import entryEditorControllerMutationsSupport from "./entry-editor-controller-mutations.ts";
+import { useEntryEditorQueries } from "./entry-editor-queries.ts";
+import { createFieldUpdater, titleFieldFrom } from "./entry-editor-support.ts";
+import type {
+  DeletionRecord,
+  EditorialConfirmationStatus,
+  EntryConflict,
+} from "./entry-editor-types.ts";
+import { stringValue } from "./main-entry-support.ts";
 
 const { useEntryEditorControllerMutations } = entryEditorControllerMutationsSupport,
   useEntryEditorControllerFieldBindings = <
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     Values extends Record<string, unknown>,
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     SetValues extends Dispatch<SetStateAction<Record<string, unknown>>>,
   >(input: {
     readonly setValues: SetValues;
@@ -64,7 +60,7 @@ const { useEntryEditorControllerMutations } = entryEditorControllerMutationsSupp
     };
   },
   useEntryEditorControllerMutationBindings = <
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     Input extends {
       readonly contentTypeId: string;
       readonly deletionRecord: DeletionRecord | undefined;

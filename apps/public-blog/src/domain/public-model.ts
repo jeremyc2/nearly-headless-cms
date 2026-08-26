@@ -1,4 +1,4 @@
-import type { PublicBlogExport, PublicPost } from "../generated/headless-client.ts";
+import type { PublicBlogExport, PublicGuide, PublicPost } from "../generated/headless-client.ts";
 
 export interface Page<Value> {
   readonly items: readonly Value[];
@@ -47,12 +47,19 @@ const archivePageSize = 6,
         rightPost.publishedAt.localeCompare(leftPost.publishedAt) ||
         leftPost.id.localeCompare(rightPost.id),
     ),
+  zSortedGuides = (snapshot: PublicBlogExport): readonly PublicGuide[] =>
+    snapshot.guides.toSorted(
+      (leftGuide, rightGuide) =>
+        leftGuide.sortOrder - rightGuide.sortOrder || leftGuide.id.localeCompare(rightGuide.id),
+    ),
   zRouteManifest = (snapshot: PublicBlogExport): readonly string[] => [
     "/",
     "/posts/",
     "/categories/",
     "/tags/",
     "/feed.xml",
+    "/guides/",
+    ...zSortedGuides(snapshot).map((guide) => `/guides/${guide.slug}/`),
     ...zPaginate({ items: zPublishedPosts(snapshot), pageSize: archivePageSize }).map(
       (page) => `/posts/page/${page.pageNumber}/`,
     ),
@@ -85,4 +92,5 @@ export {
   zPaginate as paginate,
   zPublishedPosts as publishedPosts,
   zRouteManifest as routeManifest,
+  zSortedGuides as sortedGuides,
 };

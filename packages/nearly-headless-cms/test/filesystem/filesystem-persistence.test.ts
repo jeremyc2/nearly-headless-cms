@@ -22,7 +22,6 @@ import {
   verifySerializedEntryMutations,
   verifyStaleEntryGenerationConflict,
 } from "./filesystem-commit-boundary-scenarios.ts";
-// oxlint-disable-next-line eslint/sort-imports -- [EH-357] path-invariant scenarios follow the established filesystem test import grouping.
 import {
   verifyAbandonedStagingPrefixCleanedOnRecovery,
   verifyCaseDistinctAssetFilenamesPreservedInMetadata,

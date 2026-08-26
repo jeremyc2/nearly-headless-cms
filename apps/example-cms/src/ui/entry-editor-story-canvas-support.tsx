@@ -1,7 +1,5 @@
-import {
-  type AssetRepresentation,
-  richTextDocumentFrom,
-} from "./entry-editor-story-canvas-imports.ts";
+import { type AssetRepresentation } from "../generated/management-client.ts";
+import { richTextDocumentFrom } from "./main-shared.ts";
 import storyCanvasAssetsSupport from "./entry-editor-story-canvas-assets-support.tsx";
 import storyCanvasFieldsSupport from "./entry-editor-story-canvas-fields-support.tsx";
 
@@ -13,11 +11,11 @@ const { EntryEditorContentTypeAssetFields } = storyCanvasAssetsSupport,
     EntryEditorTitleField,
   } = storyCanvasFieldsSupport,
   EntryEditorStoryCanvas = <
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     Values extends Record<string, unknown>,
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     Asset extends AssetRepresentation,
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     UpdateField extends (key: string, value: unknown) => void,
   >(props: {
     readonly assets: readonly Readonly<Asset>[] | undefined;
@@ -32,13 +30,13 @@ const { EntryEditorContentTypeAssetFields } = storyCanvasAssetsSupport,
       <EntryEditorStoryCanvasFields {...props} />
     </section>
   ),
-  // oxlint-disable-next-line eslint/max-lines-per-function -- [EH-217] React panel helpers exceed function line budget after typed prop alias escape hatches.
+  // oxlint-disable-next-line eslint/max-lines-per-function -- [EH-169] React panel helpers exceed function line budget after typed prop alias escape hatches.
   EntryEditorStoryCanvasFields = <
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     Values extends Record<string, unknown>,
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     Asset extends AssetRepresentation,
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     UpdateField extends (key: string, value: unknown) => void,
   >({
     assets,

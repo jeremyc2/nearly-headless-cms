@@ -18,7 +18,7 @@ const { invalidRequestResponse } = transportResponse,
   handleDefinitionCatalogRoutes = (
     context: Readonly<RouteHandlerContext>,
   ): Promise<RouteHandlerResult> => dispatchRouteHandlers(managementCatalogRouteHandlers, context),
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-059] route handlers await JSON body parsing before Effect execution.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-068] route handlers await JSON body parsing before Effect execution.
   handleDefinitionRetirementRoute = async (
     context: Readonly<RouteHandlerContext>,
   ): Promise<RouteHandlerResult> => {
@@ -53,7 +53,7 @@ const { invalidRequestResponse } = transportResponse,
       );
     }
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-059] route handlers await JSON body parsing before Effect execution.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-068] route handlers await JSON body parsing before Effect execution.
   handleDefinitionRevisionAppendRoute = async (
     context: Readonly<RouteHandlerContext>,
     definitionId: string,

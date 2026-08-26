@@ -16,17 +16,17 @@ const compareEscapeHatchCodes = (left: string, right: string): number =>
     return left.localeCompare(right);
   },
   escapeHatchCodeNumber = (code: string): number => {
-    // oxlint-disable-next-line eslint/require-unicode-regexp -- [EH-127] registry parsing uses ASCII comment markers only.
+    // oxlint-disable-next-line eslint/require-unicode-regexp -- [EH-195] registry parsing uses ASCII comment markers only.
     const match = /^EH-(?<number>\d{3})$/u.exec(code);
     if (match?.groups?.["number"] === undefined) {
       return Number.MAX_SAFE_INTEGER;
     }
-    // oxlint-disable-next-line unicorn/prefer-number-coercion -- [EH-214] registry code numbers are parsed from fixed-width labels.
+    // oxlint-disable-next-line unicorn/prefer-number-coercion -- [EH-278] registry code numbers are parsed from fixed-width labels.
     return Number.parseInt(match.groups["number"], 10);
   },
   renderCodeIndex = (
     entries: readonly EscapeHatchRegistryEntry[],
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-239] document line buffer is mutated while rendering the registry.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-227] document line buffer is mutated while rendering the registry.
     lines: string[],
   ): void => {
     lines.push("## Code Index", "", "Sorted by escape-hatch code (`EH-###`).", "");
@@ -35,7 +35,7 @@ const compareEscapeHatchCodes = (left: string, right: string): number =>
     }
     lines.push("");
   },
-  // oxlint-disable-next-line eslint/max-statements, eslint/max-lines-per-function -- [EH-241, EH-240] escape hatch document rendering is intentionally colocated.
+  // oxlint-disable-next-line eslint/max-statements, eslint/max-lines-per-function -- [EH-172, EH-166] escape hatch document rendering is intentionally colocated.
   renderEscapeHatchesDocument = (entries: readonly EscapeHatchRegistryEntry[]): string => {
     const lines = [
       "# Escape Hatches",
@@ -69,10 +69,10 @@ const compareEscapeHatchCodes = (left: string, right: string): number =>
     renderJustificationRegistry(entries, lines);
     return lines.join("\n");
   },
-  // oxlint-disable-next-line eslint/max-statements -- [EH-242] registry rendering keeps family grouping colocated.
+  // oxlint-disable-next-line eslint/max-statements -- [EH-176] registry rendering keeps family grouping colocated.
   renderJustificationRegistry = (
     entries: readonly EscapeHatchRegistryEntry[],
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-239] document line buffer is mutated while rendering the registry.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-227] document line buffer is mutated while rendering the registry.
     lines: string[],
   ): void => {
     lines.push(

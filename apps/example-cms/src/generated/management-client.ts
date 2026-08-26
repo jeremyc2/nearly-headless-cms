@@ -255,7 +255,7 @@ const buildAssetFormData = (file: File): FormData => {
   },
   makeTaggedErrorClass = Schema.TaggedError,
   mapFailure = <Success, Failure extends { readonly message: string }>(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-175] Effect programs are mapped without mutation.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-239] Effect programs are mapped without mutation.
     operation: Effect.Effect<Success, Failure>,
   ): Effect.Effect<Success, ManagementClientFailure> =>
     operation.pipe(

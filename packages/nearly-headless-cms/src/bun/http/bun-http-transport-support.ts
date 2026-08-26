@@ -1,8 +1,5 @@
-// oxlint-disable-next-line eslint/sort-imports -- [EH-257] Bun transport startup imports follow Effect, failure mapping, and lifecycle dependency order.
 import { InfrastructureFailure } from "../../cms-error.ts";
-// oxlint-disable-next-line eslint/sort-imports -- [EH-257] Bun transport startup imports follow Effect, failure mapping, and lifecycle dependency order.
 import { Effect } from "effect";
-// oxlint-disable-next-line eslint/sort-imports -- [EH-257] Bun transport startup imports follow Effect, failure mapping, and lifecycle dependency order.
 import createTransportLifecycle, {
   type TransportLifecycleOptions,
 } from "../../http/http-transport-lifecycle-support.ts";
@@ -21,9 +18,9 @@ const startBunHttpTransport = (
     const lifecycle = createTransportLifecycle({
       drainTimeoutMilliseconds: input.drainTimeoutMilliseconds,
     });
-    // oxlint-disable-next-line eslint/one-var -- [EH-255] transport startup keeps separate statements so lint autofix does not merge dependency-ordered locals.
+    // oxlint-disable-next-line eslint/one-var -- [EH-194] transport startup keeps separate statements so lint autofix does not merge dependency-ordered locals.
     const wrappedHandler = lifecycle.wrapHandler(input.handler);
-    // oxlint-disable-next-line eslint/one-var -- [EH-255] transport startup keeps separate statements so lint autofix does not merge dependency-ordered locals.
+    // oxlint-disable-next-line eslint/one-var -- [EH-194] transport startup keeps separate statements so lint autofix does not merge dependency-ordered locals.
     const server = yield* Effect.try({
       catch: (cause) => {
         let message = "Failed to start the HTTP transport";
@@ -38,9 +35,9 @@ const startBunHttpTransport = (
           port: input.port ?? 0,
         }),
     });
-    // oxlint-disable-next-line eslint/one-var -- [EH-255] transport startup keeps separate statements so lint autofix does not merge dependency-ordered locals.
+    // oxlint-disable-next-line eslint/one-var -- [EH-194] transport startup keeps separate statements so lint autofix does not merge dependency-ordered locals.
     const address = server.url.href;
-    // oxlint-disable-next-line eslint/one-var -- [EH-255] transport startup keeps separate statements so lint autofix does not merge dependency-ordered locals.
+    // oxlint-disable-next-line eslint/one-var -- [EH-194] transport startup keeps separate statements so lint autofix does not merge dependency-ordered locals.
     const close = lifecycle
       .close({
         onForceStop: () => {

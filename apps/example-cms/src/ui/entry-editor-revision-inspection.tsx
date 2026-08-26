@@ -39,7 +39,7 @@ const EntryEditorRevisionInspection = ({
       </div>
     );
   },
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-201] React Query results expose mutable status fields while rendering revision details.
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-266] React Query results expose mutable status fields while rendering revision details.
   EntryEditorRevisionInspectionCard = ({
     inspectedRevision,
     isRestoring,

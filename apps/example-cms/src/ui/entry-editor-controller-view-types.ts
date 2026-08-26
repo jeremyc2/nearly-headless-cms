@@ -2,11 +2,11 @@ import type {
   DeletionRecord,
   EditorialConfirmationStatus,
   EntryConflict,
-  createFieldUpdater,
-  useEntryEditorControllerMutations,
-  useEntryEditorQueries,
-  useNavigate,
-} from "./entry-editor-controller-view-imports.ts";
+} from "./entry-editor-types.ts";
+import type { useNavigate } from "@tanstack/react-router";
+import type { useEntryEditorControllerMutations } from "./entry-editor-controller-mutations.ts";
+import type { useEntryEditorQueries } from "./entry-editor-queries.ts";
+import type { createFieldUpdater } from "./entry-editor-support.ts";
 
 export interface EntryEditorControllerViewInput {
   readonly assets: ReturnType<typeof useEntryEditorQueries>["assets"];

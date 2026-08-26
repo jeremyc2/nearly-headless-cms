@@ -1,0 +1,28 @@
+---
+import SiteLayout from "./site-layout.astro"
+
+interface Props {
+  readonly title: string
+  readonly description: string
+  readonly nextGuide?: { readonly href: string; readonly label: string }
+}
+
+const { description, nextGuide, title } = Astro.props
+---
+<SiteLayout title={title} description={description}>
+  <article class="guide shell narrow">
+    <header class="guide-header">
+      <p class="eyebrow"><a href="/guides/">Nearly Headless CMS guides</a></p>
+      <h1>{title}</h1>
+      <p class="guide-intro">{description}</p>
+    </header>
+    <div class="guide-body">
+      <slot />
+    </div>
+    {nextGuide && (
+      <footer class="guide-footer">
+        <a class="read-link" href={nextGuide.href}>Next: {nextGuide.label} →</a>
+      </footer>
+    )}
+  </article>
+</SiteLayout>

@@ -3,9 +3,9 @@ import { Asset } from "../../src/index.ts";
 import { InfrastructureFailure } from "../../src/cms-error.ts";
 import { atomicFilesystemLayer } from "./filesystem-persistence-support.ts";
 import { expect } from "bun:test";
-// oxlint-disable-next-line effecttsgo/node-builtin-import -- [EH-211] Path joining is host-path setup for this filesystem integration test, outside the Effect service graph.
+// oxlint-disable-next-line effecttsgo/node-builtin-import -- [EH-149] Path joining is host-path setup for this filesystem integration test, outside the Effect service graph.
 import { join } from "node:path";
-// oxlint-disable-next-line effecttsgo/node-builtin-import -- [EH-212] The test exercises the Bun filesystem adapter's on-disk behavior; these helpers have no Bun equivalent.
+// oxlint-disable-next-line effecttsgo/node-builtin-import -- [EH-154] The test exercises the Bun filesystem adapter's on-disk behavior; these helpers have no Bun equivalent.
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 
@@ -24,12 +24,12 @@ const ingestAssetEffect = Asset.Management.pipe(
       Effect.flatMap((asset) => Effect.exit(Stream.mkUint8Array(asset.content))),
     ),
   runWithLayer = <Value, EffectError, Requirements>(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-179] Layer values are provided to runPromise without mutation.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-244] Layer values are provided to runPromise without mutation.
     layer: Layer.Layer<Requirements, EffectError>,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-173] Effect programs are executed by runPromise without mutation.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-237] Effect programs are executed by runPromise without mutation.
     effect: Readonly<Effect.Effect<Value, EffectError, Requirements>>,
   ): Promise<Value> => {
-    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-112] test entry point needs a fresh isolated layer.
+    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-162] test entry point needs a fresh isolated layer.
     const providedEffect = effect.pipe(Effect.provide(layer));
     return Effect.runPromise(providedEffect);
   },

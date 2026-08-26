@@ -81,10 +81,10 @@ const { requestFailureResponse } = transportResponse,
         }
         throw error;
       });
-    // oxlint-disable-next-line effecttsgo/run-effect-inside-effect -- [EH-108] bridge the abort callback into Promise.race.
+    // oxlint-disable-next-line effecttsgo/run-effect-inside-effect -- [EH-157] bridge the abort callback into Promise.race.
     return Promise.race([requestPromise, abortPromise]);
   },
-  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-099] Web handler timeout wrapper is not a pipeable Effect API.
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-139] Web handler timeout wrapper is not a pipeable Effect API.
   wrapHandlerWithTimeout =
     (
       handleRequest: (
@@ -95,20 +95,20 @@ const { requestFailureResponse } = transportResponse,
       requestIdentifier: () => string,
       requestTimeoutMilliseconds: number,
     ): Handler =>
-    // oxlint-disable-next-line effecttsgo/async-function -- [EH-028] Handler is a Web-standard Promise<Response> callback.
+    // oxlint-disable-next-line effecttsgo/async-function -- [EH-034] Handler is a Web-standard Promise<Response> callback.
     async (request): Promise<Response> => {
       const controller = new AbortController(),
         onClientAbort = (): void => {
           controller.abort(request.signal.reason);
         },
         requestId = requestIdentifier(),
-        // oxlint-disable-next-line effecttsgo/run-effect-inside-effect -- [EH-110] this Web handler owns a timer fiber outside the request Effect.
+        // oxlint-disable-next-line effecttsgo/run-effect-inside-effect -- [EH-159] this Web handler owns a timer fiber outside the request Effect.
         timeoutFiber = createTimeoutFiber(controller, requestTimeoutMilliseconds);
       request.signal.addEventListener("abort", onClientAbort, { once: true });
       try {
         return await runTimedRequest({ controller, handleRequest, request, requestId });
       } finally {
-        // oxlint-disable-next-line effecttsgo/run-effect-inside-effect -- [EH-109] interrupt the owned timer fiber during Web handler cleanup.
+        // oxlint-disable-next-line effecttsgo/run-effect-inside-effect -- [EH-158] interrupt the owned timer fiber during Web handler cleanup.
         await Effect.runPromise(Fiber.interrupt(timeoutFiber));
         request.signal.removeEventListener("abort", onClientAbort);
       }

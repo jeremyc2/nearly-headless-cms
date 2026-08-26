@@ -24,10 +24,10 @@ import type { ExampleSystem } from "../../src/system.ts";
 
 export type PublicationValidationHandler = ExampleSystem["handler"];
 
-// oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-096] test URL helper is intentionally a direct two-argument operation.
+// oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-133] test URL helper is intentionally a direct two-argument operation.
 const managementEntryUrl = (contentTypeIdentifier: string, entryIdentifier: string): string =>
     `http://cms.test/api/v1/management/definition-spaces/example-blog/content-types/${contentTypeIdentifier}/entries/${entryIdentifier}`,
-  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-096] test URL helper is intentionally a direct two-argument operation.
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-133] test URL helper is intentionally a direct two-argument operation.
   publishPostUrl = (postIdentifier: string): string =>
     `http://cms.test/api/v1/management/definition-spaces/example-blog/operations/posts/${postIdentifier}/publications`,
   readEntryValues = (

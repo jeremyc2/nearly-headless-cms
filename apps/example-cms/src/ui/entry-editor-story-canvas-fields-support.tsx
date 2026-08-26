@@ -1,9 +1,6 @@
-import {
-  EntryEditorRichTextField,
-  type RichText,
-  stringValue,
-  suggestedSlug,
-} from "./entry-editor-story-canvas-imports.ts";
+import { EntryEditorRichTextField } from "./entry-editor-rich-text-field.tsx";
+import { type RichText } from "nearly-headless-cms";
+import { stringValue, suggestedSlug } from "./main-entry-support.ts";
 
 const EntryEditorAuthorProfileField = ({
     onUpdateField,
@@ -24,9 +21,9 @@ const EntryEditorAuthorProfileField = ({
     </div>
   ),
   EntryEditorBodyFields = <
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     Values extends Record<string, unknown>,
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     UpdateField extends (key: string, value: unknown) => void,
   >({
     bodyDocument,
@@ -61,11 +58,11 @@ const EntryEditorAuthorProfileField = ({
       )}
     </>
   ),
-  // oxlint-disable-next-line eslint/max-lines-per-function -- [EH-217] React panel helpers exceed function line budget after typed prop alias escape hatches.
+  // oxlint-disable-next-line eslint/max-lines-per-function -- [EH-169] React panel helpers exceed function line budget after typed prop alias escape hatches.
   EntryEditorTextAreaFields = <
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     Values extends Record<string, unknown>,
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     UpdateField extends (key: string, value: unknown) => void,
   >({
     onUpdateField,
@@ -114,9 +111,9 @@ const EntryEditorAuthorProfileField = ({
     </>
   ),
   EntryEditorTitleField = <
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     Values extends Record<string, unknown>,
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     UpdateField extends (key: string, value: unknown) => void,
   >({
     onUpdateField,

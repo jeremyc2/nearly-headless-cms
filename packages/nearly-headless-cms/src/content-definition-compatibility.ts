@@ -7,7 +7,7 @@ import type {
 import { dual } from "effect/Function";
 
 const arityForClassifyCompatibilityDual = 2,
-  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-086] dual's generic overload is not inferred by the linter for this public helper.
+  // oxlint-disable-next-line effecttsgo/missing-pipeable-signature -- [EH-121] dual's generic overload is not inferred by the linter for this public helper.
   classifyCompatibility = dual(
     arityForClassifyCompatibilityDual,
     (source: CompiledSnapshot, target: CompiledSnapshot): Compatibility => {

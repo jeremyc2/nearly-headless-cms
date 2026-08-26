@@ -1,14 +1,13 @@
-// oxlint-disable-next-line effecttsgo/node-builtin-import -- [EH-211] Path joining is host-path setup for this filesystem integration test, outside the Effect service graph.
+// oxlint-disable-next-line effecttsgo/node-builtin-import -- [EH-149] Path joining is host-path setup for this filesystem integration test, outside the Effect service graph.
 import { join } from "node:path";
-// oxlint-disable-next-line effecttsgo/node-builtin-import -- [EH-211] Path joining is host-path setup for this filesystem integration test, outside the Effect service graph.
+// oxlint-disable-next-line effecttsgo/node-builtin-import -- [EH-149] Path joining is host-path setup for this filesystem integration test, outside the Effect service graph.
 import { pathToFileURL } from "node:url";
-// oxlint-disable-next-line eslint/sort-imports -- [EH-296] child spawn imports follow bun, node, and support dependency order.
 import { expect } from "bun:test";
 import { killSignal } from "./filesystem-persistence-support.ts";
 
 const commitStartMarker = "commit-start",
   firstEntryIdentifier = "entry-1",
-  // oxlint-disable-next-line eslint/max-lines-per-function -- [EH-293] child spawn script must stay in one function for eval readability.
+  // oxlint-disable-next-line eslint/max-lines-per-function -- [EH-165] child spawn script must stay in one function for eval readability.
   spawnCommittingWriterChild = (root: string): Promise<void> => {
     const adaptersSourceUrl = pathToFileURL(
         join(import.meta.dir, "../../src/adapters/index.ts"),

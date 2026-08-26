@@ -41,7 +41,7 @@ const { acquireWriterLock, initialCatalog, persistState, removeOwnedWriterLock }
   },
   ensureRootDirectory = (configuration: Configuration): Promise<void> =>
     mkdir(configuration.root, { recursive: true }).then(() => {}),
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-057] Root initialization coordinates ordered filesystem operations.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-066] Root initialization coordinates ordered filesystem operations.
   initializeEmptyRoot = async (
     configuration: Configuration,
     definitionSnapshot: CompiledSnapshot | undefined,
@@ -62,7 +62,7 @@ const { acquireWriterLock, initialCatalog, persistState, removeOwnedWriterLock }
     await persistState(configuration, state);
     return state;
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-057] Root initialization coordinates ordered filesystem operations.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-066] Root initialization coordinates ordered filesystem operations.
   initializeRoot = async (
     configuration: Configuration,
     definitionSnapshot?: CompiledSnapshot,
@@ -78,7 +78,7 @@ const { acquireWriterLock, initialCatalog, persistState, removeOwnedWriterLock }
     }
     return loadExistingRoot(configuration, definitionSnapshot, compileOptions);
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-017] Diagnostic inspection is a read-only filesystem boundary.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-021] Diagnostic inspection is a read-only filesystem boundary.
   inspectRoot = async (
     root: string,
   ): Promise<{ readonly format: string; readonly generation: number }> => {
@@ -97,17 +97,17 @@ const { acquireWriterLock, initialCatalog, persistState, removeOwnedWriterLock }
     }
     return { format: storageFormat, generation: manifest.generation };
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-011] Cleanup intentionally preserves sequential filesystem ordering.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-013] Cleanup intentionally preserves sequential filesystem ordering.
   removeAbandonedStaging = async (directory: string): Promise<void> => {
     for (const entry of await readdir(directory, { withFileTypes: true })) {
       const path = join(directory, entry.name);
       if (entry.name.startsWith(stagingPrefix)) {
         // Preserve deterministic cleanup ordering while removing abandoned staging entries.
-        // oxlint-disable-next-line no-await-in-loop -- [EH-135] cleanup must remain sequential.
+        // oxlint-disable-next-line no-await-in-loop -- [EH-197] cleanup must remain sequential.
         await rm(path, { force: true, recursive: entry.isDirectory() });
       } else if (entry.isDirectory() && ["blobs", "generations"].includes(entry.name)) {
         // Preserve recursive cleanup ordering for nested staging directories.
-        // oxlint-disable-next-line no-await-in-loop -- [EH-138] recursive cleanup must remain sequential.
+        // oxlint-disable-next-line no-await-in-loop -- [EH-200] recursive cleanup must remain sequential.
         await removeAbandonedStaging(path);
       }
     }

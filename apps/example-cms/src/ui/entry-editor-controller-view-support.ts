@@ -1,4 +1,4 @@
-import type { EditorialConfirmationStatus } from "./entry-editor-controller-view-imports.ts";
+import type { EditorialConfirmationStatus } from "./entry-editor-types.ts";
 import type { EntryEditorControllerViewInput } from "./entry-editor-controller-view-types.ts";
 import entryEditorControllerViewActionsSupport from "./entry-editor-controller-view-actions-support.ts";
 

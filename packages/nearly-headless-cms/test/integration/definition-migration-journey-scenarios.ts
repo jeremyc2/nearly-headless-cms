@@ -62,12 +62,12 @@ const expectOldOrNewVisibility = (
     snapshotId: "required-slug",
   },
   runWithLayer = <Value, Failure>(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-179] Layer values are provided to runPromise without mutation.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-244] Layer values are provided to runPromise without mutation.
     layer: Layer.Layer<CmsService, Failure>,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-173] Effect programs are executed by runPromise without mutation.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-237] Effect programs are executed by runPromise without mutation.
     effect: Readonly<Effect.Effect<Value, Failure, CmsService>>,
   ): Promise<Value> =>
-    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-285] acceptance journey entry point needs a fresh isolated layer.
+    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-160] acceptance journey entry point needs a fresh isolated layer.
     Effect.runPromise(effect.pipe(Effect.provide(layer))),
   secondCatalogVersion = 2,
   verifyDefinitionMigrationJourney = (): Promise<void> =>

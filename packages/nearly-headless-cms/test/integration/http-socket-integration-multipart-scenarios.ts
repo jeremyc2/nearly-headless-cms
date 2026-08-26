@@ -42,7 +42,7 @@ const assetUploadPath = "api/v1/management/definition-spaces/example-blog/assets
     maximumMultipartFileByteLength: payloadByteFive,
     maximumMultipartMetadataByteLength: 256,
   }).pipe(
-    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-112] test entry point needs a fresh isolated layer.
+    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-162] test entry point needs a fresh isolated layer.
     Effect.provide(DevelopmentCms.layer({ snapshot })),
   ),
   verifyMultipartUploadOverLiveSocket = (): Promise<void> =>
@@ -51,7 +51,7 @@ const assetUploadPath = "api/v1/management/definition-spaces/example-blog/assets
     ).then((transport) => {
       const uploadUrl = `${transport.address}${assetUploadPath}`;
       return (
-        // oxlint-disable-next-line effecttsgo/global-fetch -- [EH-282] integration test exercises multipart upload through the live HTTP listener.
+        // oxlint-disable-next-line effecttsgo/global-fetch -- [EH-105] integration test exercises multipart upload through the live HTTP listener.
         fetch(uploadUrl, { body: makeAcceptedUploadForm(), method: "POST" })
       )
         .then((response) => {

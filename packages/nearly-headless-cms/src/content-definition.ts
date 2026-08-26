@@ -36,3 +36,5 @@ export { capabilitiesFor } from "./content-definition-capabilities.ts";
 export { classifyCompatibility } from "./content-definition-compatibility.ts";
 /** Compiles and validates Content Definitions deterministically. */
 export { compile, compileSnapshot } from "./content-definition-compile.ts";
+/** Small helpers for authoring readable content type definitions. */
+export { Fields } from "./content-definition-fields.ts";

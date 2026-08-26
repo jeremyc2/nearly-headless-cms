@@ -15,8 +15,8 @@ import { useNavigate } from "@tanstack/react-router";
 export const useContentListCreateMutation = (contentTypeId: string) => {
   const navigate = useNavigate();
   return useMutation({
-    // oxlint-disable-next-line effecttsgo/async-function -- [EH-050] React query mutation must bridge browser fetch.
-    // oxlint-disable-next-line effecttsgo/async-function -- [EH-019] entry creation sequences dependent requests.
+    // oxlint-disable-next-line effecttsgo/async-function -- [EH-059] React query mutation must bridge browser fetch.
+    // oxlint-disable-next-line effecttsgo/async-function -- [EH-024] entry creation sequences dependent requests.
     mutationFn: async () => {
       const relatedContentTypeId = relatedContentType(contentTypeId),
         relatedEntries = await contentListQueryRelatedEntries(contentTypeId, relatedContentTypeId),
@@ -28,8 +28,8 @@ export const useContentListCreateMutation = (contentTypeId: string) => {
       }
       return Effect.runPromise(managementClient.createEntry(contentTypeId, values));
     },
-    // oxlint-disable-next-line effecttsgo/async-function -- [EH-047] React query callback sequences invalidation before navigation.
-    // oxlint-disable-next-line effecttsgo/async-function -- [EH-010] cache invalidation must remain sequential.
+    // oxlint-disable-next-line effecttsgo/async-function -- [EH-056] React query callback sequences invalidation before navigation.
+    // oxlint-disable-next-line effecttsgo/async-function -- [EH-012] cache invalidation must remain sequential.
     onSuccess: async (result) => {
       const entry = contentListEntryFromCreateResult(result);
       await queryClient.invalidateQueries({ queryKey: ["entries", contentTypeId] });

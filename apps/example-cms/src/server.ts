@@ -4,7 +4,9 @@ import { HttpRouter, HttpServerResponse, HttpStaticServer } from "effect/unstabl
 import { DashboardBuildFailure } from "./dashboard-build-failure.ts";
 import { HttpTransport } from "nearly-headless-cms/http";
 import { makeSeededExampleCompositionFromEnvironment } from "./system.ts";
-import { seed } from "./domain/seed.ts";
+import { seedGuides } from "./content/seed-guides.ts";
+import { seed } from "./content/seed.ts";
+import { syncDefinition } from "./content/sync-definition.ts";
 import tailwind from "bun-plugin-tailwind";
 
 const applicationBaseDirectory = new URL("..", import.meta.url).pathname,
@@ -87,7 +89,13 @@ const applicationBaseDirectory = new URL("..", import.meta.url).pathname,
   ),
   routeApplicationLayer = Layer.mergeAll(
     HttpTransport.layer(composition.transportOptions),
-    Layer.effectDiscard(seed),
+    Layer.effectDiscard(
+      Effect.gen(function* runExampleCmsStartup() {
+        yield* syncDefinition;
+        yield* seed;
+        yield* seedGuides;
+      }),
+    ),
     Layer.effectDiscard(routeApplicationEffect),
   ).pipe(Layer.provide(composition.cmsLayer)),
   routeDashboardFallbackEffect = HttpRouter.HttpRouter.pipe(

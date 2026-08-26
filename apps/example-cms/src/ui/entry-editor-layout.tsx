@@ -1,15 +1,14 @@
-import {
-  type AssetRepresentation,
-  type EditorialConfirmationStatus,
-  EntryEditorDangerPanel,
-  EntryEditorHistoryPanel,
-  EntryEditorPublicationPanel,
-  EntryEditorStoryCanvas,
-  type EntryRepresentation,
-  type useEntryEditorDeleteMutation,
-  type useEntryEditorEditorialMutation,
-  type useEntryEditorQueries,
-} from "./entry-editor-layout-imports.ts";
+import { type AssetRepresentation, type EntryRepresentation } from "../generated/management-client.ts";
+import { EntryEditorDangerPanel } from "./entry-editor-danger-panel.tsx";
+import { EntryEditorHistoryPanel } from "./entry-editor-history-panel.tsx";
+import { EntryEditorPublicationPanel } from "./entry-editor-publication-panel.tsx";
+import { EntryEditorStoryCanvas } from "./entry-editor-story-canvas.tsx";
+import type {
+  useEntryEditorDeleteMutation,
+  useEntryEditorEditorialMutation,
+} from "./entry-editor-mutations.ts";
+import type { useEntryEditorQueries } from "./entry-editor-queries.ts";
+import type { EditorialConfirmationStatus } from "./entry-editor-types.ts";
 
 export const EntryEditorLayout = <Properties extends EntryEditorLayoutProperties>(
     properties: Readonly<Properties>,
@@ -40,7 +39,7 @@ export const EntryEditorLayout = <Properties extends EntryEditorLayoutProperties
     </div>
   ),
   EntryEditorLayoutSidebar = <
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     Properties extends Omit<EntryEditorLayoutProperties, "assets" | "title" | "titleField">,
   >(
     properties: Readonly<Properties>,

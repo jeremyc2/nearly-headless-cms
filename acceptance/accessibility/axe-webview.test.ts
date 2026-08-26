@@ -7,7 +7,7 @@ import {
 } from "./axe-webview-support.ts";
 import { afterAll, describe, expect, test } from "bun:test";
 
-// oxlint-disable-next-line eslint/init-declarations -- [EH-314] axe script server starts lazily when acceptance servers are ready.
+// oxlint-disable-next-line eslint/init-declarations -- [EH-164] axe script server starts lazily when acceptance servers are ready.
 let axeScriptServer: ReturnType<typeof startAxeScriptServer>;
 
 const acceptanceTest = ((): typeof test => {
@@ -35,7 +35,7 @@ const acceptanceTest = ((): typeof test => {
       `Undocumented axe ${kind}s on ${page.name}: ${unresolvedFindings.map((finding) => `${finding.id} (${finding.help})`).join("; ")}`,
     ).toEqual([]);
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-311] axe acceptance scans compose awaited WebView navigation and evaluation.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-005] axe acceptance scans compose awaited WebView navigation and evaluation.
   assertIncompletesAreAllowlisted = async (
     scriptUrl: string,
     page: AxePageDefinition,
@@ -58,7 +58,7 @@ const acceptanceTest = ((): typeof test => {
   registerAxePageTests = (page: AxePageDefinition): void => {
     acceptanceTest(
       `reports no WCAG violations on ${page.name}`,
-      // oxlint-disable-next-line effecttsgo/async-function -- [EH-009] Bun's test runner requires a Promise-returning lifecycle callback.
+      // oxlint-disable-next-line effecttsgo/async-function -- [EH-011] Bun's test runner requires a Promise-returning lifecycle callback.
       async () => {
         await scanPageForViolations(axeScriptUrl(), page);
       },
@@ -66,14 +66,14 @@ const acceptanceTest = ((): typeof test => {
     );
     acceptanceTest(
       `documents axe incompletes on ${page.name}`,
-      // oxlint-disable-next-line effecttsgo/async-function -- [EH-009] Bun's test runner requires a Promise-returning lifecycle callback.
+      // oxlint-disable-next-line effecttsgo/async-function -- [EH-011] Bun's test runner requires a Promise-returning lifecycle callback.
       async () => {
         await assertIncompletesAreAllowlisted(axeScriptUrl(), page);
       },
       testTimeoutMilliseconds,
     );
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-311] axe acceptance scans compose awaited WebView navigation and evaluation.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-005] axe acceptance scans compose awaited WebView navigation and evaluation.
   runAxeScan = async <View extends Bun.WebView>(
     view: Readonly<View>,
     scriptUrl: string,
@@ -112,7 +112,7 @@ const acceptanceTest = ((): typeof test => {
     })`,
     );
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-311] axe acceptance scans compose awaited WebView navigation and evaluation.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-005] axe acceptance scans compose awaited WebView navigation and evaluation.
   scanPageForViolations = async (
     scriptUrl: string,
     page: AxePageDefinition,
@@ -135,7 +135,7 @@ const acceptanceTest = ((): typeof test => {
     expression: string,
   ): Promise<void> => {
     const deadline = performance.now() + settleTimeoutMilliseconds,
-      // oxlint-disable-next-line effecttsgo/async-function -- [EH-312] WebView readiness polling composes awaited evaluation and sleep.
+      // oxlint-disable-next-line effecttsgo/async-function -- [EH-085] WebView readiness polling composes awaited evaluation and sleep.
       poll = async (): Promise<void> => {
         if (performance.now() >= deadline) {
           throw new Error(`Accessibility page did not settle: ${expression}`);

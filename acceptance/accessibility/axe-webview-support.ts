@@ -1,6 +1,6 @@
-// oxlint-disable-next-line effecttsgo/node-builtin-import -- [EH-317] fileURLToPath converts Bun module resolution URLs into filesystem paths for axe-core serving.
+// oxlint-disable-next-line effecttsgo/node-builtin-import -- [EH-146] fileURLToPath converts Bun module resolution URLs into filesystem paths for axe-core serving.
 import { fileURLToPath } from "node:url";
-// oxlint-disable-next-line effecttsgo/node-builtin-import -- [EH-313] Accessibility test setup resolves axe-core from node_modules before any Effect application exists.
+// oxlint-disable-next-line effecttsgo/node-builtin-import -- [EH-143] Accessibility test setup resolves axe-core from node_modules before any Effect application exists.
 import { join } from "node:path";
 
 export interface AxeFindingAllowlist {
@@ -26,7 +26,7 @@ export interface AxeScanResult {
 
 const axeAllowlistPath = join(import.meta.dir, "axe-incomplete-allowlist.json"),
   axeAllowlistRaw: unknown = await Bun.file(axeAllowlistPath).json(),
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-316] allowlist JSON is versioned repository fixture data validated at acceptance runtime.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-202] allowlist JSON is versioned repository fixture data validated at acceptance runtime.
   axeAllowlistValue = axeAllowlistRaw as AxeFindingAllowlist,
   axeModulePath = fileURLToPath(import.meta.resolve("axe-core/axe.min.js")),
   axePagesValue: readonly AxePageDefinition[] = [
@@ -54,7 +54,7 @@ const axeAllowlistPath = join(import.meta.dir, "axe-incomplete-allowlist.json"),
     },
   ] as const;
 
-// oxlint-disable-next-line eslint/one-var -- [EH-315] exported bindings follow private fixture resolution in the same module.
+// oxlint-disable-next-line eslint/one-var -- [EH-186] exported bindings follow private fixture resolution in the same module.
 export const axeFindingAllowlist = axeAllowlistValue,
   axePages = axePagesValue,
   startAxeScriptServer = (): { readonly close: () => void; readonly scriptUrl: string } => {

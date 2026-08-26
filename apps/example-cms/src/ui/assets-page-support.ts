@@ -1,4 +1,7 @@
-import { Effect, managementClient, useQuery, useRef, useState } from "./assets-page-imports.ts";
+import { useQuery } from "@tanstack/react-query";
+import { Effect } from "effect";
+import { useRef, useState } from "react";
+import { managementClient } from "./main-shared.ts";
 import { useAssetsPageMutations } from "./assets-page-mutations-support.ts";
 
 export const useAssetsPage = () => {

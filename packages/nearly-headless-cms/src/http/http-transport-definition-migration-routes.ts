@@ -16,7 +16,7 @@ const { invalidRequestResponse, jsonResponse } = transportResponse,
     requireSafeInteger,
     requireSnapshotInput,
   } = migrationRouteSupport,
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-059] route handlers await JSON body parsing before Effect execution.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-068] route handlers await JSON body parsing before Effect execution.
   handleDefinitionActivationRoute = async (
     context: Readonly<RouteHandlerContext>,
   ): Promise<RouteHandlerResult> => {
@@ -63,7 +63,7 @@ const { invalidRequestResponse, jsonResponse } = transportResponse,
   handleDefinitionMigrationRoutes = (
     context: Readonly<RouteHandlerContext>,
   ): Promise<RouteHandlerResult> => dispatchRouteHandlers(migrationRouteHandlers, context),
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-059] route handlers await JSON body parsing before Effect execution.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-068] route handlers await JSON body parsing before Effect execution.
   handleMigrationManifestAppendRoute = async (
     context: Readonly<RouteHandlerContext>,
   ): Promise<RouteHandlerResult> => {
@@ -118,7 +118,7 @@ const { invalidRequestResponse, jsonResponse } = transportResponse,
         }),
     );
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-059] route handlers await JSON body parsing before Effect execution.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-068] route handlers await JSON body parsing before Effect execution.
   handleMigrationPreparationCreateRoute = async (
     context: Readonly<RouteHandlerContext>,
   ): Promise<RouteHandlerResult> => {

@@ -582,3 +582,71 @@ a {
     gap: 12px;
   }
 }
+
+.guide {
+  padding-block: 48px 96px;
+}
+
+.guide-header {
+  margin-bottom: 32px;
+}
+
+.guide-intro,
+.guide-body p,
+.guide-body li {
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.guide-body h2 {
+  margin-top: 40px;
+  margin-bottom: 12px;
+  color: var(--green-dark);
+}
+
+.guide-body pre {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: white;
+  padding: 16px 20px;
+  margin: 16px 0 24px;
+}
+
+.guide-body code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.guide-body :not(pre) > code {
+  background: rgb(37 93 82 / 8%);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+}
+
+.guide-footer {
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+
+.guide-index {
+  padding-bottom: 96px;
+}
+
+.guide-card {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: white;
+  padding: 24px 28px;
+}
+
+.guide-card h2 {
+  margin: 0 0 8px;
+}
+
+.guide-card p {
+  margin: 0 0 16px;
+  color: var(--muted);
+}

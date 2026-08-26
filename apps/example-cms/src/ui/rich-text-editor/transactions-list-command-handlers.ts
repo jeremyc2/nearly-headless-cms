@@ -59,11 +59,11 @@ const { commit, replaceBlock } = transactionsState,
           emptyIndex,
         [] as readonly RichText.BlockNode[],
         [
-          // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-143] list replacement preserves list node shape after item removal.
+          // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-206] list replacement preserves list node shape after item removal.
           {
             ...listBlock,
             children:
-              // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-142] list item filtering preserves list-item node shapes within the editor document.
+              // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-205] list item filtering preserves list-item node shapes within the editor document.
               listBlock.children.filter(
                 (_listItem, index) => index !== listItemIndex,
               ) as RichText.ListItemNode[],
@@ -91,7 +91,7 @@ const { commit, replaceBlock } = transactionsState,
     );
   },
   toggleExistingList = <
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     Input extends {
       blockIndex: number;
       listBlock: RichText.ListNode;
@@ -111,7 +111,7 @@ const { commit, replaceBlock } = transactionsState,
     return unwrapListItem({ blockIndex, listBlock, state });
   },
   unwrapListItem = <
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     Input extends {
       blockIndex: number;
       listBlock: RichText.ListNode;
@@ -135,7 +135,7 @@ const { commit, replaceBlock } = transactionsState,
     });
   },
   unwrapListItemParagraph = <
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     Input extends {
       blockIndex: number;
       listBlock: RichText.ListNode;
@@ -201,7 +201,7 @@ const { commit, replaceBlock } = transactionsState,
     return insertText({ ...state, selection }, "");
   },
   wrapBlockInList = <
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     Input extends {
       blockIndex: number;
       listType: "ordered-list" | "unordered-list";
@@ -223,7 +223,7 @@ const { commit, replaceBlock } = transactionsState,
             children: [
               {
                 children:
-                  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-146] paragraph children inherit inline nodes from the lifted block root.
+                  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- [EH-209] paragraph children inherit inline nodes from the lifted block root.
                   rootBlock.children as RichText.InlineNode[],
                 type: "paragraph",
               },

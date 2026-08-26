@@ -31,7 +31,7 @@ const journeyContext: {
   };
 
 describe("complete-system journeys", () => {
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-007] Bun lifecycle hook performs async system setup.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-009] Bun lifecycle hook performs async system setup.
   beforeAll(async () => {
     const storageRoot = await mkdtemp(join(tmpdir(), "nearly-headless-cms-journey-"));
     journeyContext.storageRoot = storageRoot;
@@ -41,7 +41,7 @@ describe("complete-system journeys", () => {
     });
   });
 
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-006] Bun lifecycle hook performs async cleanup.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-008] Bun lifecycle hook performs async cleanup.
   afterAll(async () => {
     const { storageRoot, system } = journeyContext;
     if (system !== undefined) {

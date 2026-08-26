@@ -18,20 +18,20 @@ const firstEntryIdentifier = "entry-1",
   readOnlyDirectoryMode = 0o500,
   readWriteDirectoryMode = 0o755,
   runWithLayer = <Value, EffectError, Requirements>(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-179] Layer values are provided to runPromise without mutation.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-244] Layer values are provided to runPromise without mutation.
     layer: Layer.Layer<Requirements, EffectError>,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-173] Effect programs are executed by runPromise without mutation.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-237] Effect programs are executed by runPromise without mutation.
     effect: Readonly<Effect.Effect<Value, EffectError, Requirements>>,
   ): Promise<Value> =>
-    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-112] test entry point needs a fresh isolated layer.
+    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-162] test entry point needs a fresh isolated layer.
     Effect.runPromise(effect.pipe(Effect.provide(layer))),
   runWithLayerExit = <Value, EffectError, Requirements>(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-179] Layer values are provided to runPromise without mutation.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-244] Layer values are provided to runPromise without mutation.
     layer: Layer.Layer<Requirements, EffectError>,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-173] Effect programs are executed by runPromise without mutation.
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types -- [EH-237] Effect programs are executed by runPromise without mutation.
     effect: Readonly<Effect.Effect<Value, EffectError, Requirements>>,
   ): Promise<Exit.Exit<Value, EffectError>> =>
-    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-112] test entry point needs a fresh isolated layer.
+    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-162] test entry point needs a fresh isolated layer.
     Effect.runPromise(effect.pipe(Effect.provide(layer), Effect.exit)),
   verifyCommittedCorruptionPreservedOnRestart = (): Promise<void> =>
     mkdtemp(join(tmpdir(), "nearly-headless-cms-committed-corruption-")).then((root) => {
@@ -86,7 +86,7 @@ const firstEntryIdentifier = "entry-1",
           const entries = yield* Persistence.EntryPersistence,
             step1InitialGeneration = yield* entries.readGeneration();
           yield* Effect.promise(() => chmod(generationsDirectory, readOnlyDirectoryMode));
-          // oxlint-disable-next-line eslint/one-var -- [EH-286] commit exit must follow the chmod yield before assertions.
+          // oxlint-disable-next-line eslint/one-var -- [EH-182] commit exit must follow the chmod yield before assertions.
           const step2FailedCommit = yield* Effect.exit(
             entries.commitGeneration(
               step1InitialGeneration.generation,
@@ -106,7 +106,7 @@ const firstEntryIdentifier = "entry-1",
             ),
           );
           yield* Effect.promise(() => chmod(generationsDirectory, readWriteDirectoryMode));
-          // oxlint-disable-next-line eslint/one-var -- [EH-287] read-back must follow the restore-chmod yield before assertions.
+          // oxlint-disable-next-line eslint/one-var -- [EH-190] read-back must follow the restore-chmod yield before assertions.
           const step3ReadBack = yield* entries.readGeneration();
           expect(Exit.isFailure(step2FailedCommit)).toBeTrue();
           expect(step3ReadBack.generation).toBe(step1InitialGeneration.generation);

@@ -84,7 +84,7 @@ const asParagraph = (
     );
   },
   replaceInlineNode = <
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     Input extends {
       index: number;
       node: RichText.InlineNode;

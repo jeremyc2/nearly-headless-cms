@@ -28,10 +28,9 @@ const limitsHandlerEffect = HttpTransport.makeHandler({
     ],
     maximumJsonBodyByteLength,
   }  ).pipe(
-    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-112] test entry point needs a fresh isolated layer.
+    // oxlint-disable-next-line effecttsgo/strict-effect-provide -- [EH-162] test entry point needs a fresh isolated layer.
     Effect.provide(DevelopmentCms.layer({ snapshot })),
   ),
-  // oxlint-disable-next-line eslint/sort-vars -- [EH-307] submissions path follows handler construction in this socket scenario.
   submissionsPath = "api/v1/headless/submissions",
   verifyPayloadTooLargeOverLiveSocket = (): Promise<void> =>
     Effect.runPromise(
@@ -39,7 +38,7 @@ const limitsHandlerEffect = HttpTransport.makeHandler({
     ).then((transport) => {
       const requestUrl = `${transport.address}${submissionsPath}`;
       return (
-        // oxlint-disable-next-line effecttsgo/global-fetch -- [EH-303] integration test exercises JSON body limits through the live HTTP listener.
+        // oxlint-disable-next-line effecttsgo/global-fetch -- [EH-104] integration test exercises JSON body limits through the live HTTP listener.
         fetch(requestUrl, {
           body: JSON.stringify({ values: { title: "This body is deliberately too large" } }),
           headers: { "content-type": "application/json" },

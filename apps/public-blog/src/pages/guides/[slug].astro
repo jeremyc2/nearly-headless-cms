@@ -1,0 +1,21 @@
+---
+import { guideById, publicExport } from "../../data/public-export.ts"
+import type { GetStaticPaths } from "astro"
+import GuideLayout from "../../layouts/guide-layout.astro"
+import RichText from "../../components/rich-text.astro"
+
+export const getStaticPaths: GetStaticPaths = () =>
+  publicExport.guides.map((guide) => ({
+    params: { slug: guide.slug },
+    props: { guide },
+  }))
+
+const { guide } = Astro.props,
+  nextGuideEntry = guide.nextGuide === null ? undefined : guideById.get(guide.nextGuide),
+  nextGuide = nextGuideEntry === undefined
+    ? undefined
+    : { href: `/guides/${nextGuideEntry.slug}/`, label: nextGuideEntry.title }
+---
+<GuideLayout description={guide.description} nextGuide={nextGuide} title={guide.title}>
+  <RichText nodes={guide.body.children} />
+</GuideLayout>

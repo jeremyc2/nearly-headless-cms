@@ -56,7 +56,7 @@ const { decodeCatalog } = filesystemLockIo,
   },
   parseGenerationJson = <Bytes extends Uint8Array>(generationBytes: Readonly<Bytes>): unknown =>
     JSON.parse(new TextDecoder().decode(generationBytes)) as unknown,
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-057] Root initialization coordinates ordered filesystem operations.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-066] Root initialization coordinates ordered filesystem operations.
   readCommittedGeneration = async (
     root: string,
     readJson: (path: string) => Promise<unknown>,
@@ -70,7 +70,7 @@ const { decodeCatalog } = filesystemLockIo,
       manifest,
     };
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-057] Root initialization coordinates ordered filesystem operations.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-066] Root initialization coordinates ordered filesystem operations.
   readGenerationBytes = async (
     root: string,
     manifest: ReturnType<typeof validateManifest>,
@@ -78,7 +78,7 @@ const { decodeCatalog } = filesystemLockIo,
     const generationPath = join(root, manifest.generationFile);
     return new Uint8Array(await Bun.file(generationPath).arrayBuffer());
   },
-  // oxlint-disable-next-line effecttsgo/async-function -- [EH-057] Root initialization coordinates ordered filesystem operations.
+  // oxlint-disable-next-line effecttsgo/async-function -- [EH-066] Root initialization coordinates ordered filesystem operations.
   readManifestFile = async (
     root: string,
     readJson: (path: string) => Promise<unknown>,

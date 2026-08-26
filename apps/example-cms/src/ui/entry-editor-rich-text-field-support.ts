@@ -1,29 +1,21 @@
-import {
-  BrowserAdapter,
-  Effect,
-  type RichText,
-  RichTextEditor,
-  type RichTextInsertDialog,
-  contentTypes,
-  entryOptionLabel,
-  managementClient,
-  useEffect,
-  useMemo,
-  useQueries,
-  useQuery,
-  useRef,
-  useState,
-} from "./entry-editor-rich-text-field-imports.ts";
+import { useQueries, useQuery } from "@tanstack/react-query";
+import { Effect } from "effect";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { type RichText } from "nearly-headless-cms";
+import { entryOptionLabel } from "./main-labels.ts";
+import { contentTypes, managementClient } from "./main-shared.ts";
+import { BrowserAdapter, RichTextEditor } from "./rich-text-editor/index.ts";
+import type { RichTextInsertDialog } from "./entry-editor-types.ts";
 import type { EntryRepresentation, QueryPage } from "../generated/management-client.ts";
 
 const applyRichTextFieldAdapterEffect = <
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     AdapterRef extends { current: BrowserAdapter | null },
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     HostRef extends { current: HTMLDivElement | null },
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     OnChangeRef extends { current: (document: RichText.Document) => void },
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     SetDialog extends (dialog: RichTextInsertDialog) => void,
   >({
     adapter,
@@ -64,9 +56,9 @@ const applyRichTextFieldAdapterEffect = <
     }, [adapter, host, initialValue, onChangeReference, setDialog]);
   },
   applyRichTextFieldOnChangeEffect = <
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     OnChangeRef extends { current: (document: RichText.Document) => void },
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     OnChange extends (document: RichText.Document) => void,
   >(
     onChangeReference: OnChangeRef,

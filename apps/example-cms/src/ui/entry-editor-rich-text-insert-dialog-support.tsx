@@ -1,15 +1,13 @@
-import {
-  type AssetRepresentation,
-  type BrowserAdapter,
-  type RefObject,
-  type RichTextInsertDialog,
-  assetCaption,
-} from "./entry-editor-rich-text-insert-dialog-imports.ts";
+import { assetCaption } from "./main-labels.ts";
+import type { RefObject } from "react";
+import type { AssetRepresentation } from "../generated/management-client.ts";
+import type { BrowserAdapter } from "./rich-text-editor/index.ts";
+import type { RichTextInsertDialog } from "./entry-editor-types.ts";
 
 const InsertDialogActions = <
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     AdapterRef extends RefObject<BrowserAdapter | null>,
-    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-139] React panel helpers preserve local prop aliases for component call sites.
+    // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- [EH-201] React panel helpers preserve local prop aliases for component call sites.
     Dialog extends RichTextInsertDialog,
   >({
     adapter,

@@ -84,6 +84,17 @@ export interface RichTextNode {
   readonly children?: readonly RichTextNode[];
 }
 
+export interface PublicGuide {
+  readonly id: string;
+  readonly title: string;
+  readonly slug: string;
+  readonly description: string;
+  readonly body: RichTextDocument;
+  readonly sortOrder: number;
+  readonly nextGuide: string | null;
+  readonly status: "published";
+}
+
 export interface PublicBlogExport {
   readonly definitionFingerprint: string;
   readonly generatedAt: string;
@@ -92,6 +103,7 @@ export interface PublicBlogExport {
   readonly categories: readonly PublicTaxonomy[];
   readonly tags: readonly PublicTaxonomy[];
   readonly comments: readonly PublicComment[];
+  readonly guides: readonly PublicGuide[];
   readonly assets: readonly PublicAsset[];
 }
 
@@ -220,6 +232,16 @@ const apiContractVersion = 1,
     tags: Schema.Array(Schema.String),
     title: Schema.String,
   }),
+  schemaPublicBlogGuide: Schema.Codec<PublicGuide> = Schema.Struct({
+    body: schemaCommonRichTextNodeDocument,
+    description: Schema.String,
+    id: Schema.String,
+    nextGuide: Schema.NullOr(Schema.String),
+    slug: Schema.String,
+    sortOrder: Schema.Int,
+    status: Schema.Literal("published"),
+    title: Schema.String,
+  }),
   schemaPublicBlogTaxonomy: Schema.Codec<PublicTaxonomy> = Schema.Struct({
     description: Schema.NullOr(Schema.String),
     id: Schema.String,
@@ -233,6 +255,7 @@ const apiContractVersion = 1,
     comments: Schema.Array(schemaPublicBlogComment),
     definitionFingerprint: Schema.String,
     generatedAt: Schema.String,
+    guides: Schema.Array(schemaPublicBlogGuide),
     posts: Schema.Array(schemaPublicBlogPost),
     tags: Schema.Array(schemaPublicBlogTaxonomy),
   }),
