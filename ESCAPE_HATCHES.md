@@ -652,7 +652,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `apps/example-cms/src/delivery-comment-submission-support.ts:181`
+- `apps/example-cms/src/delivery-comment-submission-support.ts:177`
 
 #### EH-161: conflict resolution callbacks receive mutable draft value maps.
 
@@ -803,19 +803,19 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:146`
+- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:142`
 
 #### EH-181: multipart errors are inspected via Predicate.isTagged without mutation.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:155`
+- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:151`
 
 #### EH-182: multipart file parts expose mutable content streams for staging writes.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:180`
+- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:176`
 
 #### EH-183: multipart state is mutated while parsing asset parts.
 
@@ -1073,7 +1073,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `acceptance/visual/responsive-baselines.test.ts:33`
+- `acceptance/visual/responsive-baselines.test.ts:121`
 
 #### EH-005: Bun filesystem handles expose Promise-based synchronization boundaries.
 
@@ -1105,7 +1105,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `acceptance/visual/responsive-baselines.test.ts:59`
+- `acceptance/visual/responsive-baselines.test.ts:147`
 - `acceptance/webview/journey.test.ts:180`
 - `acceptance/webview/journey.test.ts:199`
 - `acceptance/webview/qualification.test.ts:44`
@@ -1116,7 +1116,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 - `acceptance/accessibility/axe-webview.test.ts:61`
 - `acceptance/accessibility/axe-webview.test.ts:69`
-- `acceptance/visual/responsive-baselines.test.ts:85`
+- `acceptance/visual/responsive-baselines.test.ts:173`
 - `acceptance/webview/journey.test.ts:223`
 - `acceptance/webview/qualification.test.ts:66`
 
@@ -1143,7 +1143,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `scripts/compatibility-matrix.ts:17`
+- `scripts/package-portability-smoke.ts:17`
 - `scripts/run-acceptance.ts:24`
 
 #### EH-014: CLI readiness polling requires awaited retries.
@@ -1198,7 +1198,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:267`
+- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:263`
 
 #### EH-022: fingerprint validation awaits interruptible Effect execution.
 
@@ -1382,7 +1382,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:213`
+- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:209`
 
 #### EH-041: parallel architecture scans use async file reads.
 
@@ -1527,7 +1527,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `acceptance/visual/responsive-baselines.test.ts:12`
+- `acceptance/visual/responsive-baselines.test.ts:99`
 
 #### EH-062: snapshot resolution awaits interruptible Effect execution before routing.
 
@@ -1943,7 +1943,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:213`
+- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:209`
 - `packages/nearly-headless-cms/src/http/http-transport-request-parsing.ts:167`
 
 #### EH-091: public serialize helper is not a pipeable Effect API.
@@ -2072,8 +2072,8 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 **Locations:**
 
 - `scripts/check-architecture.ts:2`
-- `scripts/compatibility-matrix.ts:1`
 - `scripts/escape-hatches-parse-support.ts:2`
+- `scripts/package-portability-smoke.ts:1`
 - `scripts/record-release-evidence.ts:1`
 - `scripts/release.ts:1`
 - `scripts/run-acceptance.ts:2`
@@ -2664,7 +2664,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `scripts/compatibility-matrix.ts:10`
+- `scripts/package-portability-smoke.ts:10`
 - `scripts/record-release-evidence.ts:11`
 
 #### EH-259: branch text is trimmed immediately into the release evidence artifact field.
@@ -2882,7 +2882,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:271`
+- `packages/nearly-headless-cms/src/http/http-transport-request-parsing-support.ts:267`
 
 #### EH-138: recursive cleanup must remain sequential.
 

@@ -22,7 +22,7 @@ const effectVersion = "4.0.0-rc.111",
       stdout: "inherit",
     });
     if ((await child.exited) !== 0) {
-      throw new Error(`Compatibility command failed: ${command.join(" ")}`);
+      throw new Error(`Package portability command failed: ${command.join(" ")}`);
     }
   },
   runtimes = [
@@ -30,7 +30,7 @@ const effectVersion = "4.0.0-rc.111",
     { command: ["node", "--version"], label: "node" },
   ] as const,
   temporaryDirectoryResponse =
-    await Bun.$`mktemp -d ${monorepoRoot}/.artifacts/compatibility-XXXXXX`.text(),
+    await Bun.$`mktemp -d ${monorepoRoot}/.artifacts/package-portability-XXXXXX`.text(),
   trimmedDirectory = temporaryDirectoryResponse.trim(),
   twoSpaceIndent = 2;
 
@@ -55,4 +55,4 @@ await Bun.write(`${trimmedDirectory}/portable.mjs`, portableConsumer);
 await runCommand(["bun", "install", "--ignore-scripts"], trimmedDirectory);
 await runCommand(["bun", "portable.mjs"], trimmedDirectory);
 await runCommand(["node", "portable.mjs"], trimmedDirectory);
-await Bun.write(Bun.stdout, "Compatibility matrix passed.\n");
+await Bun.write(Bun.stdout, "Package portability smoke test passed.\n");
