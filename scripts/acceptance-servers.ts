@@ -8,6 +8,8 @@ export interface AcceptanceServers {
 
 export const monorepoRoot = path.join(import.meta.dir, "..");
 export const acceptanceCmsStorageRoot = path.join(monorepoRoot, ".artifacts/acceptance/example-cms");
+const exampleCmsDirectory = path.join(monorepoRoot, "apps/example-cms"),
+  publicBlogDirectory = path.join(monorepoRoot, "apps/public-blog");
 
 const acceptancePollIntervalMilliseconds = 100,
   acceptanceReadinessTimeoutMilliseconds = 20_000;
@@ -57,20 +59,24 @@ export const runAcceptanceCommand = async <Command extends readonly string[]>(
 export const startAcceptanceServers = async (): Promise<AcceptanceServers> => {
   await Bun.$`rm -rf ${acceptanceCmsStorageRoot}`.quiet();
   await Bun.$`mkdir -p ${acceptanceCmsStorageRoot}`.quiet();
-  const exampleCms = Bun.spawn(["bun", "run", "--cwd", "apps/example-cms", "start"], {
-    cwd: monorepoRoot,
-    env: { ...process.env, EXAMPLE_CMS_STORAGE_ROOT: acceptanceCmsStorageRoot },
-    stderr: "inherit",
-    stdout: "inherit",
+  const exampleCms = Bun.spawn(["bun", "src/server.ts"], {
+    cwd: exampleCmsDirectory,
+    env: {
+      ...process.env,
+      EXAMPLE_CMS_STORAGE_ROOT: acceptanceCmsStorageRoot,
+      NODE_ENV: "production",
+    },
+    stderr: "ignore",
+    stdout: "ignore",
   });
   await waitForAcceptanceService("http://localhost:3000/health");
   await runAcceptanceCommand(["bun", "run", "--cwd", "apps/public-blog", "build"], {
     EXAMPLE_CMS_URL: "http://localhost:3000",
   });
-  const publicBlog = Bun.spawn(["bun", "run", "--cwd", "apps/public-blog", "start"], {
-    cwd: monorepoRoot,
-    stderr: "inherit",
-    stdout: "inherit",
+  const publicBlog = Bun.spawn(["bun", "src/server.ts"], {
+    cwd: publicBlogDirectory,
+    stderr: "ignore",
+    stdout: "ignore",
   });
   await waitForAcceptanceService("http://localhost:4321/");
   await waitForAcceptanceService("http://localhost:4321/posts/a-lighthouse-for-content/");
@@ -79,8 +85,8 @@ export const startAcceptanceServers = async (): Promise<AcceptanceServers> => {
 
 // oxlint-disable-next-line effecttsgo/async-function, typescript/prefer-readonly-parameter-types -- [EH-354, EH-357] acceptance servers require awaited process shutdown and Bun.spawn handles are mutable platform types.
 export const stopAcceptanceServers = async (servers: Readonly<AcceptanceServers>): Promise<void> => {
-  servers.publicBlog.kill();
-  servers.exampleCms.kill();
+  servers.publicBlog.kill("SIGTERM");
+  servers.exampleCms.kill("SIGTERM");
   await Promise.allSettled([servers.exampleCms.exited, servers.publicBlog.exited]);
 };
 
