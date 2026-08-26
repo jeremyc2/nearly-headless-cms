@@ -1,4 +1,4 @@
-import type { ExampleSystem } from "../../src/system.ts";
+import type { ExampleSystem } from "../../src/core/composition.ts";
 
 const authorIndex = 0,
   createdEntryStatus = 201,

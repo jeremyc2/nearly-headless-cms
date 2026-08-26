@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "bunx --bun astro dev",
-    "build": "bun run src/fetch-export.ts && bunx --bun astro build",
+    "build": "bun run src/core/fetch-export.ts && bunx --bun astro build",
     "start": "bun src/server.ts",
     "lint": "oxlint . --type-aware",
     "typecheck": "tsc --noEmit -p tsconfig.json",

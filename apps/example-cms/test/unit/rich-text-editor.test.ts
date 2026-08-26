@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { RichTextEditor } from "../../src/ui/rich-text-editor/index.ts";
+import { RichTextEditor } from "../../src/presentation/rich-text-editor/index.ts";
 
 const firstChildIndex = 0,
   initialBlockCount = 1,

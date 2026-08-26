@@ -21,7 +21,7 @@ const architectureRepository = path.join(import.meta.dir, ".."),
     "./layers",
     "./package.json",
   ],
-  expectedWorkspaceCount = 3,
+  expectedWorkspaceCount = 4,
   findBlockCommentStart = (lines: readonly string[], lineIndex: number): number | undefined => {
     let commentLineIndex = lineIndex - oneItem;
     if (lines[commentLineIndex]?.trimEnd().endsWith("*/") !== true) {
@@ -69,6 +69,12 @@ const architectureRepository = path.join(import.meta.dir, ".."),
     "src/rich-text.ts",
     "src/transport.ts",
     "src/http/index.ts",
+    "src/http/delivery-recipes/index.ts",
+    "src/http/delivery-recipes/definition-requirement.ts",
+    "src/http/delivery-recipes/delivery-query.ts",
+    "src/http/delivery-recipes/pagination.ts",
+    "src/http/delivery-recipes/public-entry-value.ts",
+    "src/http/delivery-recipes/public-export.ts",
     "src/http/http-contract.ts",
     "src/http/http-transport.ts",
     "src/http/open-api.ts",
@@ -94,7 +100,7 @@ const architectureRepository = path.join(import.meta.dir, ".."),
     return manifest;
   },
   rootManifest: unknown = await Bun.file(path.join(architectureRepository, "package.json")).json(),
-  sourceGlob = new Bun.Glob("apps/public-blog/src/**/*.{ts,astro}"),
+  sourceGlob = new Bun.Glob("apps/public-blog/src/presentation/**/*.{ts,astro}"),
   publicBlogSourcePaths = await Array.fromAsync(sourceGlob.scan({ cwd: architectureRepository })),
   sourcePaths = publicBlogSourcePaths,
   twoSpaceIndent = 2,
@@ -109,6 +115,7 @@ const architectureRepository = path.join(import.meta.dir, ".."),
       path.join(architectureRepository, "packages/nearly-headless-cms/package.json"),
     ).json(),
     await Bun.file(path.join(architectureRepository, "apps/example-cms/package.json")).json(),
+    await Bun.file(path.join(architectureRepository, "apps/example-cms-minimal/package.json")).json(),
     await Bun.file(path.join(architectureRepository, "apps/public-blog/package.json")).json(),
   ] as const,
   workspaceManifests = workspaceManifestValues.filter((value) => recordIs(value));
@@ -149,16 +156,29 @@ if (
 if (
   findWorkspaceManifest("@nearly-headless-cms/public-blog") === undefined ||
   findWorkspaceManifest("@nearly-headless-cms/example-cms") === undefined ||
+  findWorkspaceManifest("@nearly-headless-cms/example-cms-minimal") === undefined ||
   dependencyAt(
     requireWorkspaceManifest("@nearly-headless-cms/public-blog"),
     "nearly-headless-cms",
   ) !== undefined ||
+  dependencyAt(
+    requireWorkspaceManifest("@nearly-headless-cms/example-cms-minimal"),
+    "nearly-headless-cms",
+  ) !== "workspace:*" ||
   dependencyAt(
     requireWorkspaceManifest("@nearly-headless-cms/example-cms"),
     "nearly-headless-cms",
   ) !== "workspace:*"
 ) {
   throw new Error("Application dependency direction violates the Headless API boundary");
+}
+for (const forbidden of ["react", "@tanstack/react-query", "@tanstack/react-router"]) {
+  if (
+    dependencyAt(requireWorkspaceManifest("@nearly-headless-cms/example-cms-minimal"), forbidden) !==
+    undefined
+  ) {
+    throw new Error(`Minimal Example CMS has forbidden dependency ${forbidden}`);
+  }
 }
 for (const forbidden of [
   "react",

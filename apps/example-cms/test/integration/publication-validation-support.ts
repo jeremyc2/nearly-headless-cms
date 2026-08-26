@@ -1,4 +1,4 @@
-export type { ExampleSystem } from "../../src/system.ts";
+export type { ExampleSystem } from "../../src/core/composition.ts";
 export {
   createTemporaryStorageRoot,
   exportUrl,
@@ -20,7 +20,7 @@ export {
 } from "./public-visibility-support.ts";
 import { firstItemIndex, isRecord } from "./headless-api-support.ts";
 import { readRecordArray, readStringField } from "./public-visibility-support.ts";
-import type { ExampleSystem } from "../../src/system.ts";
+import type { ExampleSystem } from "../../src/core/composition.ts";
 
 export type PublicationValidationHandler = ExampleSystem["handler"];
 

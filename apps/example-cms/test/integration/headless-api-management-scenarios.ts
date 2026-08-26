@@ -13,7 +13,7 @@ import {
   requireWriteToken,
   twoItems,
 } from "./headless-api-support.ts";
-import { type ExampleSystem } from "../../src/system.ts";
+import { type ExampleSystem } from "../../src/core/composition.ts";
 import { expect } from "bun:test";
 
 const makeReplacementForm = (): FormData => {

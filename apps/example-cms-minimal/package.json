@@ -1,0 +1,17 @@
+{
+  "name": "@nearly-headless-cms/example-cms-minimal",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun src/server.ts",
+    "lint": "oxlint . --type-aware",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@effect/platform-bun": "4.0.0-rc.111",
+    "effect": "4.0.0-rc.111",
+    "nearly-headless-cms": "workspace:*"
+  }
+}
