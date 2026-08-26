@@ -732,22 +732,43 @@ a {
   border-top: 1px solid var(--line);
 }
 
-.guide-index {
-  padding-bottom: 96px;
+.guide-index.content-stack {
+  gap: 24px;
+  padding-block: 48px 80px;
 }
 
 .guide-card {
+  display: grid;
+  gap: 10px;
   border: 1px solid var(--line);
   border-radius: 16px;
   background: white;
-  padding: 24px 28px;
+  padding: 28px 32px;
 }
 
 .guide-card h2 {
-  margin: 0 0 8px;
+  margin: 0;
+  font-family: Georgia, serif;
+  font-weight: 400;
+  font-size: clamp(24px, 3vw, 30px);
+  line-height: 1.15;
+}
+
+.guide-card h2 a {
+  text-decoration: none;
+}
+
+.guide-card h2 a:hover {
+  color: var(--green);
 }
 
 .guide-card p {
-  margin: 0 0 16px;
+  margin: 0;
   color: var(--muted);
+  line-height: 1.6;
+  max-width: 68ch;
+}
+
+.guide-card .read-link {
+  margin-top: 6px;
 }
