@@ -260,10 +260,8 @@ Sorted by escape-hatch code (`EH-###`).
 - **EH-246** (`effecttsgo/global-fetch`): integration test exercises rejection during shutdown drain.
 - **EH-247** (`effecttsgo/global-fetch`): integration test exercises the live HTTP listener through the platform fetch boundary.
 - **EH-248** (`effecttsgo/global-fetch`): integration test starts a request that outlives the drain window.
-- **EH-249** (`effecttsgo/global-timers`): pre-shutdown delay starts drain while the slow request remains active.
 - **EH-250** (`effecttsgo/global-timers`): slow handler delay mirrors a peer that keeps the connection open.
 - **EH-251** (`effecttsgo/new-promise`): hanging handler keeps the socket open until forced shutdown.
-- **EH-252** (`effecttsgo/new-promise`): shutdown timing is coordinated through Promise composition in the socket test.
 - **EH-253** (`effecttsgo/new-promise`): slow handler simulates an in-flight socket request outside Effect.
 - **EH-254** (`eslint/max-lines-per-function`): shutdown scenario keeps orchestration in one place for readability.
 - **EH-255** (`eslint/one-var`): transport startup keeps separate statements so lint autofix does not merge dependency-ordered locals.
@@ -355,6 +353,7 @@ Sorted by escape-hatch code (`EH-###`).
 - **EH-355** (`effecttsgo/async-function`): validation screenshot normalization runs after React settles in the test finalize hook.
 - **EH-356** (`eslint/sort-vars`): validation screenshot normalization runs after React settles in the test finalize hook.
 - **EH-357** (`eslint/sort-imports`): path-invariant scenarios follow the established filesystem test import grouping.
+- **EH-358** (`effecttsgo/async-function`): socket acceptance polling coordinates shutdown timing outside Effect.
 
 ## Justification Registry
 
@@ -1680,6 +1679,12 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 - `acceptance/visual/visual-baseline-scenarios.ts:221`
 
+#### EH-358: socket acceptance polling coordinates shutdown timing outside Effect.
+
+**Locations:**
+
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-shutdown-scenarios.ts:38`
+
 ### Effect · `effecttsgo/crypto-random-uuid`
 
 #### EH-068: browser UI labels need a synchronous local identifier.
@@ -1784,13 +1789,13 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/test/integration/http-socket-integration-shutdown-scenarios.ts:33`
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-shutdown-scenarios.ts:34`
 
 #### EH-246: integration test exercises rejection during shutdown drain.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/test/integration/http-socket-integration-shutdown-scenarios.ts:46`
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-shutdown-scenarios.ts:59`
 
 #### EH-247: integration test exercises the live HTTP listener through the platform fetch boundary.
 
@@ -1877,17 +1882,11 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 ### Effect · `effecttsgo/global-timers`
 
-#### EH-249: pre-shutdown delay starts drain while the slow request remains active.
-
-**Locations:**
-
-- `packages/nearly-headless-cms/test/integration/http-socket-integration-shutdown-scenarios.ts:37`
-
 #### EH-250: slow handler delay mirrors a peer that keeps the connection open.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/test/integration/http-socket-integration-shutdown-scenarios.ts:19`
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-shutdown-scenarios.ts:20`
 
 ### Effect · `effecttsgo/missing-pipeable-signature`
 
@@ -2050,17 +2049,11 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 - `packages/nearly-headless-cms/test/integration/http-socket-integration-forced-shutdown-scenarios.ts:14`
 
-#### EH-252: shutdown timing is coordinated through Promise composition in the socket test.
-
-**Locations:**
-
-- `packages/nearly-headless-cms/test/integration/http-socket-integration-shutdown-scenarios.ts:35`
-
 #### EH-253: slow handler simulates an in-flight socket request outside Effect.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/test/integration/http-socket-integration-shutdown-scenarios.ts:17`
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-shutdown-scenarios.ts:18`
 
 ### Effect · `effecttsgo/node-builtin-import`
 
@@ -2738,7 +2731,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/test/integration/http-socket-integration-shutdown-scenarios.ts:24`
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-shutdown-scenarios.ts:25`
 
 #### EH-270: lifecycle helpers follow drain, force-stop, hook, wrap, and factory order.
 
@@ -2766,7 +2759,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/test/integration/http-socket-integration-shutdown-scenarios.ts:28`
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-shutdown-scenarios.ts:29`
 
 #### EH-274: shutdown scenario locals follow handler, server, and request order.
 
@@ -2778,7 +2771,7 @@ Grouped by linter family and rule. Entries within each rule are sorted by code.
 
 **Locations:**
 
-- `packages/nearly-headless-cms/test/integration/http-socket-integration-shutdown-scenarios.ts:15`
+- `packages/nearly-headless-cms/test/integration/http-socket-integration-shutdown-scenarios.ts:16`
 
 #### EH-301: commit helper closes over firstEntryIdentifier declared above.
 

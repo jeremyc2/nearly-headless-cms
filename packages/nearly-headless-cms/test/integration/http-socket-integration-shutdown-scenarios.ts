@@ -10,8 +10,9 @@ import {
 export const verifyShutdownRejectsNewRequests = (): Promise<void> => {
   // oxlint-disable-next-line eslint/sort-vars -- [EH-274] shutdown scenario locals follow handler, server, and request order.
   const drainWindowMultiplier = 4,
-    preShutdownDelayMilliseconds = 10,
     slowHandlerDelayMilliseconds = 250,
+    slowRequestAcceptancePollMilliseconds = 5,
+    slowRequestAcceptanceTimeoutMilliseconds = 2000,
     // oxlint-disable-next-line eslint/sort-vars -- [EH-275] slow handler factory precedes lifecycle and server setup.
     makeSlowHandler = (): HttpTransport.Handler => () =>
       // oxlint-disable-next-line effecttsgo/new-promise -- [EH-253] slow handler simulates an in-flight socket request outside Effect.
@@ -31,29 +32,37 @@ export const verifyShutdownRejectsNewRequests = (): Promise<void> => {
       port: 0,
     }),
     // oxlint-disable-next-line effecttsgo/global-fetch -- [EH-245] integration test exercises an in-flight request during shutdown drain.
-    slowRequest = fetch(`${server.url.href}slow`);
-  // oxlint-disable-next-line effecttsgo/new-promise -- [EH-252] shutdown timing is coordinated through Promise composition in the socket test.
-  return new Promise<void>((resolve, reject) => {
-    // oxlint-disable-next-line effecttsgo/global-timers -- [EH-249] pre-shutdown delay starts drain while the slow request remains active.
-    setTimeout(() => {
-      const closePromise = lifecycle
-        .close({
-          onForceStop: () => {
-            void server.stop(true);
-          },
-        })
-        .pipe(Effect.runPromise);
-      // oxlint-disable-next-line effecttsgo/global-fetch -- [EH-246] integration test exercises rejection during shutdown drain.
-      void fetch(`${server.url.href}slow`)
-        .then((rejectedResponse) =>
-          Promise.all([slowRequest, closePromise]).then(([slowResponse]) => {
-            expect(slowResponse.status).toBe(successStatus);
-            expect(rejectedResponse.status).toBe(httpStatusServiceUnavailable);
-            expect(server.pendingRequests).toBe(0);
-            resolve();
-          }),
-        )
-        .catch(reject);
-    }, preShutdownDelayMilliseconds);
+    slowRequest = fetch(`${server.url.href}slow`),
+    waitForSlowRequestAcceptance = (): Promise<void> => {
+      const deadline = performance.now() + slowRequestAcceptanceTimeoutMilliseconds,
+        // oxlint-disable-next-line effecttsgo/async-function -- [EH-358] socket acceptance polling coordinates shutdown timing outside Effect.
+        poll = async (): Promise<void> => {
+          if (server.pendingRequests > 0) {
+            return;
+          }
+          if (performance.now() >= deadline) {
+            throw new Error("Slow request was not accepted before shutdown");
+          }
+          await Bun.sleep(slowRequestAcceptancePollMilliseconds);
+          return poll();
+        };
+      return poll();
+    };
+  return waitForSlowRequestAcceptance().then(() => {
+    const closePromise = lifecycle
+      .close({
+        onForceStop: () => {
+          void server.stop(true);
+        },
+      })
+      .pipe(Effect.runPromise);
+    // oxlint-disable-next-line effecttsgo/global-fetch -- [EH-246] integration test exercises rejection during shutdown drain.
+    return fetch(`${server.url.href}slow`).then((rejectedResponse) =>
+      Promise.all([slowRequest, closePromise]).then(([slowResponse]) => {
+        expect(slowResponse.status).toBe(successStatus);
+        expect(rejectedResponse.status).toBe(httpStatusServiceUnavailable);
+        expect(server.pendingRequests).toBe(0);
+      }),
+    );
   });
 };
