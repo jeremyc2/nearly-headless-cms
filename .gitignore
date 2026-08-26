@@ -11,6 +11,8 @@ dist
 apps/example-cms/.data/
 apps/example-cms-minimal/.data/
 apps/example-blog-cms/.data/
+apps/example-blog-cms/test/integration/.headless-api-*/
+apps/example-blog-cms/test/integration/.public-visibility-*/
 apps/public-blog/.generated/
 apps/example-blog/.generated/
 acceptance/journeys/.complete-system-journey-*/
