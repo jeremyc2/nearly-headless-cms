@@ -1,17 +1,19 @@
 # npm Package and Release-Readiness Contract
 
+> **Update, 2026-08-26:** The library is published on npm as `nearly-headless-cms`. The current stable line is `1.0.0`. Use [`docs/releasing.md`](./releasing.md) for the live publish runbook. The sections below record the original release contract; where they mention `0.1.0`, pre-1.0 policy, or an unpublished state, treat this update as authoritative.
+
 ## Decision
 
-Nearly Headless CMS v0.1 ships as one public npm package named `nearly-headless-cms` from the `packages/nearly-headless-cms` workspace. The package is a typed, ESM-only library licensed under MIT. Its portable modules support Bun and Node, while its Bun Filesystem Persistence Layer is isolated behind an explicit Bun-only export. The private Example CMS and Public Blog are not published.
+Nearly Headless CMS ships as one public npm package named `nearly-headless-cms` from the `packages/nearly-headless-cms` workspace. The package is a typed, ESM-only library licensed under MIT. Its portable modules support Bun and Node, while its Bun Filesystem Persistence Layer is isolated behind an explicit Bun-only export. The private Example CMS and Public Blog are not published.
 
-Release readiness means the repository can build, inspect, install, exercise, and dry-run the exact `0.1.0` artifact through the selected release workflow. It does not authorize or execute an npm publication.
+Release readiness means the repository can build, inspect, install, exercise, dry-run, and publish the exact versioned artifact through the release workflow documented in [`docs/releasing.md`](./releasing.md).
 
 ## Package identity and metadata
 
 The library manifest uses:
 
 - npm name `nearly-headless-cms`;
-- initial version `0.1.0`;
+- current stable version `1.0.0`;
 - description `A library for building headless CMS applications with Effect`;
 - author `Jeremy Ryan Chandler`;
 - SPDX license identifier `MIT`;
@@ -20,7 +22,7 @@ The library manifest uses:
 - public npm access, the public npm registry, and provenance in `publishConfig`; and
 - no initial `funding` or global `engines` field.
 
-The runtime matrix is documented and verified per public entry point because a global engine declaration cannot accurately express portable modules alongside one Bun-only module. The npm name is rechecked immediately before the first release because a prior absence from the registry does not reserve it.
+The runtime matrix is documented and verified per public entry point because a global engine declaration cannot accurately express portable modules alongside one Bun-only module. Recheck the npm name and that the target version is not already published immediately before each release.
 
 The repository and package workspace each contain the complete MIT license notice:
 
@@ -136,11 +138,11 @@ Every exported value, type, schema, invariant, failure mode, and important perfo
 
 Published versions and tags are immutable. Tags use the exact `v<version>` form and the library manifest is the single authoritative version source.
 
-Within a `0.y` line, patch releases preserve compatibility across explicit import paths, exported TypeScript interfaces, runtime behavior, errors, and serialized contracts. Patches contain compatible fixes and documentation improvements. New capabilities normally advance the next `0.y.0`; before 1.0, that release may make documented breaking changes with migration instructions. There is no guaranteed pre-1.0 deprecation window, although a practical deprecation should precede removal when it does not impose disproportionate complexity.
+Within a `1.x` line, patch releases preserve compatibility across explicit import paths, exported TypeScript interfaces, runtime behavior, errors, and serialized contracts. Patches contain compatible fixes and documentation improvements. New capabilities normally advance the next minor or major version with migration instructions in the changelog.
 
 API Contract Versions, Content Definition versions, Field Kind versions, Rich Text format versions, and migration paths retain their independent compatibility rules. A package version change never silently rewrites one of those persisted or wire contracts.
 
-Only the current `0.y` line is guaranteed active maintenance. Earlier lines remain installable but receive no general backport promise.
+Only the current `1.x` line is guaranteed active maintenance. Earlier lines remain installable but receive no general backport promise.
 
 ## Script contract
 
@@ -177,7 +179,7 @@ The protected publish job remains unavailable until all of these checks succeed:
 8. Portable-module runtime smoke tests on Bun 1.4, Node 22, and Node 24.
 9. Filesystem Persistence Layer tests on macOS, Linux, and Windows.
 10. Compilation and execution of every README example.
-11. Manifest, license, changelog, repository, tag, clean-worktree, package-name, and unpublished-version checks.
+11. Manifest, license, changelog, repository, tag, clean-worktree, package-name, and unpublished-version checks (confirm the target version is not already on the registry).
 12. `npm publish <tarball> --dry-run --json` using the same npm client and archive selected for publication.
 
 The v0.1 acceptance strategy may add broader library and Example Blog verification, but it cannot weaken these package-specific gates.
@@ -191,8 +193,6 @@ The build job uses pinned Bun, creates the archive once, records its checksum an
 `jeremyc2` is the initial npm owner. The account uses mandatory two-factor authentication. Because npm requires an existing package before trusted publishing can be configured, the first `0.1.0` release uses one narrowly scoped token stored in the protected environment and requests provenance from the same workflow. Immediately afterward, the owner configures that exact workflow as the trusted publisher and revokes the token. Later releases use npm's OIDC exchange without a long-lived publication token.
 
 After npm publication succeeds, the workflow creates the matching GitHub Release from the changelog. The runbook requires verification of registry metadata, provenance, archive integrity, and installation before declaring the release complete.
-
-No publish command is executed while producing this specification.
 
 ## Faulty release policy
 

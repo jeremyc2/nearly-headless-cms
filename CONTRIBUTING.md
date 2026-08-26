@@ -121,7 +121,7 @@ Issues and specifications are tracked in [GitHub Issues](https://github.com/jere
 
 ## Status and compatibility
 
-The project is pre-1.0. Version `0.1.0` establishes the first package, serialization, HTTP, and filesystem compatibility baseline. The package README documents the stability policy for subsequent `0.1.x` releases.
+The library is published on npm as [`nearly-headless-cms`](https://www.npmjs.com/package/nearly-headless-cms). Version `1.0.0` is the current stable line. Within `1.x`, patch releases preserve documented import paths, serialized formats, HTTP contracts, and error codes. The package README documents the stability policy and [changelog](packages/nearly-headless-cms/CHANGELOG.md) entries for every release.
 
 ## License
 

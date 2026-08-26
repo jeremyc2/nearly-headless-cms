@@ -17,7 +17,9 @@ Nearly Headless CMS can be developed as a Bun monorepo and published as a conven
 - make package inspection and tarball smoke tests release gates; and
 - perform no registry write until a human intentionally invokes the release workflow.
 
-The current repository is not yet publish-ready. Its root is still a single package rather than a private workspace root, it has no `version` or license metadata, it points `module` at the source `index.ts`, and it has no declaration or JavaScript build. Those are implementation tasks, not reasons to change the route above.
+> **Update, 2026-08-26:** The repository is publish-ready and the library is on npm as `nearly-headless-cms@1.0.0`. See [`docs/releasing.md`](../releasing.md).
+
+At the time of this research, the repository was not yet publish-ready. Its root was still a single package rather than a private workspace root, it had no `version` or license metadata, it pointed `module` at the source `index.ts`, and it had no declaration or JavaScript build. Those gaps have since been resolved.
 
 ## Monorepo boundary
 
@@ -192,6 +194,8 @@ There is one bootstrap caveat. npm requires a package to already exist before a 
 
 No publish command was executed during this research.
 
+> **Update, 2026-08-26:** The library is published on npm as `nearly-headless-cms` at `1.0.0`. Use [`docs/releasing.md`](../releasing.md) for the current publish runbook. The checklist below is a historical snapshot from before the first release.
+
 ## v0.1 release-readiness gate
 
 The library is ready for an intentional `0.1.0` publish only when all of the following are true:
@@ -208,7 +212,7 @@ The library is ready for an intentional `0.1.0` publish only when all of the fol
 - [ ] `npm publish --dry-run` succeeds from the library workspace. A dry run is still not a substitute for reviewing the pack manifest.
 - [ ] Package-name ownership, npm account 2FA, first-publish credentials, GitHub environment protection, and the exact release workflow filename are prepared.
 - [ ] The release workflow uses a Git tag matching `v0.1.0`, a GitHub-hosted runner, `id-token: write`, the pinned Bun toolchain, Node 24, and a supported npm CLI.
-- [ ] The human approves the first registry write. Until that explicit act, the repository remains publishable but unpublished, as intended.
+- [ ] The human approves the registry write.
 
 ## Decisions this research leaves to the specification
 

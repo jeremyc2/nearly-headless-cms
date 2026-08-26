@@ -195,7 +195,7 @@ Import from these paths only. Undocumented internals are not part of the public 
 
 ## Stability
 
-Pre-1.0. Within `0.1.x`, patch releases preserve documented import paths, serialized formats, HTTP contracts, and error codes. Breaking changes advance `0.y.0` with notes in the [changelog](CHANGELOG.md).
+Within `1.x`, patch releases preserve documented import paths, serialized formats, HTTP contracts, and error codes. Breaking changes advance the next major or minor version with notes in the [changelog](CHANGELOG.md).
 
 ## License
 
