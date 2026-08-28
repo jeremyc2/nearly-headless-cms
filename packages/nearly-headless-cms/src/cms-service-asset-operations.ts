@@ -1,5 +1,12 @@
 import { AssetReferenced, type CmsError } from "./cms-error.ts";
-import type { Asset as AssetValue, IngestInput, StoredAsset } from "./asset.ts";
+import type {
+  Asset as AssetValue,
+  DownloadTarget,
+  IngestInput,
+  NewAssetMetadata,
+  StoredAsset,
+  UploadTarget,
+} from "./asset.ts";
 import type { CmsServiceOperationContext } from "./cms-service-operation-context.ts";
 import { Effect } from "effect";
 import cmsSupport from "./cms-support.ts";
@@ -61,6 +68,29 @@ const { collectReferences, liveRecords } = cmsSupport,
       });
       return yield* context.assets.list();
     }),
+  prepareAssetDownloadOperation =
+    (context: Readonly<CmsServiceOperationContext>) =>
+    (assetId: string): Effect.Effect<DownloadTarget, CmsError> =>
+      Effect.gen(function* prepareAssetDownloadOperationEffect() {
+        const snapshot = yield* context.readCurrentDefinitionSnapshot();
+        yield* context.authorize("asset.read", {
+          assetId,
+          definitionSpaceId: snapshot.definitionSpaceId,
+          kind: "asset",
+        });
+        return yield* context.assetTransfer.prepareDownload(assetId);
+      }),
+  prepareAssetUploadOperation =
+    (context: Readonly<CmsServiceOperationContext>) =>
+    (metadata: Readonly<NewAssetMetadata>): Effect.Effect<UploadTarget, CmsError> =>
+      Effect.gen(function* prepareAssetUploadOperationEffect() {
+        const snapshot = yield* context.readCurrentDefinitionSnapshot();
+        yield* context.authorize("asset.create", {
+          definitionSpaceId: snapshot.definitionSpaceId,
+          kind: "asset",
+        });
+        return yield* context.assetTransfer.prepareUpload(metadata);
+      }),
   readAssetOperation =
     (context: Readonly<CmsServiceOperationContext>) =>
     (assetId: string): Effect.Effect<StoredAsset, CmsError> =>
@@ -79,5 +109,7 @@ export default {
   getAsset: getAssetOperation,
   ingestAsset: ingestAssetOperation,
   listAssets: listAssetsOperation,
+  prepareAssetDownload: prepareAssetDownloadOperation,
+  prepareAssetUpload: prepareAssetUploadOperation,
   readAsset: readAssetOperation,
 };

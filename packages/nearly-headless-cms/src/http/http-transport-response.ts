@@ -192,6 +192,11 @@ const { assetContentResponse, buildErrorDocument, responseHeaders } = responseSu
     headers.set("content-type", "application/json; charset=utf-8");
     return Response.json(value, { headers, status });
   },
+  redirectResponse = (location: string, status: number, requestId: string): Response => {
+    const headers = responseHeaders(requestId);
+    headers.set("location", location);
+    return new Response(null, { headers, status });
+  },
   requestFailureResponse = <FailureType extends RequestFailureError>(
     failure: Readonly<FailureType>,
     requestId: string,
@@ -248,6 +253,7 @@ export default {
   errorResponse,
   invalidRequestResponse,
   jsonResponse,
+  redirectResponse,
   requestFailureResponse,
   respondWithOutcome,
   responseHeaders,

@@ -2,6 +2,13 @@
 
 All notable package changes are recorded here. Published versions and `v<version>` tags are immutable.
 
+## Unreleased
+
+- Adds queryable `Persistence.EntryReader`, atomic row-level `Persistence.EntryWriter`, and optional `Persistence.EntryHistory` capabilities alongside the generation compatibility seam.
+- Adds `Asset.Catalog` and `Asset.Transfer` capabilities with direct-stream, presigned-URL, and redirect intents; management HTTP accepts presigned-upload metadata as JSON and follows redirect download intents with `303`.
+- Adds `Cms.makeCapabilityLayer` for capability-native compositions while preserving `Cms.makeLayer` for existing adapters.
+- Adds `RoleBasedAuthorization` and bearer-verifier `ClaimsIdentity` adapters.
+
 ## 1.0.0 — 2026-08-26
 
 First stable public release.

@@ -24,7 +24,15 @@ export interface OperationInputsChunk1 {
       readonly "CMS-Expected-Definition-Fingerprint"?: string;
       readonly "X-Request-Id"?: string;
     };
-    readonly body: FormData;
+    readonly body:
+      | FormData
+      | {
+          readonly defaultAlternativeText?: string;
+          readonly filename: string;
+          readonly height?: number;
+          readonly mediaType: string;
+          readonly width?: number;
+        };
   };
   readonly inspectAssetContent: {
     readonly path: { readonly definitionSpaceId: string; readonly assetId: string };

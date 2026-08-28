@@ -1,5 +1,5 @@
 import cmsServiceOperationsSupport from "./cms-service-operations-support.ts";
 
-const { layer, makeLayer } = cmsServiceOperationsSupport;
+const { capabilityLayer, layer, makeCapabilityLayer, makeLayer } = cmsServiceOperationsSupport;
 
-export { layer, makeLayer };
+export { capabilityLayer, layer, makeCapabilityLayer, makeLayer };

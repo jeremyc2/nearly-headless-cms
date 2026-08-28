@@ -115,6 +115,14 @@ const cmsLayer = InMemory.cms({ snapshot });
 
 For disk-backed storage, use `Filesystem.cms` from `nearly-headless-cms/layers` with a root path and your compiled snapshot. For production, call `Cms.makeLayer` and provide your own layers.
 
+Production adapters can use the finer-grained capability constructor, `Cms.makeCapabilityLayer`. Provide `Persistence.EntryReader` and `Persistence.EntryWriter` for queryable row storage, plus `Asset.Catalog` and `Asset.Transfer` for independent metadata and byte-transfer behavior. `EntryWriter.commit` receives an atomic delta guarded by a generation, so SQL adapters can issue row-level upserts and deletes without serializing the entire Entry collection.
+
+`Asset.Transfer.prepareUpload` can return either a direct-stream ingestion intent or a presigned `PUT` URL. `prepareDownload` can return a direct stream or a redirect URL. The Management HTTP transport preserves multipart upload and streamed download for direct adapters; presigned adapters accept upload metadata as JSON and return a transfer intent, then emit `303` for redirected downloads.
+
+Existing `Persistence.EntryPersistence` and `Asset.Management` adapters remain supported. `EntryPersistenceCapabilities` and `AssetManagementCapabilities` from `nearly-headless-cms/adapters` bridge those adapters to the new capabilities.
+
+For common authentication wiring, `ClaimsIdentity.fromBearerVerifier` converts a bearer-token verifier into an identity resolver, and `RoleBasedAuthorization.layer` builds authorization from pure `rolesOf` and `policy` functions.
+
 The [Example CMS](https://github.com/jeremyc2/nearly-headless-cms/tree/main/apps/example-cms) shows a full composition with filesystem storage, delivery operations, and a React admin UI.
 
 ## Expose HTTP when you need it
@@ -202,7 +210,7 @@ See [`apps/example-cms-minimal`](https://github.com/jeremyc2/nearly-headless-cms
 | `nearly-headless-cms` | `Cms`, `ContentDefinition`, `Entry`, `EntryQuery`, `Asset`, `RichText`, and service contracts |
 | `nearly-headless-cms/layers` | `InMemory`, `Filesystem`, and shared dev dependencies |
 | `nearly-headless-cms/http` | HTTP transport, contracts, OpenAPI generation, and `DeliveryRecipes` helpers |
-| `nearly-headless-cms/adapters` | In-memory persistence, anonymous identity, open authorization |
+| `nearly-headless-cms/adapters` | In-memory and compatibility adapters, claims identity, role-based authorization |
 | `nearly-headless-cms/bun/filesystem` | Bun-only filesystem persistence |
 | `nearly-headless-cms/testing` | Fully composed `DevelopmentCms` layer |
 

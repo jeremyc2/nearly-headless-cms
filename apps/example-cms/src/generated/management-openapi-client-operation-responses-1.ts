@@ -9,7 +9,16 @@ import type {
 export interface OperationResponsesChunk1 {
   readonly getDefinition: JsonObject;
   readonly getEntry: Entry;
-  readonly ingestAsset: Asset;
+  readonly ingestAsset:
+    | Asset
+    | {
+        readonly assetId: string;
+        readonly expiresInMilliseconds: number;
+        readonly headers?: Readonly<Record<string, string>>;
+        readonly kind: "presigned-url";
+        readonly method: "PUT";
+        readonly url: string;
+      };
   readonly inspectAssetContent: undefined;
   readonly inspectDefinitionSnapshot: JsonObject;
   readonly inspectEntryRevision: Revision;

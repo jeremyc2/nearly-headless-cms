@@ -317,6 +317,32 @@
         ],
         "requestBody": {
           "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "defaultAlternativeText": {
+                    "type": "string"
+                  },
+                  "filename": {
+                    "type": "string"
+                  },
+                  "height": {
+                    "type": "number"
+                  },
+                  "mediaType": {
+                    "type": "string"
+                  },
+                  "width": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "filename",
+                  "mediaType"
+                ],
+                "type": "object"
+              }
+            },
             "multipart/form-data": {
               "schema": {
                 "properties": {
@@ -343,7 +369,46 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Asset"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Asset"
+                    },
+                    {
+                      "properties": {
+                        "assetId": {
+                          "type": "string"
+                        },
+                        "expiresInMilliseconds": {
+                          "minimum": 1,
+                          "type": "number"
+                        },
+                        "headers": {
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "type": "object"
+                        },
+                        "kind": {
+                          "const": "presigned-url"
+                        },
+                        "method": {
+                          "const": "PUT"
+                        },
+                        "url": {
+                          "format": "uri",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "assetId",
+                        "expiresInMilliseconds",
+                        "kind",
+                        "method",
+                        "url"
+                      ],
+                      "type": "object"
+                    }
+                  ]
                 }
               }
             },
@@ -944,6 +1009,9 @@
             },
             "description": "Successful response"
           },
+          "303": {
+            "description": "Operation completed without a response body"
+          },
           "400": {
             "content": {
               "application/json": {
@@ -1134,6 +1202,9 @@
         ],
         "responses": {
           "200": {
+            "description": "Operation completed without a response body"
+          },
+          "303": {
             "description": "Operation completed without a response body"
           },
           "400": {

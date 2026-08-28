@@ -23,7 +23,7 @@ export const operationSpecificationsChunk1 = {
   ingestAsset: {
     method: "POST",
     path: "/api/v1/management/definition-spaces/{definitionSpaceId}/assets",
-    requestMediaType: "multipart/form-data",
+    requestMediaType: "application/json",
     successResponses: [
       {
         responseMediaType: "application/json",

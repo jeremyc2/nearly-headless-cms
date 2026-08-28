@@ -10,7 +10,33 @@ interface BuildCompletedOperationInput {
   readonly successStatus: number;
 }
 
-const buildCompletedOperation = ({
+const presignedUploadMetadataSchema = {
+    properties: {
+      defaultAlternativeText: { type: "string" },
+      filename: { type: "string" },
+      height: { type: "number" },
+      mediaType: { type: "string" },
+      width: { type: "number" },
+    },
+    required: ["filename", "mediaType"],
+    type: "object",
+  },
+  requestBodyContent = (
+    operationIdentifier: string,
+    requestMediaType: string,
+    requestBodySchema: Readonly<Record<string, unknown>>,
+  ): Readonly<Record<string, unknown>> => {
+    const content = { [requestMediaType]: { schema: requestBodySchema } };
+    if (operationIdentifier !== "ingestAsset") {
+      return content;
+    }
+    return {
+      ...content,
+      "application/json": { schema: presignedUploadMetadataSchema },
+    };
+  },
+
+ buildCompletedOperation = ({
   bodyless,
   firstIndex,
   operationIdentifier,
@@ -49,7 +75,7 @@ const buildCompletedOperation = ({
   };
   if (requestBodySchema !== undefined) {
     operation["requestBody"] = {
-      content: { [requestMediaType]: { schema: requestBodySchema } },
+      content: requestBodyContent(operationIdentifier, requestMediaType, requestBodySchema),
       required: true,
     };
   }

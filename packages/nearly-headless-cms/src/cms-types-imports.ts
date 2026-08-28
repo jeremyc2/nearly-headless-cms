@@ -1,4 +1,11 @@
-export type { Asset as AssetValue, IngestInput, StoredAsset } from "./asset.ts";
+export type {
+  Asset as AssetValue,
+  DownloadTarget,
+  IngestInput,
+  NewAssetMetadata,
+  StoredAsset,
+  UploadTarget,
+} from "./asset.ts";
 export type { CmsError } from "./cms-error.ts";
 export type {
   CompileOptions,

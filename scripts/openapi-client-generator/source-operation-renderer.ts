@@ -29,10 +29,22 @@ const appendParameterGroup = <Input extends AppendParameterGroupInput>(
     if (operation.requestBodySchema === undefined) {
       return;
     }
-    let bodyType = renderSchemaType(operation.requestBodySchema);
-    if (operation.requestMediaType === "multipart/form-data") {
-      bodyType = "FormData";
-    }
+    const requestBodyContents = operation.requestBodyContents ?? [
+        {
+          mediaType: operation.requestMediaType ?? "application/json",
+          schema: operation.requestBodySchema,
+        },
+      ],
+      bodyType = [
+        ...new Set(
+          requestBodyContents.map((content) => {
+            if (content.mediaType === "multipart/form-data") {
+              return "FormData";
+            }
+            return renderSchemaType(content.schema);
+          }),
+        ),
+      ].join(" | ");
     fields.push(
       `readonly ${sourceOperationRenderer.propertyField("body", bodyType, operation.requestBodyRequired)}`,
     );

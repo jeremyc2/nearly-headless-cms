@@ -17,7 +17,12 @@ export interface EntryGeneration {
   readonly records: ReadonlyMap<string, EntryRecord>;
 }
 
-/** Builder-supplied atomic Entry persistence capability. */
+/**
+ * Builder-supplied atomic Entry persistence capability.
+ *
+ * Compatibility seam for existing adapters. New adapters should implement `EntryReader` and
+ * `EntryWriter` so reads can be queried and writes can be committed as row-level changes.
+ */
 export class EntryPersistence extends Context.Service<
   EntryPersistence,
   {

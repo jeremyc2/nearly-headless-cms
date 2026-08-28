@@ -1,7 +1,9 @@
-import { httpStatusNoContent } from "./http-status-codes.ts";
+import { httpStatusNoContent, httpStatusSeeOther } from "./http-status-codes.ts";
 
 const additionalBodylessSuccessStatuses = new Map<string, readonly number[]>([
     ["deleteEntry", [httpStatusNoContent]],
+    ["inspectAssetContent", [httpStatusSeeOther]],
+    ["readAsset", [httpStatusSeeOther]],
   ]),
   createdStatus = 201,
   entrySchema = {
@@ -205,7 +207,35 @@ const additionalBodylessSuccessStatuses = new Map<string, readonly number[]>([
     ["inspectEntryRevision", { $ref: "#/components/schemas/Revision" }],
     ["restoreEntryRevision", { $ref: "#/components/schemas/CurrentEntryState" }],
     ["deleteEntry", { $ref: "#/components/schemas/DeletionRecord" }],
-    ["ingestAsset", { $ref: "#/components/schemas/Asset" }],
+    [
+      "ingestAsset",
+      {
+        oneOf: [
+          { $ref: "#/components/schemas/Asset" },
+          {
+            properties: {
+              assetId: { type: "string" },
+              expiresInMilliseconds: { minimum: 1, type: "number" },
+              headers: {
+                additionalProperties: { type: "string" },
+                type: "object",
+              },
+              kind: { const: "presigned-url" },
+              method: { const: "PUT" },
+              url: { format: "uri", type: "string" },
+            },
+            required: [
+              "assetId",
+              "expiresInMilliseconds",
+              "kind",
+              "method",
+              "url",
+            ],
+            type: "object",
+          },
+        ],
+      },
+    ],
     ["getAsset", { $ref: "#/components/schemas/Asset" }],
     ["readAsset", { format: "binary", type: "string" }],
     ["inspectAssetContent", { format: "binary", type: "string" }],

@@ -9,10 +9,12 @@ import type {
   Definition,
   DefinitionContract,
   DeletionRecord,
+  DownloadTarget,
   Handler,
   IngestInput,
   ListRevisionsInput,
   Manifest,
+  NewAssetMetadata,
   Preparation,
   Query,
   QueryPage,
@@ -24,6 +26,7 @@ import type {
   SnapshotInput,
   StoredAsset,
   UpdateInput,
+  UploadTarget,
 } from "./cms-types-imports.ts";
 import type { Effect } from "effect";
 
@@ -137,6 +140,10 @@ export interface ServiceShape {
   readonly ingestAsset: <Input extends IngestInput>(
     input: Readonly<Input>,
   ) => Effect.Effect<AssetValue, CmsError>;
+  readonly prepareAssetUpload: (
+    metadata: Readonly<NewAssetMetadata>,
+  ) => Effect.Effect<UploadTarget, CmsError>;
+  readonly prepareAssetDownload: (assetId: string) => Effect.Effect<DownloadTarget, CmsError>;
   readonly getAsset: (assetId: string) => Effect.Effect<AssetValue, CmsError>;
   readonly readAsset: (assetId: string) => Effect.Effect<StoredAsset, CmsError>;
   readonly listAssets: (_void: void) => Effect.Effect<readonly AssetValue[], CmsError>;

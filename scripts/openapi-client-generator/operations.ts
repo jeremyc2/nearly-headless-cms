@@ -17,6 +17,7 @@ export interface GeneratedOperation {
   readonly parameters: readonly Parameter[];
   readonly path: string;
   readonly requestBodyRequired: boolean;
+  readonly requestBodyContents?: readonly RequestBodyContent[];
   readonly requestBodySchema?: Readonly<Record<string, unknown>>;
   readonly requestMediaType?: string;
   readonly successResponses: readonly GeneratedSuccessResponse[];
@@ -27,7 +28,7 @@ export interface ParsedOpenApiDocument {
   readonly operations: readonly GeneratedOperation[];
 }
 
-interface ContentSchema {
+export interface RequestBodyContent {
   readonly mediaType: string;
   readonly schema: Readonly<Record<string, unknown>>;
 }
@@ -71,7 +72,7 @@ const compareOperationIdentifiers = (
     values: readonly Value[],
     compare: (left: Value, right: Value) => number,
   ): readonly Value[] => values.toSorted(compare),
-  validatedContent = (contentValue: unknown, description: string): ContentSchema | undefined => {
+  validatedContent = (contentValue: unknown, description: string): RequestBodyContent | undefined => {
     if (contentValue === undefined) {
       return undefined;
     }
@@ -86,6 +87,16 @@ const compareOperationIdentifiers = (
         mediaRecord = requireRecord(media, `${description} media`);
       return { mediaType, schema: requireRecord(mediaRecord["schema"], `${description} schema`) };
     }
+  },
+  validatedRequestContents = (contentValue: unknown): readonly RequestBodyContent[] => {
+    if (contentValue === undefined) {
+      return [];
+    }
+    const content = requireRecord(contentValue, "request content");
+    return Object.entries(content).map(([mediaType, media]) => ({
+      mediaType,
+      schema: requireRecord(requireRecord(media, "request media")["schema"], "request schema"),
+    }));
   },
   validatedParameters = (value: unknown): readonly Parameter[] => {
     if (!Array.isArray(value)) {
@@ -151,7 +162,10 @@ const compareOperationIdentifiers = (
     path,
   }: Readonly<OperationInput>): GeneratedOperation => {
     const requestBody = validatedRequestBody(operation, identifier),
-      requestContent = validatedContent(requestBody?.["content"], "request"),
+      requestBodyContents = validatedRequestContents(requestBody?.["content"]),
+      requestContent =
+        requestBodyContents.find((content) => content.mediaType === "application/json") ??
+        requestBodyContents[0],
       sharedOperation: GeneratedOperation = {
         identifier,
         method: method.toUpperCase(),
@@ -165,6 +179,7 @@ const compareOperationIdentifiers = (
     }
     return {
       ...sharedOperation,
+      requestBodyContents,
       requestBodySchema: requestContent.schema,
       requestMediaType: requestContent.mediaType,
     };
