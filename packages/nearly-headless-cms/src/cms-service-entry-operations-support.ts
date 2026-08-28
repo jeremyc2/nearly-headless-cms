@@ -1,14 +1,13 @@
 import type { CreateInput, ReadInput, Representation, UpdateInput } from "./entry.ts";
 import type { DeleteEntryInput, DeleteResult, MutationResult } from "./cms-types.ts";
 import type { Query, QueryPage } from "./entry-query.ts";
-import type { CmsError } from "./cms-error.ts";
+import { type CmsError, Conflict } from "./cms-error.ts";
 import type { CmsServiceOperationContext } from "./cms-service-operation-context.ts";
 import type { CompiledSnapshot } from "./content-definition.ts";
 import { Effect } from "effect";
 import cmsSupport from "./cms-support.ts";
 import entryOperationSupport from "./cms-service-entry-operation-support.ts";
 import entryOperationsPrepareSupport from "./cms-service-entry-operations-prepare-support.ts";
-import { evaluate as evaluateQuery } from "./entry-query-evaluation.ts";
 
 interface AuthorizeEntryExpansionInput {
   readonly contentTypeId: string;
@@ -17,7 +16,7 @@ interface AuthorizeEntryExpansionInput {
   readonly snapshot: CompiledSnapshot;
 }
 
-const { attempt, entryResource, expandRepresentation, liveRecords, project } = cmsSupport,
+const { attempt, entryResource, expandRepresentation, project } = cmsSupport,
   { commitEntryWithHistory, commitEntryWithoutHistory } = entryOperationSupport,
   {
     expandQueryPage,
@@ -158,21 +157,27 @@ const { attempt, entryResource, expandRepresentation, liveRecords, project } = c
   ): Effect.Effect<QueryPage, CmsError> =>
     Effect.gen(function* runQueryEntriesEffect() {
       const contextSnapshotForQuery = yield* authorizeQueryEntries(context, query),
-        generation = yield* context.persistence.readGeneration(),
-        page = yield* attempt(() =>
-          evaluateQuery({
-            entries: liveRecords(generation).map((record) => record.entry),
-            options: { generation: generation.generation },
-            query,
-            snapshot: contextSnapshotForQuery,
-          }),
-        );
-      return yield* expandQueryPage({
-        expansion: query.expansion,
-        generation,
-        page,
-        snapshot: contextSnapshotForQuery,
-      });
+        queryResult = yield* context.entryReader.query({
+          query,
+          snapshot: contextSnapshotForQuery,
+        });
+      if (query.expansion === undefined || query.expansion.length === 0) {
+        return queryResult.page;
+      }
+      {
+        const generation = yield* context.persistence.readGeneration();
+        if (generation.generation !== queryResult.generation) {
+          return yield* Conflict.make({
+            message: "Entry persistence changed while expanding the Query page",
+          });
+        }
+        return yield* expandQueryPage({
+          expansion: query.expansion,
+          generation,
+          page: queryResult.page,
+          snapshot: contextSnapshotForQuery,
+        });
+      }
     }),
   runUpdateEntry = (
     context: Readonly<CmsServiceOperationContext>,

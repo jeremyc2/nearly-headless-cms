@@ -3,14 +3,27 @@ import {
   type Handler,
   cmsServiceOperationsModules,
 } from "./cms-service-operations-modules.ts";
-import { DefinitionCatalog, EntryPersistence } from "./persistence.ts";
+import { DefinitionCatalog, EntryPersistence, EntryReader, EntryWriter } from "./persistence.ts";
 import { Effect, Layer, Semaphore } from "effect";
-import { Management as AssetManagement } from "./asset.ts";
+import {
+  Catalog as AssetCatalog,
+  Management as AssetManagement,
+  Transfer as AssetTransfer,
+} from "./asset.ts";
 import { Service as AuthorizationService } from "./authorization.ts";
 import { CurrentIdentity } from "./identity.ts";
 import { Generator } from "./identifier.ts";
 import { Service } from "./cms-service.ts";
 import { createCmsServiceOperationContext } from "./cms-service-operation-context.ts";
+import {
+  persistenceFromCapabilities,
+  readerFromPersistence,
+} from "./adapters/entry-persistence-capabilities.ts";
+import {
+  catalogFromManagement,
+  managementFromCapabilities,
+  transferFromManagement,
+} from "./adapters/asset-management-capabilities.ts";
 
 const assembleService = <Context extends ReturnType<typeof createCmsServiceOperationContext>>(
     context: Readonly<Context>,
@@ -46,33 +59,38 @@ const assembleService = <Context extends ReturnType<typeof createCmsServiceOpera
       listEntryRevisions: (input) => withOperationGate(entryHistory.listEntryRevisions(context)(input)),
       mutateEntriesAtomically: (input) => withOperationGate(entryBatch.mutateEntriesAtomically(context)(input)),
       permanentlyPurgeEntry: (input) => withOperationGate(entryHistory.permanentlyPurgeEntry(context)(input)),
+      prepareAssetDownload: (input) => withOperationGate(asset.prepareAssetDownload(context)(input)),
+      prepareAssetUpload: (input) => withOperationGate(asset.prepareAssetUpload(context)(input)),
       prepareDefinitionMigration: (input) => withOperationGate(definition.prepareDefinitionMigration(context)(input)),
       queryEntries: (input) => withOperationGate(entries.queryEntries(context)(input)),
       readAsset: (input) => withOperationGate(asset.readAsset(context)(input)),
-      readConsistentSnapshot: (_void: void) =>
-        withOperationGate(definition.readConsistentSnapshot(context)),
-      readDefinitionCatalog: (_void: void) =>
-        withOperationGate(definition.readDefinitionCatalog(context)),
+      readConsistentSnapshot: (_void: void) => withOperationGate(definition.readConsistentSnapshot(context)),
+      readDefinitionCatalog: (_void: void) => withOperationGate(definition.readDefinitionCatalog(context)),
       restoreEntryRevision: (input) => withOperationGate(entryHistory.restoreEntryRevision(context)(input)),
       retireDefinition: (input) => withOperationGate(definition.retireDefinition(context)(input)),
       updateEntry: (input) => withOperationGate(entries.updateEntry(context)(input)),
     });
   },
-  createCmsService = <Options extends CmsLayerOptions>(options: Readonly<Options>) =>
-    Effect.gen(function* createCmsServiceEffect() {
-      const assets = yield* AssetManagement,
-        authorization = yield* AuthorizationService,
+  createCmsServiceWithPersistence = <Options extends CmsLayerOptions>(input: {
+    readonly assetCatalog: typeof AssetCatalog.Service;
+    readonly assetTransfer: typeof AssetTransfer.Service;
+    readonly assets: typeof AssetManagement.Service;
+    readonly entryReader: typeof EntryReader.Service;
+    readonly options: Readonly<Options>;
+    readonly persistence: typeof EntryPersistence.Service;
+  }) =>
+    Effect.gen(function* createCmsServiceWithPersistenceEffect() {
+      const authorization = yield* AuthorizationService,
         catalog = yield* DefinitionCatalog,
         currentIdentity = yield* CurrentIdentity,
         identifiers = yield* Generator,
         migrationHandlers = new Map<string, Handler>(
-          (options.migrationHandlers ?? []).map((handler) => [
+          (input.options.migrationHandlers ?? []).map((handler) => [
             `${handler.identifier}@${handler.version}`,
             handler,
           ]),
         ),
         operationGate = yield* Semaphore.make(1),
-        persistence = yield* EntryPersistence,
         withOperationGate = <
           Success,
           Failure,
@@ -83,21 +101,52 @@ const assembleService = <Context extends ReturnType<typeof createCmsServiceOpera
         ) => operationGate.withPermit(operation);
       return assembleService(
         createCmsServiceOperationContext({
-          assets,
+          assetCatalog: input.assetCatalog,
+          assetTransfer: input.assetTransfer,
+          assets: input.assets,
           authorization,
           catalog,
           compileOptions: {
-            customFieldKinds: options.customFieldKinds,
-            richTextExtensions: options.richTextExtensions,
+            customFieldKinds: input.options.customFieldKinds,
+            richTextExtensions: input.options.richTextExtensions,
           },
           currentIdentity,
+          entryReader: input.entryReader,
           identifiers,
           migrationHandlers,
-          operationContracts: options.operationContracts ?? [],
-          persistence,
+          operationContracts: input.options.operationContracts ?? [],
+          persistence: input.persistence,
         }),
         withOperationGate,
       );
+    }),
+  createCmsService = <Options extends CmsLayerOptions>(options: Readonly<Options>) =>
+    Effect.gen(function* createCmsServiceEffect() {
+      const assets = yield* AssetManagement,
+        persistence = yield* EntryPersistence;
+      return yield* createCmsServiceWithPersistence({
+        assetCatalog: catalogFromManagement(assets),
+        assetTransfer: transferFromManagement(assets),
+        assets,
+        entryReader: readerFromPersistence(persistence),
+        options,
+        persistence,
+      });
+    }),
+  createCapabilityCmsService = <Options extends CmsLayerOptions>(options: Readonly<Options>) =>
+    Effect.gen(function* createCapabilityCmsServiceEffect() {
+      const assetCatalog = yield* AssetCatalog,
+        assetTransfer = yield* AssetTransfer,
+        entryReader = yield* EntryReader,
+        entryWriter = yield* EntryWriter;
+      return yield* createCmsServiceWithPersistence({
+        assetCatalog,
+        assetTransfer,
+        assets: managementFromCapabilities(assetTransfer)(assetCatalog),
+        entryReader,
+        options,
+        persistence: persistenceFromCapabilities(entryWriter)(entryReader),
+      });
     }),
   makeLayerImpl = (
     options: CmsLayerOptions = {},
@@ -110,6 +159,25 @@ const assembleService = <Context extends ReturnType<typeof createCmsServiceOpera
     | EntryPersistence
     | AssetManagement
     | Generator
-  > => Layer.effect(Service, createCmsService(options));
+  > => Layer.effect(Service, createCmsService(options)),
+  makeCapabilityLayerImpl = (
+    options: CmsLayerOptions = {},
+  ): Layer.Layer<
+    Service,
+    never,
+    | AuthorizationService
+    | CurrentIdentity
+    | DefinitionCatalog
+    | EntryReader
+    | EntryWriter
+    | AssetCatalog
+    | AssetTransfer
+    | Generator
+  > => Layer.effect(Service, createCapabilityCmsService(options));
 
-export default { layer: makeLayerImpl(), makeLayer: makeLayerImpl };
+export default {
+  capabilityLayer: makeCapabilityLayerImpl(),
+  layer: makeLayerImpl(),
+  makeCapabilityLayer: makeCapabilityLayerImpl,
+  makeLayer: makeLayerImpl,
+};

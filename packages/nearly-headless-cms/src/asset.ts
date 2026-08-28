@@ -55,3 +55,19 @@ export class Management extends Context.Service<
     readonly list: (_void: void) => Effect.Effect<readonly Asset[], InfrastructureFailure>;
   }
 >()("nearly-headless-cms/asset/Management") {}
+
+/** Asset metadata capability independent of byte transfer. */
+export { Catalog } from "./asset-catalog.ts";
+/** Asset transfer intents for direct streams, presigned uploads, and redirects. */
+export { Transfer } from "./asset-transfer.ts";
+/** Asset transfer intent and metadata input types. */
+export type {
+  DirectStreamDownload,
+  DirectStreamIngestInput,
+  DirectStreamUpload,
+  DownloadTarget,
+  NewAssetMetadata,
+  PresignedUrlUpload,
+  RedirectUrlDownload,
+  UploadTarget,
+} from "./asset-capability-types.ts";

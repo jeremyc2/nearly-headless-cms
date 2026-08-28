@@ -99,3 +99,39 @@ test("generates response unions for operations with multiple successful statuses
     generated.files.find((file) => file.filename.endsWith("-specifications"))?.content,
   ).toContain('"status": 204');
 });
+
+test("generates request unions for operations with multiple media types", () => {
+  const generated = generateClientSource({
+      ...parseOpenApiDocument({
+        ...document,
+        paths: {
+          "/assets": {
+            post: {
+              operationId: "uploadAsset",
+              requestBody: {
+                content: {
+                  "application/json": {
+                    schema: {
+                      properties: { filename: { type: "string" } },
+                      required: ["filename"],
+                      type: "object",
+                    },
+                  },
+                  "multipart/form-data": { schema: { type: "object" } },
+                },
+                required: true,
+              },
+              responses: { "204": { description: "Uploaded" } },
+            },
+          },
+        },
+      }),
+      clientBasename: "example-openapi-client",
+      formatVersion: 3,
+    }),
+    inputs = generated.files.find((file) => file.filename.endsWith("-operation-inputs-0"))?.content,
+    specifications = generated.files.find((file) => file.filename.endsWith("-specifications"))?.content;
+  expect(inputs).toContain("FormData");
+  expect(inputs).toContain("filename: string");
+  expect(specifications).toContain('"requestMediaType": "application/json"');
+});

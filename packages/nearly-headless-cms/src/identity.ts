@@ -1,4 +1,5 @@
 import { Context, type Effect } from "effect";
+import type { InfrastructureFailure } from "./cms-error.ts";
 
 /** Explicit identity state for a request without an Actor. */
 export interface Anonymous {
@@ -21,6 +22,6 @@ export const anonymous: Anonymous = { state: "anonymous" };
 export class CurrentIdentity extends Context.Service<
   CurrentIdentity,
   {
-    readonly current: (_void: void) => Effect.Effect<Identity>;
+    readonly current: (_void: void) => Effect.Effect<Identity, InfrastructureFailure>;
   }
 >()("nearly-headless-cms/identity/CurrentIdentity") {}

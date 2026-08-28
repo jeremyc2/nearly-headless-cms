@@ -6,8 +6,12 @@ import {
 } from "./operation.ts";
 import { type CmsError, Forbidden } from "./cms-error.ts";
 import { type CompileOptions, type CompiledSnapshot } from "./content-definition.ts";
-import type { DefinitionCatalog, EntryPersistence } from "./persistence.ts";
-import type { Management as AssetManagement } from "./asset.ts";
+import type { DefinitionCatalog, EntryPersistence, EntryReader } from "./persistence.ts";
+import type {
+  Catalog as AssetCatalog,
+  Management as AssetManagement,
+  Transfer as AssetTransfer,
+} from "./asset.ts";
 import type { Service as AuthorizationService } from "./authorization.ts";
 import type { CurrentIdentity } from "./identity.ts";
 import { Effect } from "effect";
@@ -34,22 +38,28 @@ const { attempt } = cmsSupport,
         return yield* Effect.void;
       }),
   createCmsServiceOperationContext = (input: {
+    readonly assetCatalog: typeof AssetCatalog.Service;
+    readonly assetTransfer: typeof AssetTransfer.Service;
     readonly assets: typeof AssetManagement.Service;
     readonly authorization: typeof AuthorizationService.Service;
     readonly catalog: typeof DefinitionCatalog.Service;
     readonly compileOptions: Readonly<CompileOptions>;
     readonly currentIdentity: typeof CurrentIdentity.Service;
+    readonly entryReader: typeof EntryReader.Service;
     readonly identifiers: typeof Generator.Service;
     readonly migrationHandlers: Map<string, Handler>;
     readonly operationContracts: readonly DefinitionContract[];
     readonly persistence: typeof EntryPersistence.Service;
   }): CmsServiceOperationContext => ({
+    assetCatalog: input.assetCatalog,
+    assetTransfer: input.assetTransfer,
     assets: input.assets,
     authorization: input.authorization,
     authorize: createAuthorize(input.authorization, input.currentIdentity),
     catalog: input.catalog,
     compileOptions: input.compileOptions,
     currentIdentity: input.currentIdentity,
+    entryReader: input.entryReader,
     identifiers: input.identifiers,
     migrationHandlers: input.migrationHandlers,
     operationContracts: input.operationContracts,
@@ -73,6 +83,8 @@ const { attempt } = cmsSupport,
     );
 
 export interface CmsServiceOperationContext {
+  readonly assetCatalog: typeof AssetCatalog.Service;
+  readonly assetTransfer: typeof AssetTransfer.Service;
   readonly assets: typeof AssetManagement.Service;
   readonly authorization: typeof AuthorizationService.Service;
   readonly authorize: (
@@ -85,6 +97,7 @@ export interface CmsServiceOperationContext {
     _void: void,
   ) => Effect.Effect<CompiledSnapshot, CmsError>;
   readonly currentIdentity: typeof CurrentIdentity.Service;
+  readonly entryReader: typeof EntryReader.Service;
   readonly identifiers: typeof Generator.Service;
   readonly migrationHandlers: Map<string, Handler>;
   readonly operationContracts: readonly DefinitionContract[];
